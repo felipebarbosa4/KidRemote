@@ -42,7 +42,8 @@ Verified state:
 - Status has the exact six configured options; Work Type has Specification, Spike and Implementation;
 - Iteration duration is seven days. Sprint 01 — Feasibility runs 2026-09-05 through 2026-09-11 with KR-001/002/003 assigned under the single-agent plan;
 - all eight initial manifest-backed fields were populated for every issue; live execution now has KR-001/002 Done, KR-003 In Progress and KR-004–010 Backlog;
-- Start Date and Target Date values remain unset; only the approved Sprint 01 Iteration is assigned to KR-001/002/003;
+- Sprint 01 execution dates are populated: KR-001/002 each ran 2026-09-05; KR-003 starts 2026-09-05 with target 2026-09-11.
+  Start/Target Date remain unset for KR-004–010 until those items are scheduled;
 - pre-existing Size, Estimate and Phase fields and the `My items` view were preserved as compatible human configuration.
 
 The other untitled Projects #1 (closed) and #2 (open) were not modified.
