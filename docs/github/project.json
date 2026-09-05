@@ -1,0 +1,306 @@
+{
+  "title": "KidRemote MVP",
+  "repository": "felipebarbosa4/KidRemote",
+  "owner": "felipebarbosa4",
+  "source_ref": "docs/initial-architecture",
+  "visibility": "PRIVATE",
+  "iteration_start": "UNSPECIFIED",
+  "iteration_days": 7,
+  "fields": [
+    {
+      "name": "Status",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Backlog",
+        "Ready",
+        "In Progress",
+        "In Review",
+        "Blocked",
+        "Done"
+      ],
+      "builtin": true
+    },
+    {
+      "name": "Priority",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    {
+      "name": "Story Points",
+      "type": "NUMBER",
+      "recommended_values": [
+        1,
+        2,
+        3,
+        5,
+        8,
+        13
+      ]
+    },
+    {
+      "name": "Iteration",
+      "type": "ITERATION",
+      "duration_days": 7,
+      "start": "UNSPECIFIED"
+    },
+    {
+      "name": "Risk",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Low",
+        "Medium",
+        "High"
+      ]
+    },
+    {
+      "name": "Area",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Product",
+        "Parent",
+        "Child Android",
+        "Backend",
+        "Sync",
+        "Security",
+        "Policy",
+        "Design",
+        "QA",
+        "Infra"
+      ]
+    },
+    {
+      "name": "Platform",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Shared",
+        "Android",
+        "Backend",
+        "Fire OS",
+        "iOS",
+        "Windows"
+      ]
+    },
+    {
+      "name": "Decision Required",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Yes",
+        "No"
+      ]
+    },
+    {
+      "name": "Work Type",
+      "type": "SINGLE_SELECT",
+      "options": [
+        "Specification",
+        "Spike",
+        "Implementation"
+      ]
+    },
+    {
+      "name": "Start Date",
+      "type": "DATE"
+    },
+    {
+      "name": "Target Date",
+      "type": "DATE"
+    }
+  ],
+  "views": [
+    {
+      "name": "Backlog",
+      "layout": "TABLE",
+      "sort": {
+        "field": "Priority",
+        "direction": "ASC"
+      },
+      "filter": {
+        "status_not": "Done"
+      }
+    },
+    {
+      "name": "Current Sprint",
+      "layout": "BOARD",
+      "group_by": "Status",
+      "query": "iteration:@current"
+    },
+    {
+      "name": "Architecture",
+      "layout": "TABLE",
+      "filter": {
+        "work_type_any": [
+          "Specification",
+          "Spike"
+        ]
+      },
+      "sort": {
+        "field": "Priority",
+        "direction": "ASC"
+      }
+    },
+    {
+      "name": "Security & Policy",
+      "layout": "TABLE",
+      "filter": {
+        "labels_any": [
+          "security",
+          "privacy",
+          "policy"
+        ]
+      },
+      "sort": {
+        "field": "Priority",
+        "direction": "ASC"
+      }
+    },
+    {
+      "name": "Roadmap",
+      "layout": "ROADMAP",
+      "group_by": "Platform",
+      "date_fields": [
+        "Start Date",
+        "Target Date"
+      ],
+      "platform_order": [
+        "Shared",
+        "Android",
+        "Backend",
+        "Fire OS",
+        "iOS",
+        "Windows"
+      ],
+      "dates": "UNSPECIFIED"
+    }
+  ],
+  "milestones": [
+    {
+      "title": "Architecture & Feasibility",
+      "description": "Product/state decisions, Android/Play go-no-go, backend/RLS and pairing threat model. Dates UNSPECIFIED."
+    },
+    {
+      "title": "Android Alpha",
+      "description": "Internal Android vertical slice after feasibility; tenant, identity, local timer and sync tests. Dates UNSPECIFIED."
+    },
+    {
+      "title": "Android MVP",
+      "description": "Approved simple Android experience with full security/device/privacy/release evidence. Dates UNSPECIFIED."
+    },
+    {
+      "title": "Fire OS Beta",
+      "description": "Future port after Android; ADM/A3L and Fire/Kids-profile feasibility. Dates UNSPECIFIED."
+    },
+    {
+      "title": "Apple Feasibility",
+      "description": "Future Screen Time/entitlement/remote-behaviour research; no iOS MVP implementation. Dates UNSPECIFIED."
+    },
+    {
+      "title": "Windows V2",
+      "description": "Future Windows privilege/enforcement research; no current implementation. Dates UNSPECIFIED."
+    }
+  ],
+  "labels": [
+    {
+      "name": "security",
+      "color": "B60205",
+      "description": "Authentication, authorization or abuse prevention"
+    },
+    {
+      "name": "privacy",
+      "color": "0E8A16",
+      "description": "Data minimization, retention or deletion"
+    },
+    {
+      "name": "policy",
+      "color": "D4C5F9",
+      "description": "Platform/store-policy evidence"
+    },
+    {
+      "name": "needs-owner-decision",
+      "color": "FBCA04",
+      "description": "Explicit product owner decision required"
+    },
+    {
+      "name": "needs-device-test",
+      "color": "F9D0C4",
+      "description": "Physical device evidence required"
+    },
+    {
+      "name": "breaking-change",
+      "color": "B60205",
+      "description": "Incompatible protocol or behaviour change"
+    },
+    {
+      "name": "blocked",
+      "color": "D93F0B",
+      "description": "Work cannot proceed on a required dependency"
+    },
+    {
+      "name": "good-first-agent-task",
+      "color": "7057FF",
+      "description": "Bounded task suitable for a first agent session"
+    },
+    {
+      "name": "area:parent",
+      "color": "1D76DB",
+      "description": "Parent Android app"
+    },
+    {
+      "name": "area:child-android",
+      "color": "1D76DB",
+      "description": "Native child Android agent"
+    },
+    {
+      "name": "area:backend",
+      "color": "1D76DB",
+      "description": "Supabase and PostgreSQL"
+    },
+    {
+      "name": "area:sync",
+      "color": "1D76DB",
+      "description": "Control, synchronization and push"
+    },
+    {
+      "name": "area:design",
+      "color": "1D76DB",
+      "description": "Design system and UI"
+    },
+    {
+      "name": "platform:android",
+      "color": "0E8A16",
+      "description": "Android platform work"
+    },
+    {
+      "name": "platform:fire",
+      "color": "E99695",
+      "description": "Future Fire OS"
+    },
+    {
+      "name": "platform:ios",
+      "color": "C5DEF5",
+      "description": "Future Apple feasibility"
+    },
+    {
+      "name": "platform:windows",
+      "color": "BFDADC",
+      "description": "Future Windows V2"
+    }
+  ],
+  "automation": {
+    "item_added": "Backlog",
+    "issue_closed": "Done",
+    "issue_reopened": "Backlog",
+    "ready_transition": "manual after dependency/decision checks",
+    "auto_archive": "disabled during feasibility",
+    "auto_add": "optional repository open-issue filter after Project permissions configured"
+  },
+  "publication": {
+    "issues": "available",
+    "project": "blocked: current gh token lacks read:project/project scopes",
+    "source_branch": "docs/initial-architecture"
+  }
+}

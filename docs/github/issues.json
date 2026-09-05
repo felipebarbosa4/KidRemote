@@ -1,0 +1,240 @@
+[
+  {
+    "id": "KR-001",
+    "title": "KR-001: Approve the MVP product contract and screen-time state machine",
+    "body_file": "docs/github/issues/KR-001.md",
+    "priority": "P0",
+    "story_points": 3,
+    "risk": "High",
+    "dependencies": [],
+    "milestone": "Architecture & Feasibility",
+    "labels": [
+      "needs-owner-decision",
+      "documentation"
+    ],
+    "area": "Product",
+    "platform": "Shared",
+    "work_type": "Specification",
+    "status": "Ready",
+    "decision_required": "Yes"
+  },
+  {
+    "id": "KR-002",
+    "title": "KR-002: Verify the repository, agent map, documentation and CI foundation",
+    "body_file": "docs/github/issues/KR-002.md",
+    "priority": "P0",
+    "story_points": 2,
+    "risk": "Low",
+    "dependencies": [],
+    "milestone": "Architecture & Feasibility",
+    "labels": [
+      "good-first-agent-task",
+      "documentation"
+    ],
+    "area": "Infra",
+    "platform": "Shared",
+    "work_type": "Implementation",
+    "status": "Ready",
+    "decision_required": "No"
+  },
+  {
+    "id": "KR-003",
+    "title": "KR-003: Prove or reject consumer Android enforcement and Play feasibility",
+    "body_file": "docs/github/issues/KR-003.md",
+    "priority": "P0",
+    "story_points": 8,
+    "risk": "High",
+    "dependencies": [
+      "KR-001",
+      "KR-002"
+    ],
+    "milestone": "Architecture & Feasibility",
+    "labels": [
+      "area:child-android",
+      "platform:android",
+      "policy",
+      "security",
+      "needs-device-test",
+      "needs-owner-decision"
+    ],
+    "area": "Child Android",
+    "platform": "Android",
+    "work_type": "Spike",
+    "status": "Backlog",
+    "decision_required": "Yes"
+  },
+  {
+    "id": "KR-004",
+    "title": "KR-004: Implement local schema and prove RLS and gateway trust boundaries",
+    "body_file": "docs/github/issues/KR-004.md",
+    "priority": "P0",
+    "story_points": 5,
+    "risk": "High",
+    "dependencies": [
+      "KR-001",
+      "KR-002"
+    ],
+    "milestone": "Architecture & Feasibility",
+    "labels": [
+      "area:backend",
+      "security",
+      "privacy"
+    ],
+    "area": "Backend",
+    "platform": "Backend",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "No"
+  },
+  {
+    "id": "KR-005",
+    "title": "KR-005: Validate single-use QR pairing and device-authentication protocol",
+    "body_file": "docs/github/issues/KR-005.md",
+    "priority": "P0",
+    "story_points": 3,
+    "risk": "High",
+    "dependencies": [
+      "KR-001",
+      "KR-004"
+    ],
+    "milestone": "Architecture & Feasibility",
+    "labels": [
+      "security",
+      "privacy",
+      "area:backend",
+      "needs-owner-decision"
+    ],
+    "area": "Security",
+    "platform": "Shared",
+    "work_type": "Spike",
+    "status": "Backlog",
+    "decision_required": "Yes"
+  },
+  {
+    "id": "KR-006",
+    "title": "KR-006: Build parent authentication and sole-owner household foundation",
+    "body_file": "docs/github/issues/KR-006.md",
+    "priority": "P1",
+    "story_points": 5,
+    "risk": "Medium",
+    "dependencies": [
+      "KR-001",
+      "KR-002",
+      "KR-004"
+    ],
+    "milestone": "Android Alpha",
+    "labels": [
+      "area:parent",
+      "platform:android",
+      "security",
+      "needs-owner-decision"
+    ],
+    "area": "Parent",
+    "platform": "Android",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "Yes"
+  },
+  {
+    "id": "KR-007",
+    "title": "KR-007: Implement child enrollment, scoped identity and permission-health setup",
+    "body_file": "docs/github/issues/KR-007.md",
+    "priority": "P1",
+    "story_points": 5,
+    "risk": "High",
+    "dependencies": [
+      "KR-003",
+      "KR-005",
+      "KR-006"
+    ],
+    "milestone": "Android Alpha",
+    "labels": [
+      "area:child-android",
+      "platform:android",
+      "security",
+      "privacy",
+      "needs-device-test"
+    ],
+    "area": "Child Android",
+    "platform": "Android",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "No"
+  },
+  {
+    "id": "KR-008",
+    "title": "KR-008: Build the persistent local screen-time accounting engine",
+    "body_file": "docs/github/issues/KR-008.md",
+    "priority": "P1",
+    "story_points": 8,
+    "risk": "High",
+    "dependencies": [
+      "KR-001",
+      "KR-002",
+      "KR-003"
+    ],
+    "milestone": "Android Alpha",
+    "labels": [
+      "area:child-android",
+      "platform:android",
+      "needs-device-test",
+      "privacy"
+    ],
+    "area": "Child Android",
+    "platform": "Android",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "No"
+  },
+  {
+    "id": "KR-009",
+    "title": "KR-009: Implement idempotent control, sync, acknowledgements and FCM hints",
+    "body_file": "docs/github/issues/KR-009.md",
+    "priority": "P1",
+    "story_points": 8,
+    "risk": "High",
+    "dependencies": [
+      "KR-004",
+      "KR-007",
+      "KR-008"
+    ],
+    "milestone": "Android Alpha",
+    "labels": [
+      "area:sync",
+      "area:backend",
+      "security",
+      "needs-device-test"
+    ],
+    "area": "Sync",
+    "platform": "Shared",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "No"
+  },
+  {
+    "id": "KR-010",
+    "title": "KR-010: Build minimal parent controls and child blocked/health UI",
+    "body_file": "docs/github/issues/KR-010.md",
+    "priority": "P1",
+    "story_points": 5,
+    "risk": "Medium",
+    "dependencies": [
+      "KR-003",
+      "KR-006",
+      "KR-009"
+    ],
+    "milestone": "Android MVP",
+    "labels": [
+      "area:parent",
+      "area:child-android",
+      "area:design",
+      "platform:android",
+      "needs-device-test"
+    ],
+    "area": "Design",
+    "platform": "Android",
+    "work_type": "Implementation",
+    "status": "Backlog",
+    "decision_required": "No"
+  }
+]

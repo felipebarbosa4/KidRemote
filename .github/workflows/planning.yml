@@ -1,0 +1,22 @@
+name: Planning checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: planning-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, verified 2026-09-05
+        with:
+          persist-credentials: false
+      - name: Validate repository planning
+        run: node tools/validate.mjs
+      - name: Check patch whitespace
+        run: git show --format= --check HEAD
