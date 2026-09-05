@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { validateStateFixtures } from "./validate-state-fixtures.mjs";
+import { validateAndroidSpike } from "./validate-android-spike.mjs";
 
 const root = resolve(import.meta.dirname ?? dirname(new URL(import.meta.url).pathname), "..");
 const errors = [];
@@ -15,6 +16,7 @@ function walk(dir) {
 }
 const files = walk("");
 errors.push(...validateStateFixtures(root));
+errors.push(...validateAndroidSpike(root));
 for (const path of files.filter(p => p.endsWith(".md"))) {
   const body = read(path);
   for (const match of body.matchAll(/\[[^\]\n]*\]\(([^)\n]+)\)/g)) {
@@ -89,5 +91,5 @@ if (errors.length) {
   errors.forEach(e => process.stderr.write(e + "\n"));
   process.exit(1);
 }
-process.stdout.write("Planning validation passed: approved state fixtures, local links, 10 issue contracts/dependencies, 7 ADRs, Issue Form, tokens and 3 concept assets.\n");
-process.stdout.write("This does not run Android, database, physical-device, load or store-policy approval tests.\n");
+process.stdout.write("Repository validation passed: planning contracts, approved state fixtures, links, ADRs, Issue Form, design assets and Android-spike least-privilege checks.\n");
+process.stdout.write("This does not run an Android build, database, physical-device, load or store-policy approval tests.\n");

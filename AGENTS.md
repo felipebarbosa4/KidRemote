@@ -10,8 +10,8 @@ KidRemote is a working codename. This repository is in architecture/feasibility,
 - Platform work: [enforcement ADR](docs/adr/0002-android-enforcement.md), [policy assessment](docs/POLICY.md), [timer](docs/product-specs/LOCAL-TIME.md).
 - Evidence: [official references](docs/REFERENCES.md), [test matrix](docs/test-plans/MATRIX.md), [capacity plan](docs/test-plans/CAPACITY.md).
 - UI: [design system](docs/design/DESIGN-SYSTEM.md), [wireframes](docs/design/wireframes.html).
-- Verification for this scaffold: `node tools/validate.mjs` and `git diff --check`. These do not certify an app, RLS, or enforcement.
+- Verification for the scaffold: `node tools/validate.mjs` and `git diff --check`. For KR-003 also run the isolated Gradle suite in its README. None certifies physical enforcement, RLS or Play approval.
 - Use current official documentation; cite significant platform/security claims. Unverified facts and unchosen product decisions are exactly **UNSPECIFIED**. Recommendations are not owner approval.
 - Never ship backend secrets, upload app/content history, or log credentials. Preserve existing changes.
 - Production enforcement requires KR-003's approved feasibility evidence; pairing requires the threat model; client database access requires RLS allow/deny tests.
-- Do not deploy, publish store assets, or expand features as part of this architecture pass.
+- Keep KR-003 code disposable under `spikes/`; do not move it into production, deploy, publish store assets or expand features before its evidence gate.

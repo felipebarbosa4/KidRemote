@@ -42,7 +42,12 @@ boot recovery receiver with appropriate boot permission; foreground-only camera 
 Notification runtime permission must be evaluated for the chosen visible status/FCM notification flows.
 No broad package query, overlay permission unrelated to the selected mechanism, location, contacts, SMS, microphone,
 media, VPN, exact-alarm, wipe, password-reset or Device Admin permission without a new justified ADR.
-Exact merged manifest and SDK method choices: **UNSPECIFIED** until spike/bootstrapping; validate against official Android references.
+The disposable KR-003 candidate now declares Usage Access, boot receipt and the system-protected Accessibility service only; it deliberately has
+no Internet, broad package query, unrelated overlay, Device Admin, camera, location or audio permission. Its configuration uses
+`typeWindowStateChanged`, `canRetrieveWindowContent=false` and `isAccessibilityTool=false`; merged-manifest CI audit is required.
+This is spike evidence, not a final production manifest or Play acceptance.
+[Exact disclosure/declaration packet](product-specs/ANDROID-ACCESSIBILITY-DISCLOSURE.md),
+[spike](../spikes/android-enforcement/README.md).
 
 ## Release evidence packet
 
