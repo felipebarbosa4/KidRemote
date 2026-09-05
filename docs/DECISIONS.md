@@ -43,7 +43,7 @@ No app/bootstrap dependency versions are chosen in this pass. The verified Actio
 Production consumer enforcement is blocked by the unproven safety/reliability boundary and policy tension in ADR-0002.
 Final pairing is blocked until OD-09/10/20 and the threat model tests are resolved.
 Client table exposure is blocked until RLS allow/deny tests exist and pass.
-GitHub Project creation is blocked by missing Project OAuth scopes; repository Issues/labels/milestones are independently available.
+GitHub planning publication is complete for machine-supported fields; UI-only view/workflow checks remain in docs/github/PROJECT.md.
 Store submission is blocked by functioning UI/evidence, audience declarations, real screenshots, and launch decisions.
 
 Ready now: product review, documentation/CI checks, physical feasibility spike design/execution on approved test devices,

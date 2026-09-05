@@ -1,20 +1,19 @@
 # GitHub Project — KidRemote MVP
 
 - **Goal:** Mirror repository work in a small, navigable GitHub execution backlog.
-- **Context:** Repository felipebarbosa4/KidRemote is public with Issues enabled; authenticated repository administration is available.
-- **Constraints:** No false success reports; preserve existing labels; no Project scope escalation performed automatically.
-- **Done when:** Ten issues, labels and milestones are created where authorized, and unavailable Project operations have exact repeatable setup.
+- **Context:** Repository felipebarbosa4/KidRemote is public with Issues enabled; the owner's existing private Project #3 is linked.
+- **Constraints:** No false success reports or duplicate Project; preserve compatible human configuration and existing labels.
+- **Done when:** Ten issues, labels, milestones and supported field values are verified, with UI-only Project work stated exactly.
 
 ## Capability and publication
 
-Current gh token has repo/workflow scopes but lacks **read:project** and **project**.
-The read-only Project-list check returned the explicit missing-scope error. Project creation is unavailable with current credentials.
-No GitHub Project, fields, views, iterations or automation have been created by this pass.
-See [PUBLISHED](PUBLISHED.md) for actual issue/milestone/source publication results.
+On 2026-09-05 the active `gh` credentials had repository administration and `project` scope.
+[Existing Project #3](https://github.com/users/felipebarbosa4/projects/3) was positively identified and reused; no Project was created.
+All ten issues and their supported manifest-backed fields are populated. See [PUBLISHED](PUBLISHED.md) for the observed state and evidence limits.
 
 Canonical configuration: [project.json](project.json). Canonical metadata/body manifest: [issues.json](issues.json).
-Defaults: private Project (repository remains public), weekly seven-day iterations, start date **UNSPECIFIED**.
-The owner confirms iteration dates before assigning a live sprint.
+The Project is private (the repository remains public) and its Iteration field is seven days. GitHub generated iterations beginning 2026-09-05;
+whether that date is the committed Sprint 01 start remains **UNSPECIFIED**. The owner confirms capacity/date before assigning work.
 
 ## Fields
 
@@ -68,7 +67,7 @@ Disable auto-archive during feasibility. Do not auto-close security/policy spike
 No scheduled autonomous agent feature is configured.
 [Built-in automations](https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-built-in-automations).
 
-## Exact human apply commands
+## Repeatable commands
 
 From repository root:
 
@@ -76,21 +75,24 @@ From repository root:
 node tools/validate.mjs
 node tools/publish-planning.mjs
 node tools/publish-planning.mjs --apply
-gh auth refresh -h github.com -s read:project -s project
 node tools/setup-project.mjs
 node tools/setup-project.mjs --apply
 ```
 
-The auth command requires the human's interactive authorization; it was not run.
 The issue publisher is repeatable: creates missing labels/milestones/issues, preserves existing ones, reports actual URLs and refuses ambiguous IDs.
-The Project helper checks access before mutation, creates/reuses title, creates missing supported fields, links the repo,
-adds issues and sets available fields. It deliberately reports all manual remainder; no unsupported API syntax is invented.
+The Project helper checks access, requires an existing exact-title Project, creates missing supported fields, links the repo,
+reuses/adds issues and sets available values. It will not create a Project implicitly. If another token lacks access, a human can run
+`gh auth refresh -h github.com -s read:project -s project` interactively.
 
-Manual completion in Project settings (exact data in project.json):
-- Edit existing Status options to the six values above; do not add a second Status field.
-- Add Iteration, duration one week, owner-selected start; GitHub creates initial iterations. Name first “Sprint 01 — Feasibility”.
-- Create the five views above and built-in workflows.
-- Re-run helper to populate statuses once options exist.
+Manual completion/verification in Project settings (exact intent in project.json):
+- Backlog: set the filter to exclude Done. Its table layout, Priority sort and fields are already configured.
+- Architecture: use the UI filter builder for Work Type = Specification OR Spike, then sort by Priority.
+- Security & Policy: use the UI filter builder for labels security OR privacy OR policy, then sort by Priority.
+- Roadmap: group by Platform and map Start Date/Target Date. Keep dates unset until roadmap commitments exist.
+- Verify workflow actions—not only their enabled names—are item added → Backlog, issue closed → Done and reopened → Backlog.
+  The API exposed enabled workflow names but not action configuration; configure the missing reopened rule if the UI supports it.
+- Verify any enabled auto-add workflow is restricted to the intended repository/open-issue filter; keep auto-archive disabled during feasibility.
+- After approving the date/capacity, rename the applicable generated iteration “Sprint 01 — Feasibility”.
 - Assign KR-001–005 to Sprint 01 only if capacity/decisions permit; otherwise use the single-contributor scope in SPRINT-01.
 - Verify all ten items, field values, milestone links and dependency bodies; record Project URL/settings evidence here.
 

@@ -7,7 +7,7 @@ const issues=JSON.parse(readFileSync(resolve(root,"docs/github/issues.json"),"ut
 const args=process.argv.slice(2);
 if(args.some(a=>a!=="--apply")) throw new Error("Usage: node tools/setup-project.mjs [--apply]");
 if(!args.includes("--apply")){
-  process.stdout.write(JSON.stringify({mode:"DRY RUN — no writes",configuration:c,manual:"Existing Status options, Iteration start, views, automation: follow docs/github/PROJECT.md"},null,2)+"\n");
+  process.stdout.write(JSON.stringify({mode:"DRY RUN — no writes",configuration:c,project_policy:"Reuse one existing exact-title Project; never create implicitly",manual:"UI-only filters, sorts, grouping, roadmap mapping, workflow actions and sprint assignment: follow docs/github/PROJECT.md"},null,2)+"\n");
   process.exit(0);
 }
 const gh=(...a)=>execFileSync("gh",a,{cwd:root,encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim();
@@ -20,7 +20,8 @@ catch(e){
 }
 const matches=available.filter(p=>p.title===c.title);
 if(matches.length>1) throw new Error("Multiple matching projects; resolve target explicitly");
-const p=matches[0]??j("project","create","--owner",c.owner,"--title",c.title,"--format","json");
+if(!matches.length) throw new Error("No exact existing Project named "+c.title+"; no Project created. Reconcile the intended target in docs/github/PROJECT.md.");
+const p=matches[0];
 gh("project","link",String(p.number),"--owner",c.owner,"--repo",c.repository);
 let fields=j("project","field-list",String(p.number),"--owner",c.owner,"--limit","100","--format","json").fields;
 for(const f of c.fields){
@@ -49,4 +50,4 @@ for(const i of issues){
     }
   }
 }
-process.stdout.write(JSON.stringify({project:p,notes:[...new Set(notes)],manual_remaining:"Confirm private visibility; edit Status; add weekly Iteration with owner-selected start; configure five views and built-in automation; assign sprint. No complete setup claimed."},null,2)+"\n");
+process.stdout.write(JSON.stringify({project:p,notes:[...new Set(notes)],manual_remaining:"Complete/verify UI-only filters, sorts, grouping, roadmap date mapping, workflow actions and approved sprint assignment; see docs/github/PROJECT.md."},null,2)+"\n");

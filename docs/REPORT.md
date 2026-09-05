@@ -127,9 +127,9 @@ Status/priority/points/weekly iteration/risk/area/platform/decision fields follo
 Work Type and optional start/target dates support Architecture/Roadmap views without more labels.
 Five requested views and built-in status automations are fully specified.
 
-Actual publication and unavailable capabilities are in [PUBLISHED](github/PUBLISHED.md).
-Project creation is unavailable because current gh credentials lack Project scopes.
-Issue creation is independently available; exact repeatable publishers and manual Project remainder are provided.
+Actual publication and capability boundaries are in [PUBLISHED](github/PUBLISHED.md).
+The owner's existing private Project #3 was reused, all ten issues were added and supported metadata was populated.
+No duplicate Project was created; exact repeatable publishers and the UI-only Project remainder are provided.
 
 Repository:
 
@@ -189,7 +189,7 @@ Significant claims are cited next to their use. No third-party technical claims 
 ## End-of-pass handoff
 
 **BLOCKERS:** consumer physical enforcement/safe recovery and policy tension; pending semantics/device-auth approvals;
-RLS allow/deny execution before exposure; Project OAuth scopes; functioning app/store launch evidence.
+RLS allow/deny execution before exposure; functioning app/store launch evidence.
 
 **OWNER DECISIONS REQUIRED:** OD-01–25 in DECISIONS, particularly independent Unlock, counted time, reset/uncertainty,
 consumer support/recovery boundary, authentication/household/framework, TTL/credential lifecycle, audience/retention/budget.

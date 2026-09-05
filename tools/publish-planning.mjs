@@ -57,4 +57,4 @@ for (const issue of issues) {
   if (!Number.isInteger(number)) throw new Error("Unexpected create response: "+url);
   published.push({id:issue.id,number,title:issue.title,url,created:true});
 }
-process.stdout.write(JSON.stringify({repository:config.repository,milestones:milestones.filter(m=>config.milestones.some(x=>x.title===m.title)).map(m=>({number:m.number,title:m.title,url:m.html_url})),issues:published,project:"NOT CREATED; current credentials lack Project scopes. Use PROJECT.md."},null,2)+"\n");
+process.stdout.write(JSON.stringify({repository:config.repository,milestones:milestones.filter(m=>config.milestones.some(x=>x.title===m.title)).map(m=>({number:m.number,title:m.title,url:m.html_url})),issues:published,project:"Not changed by this publisher; reconcile the existing Project with tools/setup-project.mjs and PROJECT.md."},null,2)+"\n");
