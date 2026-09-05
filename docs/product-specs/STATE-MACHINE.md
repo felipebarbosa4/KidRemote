@@ -1,7 +1,7 @@
-# Screen-time state machine — proposed
+# Screen-time state machine — approved MVP contract
 
 - **Goal:** Make Lock, Unlock, additions, usage and reset deterministic.
-- **Context:** PRODUCT and ADR-0005; actual choices remain **UNSPECIFIED** pending OD-01–05/19.
+- **Context:** PRODUCT and ADR-0005; OD-01–05/19 were approved by owner directive on 2026-09-05.
 - **Constraints:** Duplicate-safe, offline-capable, per-device budget; no per-app limits or schedules.
 - **Done when:** KR-001 records approval and table-driven fixtures cover all transitions below.
 
@@ -22,7 +22,7 @@ policy_blocked = manual_lock OR time_expired
 restriction_required = policy_blocked OR accounting_uncertain OR setup_incomplete
 ```
 
-The last two safety conditions are proposed separately and require owner approval.
+The last two safety conditions are approved. KR-003 must prove that emergency/accessibility/recovery routes remain safe.
 `restriction_applied` is observed adapter state; it is not inferred from `restriction_required`.
 `used_ms` may exceed a subsequently reduced allowance; never reduce consumption to fit a new limit.
 Pre-enrolment/setup is not a running budget. Enforcement starts only after explicit policy, consent and local durable setup.
@@ -99,7 +99,7 @@ Household timezone changes are not an MVP control; support migration requires a 
 Download server UTC, household zone and monotonic anchor at authenticated sync.
 Within that boot, projected UTC follows elapsedRealtime, including deep sleep.
 On reboot monotonic origin changes; arbitrary wall-clock manipulation plus offline reboot cannot be solved with this software clock.
-Recommendation: keep current-period remaining balance, mark clock uncertain, and do not grant a new daily budget until trusted server time returns.
+Decision: keep current-period remaining balance, mark clock uncertain, and do not grant a new daily budget until trusted server time returns.
 An already expired/manual-locked device stays restricted locally after service recovery.
 If a parent requires automatic resets across arbitrary offline reboots, owner must accept RTC tampering risk or change the managed-device/support requirement.
 This is an explicit product trade-off, not a proven Android capability.
@@ -107,7 +107,7 @@ This is an explicit product trade-off, not a proven Android capability.
 
 ## Numerical and concurrency rules
 
-Recommend accepted limits 0–86,400 seconds and daily limit + bonus ≤ 86,400 seconds; exact business cap **UNSPECIFIED** (OD-19).
+Accept limits 0–86,400 seconds and require daily limit + bonus ≤ 86,400 seconds (OD-19).
 Reject excess with a visible error, not silent clamping. Only 600 or 1800 is accepted for ADD_TIME.
 Use checked integers; reject negative, fractional, overflow and unknown enum payloads.
 Server serializes control changes per device. Parent concurrent Lock/Unlock follows server sequence, not client clock.
@@ -115,7 +115,7 @@ Used consumption is local; concurrent server grants never reset it.
 Expected current version is required for destructive/conflicting desired-state edits (Lock/Unlock/limit); stale parent state returns conflict for review.
 ADD_TIME uses operation ID and period precondition, permitting safe distinct concurrent additions.
 
-## Minimum examples for KR-001
+## Approved examples for KR-001
 
 1. 3,600 s base, 3,000 s used → 600 s; +10 twice intentionally → 1,800 s; retry either → still 1,800 s.
 2. Manual lock + expired → Unlock remains expired → +10 restores use.
@@ -125,3 +125,7 @@ ADD_TIME uses operation ID and period precondition, permitting safe distinct con
 6. Offline reboot after expiry → no fresh allowance from changing date; degraded state, safe recovery.
 7. Version 12 LOCK then stale version 11 UNLOCK → locked.
 8. Yesterday's +30 delivered today → no today's credit; receipt says expired-for-period.
+
+The machine-readable reviewed cases are [STATE-MACHINE-CASES.json](STATE-MACHINE-CASES.json). They model authoritative product/server
+transitions: an `ADD_TIME` action creates one canonical grant, while child sync still consumes the protocol's absolute bonus total.
+They are product fixtures, not production reducer code.

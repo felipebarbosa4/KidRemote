@@ -3,7 +3,7 @@
 - **Goal:** Provide total screen-time control without surveillance.
 - **Context:** Parent account plus paired child identity and minimal latest state; no advertising/payment/AI runtime.
 - **Constraints:** No data collection merely because APIs expose it; technical design is not legal advice.
-- **Done when:** Owner approves collection/retention/audience/region, SDK inspection confirms actual data flows, deletion tests pass.
+- **Done when:** Approved technical retention is implemented, audience/region/legal facts are resolved, SDK inspection confirms actual data flows, and deletion tests pass.
 
 ## Collection inventory
 
@@ -35,11 +35,12 @@ Do not retain Android package identifiers incidentally returned in usage queries
 If an ephemeral package identifier becomes essential for emergency/system handling, document the local-only rationale and get explicit approval before retention.
 No Google Analytics, Crashlytics, advertising SDK or detailed session replay by default.
 
-## Retention concept — proposal only
+## Retention concept — approved alpha technical baseline
 
-Actual retention durations: **UNSPECIFIED**, owner review OD-14 required.
+The application-controlled live-data targets below were approved on 2026-09-05. Provider backup purge duration, hosting region,
+legal basis and contractual requirements remain **UNSPECIFIED** and must be resolved before real family data.
 
-| Dataset | Proposed minimum retention approach |
+| Dataset | Approved minimum retention approach |
 | --- | --- |
 | Account/household/device/policy | While active; delete from live application tables within 7 days after confirmed deletion |
 | Cloud state | Overwrite latest state; no historical screen-time dashboard |

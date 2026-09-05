@@ -12,8 +12,8 @@ On 2026-09-05 the active `gh` credentials had repository administration and `pro
 All ten issues and their supported manifest-backed fields are populated. See [PUBLISHED](PUBLISHED.md) for the observed state and evidence limits.
 
 Canonical configuration: [project.json](project.json). Canonical metadata/body manifest: [issues.json](issues.json).
-The Project is private (the repository remains public) and its Iteration field is seven days. GitHub generated iterations beginning 2026-09-05;
-whether that date is the committed Sprint 01 start remains **UNSPECIFIED**. The owner confirms capacity/date before assigning work.
+The Project is private (the repository remains public) and its Iteration field is seven days. Sprint 01 — Feasibility runs
+2026-09-05 through 2026-09-11 with the approved single-agent scope KR-001/002/003.
 
 ## Fields
 
@@ -81,7 +81,7 @@ node tools/setup-project.mjs --apply
 
 The issue publisher is repeatable: creates missing labels/milestones/issues, preserves existing ones, reports actual URLs and refuses ambiguous IDs.
 The Project helper checks access, requires an existing exact-title Project, creates missing supported fields, links the repo,
-reuses/adds issues and sets available values. It will not create a Project implicitly. If another token lacks access, a human can run
+reuses/adds issues and fills missing initial values without overwriting live progress. It will not create a Project implicitly. If another token lacks access, a human can run
 `gh auth refresh -h github.com -s read:project -s project` interactively.
 
 Manual completion/verification in Project settings (exact intent in project.json):
@@ -92,8 +92,7 @@ Manual completion/verification in Project settings (exact intent in project.json
 - Verify workflow actions—not only their enabled names—are item added → Backlog, issue closed → Done and reopened → Backlog.
   The API exposed enabled workflow names but not action configuration; configure the missing reopened rule if the UI supports it.
 - Verify any enabled auto-add workflow is restricted to the intended repository/open-issue filter; keep auto-archive disabled during feasibility.
-- After approving the date/capacity, rename the applicable generated iteration “Sprint 01 — Feasibility”.
-- Assign KR-001–005 to Sprint 01 only if capacity/decisions permit; otherwise use the single-contributor scope in SPRINT-01.
+- Keep KR-004/005 outside Sprint 01 unless measured capacity allows the documented stretch scope.
 - Verify all ten items, field values, milestone links and dependency bodies; record Project URL/settings evidence here.
 
 CLI/API source:

@@ -40,9 +40,9 @@ Verified state:
 - title normalized from `@felipebarbosa4's KidRemote MVP` to `KidRemote MVP`;
 - every expected field exists: Status, Priority, Story Points, Iteration, Risk, Area, Platform, Decision Required, Work Type, Start Date and Target Date;
 - Status has the exact six configured options; Work Type has Specification, Spike and Implementation;
-- Iteration duration is seven days. GitHub currently has generated iterations beginning 2026-09-05, but sprint commitment and issue assignment remain **UNSPECIFIED**;
-- all eight manifest-backed fields are populated for every issue; KR-001/002 are Ready and KR-003–010 are Backlog;
-- issue Iteration, Start Date and Target Date values remain unset because [issues.json](issues.json) does not authorize values;
+- Iteration duration is seven days. Sprint 01 — Feasibility runs 2026-09-05 through 2026-09-11 with KR-001/002/003 assigned under the single-agent plan;
+- all eight initial manifest-backed fields were populated for every issue; live execution now has KR-001/002 In Progress and KR-003–010 Backlog;
+- Start Date and Target Date values remain unset; only the approved Sprint 01 Iteration is assigned to KR-001/002/003;
 - pre-existing Size, Estimate and Phase fields and the `My items` view were preserved as compatible human configuration.
 
 The other untitled Projects #1 (closed) and #2 (open) were not modified.

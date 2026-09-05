@@ -1,6 +1,6 @@
 # ADR-0006 — Supabase and versioned desired state
 
-Status: Recommended technical baseline; provisioning/budget and production acceptance **UNSPECIFIED**.
+Status: Accepted technical baseline 2026-09-05; provisioning, budget and production acceptance remain **UNSPECIFIED**.
 
 - **Goal:** Keep authorization, commands and recovery simple and inspectable.
 - **Context:** PostgreSQL/Supabase preferred; 1,000 parents/5,000 devices is only a load-test assumption.

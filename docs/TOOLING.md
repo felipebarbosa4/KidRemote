@@ -5,7 +5,8 @@
 - **Constraints:** Exact framework/SDK/library versions stay **UNSPECIFIED** unless required and verified.
 - **Done when:** Planning checks run and subsequent app bootstrap knows what remains unchosen.
 
-No Gradle/Android/Supabase project is bootstrapped. Application library/toolchain versions are **UNSPECIFIED**.
+Native Kotlin/Compose parent and native Kotlin child are approved, but no Gradle/Android/Supabase project is bootstrapped.
+Application library/toolchain versions remain **UNSPECIFIED** until the KR-003 bootstrap verifies current compatible releases.
 Placeholders explain module responsibilities. No production SQL/Edge function or application feature exists.
 
 CI exception required to create the requested runnable workflow:
@@ -18,8 +19,8 @@ The action documents its Node runtime/runner requirements; use a current GitHub-
 [secure workflows](https://docs.github.com/en/actions/reference/security/secure-use).
 
 The dependency-free validator uses installed Node built-ins (Node 18+ syntax; no application Node dependency is selected).
-Local tools observed: Node 22.23.1 path, gh 2.96.0, Python with PyYAML.
-adb, native Java and Supabase CLI were not found in PATH; Docker launcher exists but daemon/functionality is not verified.
+Local tools rechecked 2026-09-05 under WSL2: Node 22.23.1 and gh 2.96.0.
+Java, javac, Gradle, adb, sdkmanager, avdmanager and emulator were not found in PATH. The Docker launcher reports that Docker is not installed in this WSL2 distro.
 These observations are environment facts, not project version pins.
 No emulator/physical device/backend tests were run.
 
@@ -32,7 +33,7 @@ node tools/setup-project.mjs
 
 Both planning publishers default to dry-run. Apply modes mutate only the configured repository/Project planning scope.
 Issue Forms file uses JSON flow syntax, valid YAML, to allow dependency-free parsing and exact field validation.
-Workflow/form server-side recognition requires the files on the appropriate GitHub branch; form availability requires default branch.
+The workflow and Issue Form are now present on default branch `main` after merged PR #11.
 
 At app/bootstrap time verify current stable Kotlin, Compose/Material, AGP/Gradle/JDK, Room, Android SDK,
 Supabase CLI/client/Edge and FCM SDK compatibility from official sources; record dates and lockfiles.

@@ -1,6 +1,7 @@
 # ADR-0002 — Android enforcement and consumer feasibility
 
-Status: Official-documentation assessment complete **2026-09-05**. Physical feasibility, Play approval and owner acceptance: **UNSPECIFIED**.
+Status: Official-documentation assessment complete and feasibility spike authorized **2026-09-05**.
+Physical feasibility, Play approval and production acceptance remain **UNSPECIFIED**.
 Production enforcement gate: CLOSED. KR-003 is the bounded feasibility issue.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.

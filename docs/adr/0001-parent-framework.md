@@ -1,6 +1,6 @@
 # ADR-0001 — Parent framework and native child boundary
 
-Status: Proposed; parent framework **UNSPECIFIED**, owner approval OD-08 required.
+Status: Accepted 2026-09-05 by owner directive; exact bootstrap versions remain **UNSPECIFIED** until verified.
 
 - **Goal:** Minimize Android MVP implementation and operational complexity.
 - **Context:** Only Android parent/child ship first; future Apple parent date/team skills are **UNSPECIFIED**.
@@ -22,7 +22,7 @@ Flutter supports platform channels for native integration, which does not itself
 
 ## Decision and reasons
 
-Recommend native Kotlin/Compose parent and Kotlin child, sharing wire fixtures/design tokens and small pure Kotlin domain concepts where useful.
+Use native Kotlin/Compose parent and Kotlin child, sharing wire fixtures/design tokens and small pure Kotlin domain concepts where useful.
 Keep separate application IDs and binaries. The parent never carries child enforcement privileges.
 A language-neutral protocol is the portability boundary; do not claim binary/shared-code portability to Apple.
 Flutter becomes preferable if a committed near-term iOS parent schedule and team skill evidence outweigh two-toolchain cost.

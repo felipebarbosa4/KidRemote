@@ -1,6 +1,6 @@
 # ADR-0003 — Device-scoped authentication
 
-Status: Proposed; actual mechanism **UNSPECIFIED**, OD-09/20 approval required.
+Status: Accepted 2026-09-05 by owner directive; implementation and negative-test evidence remain required.
 
 - **Goal:** Give each child only its own sync, acknowledgement, health and credential lifecycle.
 - **Context:** Parents use Supabase Auth; child needs an identity after QR redemption.
@@ -18,7 +18,7 @@ Status: Proposed; actual mechanism **UNSPECIFIED**, OD-09/20 approval required.
 
 ## Decision and reasons
 
-Recommend securely generated 256-bit opaque bearer credentials over authenticated TLS, one device ID and independent credential record.
+Use securely generated 256-bit opaque bearer credentials over authenticated TLS, one device ID and independent credential record.
 Server stores SHA-256 digest of high-entropy secret, credential ID, expiry and revocation; no parent password or JWT is involved.
 Use standard platform randomness and constant-time verification; hashing random secrets is not password hashing.
 No custom signing, encrypted QR, mutual-TLS deployment or attestation prerequisite is justified for MVP.
@@ -40,8 +40,8 @@ No self-service household reassignment or issuance of parent tokens.
 
 ## Operational implications
 
-Propose 90-day server credential expiry, rotation after 30 days on online contact; durations **UNSPECIFIED** pending owner review.
-Persist both old/new rotation candidates before changing server state; a two-phase bounded overlap (proposed five minutes) prevents lost-response lockout.
+Use 90-day server credential expiry and rotate after 30 days on online contact.
+Persist both old/new rotation candidates before changing server state; a two-phase five-minute overlap prevents lost-response lockout.
 Authenticate rotation with old credential; confirm new credential before revoking old; idempotent rotation ID returns same generation status, not a new secret repeatedly.
 Long-offline expired credentials require explicit re-pair/recovery; already downloaded policy keeps enforcing locally.
 Revoke checks occur every request, not just issuance. Revoked credentials return a typed removal response after verifying the secret matches a revoked record;
