@@ -7,7 +7,7 @@
 
 ## Repository planning artefacts
 
-The interrupted publisher completed successfully before this reconciliation:
+All intended repository artefacts from the interrupted publisher were present before this reconciliation:
 
 - all 17 planned labels exist; existing GitHub default labels were preserved;
 - all six planned milestones exist with no due dates;
