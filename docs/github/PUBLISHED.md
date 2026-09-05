@@ -11,7 +11,7 @@ All intended repository artefacts from the interrupted publisher were present be
 
 - all 17 planned labels exist; existing GitHub default labels were preserved;
 - all six planned milestones exist with no due dates;
-- all ten open KR issues exist as issues #1–#10;
+- all ten KR issues exist as issues #1–#10; KR-001/002 are closed and KR-003–010 remain open;
 - each issue title, milestone, label set and full body matches [issues.json](issues.json) and its local body after the publisher's expected branch-link rewriting.
 
 | ID | GitHub issue |
@@ -41,7 +41,7 @@ Verified state:
 - every expected field exists: Status, Priority, Story Points, Iteration, Risk, Area, Platform, Decision Required, Work Type, Start Date and Target Date;
 - Status has the exact six configured options; Work Type has Specification, Spike and Implementation;
 - Iteration duration is seven days. Sprint 01 — Feasibility runs 2026-09-05 through 2026-09-11 with KR-001/002/003 assigned under the single-agent plan;
-- all eight initial manifest-backed fields were populated for every issue; live execution now has KR-001/002 In Progress and KR-003–010 Backlog;
+- all eight initial manifest-backed fields were populated for every issue; live execution now has KR-001/002 Done, KR-003 In Progress and KR-004–010 Backlog;
 - Start Date and Target Date values remain unset; only the approved Sprint 01 Iteration is assigned to KR-001/002/003;
 - pre-existing Size, Estimate and Phase fields and the `My items` view were preserved as compatible human configuration.
 
@@ -55,4 +55,7 @@ GitHub's available API does not expose mutation inputs for view grouping/sorting
 
 ## Evidence boundary
 
-`node tools/validate.mjs` and `git diff --check` passed during reconciliation. No Android build, physical-device test, Play approval, Supabase/RLS integration test, load test, production backend or store submission exists.
+`node tools/validate.mjs` and `git diff --check` passed during reconciliation. PR #13 later added an isolated KR-003 harness whose
+compile, 12 JVM tests, lint, debug APK assembly and merged-manifest audit passed in
+[run 33996873306](https://github.com/felipebarbosa4/KidRemote/actions/runs/33996873306).
+No Android runtime/physical-device test, Play approval, Supabase/RLS integration test, load test, production backend or store submission exists.

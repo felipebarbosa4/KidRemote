@@ -59,6 +59,8 @@ git diff --check
 ```
 
 The GitHub workflow checks the runner already has the required SDK packages; it does not silently accept licences or install preview SDKs.
+The first compile/unit/lint/APK/merged-manifest run is recorded in
+[KR-003 evidence](../../docs/test-plans/evidence/KR-003-2026-09-05.md); it is not Android runtime evidence.
 
 ## Authorized lab-device use
 
