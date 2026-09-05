@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "approval": {
+    "owner": "felipebarbosa4",
+    "date": "2026-09-05",
+    "directive": "Adopt the documented recommendations and proceed"
+  },
+  "units": "Whole seconds for review fixtures; production accounting persists milliseconds",
+  "model": "Authoritative product/server transitions; ADD_TIME creates one canonical grant. Child delivery merges an absolute bonus snapshot and never replays this delta.",
+  "constants": {
+    "maximum_daily_allowance_seconds": 86400,
+    "add_time_values_seconds": [600, 1800]
+  },
+  "cases": [
+    {
+      "id": "unlock-clears-manual-only-at-zero",
+      "test_ids": ["CMD-02"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 10},
+      "operations": [{"kind": "UNLOCK", "server_sequence": 11}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 11, "accounting_uncertain": false, "remaining_seconds": 0, "policy_blocked": true, "restriction_required": true, "block_reasons": ["TIME_EXPIRED"], "results": ["applied"]}
+    },
+    {
+      "id": "distinct-additions-and-transport-retry",
+      "test_ids": ["CMD-03", "CMD-05"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 10},
+      "operations": [
+        {"kind": "ADD_TIME", "operation_id": "grant-a", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 11},
+        {"kind": "ADD_TIME", "operation_id": "grant-a", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 11},
+        {"kind": "ADD_TIME", "operation_id": "grant-b", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 12}
+      ],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 1200, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 12, "accounting_uncertain": false, "remaining_seconds": 1800, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["applied", "duplicate_ignored", "applied"]}
+    },
+    {
+      "id": "daily-reset-retains-manual-lock",
+      "test_ids": ["TIME-12"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 1800, "used_seconds": 1200, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 8},
+      "operations": [{"kind": "RESET_DAY", "period_key": "tz1:2026-09-06", "trusted": true}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": true, "period_key": "tz1:2026-09-06", "version": 8, "accounting_uncertain": false, "remaining_seconds": 3600, "policy_blocked": true, "restriction_required": true, "block_reasons": ["MANUAL_LOCK"], "results": ["reset_applied"]}
+    },
+    {
+      "id": "limit-reduction-then-two-grants",
+      "test_ids": ["CMD-03", "CMD-04", "CMD-10"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 1},
+      "operations": [
+        {"kind": "SET_DAILY_LIMIT", "seconds": 1800, "server_sequence": 2},
+        {"kind": "ADD_TIME", "operation_id": "grant-c", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 3},
+        {"kind": "ADD_TIME", "operation_id": "grant-d", "seconds": 1800, "period_key": "tz1:2026-09-05", "server_sequence": 4}
+      ],
+      "expected": {"daily_limit_seconds": 1800, "bonus_seconds": 2400, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 4, "accounting_uncertain": false, "remaining_seconds": 1200, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["applied", "applied", "applied"]}
+    },
+    {
+      "id": "late-grant-does-not-credit-today",
+      "test_ids": ["CMD-08"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-06", "version": 4},
+      "operations": [{"kind": "ADD_TIME", "operation_id": "grant-yesterday", "seconds": 1800, "period_key": "tz1:2026-09-05", "server_sequence": 5}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-06", "version": 5, "accounting_uncertain": false, "remaining_seconds": 3600, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["expired_for_period"]}
+    },
+    {
+      "id": "stale-unlock-cannot-override-lock",
+      "test_ids": ["CMD-07"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 12},
+      "operations": [{"kind": "UNLOCK", "server_sequence": 11}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 12, "accounting_uncertain": false, "remaining_seconds": 3000, "policy_blocked": true, "restriction_required": true, "block_reasons": ["MANUAL_LOCK"], "results": ["stale_ignored"]}
+    },
+    {
+      "id": "same-period-reset-is-idempotent",
+      "test_ids": ["TIME-09", "TIME-10", "TIME-12"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 600, "used_seconds": 1200, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 7},
+      "operations": [
+        {"kind": "RESET_DAY", "period_key": "tz1:2026-09-06", "trusted": true},
+        {"kind": "RESET_DAY", "period_key": "tz1:2026-09-06", "trusted": true}
+      ],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-06", "version": 7, "accounting_uncertain": false, "remaining_seconds": 3600, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["reset_applied", "same_period_ignored"]}
+    },
+    {
+      "id": "offline-reboot-withholds-new-day-credit",
+      "test_ids": ["TIME-08"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 9},
+      "operations": [{"kind": "OFFLINE_REBOOT"}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 9, "accounting_uncertain": true, "remaining_seconds": 0, "policy_blocked": true, "restriction_required": true, "block_reasons": ["TIME_EXPIRED", "ACCOUNTING_UNCERTAIN"], "results": ["clock_uncertain"]}
+    },
+    {
+      "id": "lock-and-grant-remain-independent",
+      "test_ids": ["CMD-01", "CMD-03"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 10},
+      "operations": [
+        {"kind": "LOCK", "server_sequence": 11},
+        {"kind": "ADD_TIME", "operation_id": "grant-e", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 12}
+      ],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 600, "used_seconds": 3600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 12, "accounting_uncertain": false, "remaining_seconds": 600, "policy_blocked": true, "restriction_required": true, "block_reasons": ["MANUAL_LOCK"], "results": ["applied", "applied"]}
+    },
+    {
+      "id": "limit-increase-preserves-consumption",
+      "test_ids": ["CMD-10"],
+      "initial": {"daily_limit_seconds": 1800, "bonus_seconds": 0, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 4},
+      "operations": [{"kind": "SET_DAILY_LIMIT", "seconds": 3600, "server_sequence": 5}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3000, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 5, "accounting_uncertain": false, "remaining_seconds": 600, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["applied"]}
+    },
+    {
+      "id": "screen-off-does-not-consume",
+      "test_ids": ["TIME-02"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 2},
+      "operations": [{"kind": "COUNT_USAGE", "seconds": 600, "eligible": false}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 2, "accounting_uncertain": false, "remaining_seconds": 3000, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["not_counted"]}
+    },
+    {
+      "id": "eligible-use-counts-once",
+      "test_ids": ["TIME-01", "TIME-17"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 2},
+      "operations": [{"kind": "COUNT_USAGE", "seconds": 60, "eligible": true}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 60, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 2, "accounting_uncertain": false, "remaining_seconds": 3540, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["counted"]}
+    },
+    {
+      "id": "daily-allowance-cap-rejects-excess",
+      "test_ids": ["CMD-03", "DB-04"],
+      "initial": {"daily_limit_seconds": 86400, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 6},
+      "operations": [{"kind": "ADD_TIME", "operation_id": "grant-over-cap", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 7}],
+      "expected": {"daily_limit_seconds": 86400, "bonus_seconds": 0, "used_seconds": 0, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 6, "accounting_uncertain": false, "remaining_seconds": 86400, "policy_blocked": false, "restriction_required": false, "block_reasons": [], "results": ["rejected_cap"]}
+    },
+    {
+      "id": "missing-accounting-restricts-with-degraded-reason",
+      "test_ids": ["TIME-15"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 3},
+      "operations": [{"kind": "MARK_ACCOUNTING_UNCERTAIN"}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 600, "manual_lock": false, "period_key": "tz1:2026-09-05", "version": 3, "accounting_uncertain": true, "remaining_seconds": 3000, "policy_blocked": false, "restriction_required": true, "block_reasons": ["ACCOUNTING_UNCERTAIN"], "results": ["accounting_uncertain"]}
+    },
+    {
+      "id": "adding-time-does-not-clear-manual-lock",
+      "test_ids": ["CMD-03"],
+      "initial": {"daily_limit_seconds": 3600, "bonus_seconds": 0, "used_seconds": 3600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 20},
+      "operations": [{"kind": "ADD_TIME", "operation_id": "grant-f", "seconds": 600, "period_key": "tz1:2026-09-05", "server_sequence": 21}],
+      "expected": {"daily_limit_seconds": 3600, "bonus_seconds": 600, "used_seconds": 3600, "manual_lock": true, "period_key": "tz1:2026-09-05", "version": 21, "accounting_uncertain": false, "remaining_seconds": 600, "policy_blocked": true, "restriction_required": true, "block_reasons": ["MANUAL_LOCK"], "results": ["applied"]}
+    }
+  ]
+}

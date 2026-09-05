@@ -1,6 +1,6 @@
 # ADR-0005 — Allowance semantics and time basis
 
-Status: Proposed; product choices **UNSPECIFIED**; OD-01–05/19 owner approval required.
+Status: Accepted 2026-09-05 by owner directive; Android feasibility evidence remains required.
 
 - **Goal:** Match understandable daily total time with minimal data.
 - **Context:** Parent Unlock, time grants, offline expiry/reset and local usage recovery.
@@ -16,21 +16,21 @@ Status: Proposed; product choices **UNSPECIFIED**; OD-01–05/19 owner approval 
 | Screen-on only | Very simple signal set | Counts keyguard/ambient time against normal expectations |
 | Self-reported app timer / server timer | Simple demo | Cannot measure device use or enforce existing rule while offline |
 
-Recommend interactive + keyguard hidden while use is permitted; sample current PowerManager/KeyguardManager state and reconcile using UsageEvents.
+Use interactive + keyguard hidden while use is permitted; sample current PowerManager/KeyguardManager state and reconcile using UsageEvents.
 Screen/keyguard events exist from API 28; UsageStats queries require Usage Access and do not enforce.
 [Usage events](https://developer.android.com/reference/android/app/usage/UsageEvents.Event),
 [UsageStatsManager](https://developer.android.com/reference/android/app/usage/UsageStatsManager).
 
 Evaluate Unlock that adds temporary grace or disables expiration: one button may feel convenient but silently changes allowance.
-Recommend independent manual lock and budget, explicit +10/+30 grants, manual lock surviving midnight.
+Use independent manual lock and budget, explicit +10/+30 grants, and manual lock surviving midnight.
 Evaluate device-local timezone vs household fixed timezone: device travel is intuitive but gives easy reset manipulation.
-Recommend parent-confirmed household zone and no timezone-edit feature in MVP.
+Use a parent-confirmed household zone and no timezone-edit feature in MVP.
 
 ## Decision and reasons
 
 Use the exact transition contract in [STATE-MACHINE](../product-specs/STATE-MACHINE.md).
 Consumption uses elapsedRealtime differences only within a boot, gated by interactive/unlocked/permitted intervals.
-Use trusted server UTC + monotonic anchor for day progression within a boot; propose conservative offline-reboot handling.
+Use trusted server UTC + monotonic anchor for day progression within a boot and the approved conservative offline-reboot handling.
 SystemClock documents elapsedRealtime including deep sleep and resetting at boot, so a durable boot boundary is necessary.
 [SystemClock](https://developer.android.com/reference/android/os/SystemClock).
 

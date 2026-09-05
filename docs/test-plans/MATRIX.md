@@ -28,6 +28,8 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 | AUTH-04 | Anonymous/public-key-only/expired parent token | Denied | I | 004/006 |
 | AUTH-05 | Membership removed while JWT still valid | Access denied immediately by authorization | I | 004/006 |
 | AUTH-06 | Own safe profile update vs membership escalation | Only permitted fields change | I | 004/006 |
+| AUTH-07 | New verified parent completes sign-up twice/retries household creation | Exactly one account/sole-owner household; retry returns the same outcome | I/F | 006 |
+| AUTH-08 | Parent logs out, uses recovery, or restarts after logout | Parent tokens/cache are cleared or safely replaced; child identity/policy is unaffected | I/F | 006 |
 
 ## Commands and synchronization
 
@@ -110,6 +112,7 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 | PRIV-01 | Inject sensitive strings into QR/API/provider errors | Tokens/content absent from logs and analytics | I | 005/009 |
 | PRIV-02 | Backup/device transfer/restore | Device credentials/identity not cloned; explicit re-pair | I/P | 007 |
 | PRIV-03 | Account/device deletion | Revoke first, live rows/push address purged per approved retention; offline limits visible | I/P | 006/007 |
+| PRIV-04 | Inspect manifests, schemas, dependencies, logs and test traffic | No location, content, communications, media, keystroke, detailed app-history, advertising or surveillance data path exists | I | 002/004/007/009/010 |
 | UI-01 | All required list/detail/pair/child states | Text+icon, timestamps, actionable error; accepted ≠ applied | U/I | 010 |
 | UI-02 | Large fonts/TalkBack/contrast | No clipped controls; meaningful focus/labels; ≥48 dp target | I/P | 010 |
 | UI-03 | Two intentional taps vs transport retry | Two grants vs one grant correctly distinguished | I/P | 009/010 |

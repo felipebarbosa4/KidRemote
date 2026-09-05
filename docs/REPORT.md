@@ -7,7 +7,7 @@
 
 ## A. EXECUTIVE SUMMARY
 
-Recommend native Kotlin/Compose parent, native Kotlin child with a small pure time/policy core, Supabase Auth/PostgreSQL/RLS/Edge,
+The approved baseline is native Kotlin/Compose parent, native Kotlin child with a small pure time/policy core, Supabase Auth/PostgreSQL/RLS/Edge,
 and FCM as a hint to synchronize. Store downloaded recurring policy, local consumption and receipts transactionally on the child.
 The server orders desired state and dated grants; it never runs the child's countdown.
 See [ARCHITECTURE](ARCHITECTURE.md).
@@ -19,9 +19,9 @@ Clock trust after offline reboot and mobile background/push behaviour also limit
 [Android guidance](https://developer.android.com/guide/topics/ui/accessibility/service),
 [Play API policy](https://support.google.com/googleplay/android-developer/answer/16558241).
 
-Owner approval is required for Unlock, time definition, timezone/reset, uncertain accounting/offline reboot, consumer support boundary,
-safe recovery, framework/authentication/household choices, pairing/credential lifetime, audience and retention.
-Actual choices remain **UNSPECIFIED** in [DECISIONS](DECISIONS.md).
+The 2026-09-05 owner directive approves the documented recommendations for Unlock, time definition, timezone/reset,
+uncertain accounting/offline reboot, framework/authentication/household choices, pairing/credential lifetime and technical retention.
+External evidence and facts remain **UNSPECIFIED** as recorded in [DECISIONS](DECISIONS.md).
 First build bounded feasibility evidence, local RLS tests and pairing transaction tests.
 Production enforcement, final pairing, public database exposure and store submission remain gated.
 
@@ -31,7 +31,7 @@ Parent: sign up/login/logout → MY DEVICES → QR pairing → daily limit → t
 Child: visible enrollment → independent device identity → separate consent/permission setup → local accounting/enforcement → minimal receipt/health.
 All required UI/network/error states and non-features are in [PRODUCT](PRODUCT.md).
 
-Proposed state, **owner approval required**:
+Approved state:
 
 ```text
 remaining = max(0, daily_limit + today's_bonus - used)
@@ -40,8 +40,8 @@ policy_blocked = manual_lock OR remaining <= 0
 
 Unlock clears manual lock only. Add time does not clear manual lock. Daily reset clears used/bonus, retains recurring limit and manual lock.
 Limit edits preserve used time. Dated additions expire with their household day.
-Recommend interactive + keyguard-hidden permitted time, household-confirmed IANA zone, midnight reset, no carry-over.
-Offline same-boot expiry/reset works from downloaded state; offline reboot retains current balance and defers new-day credit while clock uncertain (proposal).
+Use interactive + keyguard-hidden permitted time, household-confirmed IANA zone, midnight reset and no carry-over.
+Offline same-boot expiry/reset works from downloaded state; offline reboot retains current balance and defers new-day credit while clock uncertain.
 Full truth/transition tables, numeric examples and day/clock semantics: [STATE-MACHINE](product-specs/STATE-MACHINE.md).
 
 No location, browsing/content/message monitoring, media capture, detailed app analytics, ads, per-app limits, schedules,
@@ -175,8 +175,8 @@ No issue is completed solely by creating its planning document.
 
 [Sprint 01](exec-plans/SPRINT-01.md): feasibility and contracts, not full MVP.
 Day 1 product/agent foundation; days 2–3 Android physical spike plus local schema/RLS; day 4 pairing/policy packet; day 5 go/no-go and next readiness.
-KR-001–005 = 21 relative points, conditional on two contributors, test devices and timely owner review.
-Team/start date **UNSPECIFIED**. One contributor commits 001/002/003, with reviewed backend/pairing designs as stretch.
+Sprint 01 runs 2026-09-05 through 2026-09-11. The committed single-agent scope is KR-001/002/003;
+KR-004/005 are stretch work, and physical-device availability remains **UNSPECIFIED**.
 Exit: explicit product choices, validated scaffold, actual Android safety/recovery evidence or blocker, reviewed/tested RLS and pairing as capacity permits.
 Unrun gates remain open.
 
@@ -188,14 +188,14 @@ Significant claims are cited next to their use. No third-party technical claims 
 
 ## End-of-pass handoff
 
-**BLOCKERS:** consumer physical enforcement/safe recovery and policy tension; pending semantics/device-auth approvals;
+**BLOCKERS:** consumer physical enforcement/safe recovery and policy tension; required device/RLS/pairing evidence;
 RLS allow/deny execution before exposure; functioning app/store launch evidence.
 
-**OWNER DECISIONS REQUIRED:** OD-01–25 in DECISIONS, particularly independent Unlock, counted time, reset/uncertainty,
-consumer support/recovery boundary, authentication/household/framework, TTL/credential lifecycle, audience/retention/budget.
+**OWNER DECISIONS:** documented recommendations were adopted on 2026-09-05. Evidence-dependent release decisions remain open,
+including consumer support/recovery acceptance after KR-003 and target audience/market/legal/hosting choices.
 
 **UNSPECIFIED ITEMS:** final brand, hosting budget/region/tier, meaning of user, versions/package IDs,
-ages/markets/audience, approval owner/date, device support/evidence, retention/credentials/dark mode, sprint staffing/dates and future platform behaviour.
+ages/markets/audience, device support/evidence, provider backup retention, licence/secret ownership and future platform behaviour.
 
 **TOP 5 RISKS:** (1) consumer enforcement/policy feasibility; (2) normal lifecycle/OEM persistence;
 (3) trustworthy daily time after offline reboot; (4) gateway/RLS/pairing authorization bugs;

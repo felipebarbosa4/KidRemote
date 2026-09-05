@@ -2,8 +2,8 @@
 
 - **Goal:** Test a minimal Android parental screen-time product with local expiry and understandable remote controls.
 - **Context:** Parent Android app and native child Android agent; KidRemote is a working codename.
-- **Constraints:** Data minimization, offline execution, explicit owner decisions, no production features in this pass.
-- **Done when:** KR-001 approves semantics and every MVP behaviour has an observable acceptance test.
+- **Constraints:** Data minimization, offline execution, approved product semantics, and evidence-gated enforcement.
+- **Done when:** Every MVP behaviour has an observable acceptance test and implementation follows the approved state contract.
 
 ## Product contract
 
@@ -31,15 +31,15 @@ A displayed remaining value is a timestamped report, never proof of current offl
 | Reconnect | Missed push or command produces the same latest state as an uninterrupted sync; bonus never applies twice |
 | Removal | Parent can revoke/remove a device; account deletion and offline removal limitations are explained in SECURITY and PRIVACY |
 
-Recommended parent authentication method: verified email and password with password recovery, avoiding SMS cost and extra social providers.
-Actual method: **UNSPECIFIED**; owner approval required. MFA/recovery escalation requirements: **UNSPECIFIED**.
+Approved alpha parent authentication method: verified email and password with password recovery, avoiding SMS cost and extra social providers.
+Production MFA/recovery escalation requirements remain **UNSPECIFIED** pending security review.
 Supabase documents supported authentication methods; SMTP configuration and delivery testing remain implementation work.
 [Supabase Auth](https://supabase.com/docs/guides/auth).
 
-## Proposed semantics — owner approval required
+## Approved MVP semantics — 2026-09-05
 
-Actual screen-time definition, Unlock semantics and day rule: **UNSPECIFIED**.
-Recommend the following, specified completely in [STATE-MACHINE](product-specs/STATE-MACHINE.md) and [ADR-0005](adr/0005-state-and-time.md):
+The owner directed the project to adopt the documented recommendations. The following contract is authoritative and is specified completely
+in [STATE-MACHINE](product-specs/STATE-MACHINE.md) and [ADR-0005](adr/0005-state-and-time.md):
 
 - Screen time is time when the enrolled Android user's screen is interactive and keyguard is not showing, while KidRemote permits use. Launcher and multi-window count once; screen-off audio does not. KidRemote's effective blocked screen does not consume allowance.
 - Each enrolled device has an independent daily allowance. A household-wide pooled budget is out of scope.
@@ -50,8 +50,8 @@ Recommend the following, specified completely in [STATE-MACHINE](product-specs/S
 - Daily limit changes take effect when received, retaining consumed time and today's bonus. They also become the recurring limit.
 - ADD_TIME is for the explicitly named current household day, not “whenever delivered.” A late grant is expired, not applied to tomorrow.
 - Parent confirms a household IANA timezone; the device timezone does not change the budget day. Day starts at local midnight in that zone, including 23/25-hour DST days.
-- Offline, same-boot daily resets use the downloaded rule and a trusted server-time/monotonic anchor. After an offline reboot, preserve current-period balance and withhold a new daily allowance until time is trusted again. This anti-tamper/usability trade-off requires owner approval.
-- A missing/unreconcilable usage interval marks degraded health and conservatively restricts ordinary use, with safe recovery routes. Approval required; this is separate from the two policy lock reasons.
+- Offline, same-boot daily resets use the downloaded rule and a trusted server-time/monotonic anchor. After an offline reboot, preserve current-period balance and withhold a new daily allowance until time is trusted again.
+- A missing/unreconcilable usage interval marks degraded health and conservatively restricts ordinary use, with safe recovery routes. This is separate from the two policy lock reasons.
 
 A consumer app cannot promise persistence of enforcement after force-stop, uninstall, safe mode, or compromise.
 If that guarantee is mandatory, a managed-device product must be considered explicitly.
@@ -67,7 +67,25 @@ At zero, helper text says “Add time to allow use”; do not imply Unlock reple
 
 Recommend no -10/-30 primary actions: unclear accidental subtraction and more controls for no specified use case.
 Daily limit editing handles future recurring limits. Negative bonus operations are out of scope.
-Light mode first; dark mode: **UNSPECIFIED**, recommend defer to preserve feasibility focus.
+MVP uses light mode only; dark mode is deferred beyond Android MVP.
+
+## Requirement traceability
+
+| Product requirement | Acceptance/test IDs |
+| --- | --- |
+| Account creation, verified login, recovery and logout | AUTH-04, AUTH-07, AUTH-08; KR-006 AC-1–4 |
+| Own enrolled-device list and isolation | AUTH-01–06, UI-01; KR-004/006 |
+| Secure QR pairing and scoped child identity | PAIR-01–08, AUTH-03, DB-05/06; KR-005/007 |
+| Explicit daily limit and remaining-time report | CMD-10, TIME-01/12, UI-01; KR-001/008/010 |
+| Lock, Unlock, +10 and +30 | CMD-01–04, CMD-07/10; KR-009/010 |
+| Idempotent, ordered commands and acknowledgements | CMD-05–15; KR-009 |
+| Local accounting, zero detection and offline expiry | TIME-01–19, NET-01/03; KR-003/008 |
+| Process, update, reboot and reconnection recovery | TIME-05–08/14, NET-02/04/05; KR-003/008/009 |
+| Honest online/offline/pending/degraded state | PERM-01–03, NET-02–06, UI-01; KR-007/009/010 |
+| Device/account deletion and revocation | DB-05/06, PRIV-02/03; KR-006/007 |
+| Data minimization and every named non-feature | PRIV-01–04; schema, permission, dependency and traffic review before release |
+
+The detailed Given/When/Then criteria are in [the test matrix](test-plans/MATRIX.md). This mapping is a specification, not passed evidence.
 
 ## Safety and consent
 

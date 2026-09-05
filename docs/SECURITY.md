@@ -43,7 +43,7 @@ Supabase elevated secret keys bypass RLS, so gateway checks and test roles matte
 | Threat | Mitigation | Residual risk |
 | --- | --- | --- |
 | Stolen parent password/session | Verified login, secure session storage, reauthentication for removal, recovery; MFA decision required | Authorized attacker can control household until session/account recovery |
-| QR photograph/front-running | Five-minute proposed TTL, single use, visible enrollment and revoke | First valid redeemer can win; proximity/guardianship not proven |
+| QR photograph/front-running | Five-minute TTL, single use, visible enrollment and revoke | First valid redeemer can win; proximity/guardianship not proven |
 | Tenant-ID substitution / privilege escalation | RLS, immutable ownership, checked FKs, strict endpoint/schema allowlists | Backend privileged-code bug remains high-impact |
 | Device credential extraction | Keystore-backed wrapping and revocation/rotation | Compromised OS can use keys/credential and falsify own state |
 | Replay / duplicate ADD_TIME | Server unique operation, payload digest, local absolute totals/version | Distinct authorized taps intentionally add multiple grants |
@@ -66,7 +66,7 @@ These are required research/tests, not claimed results. All physical outcomes cu
 | Uninstall attempt/success | Visible removal supported; cloud becomes stale/revocable | No consumer anti-uninstall promise |
 | Application data cleared | Unpaired on relaunch; old identity revoked by parent | Cannot recover erased local ledger securely without re-enrollment |
 | Normal reboot | Restore policy and measure unlock-window gap | Required supported-device test, not automatically excluded |
-| Reboot while offline | Restore expired/manual restriction; mark clock uncertainty | New-day credit withheld under proposed owner-approved rule |
+| Reboot while offline | Restore expired/manual restriction; mark clock uncertainty | New-day credit withheld under the approved rule |
 | Battery optimization/OEM killing | Reconnect/reconcile; report degraded where observable | Test default and restricted OEM settings; exclude failing configs explicitly |
 | Safe mode | Later stale/degraded report; no attempted OS bypass | Consumer third-party enforcement not guaranteed |
 | Guest/secondary user | Scope clearly says enrolled Android user | Other users outside MVP boundary; test switching |

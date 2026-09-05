@@ -1,36 +1,38 @@
 # Decision and unknown register
 
 - **Goal:** Prevent recommendations from becoming undocumented product assumptions.
-- **Context:** Initial architecture pass, 2026-09-05.
-- **Constraints:** Unchosen facts/requirements are **UNSPECIFIED**. Proposal text is not approval.
+- **Context:** Initial architecture accepted and execution started 2026-09-05.
+- **Constraints:** Unchosen or externally unverified facts remain **UNSPECIFIED**. Owner approval is not implementation or test evidence.
 - **Done when:** Each gate has an owner outcome and linked ADR/test evidence before dependent production work.
 
-Owner identity and approval date: **UNSPECIFIED**. Product owner is the requested approval role, not an assigned person.
+Owner directive: repository owner `felipebarbosa4`, 2026-09-05 — adopt the documented recommendations and proceed without waiting for further choice.
+This approves concrete recommended product/architecture choices. It does not fabricate Play approval, device results, legal facts, credentials,
+budgets, package names or provider configuration; those remain **UNSPECIFIED** until actually resolved.
 
 | ID | Actual decision / fact | Recommendation or required resolution | Gate |
 | --- | --- | --- | --- |
-| OD-01 | Unlock and manual-lock reset semantics: **UNSPECIFIED** | Unlock only manual lock; manual lock survives midnight; +time does not unlock; ADR-0005 | KR-001 |
-| OD-02 | Screen-time definition/exemptions: **UNSPECIFIED** | Interactive + keyguard hidden + permitted-use time, per device; minimal local-only events | KR-001/003 |
-| OD-03 | Timezone/daily reset: **UNSPECIFIED** | Confirmed household IANA zone, local midnight, no bonus carry-over | KR-001 |
-| OD-04 | Offline reboot clock uncertainty: **UNSPECIFIED** | Carry current balance, defer new-day credit until trusted time; explicit degraded UI | KR-001/003 |
-| OD-05 | Missing accounting / conservative restriction: **UNSPECIFIED** | Restrict ordinary use if interval cannot be reconciled; retain emergency/recovery | KR-001/003 |
-| OD-06 | Consumer enforcement risk acceptance: **UNSPECIFIED** | Evaluate consumer Accessibility route; no production go-ahead until physical/policy gates pass | KR-003 |
-| OD-07 | Emergency/system allowances and recovery: **UNSPECIFIED** | Validate dialler/emergency/system accessibility and visible disable/re-pair recovery; no fake OS lock | KR-003 |
-| OD-08 | Parent framework: **UNSPECIFIED** | Native Kotlin/Compose; Flutter gains no proven near-term benefit; ADR-0001 | KR-002 before app bootstrap |
-| OD-09 | Device authentication: **UNSPECIFIED** | Independent opaque bearer, hashed server-side, Edge-only scope; ADR-0003 | KR-005/007 |
-| OD-10 | Pairing TTL: **UNSPECIFIED** | Five minutes; single-use atomic redemption; explicit replacement on interruption | KR-005 |
-| OD-11 | Parent login/recovery/MFA: **UNSPECIFIED** | Verified email/password + recovery for alpha; security review for production | KR-006 |
-| OD-12 | Household sharing, multiple guardians: **UNSPECIFIED** | One creating owner, one household per parent in MVP; normalized membership leaves room for future invitations | KR-001/006 |
-| OD-13 | Play audience/child ages/markets: **UNSPECIFIED** | Classify parent and child listings independently with owner policy review | Release |
-| OD-14 | Retention/deletion times, region and processors: **UNSPECIFIED** | Proposed minima in PRIVACY, including provider backups; confirm before real accounts | Alpha with real data |
-| OD-15 | Android minimum/target/compile SDK and supported OEMs: **UNSPECIFIED** | Candidate min API 28 because selected events exist; target current Play requirements verified at bootstrap; physical support list required | KR-002/003 |
-| OD-16 | Budget and user definition: **UNSPECIFIED** | Load-test assumption only: 1,000 parents, 5,000 devices; no hosting tier chosen | Capacity/provisioning |
+| OD-01 | **APPROVED 2026-09-05:** Unlock clears only manual lock; manual lock survives midnight; +time does not unlock | Implement/test ADR-0005 exactly | KR-001 |
+| OD-02 | **APPROVED 2026-09-05:** count interactive + keyguard-hidden + permitted-use time independently per device | Keep event reduction local; KR-003 validates exemptions/safe surfaces | KR-001/003 |
+| OD-03 | **APPROVED 2026-09-05:** confirmed household IANA zone, local midnight, no bonus carry-over | Device timezone never changes the period | KR-001 |
+| OD-04 | **APPROVED 2026-09-05:** retain current balance and defer new-day credit after offline reboot until trusted time | Show degraded clock state; validate on device | KR-001/003 |
+| OD-05 | **APPROVED 2026-09-05:** unreconcilable accounting restricts ordinary use | Emergency/accessibility/recovery must remain available and be proven in KR-003 | KR-001/003 |
+| OD-06 | **APPROVED FOR FEASIBILITY 2026-09-05:** evaluate the consumer Accessibility candidate | Production acceptance and Play approval remain **UNSPECIFIED** pending KR-003 evidence | KR-003 |
+| OD-07 | **APPROVED SAFETY GATE 2026-09-05:** validate dialler/emergency/system accessibility and visible recovery; no fake OS lock | Exact supported surfaces remain **UNSPECIFIED** until physical validation | KR-003 |
+| OD-08 | **APPROVED 2026-09-05:** native Kotlin/Compose parent and native Kotlin child | Exact toolchain versions are selected only when verified for bootstrap; ADR-0001 | KR-002/bootstrap |
+| OD-09 | **APPROVED 2026-09-05:** independent opaque device bearer, digest server-side, dedicated Edge routes only | Threat model and negative tests remain mandatory; ADR-0003 | KR-005/007 |
+| OD-10 | **APPROVED 2026-09-05:** five-minute, single-use pairing token with atomic redemption | Post-commit response loss requires revoke/new QR | KR-005 |
+| OD-11 | **APPROVED FOR ALPHA 2026-09-05:** verified email/password plus recovery | Production MFA/recovery escalation remains **UNSPECIFIED** pending security review | KR-006 |
+| OD-12 | **APPROVED 2026-09-05:** one creating owner and one household per parent in MVP | Keep normalized membership for later invitations | KR-001/006 |
+| OD-13 | Independent parent/child listing classification is approved as a release gate | Exact ages, markets and Play target audiences remain **UNSPECIFIED** | Release |
+| OD-14 | Proposed live-data retention minima in PRIVACY are approved as the alpha technical baseline | Region, legal basis, processors/contracts and backup purge duration remain **UNSPECIFIED** | Alpha with real data |
+| OD-15 | **APPROVED FOR SPIKE 2026-09-05:** candidate minimum API 28 | Target/compile SDK and supported OEM list remain **UNSPECIFIED** until current tooling/device evidence is recorded | KR-002/003 |
+| OD-16 | LOAD-TEST ASSUMPTION approved: 1,000 active parents and up to 5,000 enrolled devices | Business meaning of user, forecast, hosting budget/tier remain **UNSPECIFIED** | Capacity/provisioning |
 | OD-17 | Final brand, package IDs, domains: **UNSPECIFIED** | KidRemote remains codename; do not buy or publish names | Distribution |
-| OD-18 | Dark mode: **UNSPECIFIED** | Light MVP; later native dark theme | KR-010 |
-| OD-19 | Initial daily limit and maximum bonus: **UNSPECIFIED** | Require explicit parent limit; propose limit 0–86,400 s and total allowance cap 86,400 s with rejection at cap | KR-001 |
-| OD-20 | Credential lifetime/rotation and offline revocation removal: **UNSPECIFIED** | 90-day credential, rotate by 30 days; downloaded policy survives auth expiry; next-sync revocation and visible local removal | KR-005/007 |
-| OD-21 | Sprint date/team availability/device inventory: **UNSPECIFIED** | Five working days relative to kickoff; conditional capacity in sprint plan | Sprint commitment |
-| OD-22 | Licence, CI approval/ruleset, secret owners: **UNSPECIFIED** | Confirm before accepting outside contributions or deploying | Repository/release |
+| OD-18 | **APPROVED 2026-09-05:** light-mode MVP; dark mode deferred | Revisit after Android MVP, not in KR-010 scope | KR-010 |
+| OD-19 | **APPROVED 2026-09-05:** no default; parent explicitly sets 0–86,400 s; total daily allowance capped at 86,400 s; reject excess | Use checked integer seconds and visible errors | KR-001 |
+| OD-20 | **APPROVED 2026-09-05:** 90-day device credential; rotate by day 30 with five-minute overlap; downloaded policy survives expiry; revocation applies on next contact | Validate lost-response, long-offline and visible local removal paths | KR-005/007 |
+| OD-21 | **STARTED 2026-09-05:** Sprint 01 ends 2026-09-11; single-agent committed scope KR-001/002/003 | Physical-device inventory remains **UNSPECIFIED**; KR-003 blocks if unavailable | Sprint 01 |
+| OD-22 | Planning CI baseline approved by merged PR #11 | Licence, branch rules, deployment secret owners and outside-contribution policy remain **UNSPECIFIED** | Repository/release |
 | OD-23 | Future Apple remote capabilities: **UNSPECIFIED** | RESEARCH REQUIRED; entitlement is external dependency; no promise of Android parity | Apple Feasibility |
 | OD-24 | Windows privilege/enforcement and Fire model support: **UNSPECIFIED** | Future-only research; ADR-0007 | Future milestones |
 | OD-25 | Play review, FCM migration compatibility, physical metrics: **UNSPECIFIED** | Run KR-003/009 and measured tests; documentation alone cannot confirm | Alpha/release |

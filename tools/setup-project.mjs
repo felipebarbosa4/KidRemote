@@ -7,7 +7,7 @@ const issues=JSON.parse(readFileSync(resolve(root,"docs/github/issues.json"),"ut
 const args=process.argv.slice(2);
 if(args.some(a=>a!=="--apply")) throw new Error("Usage: node tools/setup-project.mjs [--apply]");
 if(!args.includes("--apply")){
-  process.stdout.write(JSON.stringify({mode:"DRY RUN — no writes",configuration:c,project_policy:"Reuse one existing exact-title Project; never create implicitly",manual:"UI-only filters, sorts, grouping, roadmap mapping, workflow actions and sprint assignment: follow docs/github/PROJECT.md"},null,2)+"\n");
+  process.stdout.write(JSON.stringify({mode:"DRY RUN — no writes",configuration:c,project_policy:"Reuse one existing exact-title Project; never create implicitly",manual:"UI-only filters, sorts, grouping, roadmap mapping and workflow actions: follow docs/github/PROJECT.md"},null,2)+"\n");
   process.exit(0);
 }
 const gh=(...a)=>execFileSync("gh",a,{cwd:root,encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim();
@@ -32,15 +32,23 @@ for(const f of c.fields){
 }
 fields=j("project","field-list",String(p.number),"--owner",c.owner,"--limit","100","--format","json").fields;
 const repoIssues=j("issue","list","--repo",c.repository,"--state","all","--limit","1000","--json","number,title,url");
+const projectItems=j("project","item-list",String(p.number),"--owner",c.owner,"--limit","1000","--format","json").items;
+const outputKey=name=>name[0].toLowerCase()+name.slice(1);
 const notes=[];
 for(const i of issues){
   const candidates=repoIssues.filter(x=>x.title.startsWith(i.id+":"));
   if(candidates.length!==1){notes.push(i.id+": missing/ambiguous issue; run issue publisher first");continue;}
   const item=j("project","item-add",String(p.number),"--owner",c.owner,"--url",candidates[0].url,"--format","json");
+  const current=projectItems.find(x=>x.id===item.id)??item;
   const values={"Status":i.status,"Priority":i.priority,"Story Points":i.story_points,"Risk":i.risk,"Area":i.area,"Platform":i.platform,"Decision Required":i.decision_required,"Work Type":i.work_type};
   for(const [name,value] of Object.entries(values)){
     const field=fields.find(f=>f.name===name);
     if(!field){notes.push("Missing field "+name);continue;}
+    const existing=current[outputKey(name)];
+    if(existing!==undefined&&existing!==null&&existing!==""){
+      if(existing!==value) notes.push("Preserved live "+i.id+" "+name+"="+existing+" (initial manifest "+value+")");
+      continue;
+    }
     const base=["project","item-edit","--id",item.id,"--project-id",p.id,"--field-id",field.id];
     if(typeof value==="number") gh(...base,"--number",String(value));
     else {
@@ -50,4 +58,4 @@ for(const i of issues){
     }
   }
 }
-process.stdout.write(JSON.stringify({project:p,notes:[...new Set(notes)],manual_remaining:"Complete/verify UI-only filters, sorts, grouping, roadmap date mapping, workflow actions and approved sprint assignment; see docs/github/PROJECT.md."},null,2)+"\n");
+process.stdout.write(JSON.stringify({project:p,notes:[...new Set(notes)],manual_remaining:"Complete/verify UI-only filters, sorts, grouping, roadmap date mapping and workflow actions; see docs/github/PROJECT.md."},null,2)+"\n");

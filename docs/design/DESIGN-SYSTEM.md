@@ -1,4 +1,4 @@
-# Design system — proposed Android MVP
+# Design system — approved Android MVP baseline
 
 - **Goal:** Make five small flows calm, clear and accessible.
 - **Context:** Android parent/child, light mode first, working codename only; generated images are concepts.
@@ -51,7 +51,7 @@ Secondary outlined: Lock Now / Unlock (based on manual state), Retry, help.
 Destructive: Remove device/account uses error text with confirmation and recent reauthentication.
 Do not make Lock visually destructive; it is reversible policy control.
 Daily limit is a small labelled settings row, not another primary control.
-No -10/-30 in MVP; dark mode **UNSPECIFIED**, recommend defer.
+No -10/-30 in MVP; ship light mode first and defer dark mode beyond Android MVP.
 
 | State | Text/icon and behaviour |
 | --- | --- |

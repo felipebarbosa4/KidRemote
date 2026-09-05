@@ -1,6 +1,6 @@
 # ADR-0004 — Secure QR enrollment
 
-Status: Proposed; TTL **UNSPECIFIED**, recommend five minutes (OD-10); device-auth approval also required.
+Status: Accepted 2026-09-05 by owner directive; implementation and threat-model evidence remain required.
 
 - **Goal:** Bind one consenting installation to the authenticated parent's household once.
 - **Context:** QR is visible on parent device, scanned by child, redeemed over TLS.
@@ -56,7 +56,7 @@ Before commit: no device; same still-valid token may be submitted.
 After commit but before secret persisted: token remains consumed; do not return a fresh secret for a replay.
 Parent sees incomplete device, revokes it and creates a fresh QR. This intentionally favours one-time security over invisible retry.
 A first sync with a successfully stored credential is independently retryable.
-Propose pruning incomplete enrollment after 15 minutes with parent-visible status; duration **UNSPECIFIED** pending retention review.
+Prune incomplete enrollment after 15 minutes with parent-visible status.
 Parent may cancel/regenerate; old challenge is invalidated. If a redemption raced cancellation and already committed, offer revoke explicitly.
 
 ## Security/privacy implications
