@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KidRemote — five low-fidelity wireframes</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#eceeec;color:#202520;font:16px/1.5 system-ui,sans-serif}
+h1{font-size:28px;max-width:850px}p.intro{max-width:850px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,360px));gap:28px;align-items:start}
+section{background:white;border:2px solid #555;border-radius:20px;padding:22px;min-height:680px}
+h2{font-size:18px;margin:0 0 26px}.screen-title{font-size:22px;font-weight:700}.card{border:1px solid #777;border-radius:12px;padding:16px;margin:16px 0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.muted{color:#535b53;font-size:14px}.value{font-size:44px;line-height:1.2;font-weight:700;margin:28px 0 6px}
+button,.button{display:block;border:2px solid #454b45;border-radius:10px;padding:14px 16px;background:#f4f5f4;color:#202520;font:600 16px/1.4 system-ui;text-align:center;min-height:52px;width:100%;margin:12px 0}
+button{cursor:default}.pair{display:flex;gap:12px}.pair button{flex:1}.callout{border:2px dashed #777;padding:14px;margin:20px 0}.qr{width:220px;height:220px;margin:30px auto;border:12px solid #222;outline:2px dashed #aaa;display:grid;place-items:center;text-align:center;background:repeating-linear-gradient(45deg,#fff,#fff 14px,#eee 14px,#eee 28px)}
+.centre{text-align:center}.symbol{font-size:68px;margin:50px 0 20px}.tag{font-size:12px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid #aaa;padding-bottom:8px;margin-bottom:16px}.steps{padding-left:24px}.caption{margin-top:28px;font-size:14px;max-width:1100px}
+@media print{body{background:white}.grid{display:block}section{break-inside:avoid;display:inline-block;width:330px;margin:10px}}
+</style>
+</head>
+<body>
+<h1>KidRemote — low-fidelity flow layouts</h1>
+<p class="intro">Architecture mockups only. Buttons are inert. All names and values are synthetic. Final name and product decisions remain UNSPECIFIED. Read DESIGN-SYSTEM.md for implementation tokens; these layouts intentionally use grayscale.</p>
+<main class="grid">
+<section aria-label="Parent device list">
+<div class="tag">01 · Parent device list</div><h2 class="screen-title">MY DEVICES</h2>
+<div class="card"><strong>Alex's tablet</strong><div class="muted">Android tablet</div><p><strong>42 min left</strong></p><span>✓ Online · updated just now</span></div>
+<div class="card"><strong>Sam's phone</strong><p><strong>LOCKED</strong></p><span>▣ Locked by parent</span></div>
+<div class="card"><strong>Shared tablet</strong><p>Last reported: 18 min</p><span>☁ Offline · last seen 12 min ago</span></div>
+<button type="button">＋ Pair a device</button><p class="muted">Account</p>
+</section>
+<section aria-label="Parent device control">
+<div class="tag">02 · Device control</div><h2>‹ &nbsp; Alex's tablet</h2>
+<div class="centre"><span>✓ Online</span><div class="value">42 min</div><div>remaining today</div><p class="muted">Updated just now</p></div>
+<div class="pair"><button type="button">+10 min</button><button type="button">+30 min</button></div>
+<button type="button">▣ Lock Now</button>
+<div class="card row"><span>Daily limit</span><strong>1 hr 30 min ›</strong></div>
+<div class="callout">◷ Waiting for device<p class="muted">Example pending state after a request. The last reported value stays visible until confirmed.</p></div>
+<p class="muted">At zero: “Time is up. Add time to allow use.” Unlock clears a parent lock only under the proposed semantics.</p>
+</section>
+<section aria-label="QR pairing">
+<div class="tag">03 · QR pairing</div><h2>‹ &nbsp; Pair a device</h2>
+<p>Open the child app on the Android device, then scan this code.</p>
+<div class="qr"><strong>QR PLACEHOLDER<br><small>Not scannable<br>No secret</small></strong></div>
+<p class="centre">◷ Expires in 4:32</p><button type="button">Generate a new code</button><button type="button">Cancel</button>
+<p class="muted">Keep this code private. Pairing success appears here; permissions are set up separately on the child device.</p>
+</section>
+<section aria-label="Child time expired">
+<div class="tag">04 · Child expired</div><div class="centre"><div class="symbol" aria-hidden="true">⌛</div><h2 class="screen-title">Screen time is up.</h2><p>Ask a parent for more time.</p><p class="muted">Today's time used</p></div>
+<button type="button">Help and device status</button>
+<div class="callout">Emergency and essential system access must remain safe under the approved enforcement design. This layout does not prove enforcement.</div>
+</section>
+<section aria-label="Permission degraded">
+<div class="tag">05 · Permission degraded</div><h2>Device needs attention</h2>
+<div class="card"><strong>⚠ Permission required</strong><p>Screen-time control is not working fully.</p><p class="muted">Usage Access is off. Last checked just now.</p></div>
+<ol class="steps"><li>Open the device settings.</li><li>Enable Usage Access for the child app.</li><li>Return here to check setup.</li></ol>
+<button type="button">Open settings</button><button type="button">Check again</button>
+<p class="muted">Parent equivalent: “Alex's tablet needs attention. Last reported: 18 min. Last seen 12 min ago.” Offline and permission health can appear together.</p>
+</section>
+</main>
+<p class="caption">Required variants in PRODUCT.md: loading, empty, online, offline, pending, manual lock, time expired, degraded permissions, update required, backend error, QR generating/success/error/expired. A production app must support font scaling, TalkBack and verified safe system access.</p>
+</body>
+</html>

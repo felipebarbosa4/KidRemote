@@ -1,0 +1,211 @@
+{
+  "name": "Implementation task",
+  "description": "One bounded task with explicit acceptance, security and tests.",
+  "title": "KR-XXX: ",
+  "body": [
+    {
+      "type": "markdown",
+      "attributes": {
+        "value": "Read AGENTS.md and the linked specs. Unchosen/unverified facts are UNSPECIFIED. Do not attach credentials or child data."
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-0",
+      "attributes": {
+        "label": "Goal",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-1",
+      "attributes": {
+        "label": "Context",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-2",
+      "attributes": {
+        "label": "Scope",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-3",
+      "attributes": {
+        "label": "Out of scope",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-4",
+      "attributes": {
+        "label": "Dependencies",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-5",
+      "attributes": {
+        "label": "Technical constraints",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-6",
+      "attributes": {
+        "label": "Security/privacy",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-7",
+      "attributes": {
+        "label": "Acceptance criteria",
+        "description": "Use observable Given/When/Then and failure/denial outcomes."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-8",
+      "attributes": {
+        "label": "Unit test plan",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-9",
+      "attributes": {
+        "label": "Integration test plan",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-10",
+      "attributes": {
+        "label": "Physical-device test plan",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-11",
+      "attributes": {
+        "label": "Failure-injection test plan",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-12",
+      "attributes": {
+        "label": "Observability",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-13",
+      "attributes": {
+        "label": "Definition of done",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-14",
+      "attributes": {
+        "label": "Done when",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-15",
+      "attributes": {
+        "label": "Story points",
+        "description": "Use a relative Fibonacci estimate: 1, 2, 3, 5, 8 or 13."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-16",
+      "attributes": {
+        "label": "Open / UNSPECIFIED questions",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "section-17",
+      "attributes": {
+        "label": "Links to ADR/spec",
+        "description": "State not applicable with a reason where appropriate; preserve UNSPECIFIED for unknowns."
+      },
+      "validations": {
+        "required": true
+      }
+    }
+  ]
+}
