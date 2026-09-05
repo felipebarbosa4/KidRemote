@@ -8,8 +8,8 @@ The child executes downloaded rules locally, including when offline.
 ## Current state
 
 Architecture and planning scaffold, verified against official documentation on **2026-09-05**.
-No production applications, backend deployment, database exposure, or device-test results exist.
-Proposals requiring owner approval are recorded explicitly; this is not a claim that consumer enforcement is proven.
+KR-001/002 are complete and KR-003 now has an isolated, disposable Android enforcement test harness.
+No production application, backend deployment, database exposure, physical-device result or Play approval exists.
 
 Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order, then:
 
@@ -24,6 +24,7 @@ Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order
 | UI concepts | [Design system](docs/design/DESIGN-SYSTEM.md), [five wireframes](docs/design/wireframes.html), [three store concepts](docs/design/STORE-CONCEPTS.md) |
 | Bounded work | [Ten issues](docs/github/ISSUES.md), [Project setup](docs/github/PROJECT.md), [first sprint](docs/exec-plans/SPRINT-01.md) |
 | Evidence and validation | [References](docs/REFERENCES.md), [test matrix](docs/test-plans/MATRIX.md), [capacity](docs/test-plans/CAPACITY.md) |
+| Current feasibility spike | [Android enforcement spike](spikes/android-enforcement/README.md), [KR-003 physical protocol](docs/test-plans/KR-003-PHYSICAL.md) |
 
 ## Validate the planning scaffold
 
@@ -34,10 +35,10 @@ node tools/publish-planning.mjs
 ```
 
 The last command is a dry run. GitHub creation status and exact apply commands are in [Project setup](docs/github/PROJECT.md).
-No Android, Supabase, Flutter, Kotlin, or Gradle versions are selected by these placeholders.
-See [tooling](docs/TOOLING.md) for the one verified CI action version.
+Production application/library versions remain **UNSPECIFIED**. KR-003 alone pins its disposable compatible Android toolchain;
+see [tooling](docs/TOOLING.md).
 
 ## Pick up a task
 
-Read [AGENTS.md](AGENTS.md), select KR-001 or KR-002, and use the issue's Goal / Context / Constraints / Done when.
+Read [AGENTS.md](AGENTS.md), continue the active KR-003 feasibility issue, and use its Goal / Context / Constraints / Done when.
 Record evidence in the repository. Never turn an unrun test or a proposed ADR into a passed launch gate.

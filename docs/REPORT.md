@@ -147,8 +147,9 @@ docs/exec-plans/                task contract and first sprint
 docs/design/                   tokens, five wireframes, three concepts
 docs/github/                   Project config and ten full issues
 .github/ISSUE_TEMPLATE/        validated form
-.github/workflows/             planning checks
-tools/                         validator and repeatable planning setup
+.github/workflows/             planning and isolated Android-spike checks
+spikes/android-enforcement/    disposable KR-003 feasibility harness; not production
+tools/                         validators and repeatable planning setup
 ```
 
 ## G. PRIORITIZED GITHUB ISSUES TABLE
@@ -201,7 +202,7 @@ ages/markets/audience, device support/evidence, provider backup retention, licen
 (3) trustworthy daily time after offline reboot; (4) gateway/RLS/pairing authorization bugs;
 (5) delayed push/stale UI/current FCM addressing compatibility.
 
-**READY FOR IMPLEMENTATION:** bounded product review and docs/CI verification; authorized disposable enforcement spike;
-local-only schema/RLS tests; pairing transaction/security prototype. Main production enforcement/final pairing/client exposure remain gated.
+**READY FOR IMPLEMENTATION:** KR-003's authorized disposable enforcement spike is in progress; local-only schema/RLS tests;
+pairing transaction/security prototype. Main production enforcement/final pairing/client exposure remain gated.
 
 Validation and remote artefact results are recorded in PUBLISHED; do not infer Android/database/physical tests from a planning-validator pass.

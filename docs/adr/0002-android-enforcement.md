@@ -4,6 +4,10 @@ Status: Official-documentation assessment complete and feasibility spike authori
 Physical feasibility, Play approval and production acceptance remain **UNSPECIFIED**.
 Production enforcement gate: CLOSED. KR-003 is the bounded feasibility issue.
 
+Implementation evidence status: the isolated least-privilege harness and physical protocol now exist under
+[`spikes/android-enforcement`](../../spikes/android-enforcement/README.md). A build is not physical evidence; no support boundary or
+production decision changes until [KR-003's protocol](../test-plans/KR-003-PHYSICAL.md) is completed.
+
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.
 - **Constraints:** No stealth, content inspection, security-control circumvention, managed provisioning disguised as normal QR pairing, or unbreakable claims.

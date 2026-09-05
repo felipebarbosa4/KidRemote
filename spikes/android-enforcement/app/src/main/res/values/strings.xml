@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">KidRemote enforcement spike</string>
+    <string name="accessibility_service_description">Test-only service that displays a screen-time block over ordinary apps. It does not read screen text or content, take screenshots, record typing, or perform gestures.</string>
+</resources>
