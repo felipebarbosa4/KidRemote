@@ -22,6 +22,34 @@ Metric: elapsed milliseconds from the monotonic instant the local allowance math
 Report sample count, p50, p95 and maximum from the app plus independent observer failures. Gate: p95 ≤2,000 ms and zero silent no-block outcomes.
 This metric excludes push/backend latency and does not by itself prove safe or tamper-resistant enforcement.
 
+### Pre-qualification stability checkpoint
+
+Before starting the 100-sample qualification after an enforcement-stability fix, run 10 **independent attempted cycles** on the exact candidate
+configuration and APK hash. This staged checkpoint was adopted for the Mi 8 follow-up after the established overlay feedback-loop failure; it
+does not replace, reduce, or count as the 100-sample qualification.
+
+Each cycle must start from a cleared restriction and a fresh arm/revision. Record the following observer results separately:
+
+1. clearing the lab restriction makes the disposable ordinary app usable;
+2. re-arming starts a new 10-second allowance and the ordinary app remains eligible through expiry;
+3. expiry produces a continuously visible restriction for at least 10 seconds, with no flicker or disappearance;
+4. one physical Home attempt while restricted does not restore ordinary use;
+5. the designated **Open device settings** action makes Settings visible and usable;
+6. leaving Settings for a disposable ordinary app restores persistent enforcement;
+7. returning through the designated safe surface and clearing the restriction restores ordinary use before the next cycle.
+
+Record exactly 10 attempts and then stop, including failed and invalid attempts. Any failed or invalid observation keeps the checkpoint incomplete
+and stops progression to the 100-sample run pending review; do not append replacement attempts to this checkpoint or silently discard them.
+The operator—not the runner—must classify visible persistence, flicker, escape, safe-surface usability, re-entry enforcement and clear behaviour.
+A scripted Home injection rejected by the OS is invalid and must be replaced by a physical Home attempt.
+
+The optional [owner-operated Mi 8 checkpoint runner](../../tools/kr003-mi8-checkpoint.ps1) can start the harness/disposable Calculator, wait,
+capture only the debug trace tag and collect constrained observer entries. It deliberately does not inject Home and never converts
+`overlay_attached` into a physical pass.
+
+Report internal expiry-to-attachment samples and p50/p95/maximum independently from observer-confirmed trial results. Counts of attachment events,
+safe-surface checks, Home attempts or re-entry checks are not additional expiry trials.
+
 Repeat the candidate run at minimum on the oldest proposed API 28 configuration, Android 15, Android 16 and any proposed OEM support variants.
 Android 17 is currently a preview research target, not the stable production baseline.
 
