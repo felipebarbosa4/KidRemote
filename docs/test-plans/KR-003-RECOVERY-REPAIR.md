@@ -47,4 +47,3 @@ Physical P/F/I values remain independent from software evidence. Digital Wellbei
 the repair succeeds for this route only if the **single** recovery action restores continuously usable top-level Settings for the observation
 period with a fresh phase-local safe transition and no reattachment. CLEAR is cleanup, never consumer recovery evidence. Zero qualification rows
 are produced under every outcome.
-
