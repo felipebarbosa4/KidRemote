@@ -154,9 +154,13 @@ passed all three jobs; its device calls were stubbed and do not constitute physi
 The owner executed the immutable Q4 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) records expiry/root PASS,
 expected Digital Wellbeing blocking and a single recovery-button physical FAIL. The safe transition lasted only 681 ms before `ORDINARY_APP`
 returned and the overlay reattached, matching the observed approximately one-second Settings flash. Zero qualification rows began; lab CLEAR
-passed and network state was not changed. `NEW_TASK | CLEAR_TOP` is rejected for this Mi 8 route. Publication to issue #3/PR #16 is pending.
+passed and network state was not changed. `NEW_TASK | CLEAR_TOP` is rejected for this Mi 8 route.
 
 Q5 source `97173d207c8076219c6c4c8d780db43d8f9fc566` uses the same `ACTION_SETTINGS` with only `NEW_TASK | CLEAR_TASK` as the final flag-only
 candidate and hardens the software oracle against transient recovery. It passed [exact-source CI run 34059150290](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059150290).
 The [new immutable bundle, hashes and command](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) are verified; physical Q5 execution is
-**Not run**. Issue/PR publication of this update is pending.
+**Not run**. Issue #3 and draft PR #16 were updated and read back: all seven acceptance checkboxes remain present, issue #3 remains Open/In
+Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog. The [issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562113931)
+and [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562114041) preserve the same boundary. Current-head
+[CI run 34059402758](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059402758) passed all three jobs; device calls were stubbed and
+do not constitute physical Q5 evidence.
