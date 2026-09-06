@@ -104,4 +104,6 @@ ordinary enforcement returned 681 ms after the safe transition. Zero qualificati
 - **Done when:** Pure intent/verdict/transition tests, Windows runner tests, debug/release isolation, build/validation, immutable hashes and exact-source CI pass; then one owner-operated calibration determines the physical result.
 
 The [Q5 contract](../test-plans/KR-003-RECOVERY-TASK-RESET.md) treats this as the last flag-only candidate. The runner now explicitly records
-safe-then-ordinary reattachment as a regression rather than leaving the safe-transition label latched. Physical execution remains **Not run**.
+safe-then-ordinary reattachment as a regression rather than leaving the safe-transition label latched. Source `97173d2` passed all three CI jobs;
+the [immutable bundle and owner handoff](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) were independently hash/source-byte verified.
+Physical execution remains **Not run**.

@@ -155,3 +155,8 @@ The owner executed the immutable Q4 bundle. [Preserved evidence](../test-plans/e
 expected Digital Wellbeing blocking and a single recovery-button physical FAIL. The safe transition lasted only 681 ms before `ORDINARY_APP`
 returned and the overlay reattached, matching the observed approximately one-second Settings flash. Zero qualification rows began; lab CLEAR
 passed and network state was not changed. `NEW_TASK | CLEAR_TOP` is rejected for this Mi 8 route. Publication to issue #3/PR #16 is pending.
+
+Q5 source `97173d207c8076219c6c4c8d780db43d8f9fc566` uses the same `ACTION_SETTINGS` with only `NEW_TASK | CLEAR_TASK` as the final flag-only
+candidate and hardens the software oracle against transient recovery. It passed [exact-source CI run 34059150290](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059150290).
+The [new immutable bundle, hashes and command](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) are verified; physical Q5 execution is
+**Not run**. Issue/PR publication of this update is pending.
