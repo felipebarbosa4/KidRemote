@@ -9,7 +9,8 @@ The child executes downloaded rules locally, including when offline.
 
 Architecture and planning scaffold, verified against official documentation on **2026-09-05**.
 KR-001/002 are complete and KR-003 now has an isolated, disposable Android enforcement test harness.
-No production application, backend deployment, database exposure, physical-device result or Play approval exists.
+Bounded [Mi 8 physical evidence](docs/test-plans/evidence/KR-003-MI8-2026-09-06.md) exists; the KR-003 qualification gate remains open.
+No production application, backend deployment, database exposure or Play approval exists.
 
 Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order, then:
 
