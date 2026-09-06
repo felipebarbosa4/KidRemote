@@ -144,4 +144,7 @@ PowerShell 5.1 and Android debug/release isolation checks; device calls were stu
 
 The [immutable Q4 bundle, hashes, protocol and exact command](../test-plans/evidence/KR-003-Q4-BUNDLE-2026-09-06.md) were independently verified
 in mounted Windows storage. Physical execution is **Not run**. The repair remains unproven, 100 samples remain blocked, KR-003 remains Open/In
-Progress, PR #16 remains draft and KR-004 remains untouched.
+Progress, PR #16 remains draft and KR-004 remains untouched. Issue #3 and PR #16 were read back after publication; all seven issue acceptance
+checkboxes remain present. The [Q3 ingestion/Q4 handoff comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561946765)
+records the same evidence boundary. Current-head [CI run 34057870919](https://github.com/felipebarbosa4/KidRemote/actions/runs/34057870919)
+passed all three jobs; its device calls were stubbed and do not constitute physical Q4 evidence.
