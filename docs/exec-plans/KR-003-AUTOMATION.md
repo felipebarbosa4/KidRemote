@@ -45,4 +45,6 @@ The next runner must verify direct telemetry availability before arming and pres
 Incident ingestion and bounded fixes are implemented; [evidence](../test-plans/evidence/KR-003-CALIBRATION-2026-09-06.md) preserves originals and
 the unresolved Android discrepancy. Q2 separates owner PASS from phase corroboration, includes debug-only owned-window diagnostics, guards
 cleanup/reporting, and adds calibration-only mode. Local tests passed (23 JVM, 45 + 65 PowerShell assertions, six Node tests, debug/release lint/build
-and manifest/DEX audits). Exact-source CI, immutable packaging and publication are the remaining repository handoff steps, not physical evidence.
+and manifest/DEX audits). Exact-source `37ad70b` subsequently passed all three CI jobs, including Windows PowerShell 5.1. The new
+[immutable bundle](../test-plans/evidence/KR-003-Q2-BUNDLE-2026-09-06.md) was built and hash/source-byte verified; issue #3's evidence was updated
+without changing acceptance checkboxes. The remaining boundary is owner-run calibration-only, not KR-004 or a completed physical/policy gate.

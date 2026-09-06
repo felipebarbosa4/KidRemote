@@ -81,3 +81,12 @@ The historical d81f19a handoff above was executed by the owner. [Mounted evidenc
 records one successful physical expiry plus same-session Home/Settings PASS, but an uncorroborated recovery oracle and zero-row reporting defect.
 No qualification row began. Android-side disagreement and final radio state remain **UNSPECIFIED**. Q2 tooling repairs require a new immutable
 calibration-only handoff; no issue closure, PR readiness, KR-004 implementation or policy acceptance follows from those repairs.
+
+Q2 source `37ad70b177d84d21250887c4b75e33c1b6d328af` passed all three jobs in
+[CI run 34048490604](https://github.com/felipebarbosa4/KidRemote/actions/runs/34048490604), including 65 Windows PowerShell 5.1 assertions with
+stubbed device calls. The [new immutable bundle/hashes/operator command](../test-plans/evidence/KR-003-Q2-BUNDLE-2026-09-06.md) was independently
+verified after packaging. Its new physical calibration is **Not run**; the old bundle/run were not overwritten.
+
+Issue #3's Context/Results/Next paragraphs and
+[progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5560924249) were published and read back; all acceptance
+checkboxes were preserved. KR-003 is Open/In Progress and KR-004 Open/Backlog. PR #16 remains draft/Open; no closure, merge or KR-004 change occurred.

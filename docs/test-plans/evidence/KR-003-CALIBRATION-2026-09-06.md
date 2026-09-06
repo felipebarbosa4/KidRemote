@@ -106,5 +106,7 @@ An additional `testReleaseUnitTest` invocation was rejected during task selectio
 Task discovery confirms the registered JVM variant is debug (shared `test` plus `testDebug` sources, all 23 cases covered); do not claim a
 separate release JVM suite ran. Release compilation, lint and manifest/DEX isolation are separate executed checks.
 
-GitHub exact-source CI, immutable bundle identities and final repository validation are recorded in the subsequent handoff once actually verified.
+GitHub exact-source CI, independently verified immutable bundle identities and successful final repository validation are recorded in the
+[Q2 calibration-only handoff](KR-003-Q2-BUNDLE-2026-09-06.md). Source `37ad70b` passed all three CI jobs, including 65 assertions under Windows
+PowerShell 5.1; the new bundle has not been executed on the Mi 8.
 These desktop results do not validate Q2 on-device recovery, radio restoration, 100-sample qualification, another OEM/API or Google Play acceptance.
