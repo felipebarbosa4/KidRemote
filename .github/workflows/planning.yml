@@ -22,6 +22,8 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
+      - name: Test finalization and recovery without a device
+        run: pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
       - name: Check patch whitespace
         run: git show --format= --check HEAD
   android-enforcement-spike:
@@ -47,3 +49,14 @@ jobs:
         run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
       - name: Audit executed tests, both merged manifests and release DEX isolation
         run: node tools/kr003/audit-build.mjs
+  windows-runner-tests:
+    name: Windows PowerShell runner tests (no device)
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # existing pinned action
+        with:
+          persist-credentials: false
+      - name: Exercise StrictMode finalization and recovery under Windows PowerShell
+        shell: powershell
+        run: ./tools/kr003/Runner.Tests.ps1

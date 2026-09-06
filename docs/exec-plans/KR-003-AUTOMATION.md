@@ -29,3 +29,20 @@ The next runner must verify direct telemetry availability before arming and pres
 - Owner operation of the new debug telemetry/calibration and 100-sample run is the next boundary. No new device commands ran in WSL.
 - Source `d81f19a` passed local and GitHub CI checks; [exact bundle/handoff](../test-plans/evidence/KR-003-BUNDLE-2026-09-06.md) is prepared in Windows storage.
 - KR-003 issue/Project were synchronized and verified; draft PR #16 is open, not merged. KR-004 remains Backlog and untouched.
+
+## Calibration incident follow-up — 2026-09-06
+
+- **Goal:** Preserve the interrupted calibration, remove reporting/cleanup failure paths and correlate the recovery oracle with actual operator phases.
+- **Context:** Latest owner run `run-20260906-025608-9dd0c8c7`: expiry PASS, Home/Settings owner PASS, post-P Settings oracle timeout, then empty-row StrictMode exception.
+- **Constraints:** No physical execution, destructive actions, production enforcement change or KR-004. Original directories/bundles remain immutable. Android-side disagreement remains **UNSPECIFIED** until evidence establishes it.
+- **Done when:** Incident/source hashes are documented; zero/partial/full finalization and correlated-phase tests pass; cleanup cannot mask the primary reason; a new immutable bundle passes exact-source CI and is ready for owner calibration only.
+
+1. Read all existing run artefacts and preserve their hashes; distinguish missing summary/observer journal from missing physical success.
+2. Test/fix finalization, independent network restoration and durable partial observer results.
+3. Correlate recovery-phase polling/trace with revision and monotonic bounds; instrument only debug-owned overlay/recovery signals if needed.
+4. Run complete desktop/build/release suites, commit/push, wait for exact-source CI, package and verify a new bundle. No physical run occurs here.
+
+Incident ingestion and bounded fixes are implemented; [evidence](../test-plans/evidence/KR-003-CALIBRATION-2026-09-06.md) preserves originals and
+the unresolved Android discrepancy. Q2 separates owner PASS from phase corroboration, includes debug-only owned-window diagnostics, guards
+cleanup/reporting, and adds calibration-only mode. Local tests passed (23 JVM, 45 + 65 PowerShell assertions, six Node tests, debug/release lint/build
+and manifest/DEX audits). Exact-source CI, immutable packaging and publication are the remaining repository handoff steps, not physical evidence.

@@ -30,7 +30,7 @@ class LabControlReceiver : BroadcastReceiver() {
                 JSONObject().put("error", "CONTROL_FAILED")
             }
         }
-        response.put("schema", 1).put("request", request)
+        response.put("schema", 2).put("request", request)
         resultCode = if (response.has("error")) 1 else 0
         resultData = "KR003:" + Base64.encodeToString(response.toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
     }
@@ -61,6 +61,9 @@ class LabControlReceiver : BroadcastReceiver() {
             .put("sampledRevision", LabProbe.sampledRevision)
             .put("disposition", LabProbe.disposition.name)
             .put("attached", LabProbe.attached)
+            .put("windowVisibility", LabProbe.windowVisibility)
+            .put("windowFocused", LabProbe.windowFocused)
+            .put("viewAttached", LabProbe.viewAttached)
             .put("eligibilityLost", LabProbe.eligibilityLost)
             .put("firstAttachedAt", LabProbe.firstAttachedAt)
             .put("removals", LabProbe.removals)

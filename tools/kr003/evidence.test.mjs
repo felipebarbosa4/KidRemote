@@ -35,9 +35,46 @@ test("qualification ingestion does not promote internal signals and rejects alte
   save('attempts.json',[row,row]); assert.throws(()=>ingestQualification(dir),/Duplicate attempt/);
   save('attempts.json',[{...row,HoldMillis:9999}]); assert.throws(()=>ingestQualification(dir),/short observation/);
   save('attempts.json',[{...row,Observer:'UNRECORDED'}]);
-  save('summary.json',{...summary,ValidPairedObservations:0});
+  save('summary.json',{...summary,ValidPairedObservations:0,InternalPairedStatistics:{Count:0,P50:null,P95:null,Max:null}});
   assert.equal(ingestQualification(dir).validPairedObservations,0);
   save('summary.json',{...summary,Status:'PASSED_THIS_CONFIGURATION_ONLY',ValidPairedObservations:0});
+  assert.throws(()=>ingestQualification(dir));
+}));
+test("legacy calibration missing summary is preserved as incomplete, not a physical failure",()=>temporary(dir=>{
+  writeFileSync(join(dir,'manifest.json'),JSON.stringify({Bundle:{protocol:'KR003-Q1',sourceCommit:'a'.repeat(40)}}));
+  writeFileSync(join(dir,'attempts.json'),'[]');
+  writeFileSync(join(dir,'calibration.json'),JSON.stringify({Phase:'CALIBRATION',Observer:'PASS',Automated:'PASS',LatencyMs:148}));
+  const result=ingestQualification(dir);
+  assert.equal(result.status,'INCOMPLETE_MISSING_SUMMARY');
+  assert.equal(result.validPairedObservations,0);
+  assert.equal(result.calibration.Observer,'PASS');
+  assert.equal(result.networkRestoration,'UNSPECIFIED');
+}));
+test("v2 full run requires retained calibration, corroborated recovery and independent cleanup evidence",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const calibration={Attempt:0,Phase:'CALIBRATION',Observer:'PASS',Automated:'PASS',LatencyMs:123};
+  const rows=Array.from({length:100},(_,i)=>({Attempt:i+1,Phase:'QUALIFICATION',Revision:100+i,Observer:'PASS',Automated:'PASS',LatencyMs:123,HoldMillis:10000}));
+  save('manifest.json',{Bundle:{protocol:'KR003-Q2',sourceCommit:'a'.repeat(40)},OfflineOwnerConfirmed:true});
+  save('attempts.json',[calibration,...rows]); save('calibration.json',calibration);
+  const safety={PhysicalHomeAndSettings:'OWNER_PASS',Reentry:'OWNER_PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT',IndependentExpirySamples:0,Oracle:'CORROBORATED'};
+  save('safety-calibration.json',safety); save('safety-final.json',safety);
+  save('final-metrics.json',{samples:rows.map(r=>r.LatencyMs),sampleCount:100});
+  save('network-restoration.json',{Status:'RESTORED_AND_FLAGS_VERIFIED'});
+  const summary={Status:'PASSED_THIS_CONFIGURATION_ONLY',ValidPairedObservations:100,InternalPairedStatistics:{Count:100,P50:123,P95:123,Max:123},SafetyChecksPassed:true,Kr003Complete:false,Offline:true,FinalizationErrors:[],QualificationRequested:true};
+  save('summary.json',summary);
+  assert.equal(ingestQualification(dir).validPairedObservations,100);
+  save('safety-calibration.json',{...safety,Oracle:'UNCORROBORATED'}); assert.throws(()=>ingestQualification(dir));
+  save('safety-calibration.json',safety); save('summary.json',{...summary,FinalizationErrors:['NETWORK_UNVERIFIED']}); assert.throws(()=>ingestQualification(dir));
+}));
+test("calibration-only completion cannot become qualification or discard an oracle disagreement",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const calibration={Attempt:0,Phase:'CALIBRATION',Observer:'PASS',Automated:'PASS',LatencyMs:123};
+  const safety={PhysicalHomeAndSettings:'OWNER_PASS',Oracle:'CORROBORATED',Reentry:'OWNER_PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'};
+  save('manifest.json',{Bundle:{protocol:'KR003-Q2',sourceCommit:'a'.repeat(40)},CalibrationOnly:true});
+  save('attempts.json',[calibration]); save('calibration.json',calibration); save('safety-calibration.json',safety);
+  save('summary.json',{Status:'CALIBRATION_COMPLETED_ONLY',ValidPairedObservations:0,InternalPairedStatistics:{Count:0,P50:null,P95:null,Max:null},QualificationRequested:false});
+  assert.equal(ingestQualification(dir).validPairedObservations,0);
+  save('safety-calibration.json',{...safety,Oracle:'UNCORROBORATED'});
   assert.throws(()=>ingestQualification(dir));
 }));
 test("least-privilege validator rejects new files, permissions, unprotected debug entry and release trace",()=>temporary(dir=>{
@@ -48,6 +85,8 @@ test("least-privilege validator rejects new files, permissions, unprotected debu
     [path+'/ordinary-fixture/src/main/kotlin/dev/kidremote/spike/ordinary/FixtureActivity.kt','\nfun forbidden() { println("synthetic") }'],
     [path+'/app/src/debug/AndroidManifest.xml',null],
     [path+'/app/src/release/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt','\n// android.util.Log forbidden'],
+    [path+'/app/src/release/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt','\n// hasWindowFocus() forbidden'],
+    [path+'/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt','\n// getSource() forbidden: event.getSource()'],
     [path+'/ordinary-fixture/src/main/AndroidManifest.xml','\n<uses-permission android:name="android.permission.INTERNET" />'],
   ];
   for(const [file,addition] of cases) {

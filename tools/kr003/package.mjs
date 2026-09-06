@@ -30,7 +30,7 @@ const files = Object.entries(mapping).map(([name, source])=>{
   return { name, sha256:createHash("sha256").update(readFileSync(resolve(output,name))).digest("hex") };
 });
 const manifest = {
-  schema:1, protocol:"KR003-Q1", sourceCommit:commit, runnerVersion:1,
+  schema:1, protocol:"KR003-Q2", sourceCommit:commit, runnerVersion:2,
   createdUtc:new Date().toISOString(), candidateSha256:files.find(f=>f.name==="candidate.apk").sha256,
   fixtureSha256:files.find(f=>f.name==="ordinary-fixture.apk").sha256, files,
   ownerDevice:{model:"Xiaomi Mi 8",miui:"MIUI Global 12.0.3",api:29,codename:"dipper"},

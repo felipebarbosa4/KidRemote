@@ -22,7 +22,7 @@ function Convert-KRReply {
         $json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($matchesFound[0].Groups[1].Value))
         $data = $json | ConvertFrom-Json
     } catch { throw 'INVALID:MALFORMED_REPLY' }
-    if ($data.schema -ne 1 -or $data.request -ne $Request) { throw 'INVALID:STALE_REPLY' }
+    if ($data.schema -notin @(1,2) -or $data.request -ne $Request) { throw 'INVALID:STALE_REPLY' }
     if ($data.PSObject.Properties.Name -contains 'error') { throw 'INVALID:DEBUG_CONTROL_REJECTED' }
     if ($Fixture) {
         $numbers = @('schema','request','elapsed','instance','taps')
@@ -32,6 +32,10 @@ function Convert-KRReply {
         $numbers = @('schema','request','elapsed','versionCode','api','revision','remaining','sampledAt','sampledRevision','firstAttachedAt','removals','recordedRevision','sampleCount','p50','p95','max','traceHead')
         $booleans = @('armed','restriction','uncertain','usage','accessibility','heartbeat','eligible','attached','eligibilityLost','traceLost')
         $extra = @('versionName','adapter','disposition','samples','events')
+        if ($data.schema -eq 2) {
+            $numbers += 'windowVisibility'
+            $booleans += @('windowFocused','viewAttached')
+        }
     }
     $allowed = $numbers + $booleans + $extra
     if (@($data.PSObject.Properties.Name).Count -ne $allowed.Count -or @($data.PSObject.Properties.Name | Where-Object { $_ -notin $allowed }).Count) { throw 'INVALID:REPLY_SCHEMA' }
@@ -43,6 +47,7 @@ function Convert-KRReply {
     foreach ($key in $booleans) { if ($data.$key -isnot [bool]) { throw 'INVALID:REPLY_BOOLEAN' } }
     if (-not $Fixture) {
         if ($data.disposition -notin @('ORDINARY_APP','SAFE_SYSTEM','UNKNOWN_FAIL_OPEN')) { throw 'INVALID:DISPOSITION' }
+        if ($data.schema -eq 2 -and $data.windowVisibility -notin @(-1,0,4,8)) { throw 'INVALID:WINDOW_VISIBILITY' }
         if ($data.adapter -notin @('APPLIED','NOT_REQUIRED','SAFE_SURFACE_AVAILABLE','UNKNOWN_SURFACE_FAIL_OPEN','OVERLAY_FAILED')) { throw 'INVALID:ADAPTER' }
         if ($data.versionName -notmatch '^[0-9a-zA-Z.-]{1,50}$') { throw 'INVALID:VERSION' }
         if ($data.samples -isnot [Array] -or $data.events -isnot [Array] -or $data.samples.Count -gt 500 -or $data.events.Count -gt 32) { throw 'INVALID:REPLY_BOUNDS' }
@@ -90,11 +95,59 @@ function Get-KRRunVerdict {
     if (@($Rows | Where-Object { $_.Observer -eq 'FAIL' -or $_.Automated -eq 'FAIL' }).Count) { return 'FAILED' }
     if ($Rows.Count -ne 100 -or -not $SafetyPassed) { return 'INCOMPLETE' }
     if (@($Rows | Where-Object { $_.Observer -ne 'PASS' -or $_.Automated -ne 'PASS' -or $null -eq $_.LatencyMs }).Count) { return 'INCOMPLETE' }
-    if (@($Rows.Revision | Select-Object -Unique).Count -ne 100) { return 'INCOMPLETE' }
-    $stats = Get-KRStatistics -Values @($Rows.LatencyMs)
+    if (@($Rows | ForEach-Object { $_.Revision } | Select-Object -Unique).Count -ne 100) { return 'INCOMPLETE' }
+    $stats = Get-KRStatistics -Values @($Rows | ForEach-Object { $_.LatencyMs })
     if ($stats.P95 -gt 2000) { return 'FAILED_P95' }
     if (-not $Offline) { return 'ONLINE_ONLY_OFFLINE_GATE_OPEN' }
     return 'PASSED_THIS_CONFIGURATION_ONLY'
 }
 
-Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict
+function Get-KRValidRows {
+    param([object[]]$Rows = @())
+    foreach ($row in $Rows) {
+        if ($row.Phase -eq 'QUALIFICATION' -and $row.Observer -eq 'PASS' -and $row.Automated -eq 'PASS' -and $null -ne $row.LatencyMs -and $row.HoldMillis -ge 10000) { $row }
+    }
+}
+
+function New-KRRecoveryEvidence {
+    param([string]$Phase, $Snapshot)
+    [PSCustomObject]@{
+        Phase=$Phase; Revision=[long]$Snapshot.revision; StartedElapsed=[long]$Snapshot.elapsed
+        AfterSequence=[long]$Snapshot.traceHead; StartedUtc=[DateTime]::UtcNow.ToString('o')
+        LastElapsed=[long]$Snapshot.elapsed; OwnerConfirmedUtc=$null; EndedUtc=$null
+        PhysicalHomeAndSettings='UNRECORDED'; Reentry='UNRECORDED'; ClearTouch='UNRECORDED'
+        OpenRequested=$false; OpenDispatched=$false; SafeSample=$false; SafeTransition=$false; Removed=$false
+        OpenRequestedSequence=-1L; OpenDispatchedElapsed=-1L
+        Oracle='PENDING'; Reason=$null; IndependentExpirySamples=0
+    }
+}
+
+function Update-KRRecoveryEvidence {
+    param($Evidence, $Snapshot)
+    Assert-KRHealth $Snapshot -PreviousElapsed $Evidence.LastElapsed
+    if ($Snapshot.revision -ne $Evidence.Revision -or $Snapshot.sampledRevision -ne $Evidence.Revision) { throw 'FAIL:RECOVERY_REVISION_CHANGED' }
+    if ($Snapshot.traceLost) { throw 'INVALID:RECOVERY_TRACE_GAP' }
+    $Evidence.LastElapsed=[long]$Snapshot.elapsed
+    foreach ($entry in $Snapshot.events) {
+        if ($entry.sequence -le $Evidence.AfterSequence) { continue }
+        if ($entry.line -notmatch '^t=(\d+) .* revision=(\d+)$') { throw 'INVALID:RECOVERY_TRACE_SCHEMA' }
+        $eventTime=[long]$Matches[1]; $eventRevision=[long]$Matches[2]
+        if ($eventTime -lt $Evidence.StartedElapsed -or $eventRevision -ne $Evidence.Revision) { continue }
+        if ($eventTime -gt $Snapshot.elapsed) { throw 'INVALID:RECOVERY_TRACE_TIME' }
+        if ($entry.line -match ' kind=recovery_open_requested ') {
+            $Evidence.OpenRequested=$true; $Evidence.OpenRequestedSequence=[long]$entry.sequence
+        }
+        if ($Evidence.OpenRequested -and $entry.sequence -gt $Evidence.OpenRequestedSequence -and $entry.line -match ' kind=recovery_open_dispatched ') {
+            $Evidence.OpenDispatched=$true; $Evidence.OpenDispatchedElapsed=$eventTime
+        }
+        if ($Evidence.OpenDispatched -and $eventTime -ge $Evidence.OpenDispatchedElapsed) {
+            if ($entry.line -match ' kind=surface_transition .*identity=KNOWN_SAFE_SYSTEM .*nextDisposition=SAFE_SYSTEM restriction=true ') { $Evidence.SafeTransition=$true }
+            if ($entry.line -match ' kind=overlay_removed trigger=safe_surface .*restriction=true ') { $Evidence.Removed=$true }
+        }
+    }
+    if ($Evidence.OpenDispatched -and $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed -and $Snapshot.restriction -and -not $Snapshot.attached -and $Snapshot.disposition -eq 'SAFE_SYSTEM') { $Evidence.SafeSample=$true }
+    # Retain correlated phase evidence even if a later snapshot has already returned to ordinary use.
+    if ($Evidence.OpenRequested -and $Evidence.OpenDispatched -and ($Evidence.SafeSample -or ($Evidence.SafeTransition -and $Evidence.Removed))) { $Evidence.Oracle='CORROBORATED' }
+}
+
+Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence

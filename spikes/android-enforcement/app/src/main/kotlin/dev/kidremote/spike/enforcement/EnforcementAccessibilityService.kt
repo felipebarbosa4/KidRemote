@@ -131,7 +131,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
             store.setServiceHeartbeat(now)
         }
         applyRestriction(state.restrictionRequired, trigger)
-        EnforcementTrace.sample(now, state, surfaceDisposition, overlay != null, eligible)
+        EnforcementTrace.sample(now, state, surfaceDisposition, overlay, eligible)
     }
 
     private fun applyRestriction(required: Boolean, trigger: String) {
@@ -252,7 +252,9 @@ class EnforcementAccessibilityService : AccessibilityService() {
             text = "Open device settings"
             isAllCaps = false
             setOnClickListener {
+                trace(kind = "recovery_open_requested", trigger = "settings_button")
                 startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                trace(kind = "recovery_open_dispatched", trigger = "settings_button")
             }
         })
     }

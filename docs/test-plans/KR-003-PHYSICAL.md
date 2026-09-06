@@ -14,7 +14,7 @@ Do not record device serial, accounts, real child identity or app/content histor
 
 ## Expiry performance
 
-The precise runner contract, failure handling and evidence fields are in [qualification v1](KR-003-QUALIFICATION.md). It reconciles the existing
+The precise runner contract, failure handling and evidence fields are in [qualification v2](KR-003-QUALIFICATION.md). It reconciles the existing
 100-observation requirement with the Mi 8 persistence checkpoint and preserves the distinction between observation and attachment metrics.
 
 Use the same configuration for all samples. Reset local timing samples, enable both required accesses, arm the 10-second timer and move to an

@@ -4,6 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DebugProbeTest {
+    @Test fun ownedWindowDiagnosticsDoNotOverrideAdapterState() {
+        LabProbe.sample(100, LabTimerState(armed = true, revision = 300), SurfaceDisposition.ORDINARY_APP,
+            true, true, visibility = 4, focused = false, attachedToWindow = true)
+        assertTrue(LabProbe.attached)
+        assertEquals(SurfaceDisposition.ORDINARY_APP, LabProbe.disposition)
+        assertEquals(4, LabProbe.windowVisibility)
+        assertFalse(LabProbe.windowFocused)
+        assertTrue(LabProbe.viewAttached)
+    }
+
     @Test fun probeLatchesEligibilityLossUntilANewRevision() {
         val state = LabTimerState(armed = true, remainingMillis = 10_000, revision = 100)
         LabProbe.sample(10, state, SurfaceDisposition.ORDINARY_APP, false, true)

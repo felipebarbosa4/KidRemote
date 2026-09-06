@@ -1,6 +1,7 @@
 # ADR-0008 — Debug qualification controls and observation oracle
 
-Status: Accepted for the KR-003 disposable lab, 2026-09-06. Physical operation of the new controls remains unverified until calibration.
+Status: Accepted for the KR-003 disposable lab, 2026-09-06. Q1 controls operated on Mi 8; the recovery oracle disagreed with physical observation.
+Q2 diagnostic changes remain unverified on-device until the new calibration-only checkpoint.
 
 - **Goal:** Remove repetitive lab interaction while preserving independent physical evidence and release isolation.
 - **Context:** Ten Mi 8 cycles passed by owner observation; the captured log had only buffer headers. Persisted metric count was not transcribed.
@@ -55,3 +56,43 @@ tests inject missing data, duplicate revisions, clock regressions, delayed attac
 Official API sources above and [dumpsys](https://developer.android.com/tools/dumpsys),
 [UIAutomator](https://developer.android.com/training/testing/other-components/ui-automator),
 [Activity focus](https://developer.android.com/reference/android/app/Activity#onWindowFocusChanged(boolean)) checked 2026-09-06.
+
+## Q2 incident reconciliation — recovery oracle and finalization
+
+- **Goal:** Preserve observer evidence independently of a software oracle and make failed calibration safely reportable.
+- **Context:** [d81f19a incident](../test-plans/evidence/KR-003-CALIBRATION-2026-09-06.md): physical Settings PASS, twenty fresh ordinary/attached samples,
+  no safe transition in the captured journal, then StrictMode failure on empty-array member enumeration.
+- **Constraints:** No enforcement/allowlist change, speculative Android root cause, timeout inflation, new permissions or substitution for observation.
+- **Done when:** Real runner finalization and phase-correlation regressions pass; exact-source CI and release audit pass; owner calibration corroborates
+  recovery or preserves a precisely classified disagreement. Repository checks alone cannot complete the last condition.
+
+Alternatives evaluated:
+
+1. Increase the post-P timeout: rejected; existing samples were fresh and no delayed safe event is established.
+2. Drop the oracle or automatically trust attachment/focus: rejected; this would conceal contradictory state and weaken evidence integrity.
+3. Require SAFE_SYSTEM at the exact later P query: rejected as the sole temporal definition. A recovery action happens during an operator phase;
+   subsequent navigation can legitimately change the current surface. That possibility is not claimed as the root cause of this run.
+4. Correlate during-phase samples and trace with revision/time/sequence and actual Settings-button dispatch: selected. Retain independent physical
+   response and all contradictory signals. Uncorroborated recovery is INVALID pending investigation, never a fabricated physical FAIL or PASS.
+
+Decision/reasons: use Q2 phase polling and typed button request/dispatch diagnostics; add only the owned overlay View's window-visibility, focus
+and framework-attachment flags to debug telemetry. Existing `attached` means the adapter holds an overlay reference; it does not independently prove
+that the window is currently visible. The new fields help distinguish those cases without changing that field's meaning or enforcement behaviour.
+[View window visibility](https://developer.android.com/reference/android/view/View#getWindowVisibility()),
+[focus](https://developer.android.com/reference/android/view/View#hasWindowFocus()),
+[attachment](https://developer.android.com/reference/android/view/View#isAttachedToWindow()), checked 2026-09-06.
+
+Security/privacy: read only the View created by this spike; no system window enumeration, Accessibility nodes/content, other-app identifiers,
+screenshots or additional permissions. Release sampling remains no-op; source and merged-manifest/DEX audits enforce debug isolation. Fixed enum/
+boolean/numeric schemas reject unexpected diagnostic data. No new libraries or SDK versions are introduced.
+
+Operations: save P/F/I/Q before corroboration; retain calibration and partial rows; statistics enumerate rows explicitly so empty arrays are safe.
+Guard each radio recovery/readback and report independently; never replace the primary reason with a reporting exception. Summary fallback cannot
+guarantee unavailable storage or hard-kill recovery. Add native Windows PowerShell CI coverage in addition to Linux synthetic checks; GitHub's
+[explicit PowerShell shell](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsshell) was reviewed
+2026-09-06. Next owner execution is calibration-only, with review before a separate 100-sample run.
+
+Risks/tests that invalidate: unrelated/pre-dispatch safe events satisfy recovery; fresh samples mask stale disposition; phase queries perturb the
+window; owner PASS is lost on an oracle timeout; zero/partial rows or reporting failures skip recovery; a radio error skips the other radio;
+debug diagnostics leak into release. Tests cover phase ordering/stale evidence/revision changes, five requested row-count paths and fault injection.
+The actual Android discrepancy remains **UNSPECIFIED** until new evidence establishes it; the original own-package fix is not changed.

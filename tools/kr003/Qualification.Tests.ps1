@@ -31,6 +31,14 @@ Assert-Equal (Get-KRStatistics @(263,1,123)).P50 123
 Assert-Reject { Get-KRStatistics @(-1) } 'INVALID:NEGATIVE_LATENCY'
 $s = New-Snapshot
 Assert-Equal (Convert-KRReply (Encode-Reply $s) 1).sampleCount 1
+$v2 = New-Snapshot
+$v2.schema=2
+$v2 | Add-Member NoteProperty windowVisibility 4
+$v2 | Add-Member NoteProperty windowFocused $false
+$v2 | Add-Member NoteProperty viewAttached $true
+Assert-Equal (Convert-KRReply (Encode-Reply $v2) 1).windowVisibility 4
+$v2.windowVisibility=123
+Assert-Reject { Convert-KRReply (Encode-Reply $v2) 1 } 'INVALID:WINDOW_VISIBILITY'
 Assert-Reject { Convert-KRReply (Encode-Reply $s) 2 } 'INVALID:STALE_REPLY'
 Assert-Reject { Convert-KRReply '--------- beginning of main' 1 } 'INVALID:MISSING_OR_AMBIGUOUS_REPLY'
 Assert-Reject { Convert-KRReply ((Encode-Reply $s) + (Encode-Reply $s)) 1 } 'INVALID:MISSING_OR_AMBIGUOUS_REPLY'
@@ -101,7 +109,13 @@ foreach($name in @('Enter-OfflineNetwork','Restore-Network')) {
     Invoke-Expression $fn.Extent.Text
 }
 $script:NetworkCommands=@()
-function Invoke-LabAdb { param($Arguments) $script:NetworkCommands+=($Arguments -join ' '); return '' }
+function Invoke-LabAdb {
+    param($Arguments)
+    $script:NetworkCommands+=($Arguments -join ' ')
+    if (($Arguments -join ' ') -eq 'shell settings get global wifi_on') { return '1' }
+    if (($Arguments -join ' ') -eq 'shell settings get global mobile_data') { return '0' }
+    return ''
+}
 function Wait-RadioFlag { param($Key,$Expected) }
 function Write-JsonFile { param($Name,$Value) }
 function Read-DeviceConfiguration { [PSCustomObject]@{wifi_on='0';mobile_data='0'} }
@@ -109,7 +123,7 @@ $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'
 $script:Device=[PSCustomObject]@{wifi_on='1';mobile_data='0'}
 Enter-OfflineNetwork
 Restore-Network
-Assert-Equal ($script:NetworkCommands -join ',') 'shell svc wifi disable,shell svc wifi enable'
+Assert-Equal ($script:NetworkCommands -join ',') 'shell svc wifi disable,shell svc wifi enable,shell settings get global wifi_on,shell settings get global mobile_data'
 Assert-Equal $script:RadioRestoreStatus 'RESTORED_AND_FLAGS_VERIFIED'
 $script:Device=[PSCustomObject]@{wifi_on='UNSPECIFIED';mobile_data='1'}
 Assert-Reject { Enter-OfflineNetwork } 'INVALID:RADIO_INITIAL_STATE_UNKNOWN'

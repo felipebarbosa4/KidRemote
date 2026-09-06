@@ -1,6 +1,7 @@
 package dev.kidremote.spike.enforcement
 
 import android.util.Log
+import android.view.View
 
 internal object EnforcementTrace {
     private const val TRACE_TAG = "KidRemoteKR003"
@@ -10,7 +11,8 @@ internal object EnforcementTrace {
         Log.i(TRACE_TAG, record.toLogLine())
     }
 
-    fun sample(now: Long, state: LabTimerState, disposition: SurfaceDisposition, attached: Boolean, eligible: Boolean) {
-        LabProbe.sample(now, state, disposition, attached, eligible)
+    fun sample(now: Long, state: LabTimerState, disposition: SurfaceDisposition, overlay: View?, eligible: Boolean) {
+        LabProbe.sample(now, state, disposition, overlay != null, eligible,
+            overlay?.windowVisibility ?: -1, overlay?.hasWindowFocus() == true, overlay?.isAttachedToWindow == true)
     }
 }

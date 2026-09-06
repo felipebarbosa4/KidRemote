@@ -69,18 +69,20 @@ export function validateAndroidSpike(root) {
   const tracePath = `${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`;
   const sourcePaths = shipped.filter(path => path.endsWith(".kt") && path !== tracePath);
   const sources = sourcePaths.map(read).join("\n");
+  const debugTrace = read(tracePath);
   for (const forbidden of [
     ".rootInActiveWindow", ".getSource()", ".source", "dispatchGesture(", "takeScreenshot(", "performGlobalAction(", "Log.",
     "import android.view.accessibility.AccessibilityNodeInfo", "getRootInActiveWindow(", "getWindows(", "getText(",
     "getContentDescription(", "System.out", "println(", "java.net.", "Build.SERIAL", "getSerial(",
-  ]) check(!sources.includes(forbidden), `Android spike source contains unapproved access: ${forbidden}`);
-  const debugTrace = read(`${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
+  ]) check(!(forbidden === "Log." ? sources : sources + "\n" + debugTrace).includes(forbidden),
+    `Android spike source contains unapproved access: ${forbidden}`);
   const releaseTrace = read(`${spikeRoot}/app/src/release/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
   check(debugTrace.includes('private const val TRACE_TAG = "KidRemoteKR003"'), "Debug trace tag changed");
   check(debugTrace.includes("Log.i(TRACE_TAG, record.toLogLine())"), "Debug trace must log only the typed sanitized record");
   check(!debugTrace.includes("packageName") && !debugTrace.includes("AccessibilityEvent"), "Debug trace accepts sensitive/raw input");
   check(!releaseTrace.includes("android.util.Log") && !releaseTrace.includes("toLogLine"), "Release trace must remain a no-op");
   check((releaseTrace.match(/= Unit/g) ?? []).length === 2 && !releaseTrace.includes("LabProbe"), "Release observation hooks must be no-ops");
+  check(!/windowVisibility|hasWindowFocus|isAttachedToWindow/.test(releaseTrace), "Release trace must not read debug window diagnostics");
   check((debugTrace.match(/Log\./g) ?? []).length === 1, "Only one typed debug logging call is allowed");
   for (const module of ["app", "ordinary-fixture"]) {
     const debugManifest = read(`${spikeRoot}/${module}/src/debug/AndroidManifest.xml`);

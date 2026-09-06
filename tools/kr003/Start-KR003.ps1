@@ -7,7 +7,8 @@ Done when: Every attempt is journalled; qualification requires 100 paired physic
 param(
     [string]$Adb = 'C:\platform-tools\adb.exe',
     [string]$OutputRoot = 'C:\platform-tools\kr003-qualification',
-    [switch]$OfflineNetwork
+    [switch]$OfflineNetwork,
+    [switch]$CalibrationOnly
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -38,6 +39,9 @@ $script:Manifest = $null
 $script:RadioOriginal = $null
 $script:RadioTouched = @()
 $script:RadioRestoreStatus = 'NOT_CHANGED'
+$script:RadioResults = @()
+$script:FinalizationErrors = @()
+$script:Recovery = $null
 $script:StartedAt = [DateTime]::UtcNow.ToString('o')
 $script:Terminal = 'INCOMPLETE'
 $script:Reason = 'NOT_STARTED'
@@ -84,6 +88,7 @@ function Get-LabState {
     $script:Request++
     $raw = Invoke-LabAdb @('shell','am','broadcast','--receiver-foreground','-n',$candidateReceiver,'--es','operation',$Operation,'--el','request',"$script:Request",'--el','after',"$script:Cursor")
     $snapshot = Convert-KRReply -Raw $raw -Request $script:Request
+    if ($snapshot.schema -ne 2) { throw 'INVALID:DEBUG_SCHEMA_UPDATE_REQUIRED' }
     if ($snapshot.traceLost -or $snapshot.traceHead -lt $script:Cursor) { throw 'INVALID:TRACE_GAP_OR_PROCESS_REPLACED' }
     foreach ($entry in $snapshot.events) {
         if ($entry.sequence -ne $script:Cursor + 1) { throw 'INVALID:TRACE_SEQUENCE' }
@@ -145,13 +150,25 @@ function Enter-OfflineNetwork {
 }
 
 function Restore-Network {
+    $script:RadioResults = @()
+    if ($null -eq $script:RadioOriginal) { return }
     foreach ($pair in @(@('wifi_on','wifi'),@('mobile_data','data'))) {
-        if ($pair[0] -in $script:RadioTouched) {
-            $null = Invoke-LabAdb @('shell','svc',$pair[1],'enable')
-            Wait-RadioFlag -Key $pair[0] -Expected '1'
+        $result = [PSCustomObject]@{ Setting=$pair[0]; Original=$script:RadioOriginal.($pair[0]); Changed=($pair[0] -in $script:RadioTouched); Observed='UNSPECIFIED'; Status='UNVERIFIED'; AtUtc=$null }
+        try {
+            if ($result.Changed) {
+                $null = Invoke-LabAdb @('shell','svc',$pair[1],'enable')
+                Wait-RadioFlag -Key $pair[0] -Expected '1'
+            }
+            $flag = (Invoke-LabAdb @('shell','settings','get','global',$pair[0])).Trim()
+            if ($flag -match '^[01]$') { $result.Observed=$flag }
+            $result.Status = if ($result.Observed -ceq $result.Original) { 'VERIFIED' } else { 'MISMATCH' }
+        } catch { $result.Status='RESTORE_OR_READ_FAILED' }
+        finally {
+            $result.AtUtc=[DateTime]::UtcNow.ToString('o')
+            $script:RadioResults += $result
         }
     }
-    if ($script:RadioTouched.Count) { $script:RadioRestoreStatus = 'RESTORED_AND_FLAGS_VERIFIED' }
+    $script:RadioRestoreStatus = if (@($script:RadioResults | Where-Object { $_.Status -ne 'VERIFIED' }).Count) { 'RESTORE_FAILED_OWNER_ACTION_REQUIRED' } else { 'RESTORED_AND_FLAGS_VERIFIED' }
 }
 
 function Open-Fixture {
@@ -172,16 +189,28 @@ function Wait-FixtureFocus {
 }
 
 function Read-Result {
-    param([string]$Prompt)
+    param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved)
     Check-EarlyStop
     Write-Host $Prompt -ForegroundColor Cyan
     Write-Host '[P] observed success  [F] failure  [I] invalid/missed observation  [Q] stop'
     while ($true) {
+        if (-not [Console]::KeyAvailable) {
+            if ($null -ne $Poll) { & $Poll | Out-Null }
+            Start-Sleep -Milliseconds 100
+            continue
+        }
         $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
-        if ($key -eq 'P') { return 'PASS' }
-        if ($key -eq 'Q') { throw 'INTERRUPTED:OPERATOR_STOP' }
+        if ($key -eq 'P') {
+            if ($null -ne $OnObserved) { & $OnObserved 'PASS' }
+            return 'PASS'
+        }
+        if ($key -eq 'Q') {
+            if ($null -ne $OnObserved) { & $OnObserved 'INTERRUPTED' }
+            throw 'INTERRUPTED:OPERATOR_STOP'
+        }
         if ($key -eq 'F' -or $key -eq 'I') {
             $class = if ($key -eq 'F') { 'FAIL' } else { 'INVALID' }
+            if ($null -ne $OnObserved) { & $OnObserved $class }
             Write-Host 'Reason: [1] flicker  [2] disappearance/no-block  [3] escape  [4] recovery/clear  [5] missed/ineligible  [6] other'
             do { $reasonKey = [Console]::ReadKey($true).KeyChar.ToString() } while ($reasonKey -notin @('1','2','3','4','5','6'))
             throw ($class + ':OBSERVER_' + $reasonKey)
@@ -212,10 +241,16 @@ function Wait-LabCondition {
 }
 
 function Save-Progress {
-    $journal = @($script:Rows)
-    if ($null -ne $script:CurrentRow) { $journal += $script:CurrentRow }
-    Write-JsonFile 'attempts.json' @($journal)
-    if ($journal.Count) { $journal | Export-Csv -NoTypeInformation -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8 }
+    $journal = @()
+    if ($null -ne $script:Calibration) { $journal += $script:Calibration }
+    $journal += @($script:Rows)
+    if ($null -ne $script:CurrentRow -and -not [Object]::ReferenceEquals($script:CurrentRow,$script:Calibration)) { $journal += $script:CurrentRow }
+    try { Write-JsonFile 'attempts.json' @($journal) } finally {
+        if ($journal.Count) { $journal | Export-Csv -NoTypeInformation -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8 }
+        else {
+            '"Attempt","Phase","StartedUtc","EndedUtc","Revision","Observer","Automated","LatencyMs","InternalSampleCount","HoldMillis","Reason"' | Set-Content -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8
+        }
+    }
 }
 
 function Clear-ToOrdinary {
@@ -271,7 +306,11 @@ function Invoke-Expiry {
     } while ($script:CurrentRow.HoldMillis -lt 10000)
     $script:CurrentRow.Automated = 'PASS'
     Save-Progress
-    $script:CurrentRow.Observer = Read-Result 'Did the restriction stay visibly continuous for the entire 10 seconds, with no flicker or ordinary use?'
+    $script:CurrentRow.Observer = Read-Result 'Did the restriction stay visibly continuous for the entire 10 seconds, with no flicker or ordinary use?' -OnObserved {
+        param($result)
+        $script:CurrentRow.Observer=$result
+        Save-Progress
+    }
     # Check again after the owner response; do not trust a stale pre-prompt sample.
     $snapshot = Get-LabState
     Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState (Get-FixtureState)
@@ -285,13 +324,38 @@ function Invoke-Expiry {
 }
 
 function Invoke-RecoveryObservation {
-    param([string]$Phase)
+    param([string]$Phase, [int]$CorroborationTimeoutSeconds = 8)
+    $start = Get-LabState
+    Assert-KRHealth $start
+    if (-not $start.restriction -or -not $start.attached) { throw 'INVALID:RECOVERY_START_NOT_RESTRICTED' }
+    $script:Recovery = New-KRRecoveryEvidence -Phase $Phase -Snapshot $start
+    Save-Recovery
     Write-Host 'Press Home PHYSICALLY once. Watch that restriction remains. Then tap the overlay Open device settings button and verify Settings is usable.'
-    $null = Read-Result 'Confirm BOTH physical Home resistance and usable designated Settings (F if either failed).'
-    $null = Wait-LabCondition -Condition { param($s) $s.restriction -and -not $s.attached -and $s.disposition -eq 'SAFE_SYSTEM' } -FailureCode 'FAIL:SETTINGS_RECOVERY'
+    $null = Read-Result 'Confirm BOTH physical Home resistance and usable designated Settings (F if either failed). Stay in Settings until the runner continues.' -Poll { Poll-Recovery } -OnObserved {
+        param($result)
+        $script:Recovery.PhysicalHomeAndSettings= if ($result -eq 'PASS') { 'OWNER_PASS' } else { 'OWNER_' + $result }
+        $script:Recovery.OwnerConfirmedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Recovery
+    }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        Poll-Recovery
+        if ($script:Recovery.Oracle -eq 'CORROBORATED') { break }
+        Start-Sleep -Milliseconds 250
+    } while ($watch.Elapsed.TotalSeconds -lt $CorroborationTimeoutSeconds)
+    if ($script:Recovery.Oracle -ne 'CORROBORATED') {
+        $script:Recovery.Oracle='UNCORROBORATED'
+        $script:Recovery.Reason='SETTINGS_RECOVERY_ORACLE_UNCORROBORATED'
+        Save-Recovery
+        throw 'INVALID:SETTINGS_RECOVERY_ORACLE_UNCORROBORATED'
+    }
     Open-Fixture
     $null = Wait-LabCondition -Condition { param($s) $s.attached -and $s.restriction -and $s.disposition -eq 'ORDINARY_APP' } -FailureCode 'FAIL:REENTRY'
-    $null = Read-Result 'Confirm ordinary re-entry is visibly restricted again.'
+    $null = Read-Result 'Confirm ordinary re-entry is visibly restricted again.' -OnObserved {
+        param($result)
+        $script:Recovery.Reentry= if ($result -eq 'PASS') { 'OWNER_PASS' } else { 'OWNER_' + $result }
+        Save-Recovery
+    }
     Clear-ToOrdinary
     $beforeTap = Get-FixtureState
     Write-Host 'On the now-unblocked ordinary test surface, tap Test ordinary use once.'
@@ -303,11 +367,20 @@ function Invoke-RecoveryObservation {
         Start-Sleep -Milliseconds 250
     } while ($watch.Elapsed.TotalSeconds -lt 60)
     if ($fixture.taps -le $beforeTap.taps) { throw 'FAIL:CLEAR_USABILITY_NOT_CONFIRMED' }
-    Write-JsonFile ("safety-" + $Phase + '.json') ([PSCustomObject]@{
-        Phase = $Phase; ObservedUtc = [DateTime]::UtcNow.ToString('o')
-        PhysicalHomeAndSettings = 'OWNER_PASS'; Reentry = 'OWNER_PASS'; ClearTouch = 'FIXTURE_COUNTER_INCREMENT'
-        IndependentExpirySamples = 0
-    })
+    $script:Recovery.ClearTouch='FIXTURE_COUNTER_INCREMENT'
+    $script:Recovery.EndedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-Recovery
+}
+
+function Save-Recovery {
+    if ($null -ne $script:Recovery) { Write-JsonFile ('safety-' + $script:Recovery.Phase + '.json') $script:Recovery }
+}
+
+function Poll-Recovery {
+    $snapshot = Get-LabState
+    Update-KRRecoveryEvidence -Evidence $script:Recovery -Snapshot $snapshot
+    $null = Get-FixtureState
+    Save-Recovery
 }
 
 function Verify-InstalledApk {
@@ -351,17 +424,106 @@ function Read-DeviceConfiguration {
     return [PSCustomObject]$record
 }
 
+function Invoke-FinalStep {
+    param([string]$Name, [scriptblock]$Action)
+    try { & $Action | Out-Null } catch {
+        $script:FinalizationErrors += $Name
+        Write-Host ('Finalization step needs attention: ' + $Name) -ForegroundColor Yellow
+    }
+}
+
+function Write-FinalSummary {
+    param($Summary)
+    # Fallback avoids a broken higher-level writer. An unwritable/full filesystem cannot be guaranteed recoverable.
+    $Summary.FinalizationErrors=@($script:FinalizationErrors)
+    try { Write-JsonFile 'summary.json' $Summary } catch {
+        $script:FinalizationErrors += 'SUMMARY_JSON_PRIMARY_WRITE'
+        Invoke-FinalStep 'SUMMARY_JSON_FALLBACK_WRITE' {
+            $Summary.FinalizationErrors=@($script:FinalizationErrors)
+            [IO.File]::WriteAllText((Join-Path $runDirectory 'summary.json'), (ConvertTo-Json -InputObject $Summary -Depth 20), (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+    $markdown = @(
+        '# KR-003 qualification result'
+        ''
+        ('Primary status: ' + $Summary.Status + '; reason: ' + $Summary.Reason)
+        ('Valid paired qualification observations: ' + $Summary.ValidPairedObservations + '/100.')
+        ('Internal paired statistics: ' + ($Summary.InternalPairedStatistics | ConvertTo-Json -Compress))
+        ('Network restoration: ' + $Summary.NetworkRestoration)
+        ('Finalization errors: ' + ($script:FinalizationErrors -join ', '))
+        'Calibration, Home and recovery observations are separate; they are not extra qualification samples.'
+        'Partial/current attempts and physical recovery responses are retained. No KR-003 closure or Play approval is implied.'
+    ) -join [Environment]::NewLine
+    try { $markdown | Set-Content -LiteralPath (Join-Path $runDirectory 'SUMMARY.md') -Encoding UTF8 } catch {
+        $script:FinalizationErrors += 'SUMMARY_MARKDOWN_PRIMARY_WRITE'
+        Invoke-FinalStep 'SUMMARY_MARKDOWN_FALLBACK_WRITE' {
+            [IO.File]::WriteAllText((Join-Path $runDirectory 'SUMMARY.md'), $markdown, (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+    # Include errors from either writer, without overwriting the primary test status/reason.
+    if ($script:FinalizationErrors.Count) {
+        Invoke-FinalStep 'SUMMARY_ERROR_INDEX_WRITE' {
+            $Summary.FinalizationErrors=@($script:FinalizationErrors)
+            [IO.File]::WriteAllText((Join-Path $runDirectory 'summary.json'), (ConvertTo-Json -InputObject $Summary -Depth 20), (New-Object Text.UTF8Encoding($false)))
+        }
+    }
+}
+
+function Complete-LabRun {
+    # No reporting failure can prevent restoration, another report attempt, or replace the primary terminal reason.
+    try { Restore-Network } catch {
+        $script:RadioRestoreStatus='RESTORE_FAILED_OWNER_ACTION_REQUIRED'
+        $script:FinalizationErrors += 'NETWORK_RESTORE'
+    }
+    if ($script:RadioRestoreStatus -eq 'RESTORE_FAILED_OWNER_ACTION_REQUIRED') { $script:FinalizationErrors += 'NETWORK_UNVERIFIED' }
+    if (-not (Test-Path -LiteralPath $runDirectory -ErrorAction SilentlyContinue)) { return }
+    Invoke-FinalStep 'NETWORK_REPORT' {
+        Write-JsonFile 'network-restoration.json' ([PSCustomObject]@{Status=$script:RadioRestoreStatus; Settings=@($script:RadioResults)})
+    }
+    Invoke-FinalStep 'MANIFEST_REPORT' {
+        if ($null -ne $script:Manifest) {
+            $script:Manifest.EndedUtc=[DateTime]::UtcNow.ToString('o')
+            Write-JsonFile 'manifest.json' $script:Manifest
+        }
+    }
+    Invoke-FinalStep 'ATTEMPT_REPORT' { Save-Progress }
+    Invoke-FinalStep 'RECOVERY_REPORT' {
+        if ($null -ne $script:Recovery) {
+            if ($null -eq $script:Recovery.Reason -and $script:Reason -ne 'COMPLETED') { $script:Recovery.Reason=$script:Reason }
+            $script:Recovery.EndedUtc=[DateTime]::UtcNow.ToString('o')
+            Save-Recovery
+        }
+    }
+    $summary = [PSCustomObject]@{
+        Status=$script:Terminal; Reason=$script:Reason; StartUtc=$script:StartedAt; EndUtc=[DateTime]::UtcNow.ToString('o')
+        ValidPairedObservations=$null; InternalPairedStatistics=$null; StatisticsAvailable=$false
+        CalibrationExcluded=$true; SafetyChecksPassed=$script:SafetyPassed; Offline=$script:Offline
+        Kr003Complete=$false; ProductionApproved=$false; NetworkRestoration=$script:RadioRestoreStatus
+        FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly)
+    }
+    Invoke-FinalStep 'STATISTICS' {
+        $validRows = @(Get-KRValidRows -Rows @($script:Rows))
+        $summary.InternalPairedStatistics = Get-KRStatistics -Values @($validRows | ForEach-Object { $_.LatencyMs })
+        $summary.ValidPairedObservations=$validRows.Count
+        $summary.StatisticsAvailable=$true
+    }
+    Invoke-FinalStep 'SUMMARY_REPORT' { Write-FinalSummary $summary }
+    Write-Host ('Evidence saved: ' + $runDirectory)
+    Write-Host ('Primary result: ' + $script:Terminal + ':' + $script:Reason)
+    Write-Host 'The agent reads this directory directly. If network restoration is unverified, preserve network-original.json for owner-assisted recovery.'
+}
+
 try {
     if ([Console]::IsInputRedirected) { throw 'INVALID:INTERACTIVE_OPERATOR_REQUIRED' }
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q1') { throw 'INVALID:BUNDLE_SCHEMA' }
+    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q2') { throw 'INVALID:BUNDLE_SCHEMA' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
         if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'INVALID:BUNDLE_INTEGRITY' }
     }
-    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = [bool]$OfflineNetwork; OfflineOwnerConfirmed = $false; PhysicalRun = $true }
+    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = [bool]$OfflineNetwork; OfflineOwnerConfirmed = $false; CalibrationOnly = [bool]$CalibrationOnly; PhysicalRun = $true }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
     $script:Device = Read-DeviceConfiguration
@@ -393,25 +555,31 @@ try {
     $null = Get-LabState 'RESET_METRICS'
     Invoke-Expiry -Attempt 0 -Calibration
     Invoke-RecoveryObservation -Phase 'calibration'
-    $null = Get-LabState 'RESET_METRICS'
-    $zero = Get-LabState
-    if ($zero.sampleCount -ne 0) { throw 'INVALID:METRICS_RESET_FAILED' }
-    for ($attempt = 1; $attempt -le 100; $attempt++) {
-        Invoke-Expiry -Attempt $attempt
+    if ($CalibrationOnly) {
+        Write-JsonFile 'calibration-final-metrics.json' (Get-LabState)
+        $script:Terminal='CALIBRATION_COMPLETED_ONLY'
+        $script:Reason='COMPLETED'
+    } else {
+        $null = Get-LabState 'RESET_METRICS'
+        $zero = Get-LabState
+        if ($zero.sampleCount -ne 0) { throw 'INVALID:METRICS_RESET_FAILED' }
+        for ($attempt = 1; $attempt -le 100; $attempt++) {
+            Invoke-Expiry -Attempt $attempt
+        }
+        Invoke-RecoveryObservation -Phase 'final'
+        $script:SafetyPassed = $true
+        $final = Get-LabState
+        Write-JsonFile 'final-metrics.json' $final
+        $stats = Get-KRStatistics -Values @($script:Rows | ForEach-Object { $_.LatencyMs })
+        if ($final.sampleCount -ne 100 -or $final.p50 -ne $stats.P50 -or $final.p95 -ne $stats.P95 -or $final.max -ne $stats.Max) { throw 'INVALID:AGGREGATE_MISMATCH' }
+        $script:Terminal = Get-KRRunVerdict -Rows $script:Rows -SafetyPassed $script:SafetyPassed -Offline $script:Offline
+        $script:Reason = 'COMPLETED'
     }
-    Invoke-RecoveryObservation -Phase 'final'
-    $script:SafetyPassed = $true
-    $final = Get-LabState
-    Write-JsonFile 'final-metrics.json' $final
-    $stats = Get-KRStatistics -Values @($script:Rows.LatencyMs)
-    if ($final.sampleCount -ne 100 -or $final.p50 -ne $stats.P50 -or $final.p95 -ne $stats.P95 -or $final.max -ne $stats.Max) { throw 'INVALID:AGGREGATE_MISMATCH' }
     $endDevice = Read-DeviceConfiguration
     Write-JsonFile 'end-device.json' $endDevice
     if (($endDevice | ConvertTo-Json -Compress) -cne ($script:Device | ConvertTo-Json -Compress)) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256 -NoInstall
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256 -NoInstall
-    $script:Terminal = Get-KRRunVerdict -Rows $script:Rows -SafetyPassed $script:SafetyPassed -Offline $script:Offline
-    $script:Reason = 'COMPLETED'
 } catch {
     $message = $_.Exception.Message
     if ($message -notmatch '^(FAIL|INVALID|INTERRUPTED):[A-Z0-9_]+$') { $message = 'INVALID:HOST_EXCEPTION' }
@@ -426,44 +594,16 @@ try {
     }
     Write-Host ("Stopped: " + $message) -ForegroundColor Yellow
 } finally {
-    if (Test-Path -LiteralPath $runDirectory) {
-        try { Restore-Network } catch {
-            $script:RadioRestoreStatus = 'RESTORE_FAILED_OWNER_ACTION_REQUIRED'
-            $script:Terminal = 'INVALID'
-            $script:Reason = 'RADIO_RESTORE_REQUIRES_OWNER'
-            Write-Host 'Radio restoration failed. Preserve this directory; network-original.json records the settings to restore.' -ForegroundColor Yellow
-        }
-        if ($null -ne $script:Manifest) {
-            $script:Manifest.EndedUtc = [DateTime]::UtcNow.ToString('o')
-            Write-JsonFile 'manifest.json' $script:Manifest
-        }
-        Save-Progress
-        $validRows = @($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' -and $_.Observer -eq 'PASS' -and $_.Automated -eq 'PASS' })
-        $stats = Get-KRStatistics -Values @($validRows.LatencyMs)
-        $summary = [PSCustomObject]@{
-            Status = $script:Terminal; Reason = $script:Reason; StartUtc = $script:StartedAt; EndUtc = [DateTime]::UtcNow.ToString('o')
-            ValidPairedObservations = $validRows.Count; InternalPairedStatistics = $stats
-            CalibrationExcluded = $true; SafetyChecksPassed = $script:SafetyPassed; Offline = $script:Offline
-            Kr003Complete = $false; ProductionApproved = $false
-            NetworkRestoration = $script:RadioRestoreStatus
-        }
-        Write-JsonFile 'summary.json' $summary
-        @(
-            '# KR-003 qualification result'
-            ''
-            ("Status: **" + $script:Terminal + "**; reason: " + $script:Reason)
-            ("Valid paired physical observations: " + $validRows.Count + '/100.')
-            ("Internal paired attachment timing: " + ($stats | ConvertTo-Json -Compress))
-            'Calibration and safety observations are not additional expiry samples.'
-            'Unpaired/failed/interrupted attempts remain in attempts.json and telemetry.jsonl.'
-            'This result does not close KR-003, validate other devices, or establish Play acceptance.'
-        ) | Set-Content -LiteralPath (Join-Path $runDirectory 'SUMMARY.md') -Encoding UTF8
-        Write-Host ("Evidence saved: " + $runDirectory)
-        Write-Host 'The agent can read this directory directly from mounted Windows storage.'
-        Write-Host 'On a stopped run the current restriction is preserved for investigation; use Open device settings for recovery.'
+    try { Complete-LabRun } catch {
+        $script:FinalizationErrors += 'UNEXPECTED_FINALIZER'
+        # Last-resort independent writes still preserve the original reason, never the secondary exception text.
+        $fallback = [PSCustomObject]@{ Status=$script:Terminal; Reason=$script:Reason; StatisticsAvailable=$false; FinalizationErrors=@($script:FinalizationErrors); NetworkRestoration=$script:RadioRestoreStatus; Kr003Complete=$false }
+        try { [IO.File]::WriteAllText((Join-Path $runDirectory 'summary.json'), (ConvertTo-Json -InputObject $fallback -Depth 8), (New-Object Text.UTF8Encoding($false))) } catch { }
+        try { [IO.File]::WriteAllText((Join-Path $runDirectory 'SUMMARY.md'), ('Primary result: ' + $script:Terminal + ':' + $script:Reason + [Environment]::NewLine + 'Unexpected finalizer defect; statistics unavailable. Preserve all artefacts.'), (New-Object Text.UTF8Encoding($false))) } catch { }
+        Write-Host ('Primary result preserved: ' + $script:Terminal + ':' + $script:Reason + '. Reporting needs review.') -ForegroundColor Yellow
     }
 }
 
 # Machine callers must not interpret a stopped or online-only run as offline qualification.
-if ($script:Terminal -eq 'PASSED_THIS_CONFIGURATION_ONLY') { exit 0 }
+if ($script:Terminal -in @('PASSED_THIS_CONFIGURATION_ONLY','CALIBRATION_COMPLETED_ONLY') -and $script:FinalizationErrors.Count -eq 0) { exit 0 }
 exit 2
