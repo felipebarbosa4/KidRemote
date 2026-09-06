@@ -120,5 +120,7 @@ lab-only CLEAR bailout without changing Android enforcement policy. It passed al
 Android debug/release isolation checks and repository validation. Device calls were stubbed; this is not physical evidence.
 
 The [immutable Q3 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q3-DIAGNOSTIC-BUNDLE-2026-09-06.md) were independently
-verified in mounted Windows storage. Physical execution is **Not run**. KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004
-remains Open/Backlog. No qualification, enforcement-policy change, OEM allowlist or Play acceptance is claimed.
+verified in mounted Windows storage. Issue #3's stale Next paragraph, PR #16's handoff and
+[the Q3 progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561778844) were published and read back while preserving
+all seven acceptance checkboxes. Physical execution is **Not run**. KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004 remains
+Open/Backlog. No qualification, enforcement-policy change, OEM allowlist or Play acceptance is claimed.
