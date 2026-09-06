@@ -20,10 +20,11 @@ function Invoke-BailoutAdb {
     $process.StartInfo.RedirectStandardOutput=$true
     $process.StartInfo.RedirectStandardError=$true
     $process.StartInfo.CreateNoWindow=$true
-    $process.StartInfo.Arguments=(foreach($argument in $Arguments) {
+    $quoted=foreach($argument in $Arguments) {
         if ($argument.Contains('"') -or $argument.Contains([string][char]13) -or $argument.Contains([string][char]10) -or $argument.EndsWith('\')) { throw 'INVALID:ADB_ARGUMENT' }
         '"' + $argument + '"'
-    }) -join ' '
+    }
+    $process.StartInfo.Arguments=$quoted -join ' '
     try {
         [void]$process.Start()
         $stdoutTask=$process.StandardOutput.ReadToEndAsync()
