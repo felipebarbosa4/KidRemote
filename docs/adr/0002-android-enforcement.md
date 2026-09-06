@@ -8,6 +8,10 @@ Implementation evidence status: the isolated least-privilege harness and physica
 [`spikes/android-enforcement`](../../spikes/android-enforcement/README.md). A build is not physical evidence; no support boundary or
 production decision changes until [KR-003's protocol](../test-plans/KR-003-PHYSICAL.md) is completed.
 
+Current Mi 8 candidate: Q2 calibration **physically failed designated Settings/recovery**, despite successful expiry/Home observations.
+[Recorded evidence](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) blocks qualification and production acceptance; no safe-surface
+requirement or support-boundary exception is waived, and no alternate enforcement architecture has been selected from this result.
+
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.
 - **Constraints:** No stealth, content inspection, security-control circumvention, managed provisioning disguised as normal QR pairing, or unbreakable claims.

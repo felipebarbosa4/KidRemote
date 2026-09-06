@@ -48,3 +48,20 @@ cleanup/reporting, and adds calibration-only mode. Local tests passed (23 JVM, 4
 and manifest/DEX audits). Exact-source `37ad70b` subsequently passed all three CI jobs, including Windows PowerShell 5.1. The new
 [immutable bundle](../test-plans/evidence/KR-003-Q2-BUNDLE-2026-09-06.md) was built and hash/source-byte verified; issue #3's evidence was updated
 without changing acceptance checkboxes. The remaining boundary is owner-run calibration-only, not KR-004 or a completed physical/policy gate.
+
+## Q2 physical recovery failure — 2026-09-06
+
+- **Goal:** Preserve the completed Q2 physical FAIL and determine what the sanitized trace establishes before changing recovery policy.
+- **Context:** Owner reports successful expiry/Home, selective MIUI Settings paths blocked, then the Settings recovery button unable to recover.
+- **Constraints:** No new physical run, 100 samples, KR-004, guessed OEM allowlists or expanded identity collection. Originals immutable. Propose any additional diagnostic before implementing it.
+- **Done when:** Runner/observer/software outcomes are separately recorded, trace and radio restoration correlated, established versus inferred causes stated, and the smallest bounded next diagnostic/fix is proposed.
+
+1. Ingest the finalized `run-20260906-143058-1a877aa4` artefacts directly; hash original files and verify exact APK/source.
+2. Correlate expiry, recovery dispatches, known-safe/ordinary/unknown transitions, window flags and final observer failure.
+3. Compare actual policy/intent behaviour with official guidance; do not infer destination identities from UI labels or a boolean safe observation.
+4. Update evidence/current gate and GitHub status; validate and publish documentation only. Physical confirmation of a future repair requires a fresh calibration-only run.
+
+Ingestion confirms `FAIL:OBSERVER_4`, one successful calibration expiry, owner Home PASS and Settings/recovery FAIL, zero qualification rows,
+no finalization errors and verified radio flags. [Q2 failure analysis](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) separates the
+established ordinary-classification/overlay chain from the unresolved destination/task cause. Proposed next work is labelled, bounded recovery
+diagnostics with a lab bailout; no APK/policy/runner change or physical execution occurred in this investigation.

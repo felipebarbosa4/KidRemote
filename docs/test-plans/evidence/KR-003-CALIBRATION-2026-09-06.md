@@ -110,3 +110,12 @@ GitHub exact-source CI, independently verified immutable bundle identities and s
 [Q2 calibration-only handoff](KR-003-Q2-BUNDLE-2026-09-06.md). Source `37ad70b` passed all three CI jobs, including 65 assertions under Windows
 PowerShell 5.1; the new bundle has not been executed on the Mi 8.
 These desktop results do not validate Q2 on-device recovery, radio restoration, 100-sample qualification, another OEM/API or Google Play acceptance.
+
+## Subsequent Q2 result — separate physical failure
+
+The owner subsequently executed the Q2 calibration-only bundle. [Q2 Settings/recovery evidence](KR-003-Q2-SETTINGS-2026-09-06.md) records final
+**FAIL:OBSERVER_4**: expiry PASS, Home PASS, partial Settings usability and loss of the Settings-button recovery after a blocked destination.
+This is a **physical recovery FAIL**, not the Q1 oracle-only disagreement documented above. Both historical classifications remain intact.
+Q2 correctly wrote zero-qualification-row summaries with no finalization errors and verified Wi-Fi/mobile flag restoration. It also captured
+SAFE_SYSTEM → ORDINARY_APP → attachment and later dispatch-without-safe-event sequences. Exact OEM/task cause remains **UNSPECIFIED**.
+The current candidate cannot proceed to 100 samples; the next diagnostic is proposed in that evidence, not implemented or executed.

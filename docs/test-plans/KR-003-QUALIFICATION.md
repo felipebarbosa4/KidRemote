@@ -5,6 +5,10 @@
 - **Constraints:** Authorized lab; owner executes Windows ADB; continuous human observation; no destructive operations; all attempts preserved.
 - **Done when:** One immutable run has 100 valid paired observations, zero enforcement failures, nearest-rank internal p95 ≤2,000 ms, and separately reported safety/preflight results. This is only AC-3 evidence for one configuration.
 
+**Current gate:** the [Q2 owner-run calibration](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery. Do not rerun the
+37ad70b qualification command or start 100 samples. The proposed labelled recovery diagnostic must be prepared with a verified lab bailout;
+a justified repair must pass another calibration-only verification. The requirements below are unchanged, not waived by earlier expiry success.
+
 ## Reconciled definitions
 
 The existing documents require **both** physical observations and latency samples. One sample is a new persisted 10-second allowance/revision,
@@ -73,6 +77,12 @@ Q2 fixes evidence collection/classification without changing enforcement semanti
   blocking. No other window, node, content, package history or screenshot is inspected. Release hooks remain no-op.
 - After corroboration, ordinary re-entry must still be physically blocked; after Clear, a real touch must reach the ordinary fixture. Save each
   result as it happens, including partial checklists. Home/Settings/re-entry/Clear never add expiry samples.
+
+A latched safe transition is phase-existence evidence, **not broad Settings usability or proof of the latest button attempt**. Q2 captured this
+distinction: earlier SAFE evidence coexisted with a later physical recovery failure. Physical F must remain FAIL. Opening only top-level Settings
+does not satisfy designated recovery if required destinations are blocked or return-to-Settings becomes unusable. The newly identified failing
+paths are regression cases; no OEM package is declared safe merely because a Settings link opens it. Separate Home, destination and recovery
+observations in the next diagnostic; do not manufacture separate machine observations from the old combined field.
 
 The next owner run uses **`-CalibrationOnly`** because this disagreement remains unresolved. It installs/verifies the new immutable APK, performs
 one calibration expiry/recovery sequence and always stops before sample 1, even on success. A successful run reports `CALIBRATION_COMPLETED_ONLY`

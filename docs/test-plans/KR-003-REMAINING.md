@@ -1,7 +1,7 @@
 # KR-003 remaining feasibility work and device strategy
 
 - **Goal:** Complete the remaining engineering/policy gates without repetitive manual setup.
-- **Context:** One initial Mi 8 expiry plus ten complete Mi 8 checkpoint cycles passed by owner observation. Qualification v1 is prepared, not executed.
+- **Context:** Mi 8 expiry evidence includes the initial/ten-cycle checkpoint and two later calibration expiries. Q2 physically failed Settings/recovery; no 100-sample qualification ran.
 - **Constraints:** KR-003 only; no production timer/sync/backend implementation; disruptive operations require separate owner execution approval.
 - **Done when:** Every outstanding KR-003 matrix row has measured evidence or an explicit accepted unsupported boundary, required hardware evidence exists, and go/no-go is recorded.
 
@@ -25,7 +25,7 @@ Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
 | TIME-15 missing UsageEvents | A,B | Queue synthetic reconciliation/diagnostic fixtures with explicit uncertainty | Current UsageEvents code is only a probe; no claim production reconciliation is implemented |
 | TIME-16 multi-window/PiP/launcher/video | B,C,D | Reuse fixture and technical snapshots around each surface | Human validates safe visible behaviour; app focus is insufficient |
 | TIME-18 storage write failure | A,B | Queue injected persistence failure in disposable tests; no clear-data/corruption command on device | Separate isolated test design before touching durable state; report degradation |
-| NET-01 network lost before expiry | B | No-INTERNET audit exists; explicit `-OfflineNetwork` opt-in journals/verifies/disables/restores Wi-Fi/mobile data | Prepared, not run; owner confirms no other connection. Flags alone do not prove connectivity; no backend-recovery claim |
+| NET-01 network lost before expiry | B | Offline calibration expiries observed; Q2 radio restore/readback verified; full qualification still blocked by Settings failure | Mid-session network-loss/recovery not isolated; flags alone do not prove connectivity; no backend-recovery claim |
 | PERM-01 Usage Access remove/regrant | B | Read-only Usage Access query prepared; queue original AppOps state capture → approved change → restore | Explicit execution approval; no automatic grant to conceal refusal |
 | PERM-02 Accessibility disable/re-enable | B,C | Service/permission freshness checks prepared; direct snapshots can observe loss | Explicit execution approval; use Settings rather than overwriting enabled-services lists and affecting other services |
 | PERM-03 incomplete setup/refusal | B,C | Debug preflight refuses unhealthy setup; queue clean consent/refusal UI test | Observe actual explanation/refusal; do not clear data to manufacture a fresh install |
@@ -37,7 +37,7 @@ Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
 | TAMP-07 ADB/developer options | A,B | Protected debug receiver/release audit and allowlisted evidence export prepared | Privileged ADB is outside consumer protection; sender-denial runtime test still queued |
 | TAMP-08 root/bootloader | C,D | Explicit unsupported boundary from ADR-0002 | No root/unlock/flash operation; physical testing only if separately authorized |
 | SAFE-01 emergency/dialler/TalkBack/IME/permission UI | C,D | Record technical state while an operator follows approved safety script | Settings success does not prove these; never dial a live emergency service for a test |
-| SAFE-02 offline local help/removal and other recovery | B,C,D | Designated Settings + re-entry covered on Mi 8; reusable checklist prepared | Approved removal/help semantics and all other safety surfaces outstanding |
+| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2 **physical FAIL**: blocked Settings destinations and loss of designated recovery; prepare labelled diagnostic and lab bailout | Restore reliable recovery and retest known-failed paths; prior top-level successes do not satisfy this gate; other safety surfaces outstanding |
 | Missing package, interruption, lost screen signal | A,B | Pure fail-open regression exists; queue service/lifecycle injections and observations | Unknown/safe fail-open is deliberate but not an enforcement pass |
 | AC-6 least privilege | A,B | Recursive source/permission checks, debug/release manifest and DEX audit, typed schema rejection tests | Runtime sender-denial/traffic audit still required; static absence of INTERNET is only static evidence |
 | AC-1/2 policy design packet | A,E | Existing ADR/disclosure/refusal/declaration docs; keep packet synced with actual code | Policy review/target-audience/account choices cannot be inferred from builds |
@@ -69,7 +69,8 @@ Official device/testing sources reviewed 2026-09-06.
 
 ## Three separate gates
 
-1. **Technical evidence:** completed Mi 8 checkpoint; qualification and remaining physical matrix outstanding.
+1. **Technical evidence:** completed Mi 8 checkpoint, followed by Q2 **physical Settings/recovery failure**. Current build cannot qualify;
+   [analysis/next diagnostic](evidence/KR-003-Q2-SETTINGS-2026-09-06.md), remaining physical matrix and 100 samples are outstanding.
 2. **Policy design assessment:** ADR-0002 and POLICY document a conditional design and unresolved Android/Play purpose tension.
 3. **Actual Play review/acceptance:** no submission/review/approval evidence exists. Remains **UNSPECIFIED** and external.
 
