@@ -67,4 +67,3 @@ meaning and non-destructive bailout fields. Original run files remain immutable.
 The existing telemetry is sufficient for this checkpoint, so the short-lived equality diagnostic is **not implemented**. Exact destination
 package/component, Android task-stack behaviour and cause of a no-event launch remain **UNSPECIFIED**. Review the Q3 evidence before designing any
 enforcement/recovery repair. Do not add OEM allowlists, task flags, timing grace or further identity collection from this plan alone.
-
