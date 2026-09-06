@@ -36,6 +36,7 @@ budgets, package names or provider configuration; those remain **UNSPECIFIED** u
 | OD-23 | Future Apple remote capabilities: **UNSPECIFIED** | RESEARCH REQUIRED; entitlement is external dependency; no promise of Android parity | Apple Feasibility |
 | OD-24 | Windows privilege/enforcement and Fire model support: **UNSPECIFIED** | Future-only research; ADR-0007 | Future milestones |
 | OD-25 | Play review, FCM migration compatibility, physical metrics: **UNSPECIFIED** | Run KR-003/009 and measured tests; documentation alone cannot confirm | Alpha/release |
+| OD-26 | **SPIKE DECISION 2026-09-06:** Q4 physically rejects `NEW_TASK | CLEAR_TOP`; test `NEW_TASK | CLEAR_TASK` once as the final flag-only recovery candidate | Q5 must pass the exact failed route; failure returns consumer recovery to architecture/go-no-go review | KR-003 |
 
 Exact Kotlin, Compose, Room, Gradle, AGP, Java toolchain, Android SDK, Flutter, Supabase CLI/client, Deno/Edge runtime and FCM SDK versions: **UNSPECIFIED**.
 No app/bootstrap dependency versions are chosen in this pass. The verified Actions checkout pin is documented in TOOLING.

@@ -21,7 +21,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 internal object RecoverySettingsIntent {
-    val flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    val flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
 
     fun create(): Intent = Intent(Settings.ACTION_SETTINGS).addFlags(flags)
 }

@@ -95,3 +95,13 @@ Source `768aaa0` passed all three CI jobs. The [immutable Q4 bundle and operator
 were independently hash/source-byte verified. The owner then executed it: [Q4 evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md)
 records expiry/root PASS, expected Digital Wellbeing blocking and a single recovery physical FAIL. `CLEAR_TOP` reached Settings only transiently;
 ordinary enforcement returned 681 ms after the safe transition. Zero qualification rows began and the lab bailout passed. This candidate is rejected.
+
+## Q5 final flag-only task reset
+
+- **Goal:** Test whether clearing the associated Settings task produces persistent root recovery after the exact Q4 failure route.
+- **Context:** Q4 showed a fresh safe transition followed by `ORDINARY_APP` 681 ms later; `CLEAR_TOP` did not reset the retained route.
+- **Constraints:** `ACTION_SETTINGS` with `NEW_TASK | CLEAR_TASK` only; no allowlist, identity/history collection, parallel task, qualification or KR-004.
+- **Done when:** Pure intent/verdict/transition tests, Windows runner tests, debug/release isolation, build/validation, immutable hashes and exact-source CI pass; then one owner-operated calibration determines the physical result.
+
+The [Q5 contract](../test-plans/KR-003-RECOVERY-TASK-RESET.md) treats this as the last flag-only candidate. The runner now explicitly records
+safe-then-ordinary reattachment as a regression rather than leaving the safe-transition label latched. Physical execution remains **Not run**.

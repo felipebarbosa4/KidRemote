@@ -129,6 +129,15 @@ $recovered.events=@(
 )
 Update-KRDiagnosticPhase $recovery $recovered
 Assert-Equal $recovery.Oracle 'FRESH_SAFE_TRANSITION_CORROBORATED'
+$regressed=New-Snapshot
+$regressed.elapsed=31800; $regressed.sampledAt=31790; $regressed.traceHead=22; $regressed.attached=$true; $regressed.disposition='ORDINARY_APP'
+$regressed.events=@(
+    [PSCustomObject]@{sequence=21;line='t=31600 kind=surface_transition trigger=event identity=ORDINARY_APP disposition=SAFE_SYSTEM nextDisposition=ORDINARY_APP restriction=true overlay=DETACHED revision=2'},
+    [PSCustomObject]@{sequence=22;line='t=31610 kind=overlay_attached trigger=accessibility_event disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED revision=2'}
+)
+Update-KRDiagnosticPhase $recovery $regressed
+Assert-Equal $recovery.Oracle 'RECOVERY_REGRESSED_TO_ORDINARY'
+Assert-Equal $recovery.Reason 'SAFE_TRANSITION_DID_NOT_PERSIST'
 $duplicate=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
 $duplicateFrame=New-Snapshot
 $duplicateFrame.elapsed=31500; $duplicateFrame.sampledAt=31490; $duplicateFrame.traceHead=20
@@ -145,6 +154,20 @@ $postFrame=New-Snapshot
 $postFrame.elapsed=31700; $postFrame.sampledAt=31690; $postFrame.traceHead=20; $postFrame.attached=$false; $postFrame.disposition='SAFE_SYSTEM'
 Update-KRDiagnosticPhase $post $postFrame
 Assert-Equal $post.Oracle 'SAFE_STATE_OBSERVED'
+
+$verdictRoot=[PSCustomObject]@{Name='SETTINGS_ROOT';PhysicalResult='PASS';Oracle='SAFE_TRANSITION_CORROBORATED'}
+$verdictDigital=[PSCustomObject]@{Name='DIGITAL_WELLBEING_ATTEMPT';PhysicalResult='FAIL';Oracle='ORDINARY_REATTACHMENT_CORROBORATED'}
+$verdictRecovery=[PSCustomObject]@{Name='RECOVERY_BUTTON_ATTEMPT';PhysicalResult='PASS';Oracle='FRESH_SAFE_TRANSITION_CORROBORATED'}
+$verdictPost=[PSCustomObject]@{Name='POST_RECOVERY_STATE';PhysicalResult='UNRECORDED';Oracle='SAFE_STATE_OBSERVED'}
+Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_PASS_RECORDED'
+$verdictRecovery.Oracle='RECOVERY_REGRESSED_TO_ORDINARY'
+Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'SOFTWARE_FAILURE_RECORDED'
+$verdictRecovery.PhysicalResult='FAIL'
+Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_FAILURE_RECORDED'
+$verdictRecovery.PhysicalResult='PASS'; $verdictRecovery.Oracle='FRESH_SAFE_TRANSITION_CORROBORATED'; $verdictDigital.PhysicalResult='PASS'
+Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_FAILURE_RECORDED'
+$verdictDigital.PhysicalResult='INVALID'
+Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_INVALID_RECORDED'
 
 $rows = @(1..100 | ForEach-Object { [PSCustomObject]@{Revision=$_;Observer='UNRECORDED';Automated='PASS';LatencyMs=123} })
 Assert-Equal (Get-KRRunVerdict $rows $true $true) 'INCOMPLETE'

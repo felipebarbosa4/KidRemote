@@ -160,3 +160,19 @@ ordinary/restricted/attached until the verified sample-preserving lab CLEAR.
 Decision consequence: reject `NEW_TASK | CLEAR_TOP` for this Mi 8 route. The fresh safe-transition oracle is transition corroboration only; it
 cannot satisfy persistent recovery in the presence of a later ordinary transition or physical FAIL. Exact MIUI activity/task behaviour remains
 **UNSPECIFIED**. Do not add an OEM allowlist, timing grace, raw identity collection or start qualification from this result.
+
+## Q5 final flag-only task-reset decision
+
+Q4 establishes that locating/clearing above the existing Settings target is insufficient. Android documents `NEW_TASK | CLEAR_TASK` as clearing
+the associated task before launch and making the launched activity its new root. Select that pair with the unchanged `ACTION_SETTINGS` as one
+final bounded flag-only candidate. `CLEAR_TOP` and `MULTIPLE_TASK` are absent. The full alternatives, operational trade-off and invalidation tests
+are in [the Q5 contract](../test-plans/KR-003-RECOVERY-TASK-RESET.md).
+
+Security/privacy: no policy, permission, event, raw identity, node/content, screenshot, task-history log or network change. Operationally, the
+explicit recovery action can abandon in-progress Settings navigation, but does not deliberately clear persisted application data or system
+settings. Physical success remains **UNSPECIFIED** until the exact candidate passes the failed route for at least ten seconds.
+
+The phase reducer must now downgrade a latched safe transition to `RECOVERY_REGRESSED_TO_ORDINARY` when a later ordinary transition and overlay
+reattachment occur. A pure verdict treats Digital Wellbeing blocking as the expected precondition, while requiring persistent physical and
+software recovery plus a safe post-state. If Q5 fails, stop flag iteration and return the consumer recovery architecture to go/no-go review.
+[Intent flag API](https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_CLEAR_TASK), reviewed 2026-09-06.

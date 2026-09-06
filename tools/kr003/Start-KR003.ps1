@@ -1,7 +1,7 @@
 <#
 Goal: Owner-operated KR-003 focused Settings recovery diagnosis with reproducible, phase-local evidence.
-Context: Run only in RecoveryDiagnostic mode from an integrity-checked Q3 bundle produced by package.mjs.
-Constraints: No enforcement change, raw identity, host/network/permission change, input injection, uninstall, data clear or reboot command.
+Context: Run only in RecoveryDiagnostic mode from an integrity-checked Q5 bundle produced by package.mjs.
+Constraints: No surface-policy change, raw identity, host/network/permission change, input injection, uninstall, data clear or reboot command.
 Done when: One labelled case is journalled and lab-only CLEAR releases the restriction without changing latency samples.
 #>
 param(
@@ -558,10 +558,7 @@ function Invoke-FocusedRecoveryDiagnostic {
     Complete-DiagnosticPhase $null 2
     $script:DiagnosticPhase.Reason='AUTOMATED_STATE_ONLY_NO_PHYSICAL_PROMPT'
     $script:Diagnostic.Result='EVIDENCE_CAPTURED'
-    $invalid=@($script:Diagnostic.Phases | Where-Object { $_.Name -ne 'POST_RECOVERY_STATE' -and $_.PhysicalResult -eq 'INVALID' }).Count
-    $softwareInvalid=@($script:Diagnostic.Phases | Where-Object { $_.Oracle -like 'INVALID_*' }).Count
-    $fail=@($script:Diagnostic.Phases | Where-Object { $_.PhysicalResult -eq 'FAIL' }).Count
-    $script:Diagnostic.Reason=if ($softwareInvalid) { 'SOFTWARE_INVALID_RECORDED' } elseif ($invalid) { 'PHYSICAL_INVALID_RECORDED' } elseif ($fail) { 'PHYSICAL_FAILURE_RECORDED' } else { 'PHYSICAL_PASS_RECORDED' }
+    $script:Diagnostic.Reason=Get-KRFocusedDiagnosticReason -Phases @($script:Diagnostic.Phases)
     $script:Diagnostic.EndedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Diagnostic
 }
@@ -725,7 +722,7 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q4-RECOVERY-REPAIR-CALIBRATION' -or -not $script:Bundle.diagnosticOnly) { throw 'INVALID:BUNDLE_SCHEMA' }
+    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION' -or -not $script:Bundle.diagnosticOnly) { throw 'INVALID:BUNDLE_SCHEMA' }
     if (-not $RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork) { throw 'INVALID:DIAGNOSTIC_MODE_REQUIRED' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }

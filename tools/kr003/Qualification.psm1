@@ -256,7 +256,14 @@ function Update-KRDiagnosticPhase {
                 $Evidence.OverlayRemovedSequence -gt $Evidence.OpenDispatchedSequence
             $correlatedSample=$Evidence.SafeSample -and $Evidence.OpenDispatchedElapsed -ge 0 -and
                 $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed
-            if ($Evidence.OpenDispatched -and ($correlatedTrace -or $correlatedSample)) {
+            $regressed=$Evidence.SafeTransition -and $Evidence.OrdinaryTransition -and
+                $Evidence.OrdinaryTransitionSequence -gt $Evidence.SafeTransitionSequence -and
+                (($Evidence.OverlayAttached -and $Evidence.OverlayAttachedSequence -gt $Evidence.SafeTransitionSequence) -or
+                    $Evidence.OrdinaryAttachedSample)
+            if ($regressed) {
+                $Evidence.Oracle='RECOVERY_REGRESSED_TO_ORDINARY'
+                $Evidence.Reason='SAFE_TRANSITION_DID_NOT_PERSIST'
+            } elseif ($Evidence.OpenDispatched -and ($correlatedTrace -or $correlatedSample)) {
                 $Evidence.Oracle='FRESH_SAFE_TRANSITION_CORROBORATED'
             }
         }
@@ -268,4 +275,37 @@ function Update-KRDiagnosticPhase {
     }
 }
 
-Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, New-KRDiagnosticPhase, Update-KRDiagnosticPhase
+function Get-KRFocusedDiagnosticReason {
+    param([object[]]$Phases)
+    $expected=@('SETTINGS_ROOT','DIGITAL_WELLBEING_ATTEMPT','RECOVERY_BUTTON_ATTEMPT','POST_RECOVERY_STATE')
+    if ($Phases.Count -ne $expected.Count) { return 'SOFTWARE_INVALID_RECORDED' }
+    $byName=@{}
+    foreach ($phase in $Phases) {
+        if ($phase.Name -notin $expected -or $byName.ContainsKey($phase.Name)) { return 'SOFTWARE_INVALID_RECORDED' }
+        $byName[$phase.Name]=$phase
+    }
+    foreach ($name in $expected) { if (-not $byName.ContainsKey($name)) { return 'SOFTWARE_INVALID_RECORDED' } }
+
+    $root=$byName['SETTINGS_ROOT']
+    $digital=$byName['DIGITAL_WELLBEING_ATTEMPT']
+    $recovery=$byName['RECOVERY_BUTTON_ATTEMPT']
+    $post=$byName['POST_RECOVERY_STATE']
+    $physicalPhases=@($root,$digital,$recovery)
+
+    if (@($physicalPhases | Where-Object { $_.PhysicalResult -eq 'INVALID' }).Count) { return 'PHYSICAL_INVALID_RECORDED' }
+    if ($root.PhysicalResult -ne 'PASS' -or $digital.PhysicalResult -ne 'FAIL' -or $recovery.PhysicalResult -ne 'PASS') {
+        return 'PHYSICAL_FAILURE_RECORDED'
+    }
+    if (@($physicalPhases | Where-Object { $_.Oracle -like 'INVALID_*' -or $_.Oracle -eq 'PENDING' }).Count) {
+        return 'SOFTWARE_INVALID_RECORDED'
+    }
+    if ($root.Oracle -ne 'SAFE_TRANSITION_CORROBORATED' -or
+        $digital.Oracle -ne 'ORDINARY_REATTACHMENT_CORROBORATED' -or
+        $recovery.Oracle -ne 'FRESH_SAFE_TRANSITION_CORROBORATED' -or
+        $post.Oracle -ne 'SAFE_STATE_OBSERVED') {
+        return 'SOFTWARE_FAILURE_RECORDED'
+    }
+    return 'PHYSICAL_PASS_RECORDED'
+}
+
+Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Get-KRFocusedDiagnosticReason

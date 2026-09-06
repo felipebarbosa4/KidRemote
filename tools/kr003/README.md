@@ -1,7 +1,7 @@
 # KR-003 qualification operator tooling
 
 - **Goal:** One owner-run Windows command, reproducible evidence, minimal repetitive interaction.
-- **Context:** [Q4 repair calibration](../../docs/test-plans/KR-003-RECOVERY-REPAIR.md) follows the phase-local Q3 physical Settings/recovery failure.
+- **Context:** [Q5 task-reset calibration](../../docs/test-plans/KR-003-RECOVERY-TASK-RESET.md) follows the physical Q4 `CLEAR_TOP` recovery failure.
 - **Constraints:** No Windows ADB execution from WSL; debug disposable APKs only; no automatic physical PASS, host changes, destructive tests or KR-004.
 - **Done when:** The diagnostic-only integrity-checked bundle retains one labelled recovery case and verifies the lab-only bailout.
 
@@ -25,14 +25,14 @@ Use the exact populated command in the latest handoff, of this form:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -RecoveryDiagnostic
 ```
 
-`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. Q4 rejects `-OfflineNetwork` and
+`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. Q5 rejects `-OfflineNetwork` and
 `-CalibrationOnly`: network state is not part of this diagnostic and no qualification path is available from its immutable bundle.
 Keep only the intended authorized Mi 8 connected: `get-state` fails on ambiguous devices, and model/codename/API are checked before installation.
 The runner installs in place and hashes pulled installed APKs; there is no uninstall fallback. Accept an OS installer prompt if it appears.
 Permissions must already be enabled through the disclosed setup flow. Refusal/MIUI denial stops; the runner never grants permissions or escalates.
 
-Q2 and Q3 physically failed Settings/recovery. Do not rerun them or start qualification. The next immutable bundle implements only the
-[Q4 bounded recovery-launch calibration](../../docs/test-plans/KR-003-RECOVERY-REPAIR.md). Run it with `-RecoveryDiagnostic`; the bundle rejects other modes,
+Q2/Q3 physically failed Settings/recovery and Q4 rejected `CLEAR_TOP`. Do not rerun them or start qualification. The next immutable bundle implements only the
+[Q5 task-reset calibration](../../docs/test-plans/KR-003-RECOVERY-TASK-RESET.md). Run it with `-RecoveryDiagnostic`; the bundle rejects other modes,
 never starts the 100 rows and does not reset latency samples or change network state. Review its evidence before accepting or rejecting the repair.
 Do not change the device/user/settings or switch to personal apps during the run. The fixture is a separate zero-permission disposable ordinary app.
 

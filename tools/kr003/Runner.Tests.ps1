@@ -219,7 +219,7 @@ try {
     Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
     $runnerSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-KR003.ps1') -Raw
     Assert-Equal ([bool]($runnerSource -match '\[string\]::IsNullOrEmpty\(\$PhysicalResult\)')) $true
-    Assert-Equal ([bool]($runnerSource -match 'KR003-Q4-RECOVERY-REPAIR-CALIBRATION')) $true
+    Assert-Equal ([bool]($runnerSource -match 'KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION')) $true
     Assert-Equal ([bool]($runnerSource -match 'MinimumPassSeconds 10')) $true
 } finally {
     # Only this test-created unique temporary tree; no real run directory is used or touched.

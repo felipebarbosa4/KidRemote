@@ -11,6 +11,9 @@
 commands or start 100 samples. A separately justified recovery candidate must pass a fresh focused calibration. The requirements below remain
 unchanged and are not waived by successful expiries.
 
+That separately justified candidate is the diagnostic-only [Q5 Settings task reset](KR-003-RECOVERY-TASK-RESET.md). It is the final flag-only
+experiment and has no physical result yet. Qualification remains blocked until Q5 passes; Q5 failure returns recovery to architecture review.
+
 ## Reconciled definitions
 
 The existing documents require **both** physical observations and latency samples. One sample is a new persisted 10-second allowance/revision,
