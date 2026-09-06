@@ -174,3 +174,15 @@ historical internal samples, and the run made no network change. Zero qualificat
 
 This clears only the focused prerequisite to prepare a new immutable qualification runner using the exact APK hash. The 100 fresh samples,
 remaining physical/safety/lifecycle/device gates and Play evidence remain open. Publication to issue #3/PR #16 is pending; KR-004 is untouched.
+
+## Q6 offline qualification handoff — 2026-09-06
+
+Exact source `c9edbe5460fff8603a6ff4887114a572d297c89e` prepares the [Q6 offline contract](../test-plans/KR-003-Q6-QUALIFICATION.md) without changing
+the Q5-calibrated Android APK bytes. [CI run 34062263290](https://github.com/felipebarbosa4/KidRemote/actions/runs/34062263290) passed all three jobs,
+including native Windows PowerShell 5.1, synthetic failure/finalization/safety paths, Android debug/release isolation and repository validation.
+No CI device call was real.
+
+The [immutable Q6 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q6-BUNDLE-2026-09-06.md) were independently verified in
+`C:\platform-tools\kr003-qualification-bundles\c9edbe5`. Its candidate and fixture APK hashes exactly match physical Q5. Physical Q6 execution
+is **Not run**; zero new qualification samples exist. Issue #3/PR #16 publication is pending, KR-003 remains Open/In Progress, PR #16 remains
+draft/Open and KR-004 remains untouched.
