@@ -26,7 +26,7 @@ No raw logcat/dumpsys output, content, node text, screenshots, accounts, serials
 | `lintDebug`, `assembleDebug` | Passed for candidate and fixture |
 | `lintRelease`, `assembleRelease` | Passed for candidate and fixture; unsigned release APKs, not production builds |
 | Merged manifests and DEX | Both variants audited; exact existing candidate permissions, zero fixture permissions; debug controls/trace absent in release |
-| `Qualification.Tests.ps1` | 41 assertions passed using synthetic snapshots/operator replies and harmless local process stubs; never ADB |
+| `Qualification.Tests.ps1` | 43 assertions passed using synthetic snapshots/operator replies and harmless local process stubs; never ADB |
 | Node test suites | 3 passed: checkpoint integrity, qualification evidence integrity, negative least-privilege mutation checks |
 | `node tools/validate.mjs` | Passed |
 | `git diff --check` | Passed |

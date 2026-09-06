@@ -61,6 +61,8 @@ Reports leave missing fields **UNSPECIFIED**. The agent later ingests these dire
 Fixture focus/resume/tap counters are stored separately in `fixture.jsonl`. They corroborate state and can expose a failure, but do not prove
 visual occlusion or touch interception. Global radio/clock/power flags are checked before each arm; full device metadata and installed hashes
 are checked at both ends. This is sampled configuration continuity, not proof that an unobserved transient setting never changed.
+The runner allows up to three seconds for an asynchronous fixture focus callback before starting the ten-second hold. Failure to establish this
+oracle is INVALID, not proof of a physical no-block. This wait does not change or subtract from the measured expiry-to-attachment latency.
 
 ## Offline and device gates
 

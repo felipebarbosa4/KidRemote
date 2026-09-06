@@ -24,6 +24,6 @@ The next runner must verify direct telemetry availability before arming and pres
 - Mounted checkpoint ingestion committed/pushed as `8786dc5`; the count is ten independent successful cycles, not fifty expiries.
 - Qualification contract v1 resolves paired physical/timing observations, the existing ten-second persistence rule, failure/invalid handling and no pooling.
 - ADR-0008 selects debug sender-protected controls plus an independent ordinary fixture; no enforcement decision or production permission was changed.
-- Desktop checks passed: 22 JVM cases, 41 synthetic PowerShell assertions, three Node suites, both debug/release lint/builds and manifest/DEX isolation.
+- Desktop checks passed: 22 JVM cases, 43 synthetic PowerShell assertions, three Node suites, both debug/release lint/builds and manifest/DEX isolation.
 - Remaining matrix categorized and queued in [KR-003-REMAINING](../test-plans/KR-003-REMAINING.md); required API 28/35/36 hardware and policy evidence remain outstanding.
 - Owner operation of the new debug telemetry/calibration and 100-sample run is the next boundary. No new device commands ran in WSL.

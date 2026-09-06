@@ -114,12 +114,22 @@ Assert-Equal $script:RadioRestoreStatus 'RESTORED_AND_FLAGS_VERIFIED'
 $script:Device=[PSCustomObject]@{wifi_on='UNSPECIFIED';mobile_data='1'}
 Assert-Reject { Enter-OfflineNetwork } 'INVALID:RADIO_INITIAL_STATE_UNKNOWN'
 
+$focusAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-FixtureFocus'},$true)
+Invoke-Expression $focusAst.Extent.Text
+$script:FocusQueries=0
+function Get-FixtureState { $script:FocusQueries++; [PSCustomObject]@{focused=($script:FocusQueries -gt 1);resumed=$true} }
+function Check-EarlyStop {}
+function Start-Sleep {}
+Assert-Equal (Wait-FixtureFocus -Focused $true).focused $true
+Assert-Equal $script:FocusQueries 2
+
 # Exercise actual cycle orchestration with deterministic synthetic snapshots and an independent observer stub.
 # These tests do not write a physical evidence manifest or use ADB.
 $functionAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-Expiry'},$true)
 Invoke-Expression $functionAst.Extent.Text
 function Save-Progress {}
 function Clear-ToOrdinary {}
+function Wait-FixtureFocus { param($Focused) }
 function Assert-FixedSettings {}
 function Check-EarlyStop {}
 function Start-Sleep {}

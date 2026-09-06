@@ -158,6 +158,19 @@ function Open-Fixture {
     $null = Invoke-LabAdb @('shell','am','start','-n',$fixtureActivity)
 }
 
+function Wait-FixtureFocus {
+    param([bool]$Focused)
+    # Activity focus callbacks are asynchronous. Calibrate their arrival, not an assumed zero-delay callback.
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        Check-EarlyStop
+        $fixture = Get-FixtureState
+        if ($fixture.focused -eq $Focused -and (-not $Focused -or $fixture.resumed)) { return $fixture }
+        Start-Sleep -Milliseconds 100
+    } while ($watch.Elapsed.TotalSeconds -lt 3)
+    throw 'INVALID:FIXTURE_FOCUS_ORACLE_UNAVAILABLE'
+}
+
 function Read-Result {
     param([string]$Prompt)
     Check-EarlyStop
@@ -210,8 +223,7 @@ function Clear-ToOrdinary {
     $null = Wait-LabCondition -Condition { param($s) -not $s.armed -and -not $s.attached -and -not $s.restriction } -FailureCode 'FAIL:CLEAR_DID_NOT_RELEASE'
     Open-Fixture
     $null = Wait-LabCondition -Condition { param($s) $s.disposition -eq 'ORDINARY_APP' } -FailureCode 'INVALID:FIXTURE_NOT_ORDINARY'
-    $fixture = Get-FixtureState
-    if (-not $fixture.focused -or -not $fixture.resumed) { throw 'FAIL:ORDINARY_FOCUS_NOT_RESTORED' }
+    $null = Wait-FixtureFocus -Focused $true
 }
 
 function Invoke-Expiry {
@@ -247,7 +259,8 @@ function Invoke-Expiry {
     if (-not $script:AttachmentRevisions.ContainsKey([string]$revision)) { throw 'INVALID:MISSING_ATTACHMENT_TRACE' }
     $script:CurrentRow.LatencyMs = $latency
     $script:CurrentRow.InternalSampleCount = $attached.sampleCount
-    $startHold = $attached.elapsed
+    $null = Wait-FixtureFocus -Focused $false
+    $startHold = (Get-LabState).elapsed
     do {
         Check-EarlyStop
         $snapshot = Get-LabState
