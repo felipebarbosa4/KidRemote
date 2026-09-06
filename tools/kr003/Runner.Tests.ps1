@@ -217,6 +217,8 @@ try {
     $bailoutSource=Get-Content -LiteralPath $bailoutPath -Raw
     Assert-Equal ([bool]($bailoutSource -match "Get-BailoutState 'CLEAR'")) $true
     Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
+    $runnerSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-KR003.ps1') -Raw
+    Assert-Equal ([bool]($runnerSource -match '\[string\]::IsNullOrEmpty\(\$PhysicalResult\)')) $true
 } finally {
     # Only this test-created unique temporary tree; no real run directory is used or touched.
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force

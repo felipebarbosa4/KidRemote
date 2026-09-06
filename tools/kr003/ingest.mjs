@@ -108,6 +108,10 @@ export function ingestRecoveryDiagnostic(directory) {
   assert.deepEqual(diagnostic.Phases.map(p=>p.Name),expected.slice(0,diagnostic.Phases.length));
   for(let i=0;i<diagnostic.Phases.length;i++) {
     const phase=diagnostic.Phases[i];
+    // Q3 on Windows PowerShell 5.1 serialized the no-prompt post-state's
+    // explicit null argument as "". Accept that historical representation
+    // only for POST_RECOVERY_STATE and normalize it; prompted phases stay strict.
+    if(phase.Name==='POST_RECOVERY_STATE' && phase.PhysicalResult==='') phase.PhysicalResult='UNRECORDED';
     assert(['PASS','FAIL','INVALID','UNRECORDED'].includes(phase.PhysicalResult));
     assert(Number.isInteger(phase.AfterSequence)&&Number.isInteger(phase.LastSequence)&&phase.LastSequence>=phase.AfterSequence);
     if(i) assert(phase.AfterSequence>=diagnostic.Phases[i-1].LastSequence,'Diagnostic phases overlap or reuse an earlier trace floor');

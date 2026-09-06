@@ -5,9 +5,10 @@
 - **Constraints:** Authorized lab; owner executes Windows ADB; continuous human observation; no destructive operations; all attempts preserved.
 - **Done when:** One immutable run has 100 valid paired observations, zero enforcement failures, nearest-rank internal p95 ≤2,000 ms, and separately reported safety/preflight results. This is only AC-3 evidence for one configuration.
 
-**Current gate:** the [Q2 owner-run calibration](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery. Do not rerun the
-37ad70b qualification command or start 100 samples. The [labelled Q3 recovery diagnostic](KR-003-RECOVERY-DIAGNOSTIC.md) must run with its verified lab bailout;
-a justified repair must pass another calibration-only verification. The requirements below are unchanged, not waived by earlier expiry success.
+**Current gate:** the [Q2 owner-run calibration](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery. The subsequent
+[Q3 focused diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) reproduced the physical destination/recovery FAIL and established a phase-local
+ORDINARY_APP reattachment. Do not rerun either old command or start 100 samples. A bounded recovery repair must pass another focused calibration.
+The requirements below are unchanged, not waived by earlier expiry success.
 
 ## Reconciled definitions
 
@@ -84,9 +85,10 @@ does not satisfy designated recovery if required destinations are blocked or ret
 paths are regression cases; no OEM package is declared safe merely because a Settings link opens it. Separate Home, destination and recovery
 observations in the next diagnostic; do not manufacture separate machine observations from the old combined field.
 
-Historical Q2 used **`-CalibrationOnly`** and exposed the physical recovery failure. The next owner run instead uses the diagnostic-only Q3
-contract and `-RecoveryDiagnostic`; it cannot start sample 1 under any result. Inspect that evidence before implementing a repair. A repaired build
-must later pass fresh calibration before a separately authorized full run. This boundary does not lower or increase AC-3's 100 independent samples.
+Historical Q2 used **`-CalibrationOnly`** and exposed the physical recovery failure. Q3 then used the diagnostic-only
+`-RecoveryDiagnostic` contract and started no qualification row. It established top-level Settings PASS, Digital Wellbeing FAIL with ordinary
+reattachment, recovery FAIL and a verified lab bailout. A repaired build must pass a fresh focused calibration before a separately authorized full
+run. This boundary does not lower or increase AC-3's 100 independent samples.
 
 The runner creates an exclusive timestamped directory with bundle/installed APK hashes, source and runner/protocol hashes, start/end time, owner
 device class, automatically observable build/settings, calibration, pre-reset metric export, per-attempt JSON/CSV, typed trace JSONL, checkpoints

@@ -9,6 +9,10 @@ Protocol: **`KR003-Q3-RECOVERY-DIAGNOSTIC`**. This is a diagnostic-only bundle a
 reset latency samples or alter permissions. It installs the same disposable candidate/fixture in place, runs one fresh expiry observation and then
 executes only the labelled recovery case below. A completed command is evidence capture, not a successful feasibility gate.
 
+**Executed result:** [the owner-run Q3 evidence](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) records expiry/root PASS, Digital Wellbeing and recovery
+FAIL, phase-local ORDINARY_APP reattachment, two recovery-button handler activations and a verified sample-preserving bailout. No qualification
+row began. This contract is now historical evidence; do not rerun its immutable bundle as a replacement trial.
+
 ## Phase contract
 
 Every phase records a new `StartedUtc`, `StartedElapsed`, `AfterSequence` trace floor, `LastSequence`, end time, physical result where applicable,

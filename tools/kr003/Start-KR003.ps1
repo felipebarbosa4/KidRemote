@@ -476,7 +476,10 @@ function Poll-DiagnosticPhase {
 
 function Complete-DiagnosticPhase {
     param([AllowNull()][string]$PhysicalResult, [int]$SettleSeconds = 2)
-    if ($null -ne $PhysicalResult) {
+    # Windows PowerShell 5.1 binds an explicit $null string argument as an
+    # empty string. POST_RECOVERY_STATE has no physical prompt, so retain the
+    # constructor's explicit UNRECORDED value instead of serializing "".
+    if (-not [string]::IsNullOrEmpty($PhysicalResult)) {
         $script:DiagnosticPhase.PhysicalResult=$PhysicalResult
         $script:DiagnosticPhase.PhysicalObservedUtc=[DateTime]::UtcNow.ToString('o')
     }

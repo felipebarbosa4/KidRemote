@@ -132,6 +132,10 @@ test("focused diagnostic ingestion preserves physical and software outcomes with
   assert.equal(result.phases[1].physicalResult,'FAIL');
   assert.equal(result.phases[1].oracle,'ORDINARY_REATTACHMENT_CORROBORATED');
   assert.equal(result.bailout,'VERIFIED');
+  phases[3].PhysicalResult='';
+  save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
+  assert.equal(ingestRecoveryDiagnostic(dir).phases[3].physicalResult,'UNRECORDED');
+  phases[3].PhysicalResult='UNRECORDED';
   phases[2].AfterSequence=19;
   save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
   assert.throws(()=>ingestRecoveryDiagnostic(dir),/overlap|reuse/);

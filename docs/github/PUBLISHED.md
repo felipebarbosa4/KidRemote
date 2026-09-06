@@ -124,3 +124,13 @@ verified in mounted Windows storage. Issue #3's stale Next paragraph, PR #16's h
 [the Q3 progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561778844) were published and read back while preserving
 all seven acceptance checkboxes. Physical execution is **Not run**. KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004 remains
 Open/Backlog. No qualification, enforcement-policy change, OEM allowlist or Play acceptance is claimed.
+
+## Q3 physical recovery result — 2026-09-06
+
+The owner executed the immutable Q3 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q3-RECOVERY-2026-09-06.md) records one expiry PASS,
+top-level Settings PASS, Digital Wellbeing FAIL with phase-local ORDINARY_APP reattachment, and recovery-button physical FAIL. Two handler
+activations make the single-attempt software oracle invalid; they do not erase the physical failure. The automatic lab CLEAR released the
+restriction and preserved both latency samples. Zero qualification rows began, and no Home result was added.
+
+Existing coarse telemetry answered the disposition question, so no equality/identity diagnostic or package allowlist was added. Exact task and
+component behaviour remains **UNSPECIFIED**. KR-003 remains Open/In Progress, PR #16 remains draft and KR-004 remains untouched.

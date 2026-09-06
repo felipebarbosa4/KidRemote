@@ -1,7 +1,7 @@
 # KR-003 remaining feasibility work and device strategy
 
 - **Goal:** Complete the remaining engineering/policy gates without repetitive manual setup.
-- **Context:** Mi 8 expiry evidence includes the initial/ten-cycle checkpoint and two later calibration expiries. Q2 physically failed Settings/recovery; no 100-sample qualification ran.
+- **Context:** Mi 8 expiry evidence includes the initial/ten-cycle checkpoint and three later calibration expiries. Q2 and Q3 physically failed Settings/recovery; no 100-sample qualification ran.
 - **Constraints:** KR-003 only; no production timer/sync/backend implementation; disruptive operations require separate owner execution approval.
 - **Done when:** Every outstanding KR-003 matrix row has measured evidence or an explicit accepted unsupported boundary, required hardware evidence exists, and go/no-go is recorded.
 
@@ -37,7 +37,7 @@ Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
 | TAMP-07 ADB/developer options | A,B | Protected debug receiver/release audit and allowlisted evidence export prepared | Privileged ADB is outside consumer protection; sender-denial runtime test still queued |
 | TAMP-08 root/bootloader | C,D | Explicit unsupported boundary from ADR-0002 | No root/unlock/flash operation; physical testing only if separately authorized |
 | SAFE-01 emergency/dialler/TalkBack/IME/permission UI | C,D | Record technical state while an operator follows approved safety script | Settings success does not prove these; never dial a live emergency service for a test |
-| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2 **physical FAIL**; [Q3 labelled one-destination diagnostic](KR-003-RECOVERY-DIAGNOSTIC.md) and verified lab bailout prepared for owner execution | Diagnose, restore reliable recovery, then retest known-failed paths; prior top-level successes do not satisfy this gate; other safety surfaces outstanding |
+| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2 **physical FAIL**; [Q3 labelled diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) reproduced Digital Wellbeing ORDINARY_APP reattachment and recovery FAIL; lab bailout verified | Implement only a bounded recovery repair, rerun the focused route, then retest known-failed paths; prior top-level successes do not satisfy this gate; other safety surfaces outstanding |
 | Missing package, interruption, lost screen signal | A,B | Pure fail-open regression exists; queue service/lifecycle injections and observations | Unknown/safe fail-open is deliberate but not an enforcement pass |
 | AC-6 least privilege | A,B | Recursive source/permission checks, debug/release manifest and DEX audit, typed schema rejection tests | Runtime sender-denial/traffic audit still required; static absence of INTERNET is only static evidence |
 | AC-1/2 policy design packet | A,E | Existing ADR/disclosure/refusal/declaration docs; keep packet synced with actual code | Policy review/target-audience/account choices cannot be inferred from builds |
@@ -69,8 +69,8 @@ Official device/testing sources reviewed 2026-09-06.
 
 ## Three separate gates
 
-1. **Technical evidence:** completed Mi 8 checkpoint, followed by Q2 **physical Settings/recovery failure**. Current build cannot qualify;
-   [analysis/next diagnostic](evidence/KR-003-Q2-SETTINGS-2026-09-06.md), remaining physical matrix and 100 samples are outstanding.
+1. **Technical evidence:** completed Mi 8 checkpoint, followed by Q2 and Q3 **physical Settings/recovery failures**. Current build cannot qualify;
+   [focused evidence](evidence/KR-003-Q3-RECOVERY-2026-09-06.md), a bounded repair, the remaining physical matrix and 100 samples are outstanding.
 2. **Policy design assessment:** ADR-0002 and POLICY document a conditional design and unresolved Android/Play purpose tension.
 3. **Actual Play review/acceptance:** no submission/review/approval evidence exists. Remains **UNSPECIFIED** and external.
 

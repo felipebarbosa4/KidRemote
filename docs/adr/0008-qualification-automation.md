@@ -1,7 +1,8 @@
 # ADR-0008 — Debug qualification controls and observation oracle
 
 Status: Accepted for the KR-003 disposable lab, 2026-09-06. Q1 controls operated on Mi 8; the recovery oracle disagreed with physical observation.
-Q2 diagnostics/finalization operated on Mi 8, but the calibration **physically failed Settings/recovery**. Engineering safety/qualification remain blocked.
+Q2 physically failed Settings/recovery. Q3 reproduced the destination/recovery failure with phase-local evidence and verified its lab bailout.
+Engineering safety/qualification remain blocked.
 
 - **Goal:** Remove repetitive lab interaction while preserving independent physical evidence and release isolation.
 - **Context:** Ten Mi 8 cycles passed by owner observation; the captured log had only buffer headers. Persisted metric count was not transcribed.
@@ -105,7 +106,7 @@ The actual Android discrepancy remains **UNSPECIFIED** until new evidence establ
 - **Constraints:** Existing SAFE requirement stays intact; no new runtime permission, node/content access, task clearing, production grace period,
   guessed vendor packages or new physical run during analysis.
 - **Done when:** Diagnostics distinguish per-path and per-button outcomes; any further collection is reviewed before implementation;
-  the lab-only bailout is verified; a justified repair passes fresh physical calibration. Q3 is implemented but not run, so the last condition remains open.
+  the lab-only bailout is verified; a justified repair passes fresh physical calibration. Q3 ran and met the diagnostic/bailout conditions; repair verification remains open.
 
 Alternatives: a blanket OEM/system-package exemption is rejected because provenance alone does not make every destination safe. Extending timeout
 is not justified by four returned launches plus 37 seconds of unchanged state after the last one. Reverting OWN_PACKAGE preservation would
@@ -128,3 +129,10 @@ Settings regressions before the unchanged broader stability/qualification gates.
 Risks/invalidation: a case label cannot precisely timestamp a gesture unless the phase boundary is recorded; package equality is not task identity;
 no-event launch failures may need a different approved oracle. Reject any design that automatically promotes a safe transition into broad Settings
 PASS, makes arbitrary external apps permanently safe, or again traps the user. Exact OEM/task cause remains **UNSPECIFIED**.
+
+### Q3 physical result
+
+[Q3 evidence](../test-plans/evidence/KR-003-Q3-RECOVERY-2026-09-06.md) records expiry PASS, top-level Settings PASS, a labelled Digital Wellbeing
+FAIL corroborated by ORDINARY_APP reattachment, and recovery FAIL. The first of two phase-local recovery dispatches was safe for only 682 ms before
+ordinary enforcement returned; the second produced no safe event. Two click-handler activations invalidate the single-attempt software oracle but
+do not erase the physical FAIL. Existing coarse telemetry answered the disposition question, so no equality diagnostic or raw identity is justified.
