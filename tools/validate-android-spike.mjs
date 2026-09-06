@@ -60,11 +60,18 @@ export function validateAndroidSpike(root) {
 
   const sourcePaths = [
     "LabTimer.kt", "LabTimerStore.kt", "DeviceSignals.kt", "BootReceiver.kt", "MainActivity.kt", "EnforcementAccessibilityService.kt",
+    "EnforcementTraceRecord.kt",
   ].map(name => `${spikeRoot}/app/src/main/kotlin/dev/kidremote/spike/enforcement/${name}`);
   const sources = sourcePaths.map(read).join("\n");
   for (const forbidden of [
     ".rootInActiveWindow", ".getSource()", ".source", "dispatchGesture(", "takeScreenshot(", "performGlobalAction(", "Log.",
   ]) check(!sources.includes(forbidden), `Android spike source contains unapproved access: ${forbidden}`);
+  const debugTrace = read(`${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
+  const releaseTrace = read(`${spikeRoot}/app/src/release/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
+  check(debugTrace.includes('private const val TRACE_TAG = "KidRemoteKR003"'), "Debug trace tag changed");
+  check(debugTrace.includes("Log.i(TRACE_TAG, record.toLogLine())"), "Debug trace must log only the typed sanitized record");
+  check(!debugTrace.includes("packageName") && !debugTrace.includes("AccessibilityEvent"), "Debug trace accepts sensitive/raw input");
+  check(!releaseTrace.includes("android.util.Log") && !releaseTrace.includes("toLogLine"), "Release trace must remain a no-op");
   check(sources.includes("SystemClock.elapsedRealtime()"), "Android spike must use the monotonic Android clock");
   check(sources.includes("UNKNOWN_FAIL_OPEN"), "Android spike must preserve the unknown-surface fail-open safety path");
   return errors;
