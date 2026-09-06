@@ -41,7 +41,8 @@ Work Type avoids an extra architecture label. Dates allow a real roadmap without
 3. Architecture: Table, filter Work Type is Specification OR Spike, sort Priority.
 4. Security & Policy: Table, label filter includes security OR privacy OR policy (use UI filter builder); sort Priority.
 5. Roadmap: Roadmap layout, group Platform, date fields Start Date/Target Date; conceptual sequence Android → Fire OS → Apple → Windows.
-   Leave dates unset. Future research is in ADR-0007/milestones; no implementation dates or additional issues are invented.
+   Date only committed work. KR-001/002 actual dates and KR-003's current Sprint target are recorded; leave KR-004–010 and future-platform
+   dates unset until scheduled. Future research is in ADR-0007/milestones; no implementation dates or additional issues are invented.
 
 The object filters in project.json describe UI configuration, not an undocumented GitHub query language.
 Use GitHub's view filter builder for fields containing spaces and OR label selection.
@@ -88,7 +89,7 @@ Manual completion/verification in Project settings (exact intent in project.json
 - Backlog: set the filter to exclude Done. Its table layout, Priority sort and fields are already configured.
 - Architecture: use the UI filter builder for Work Type = Specification OR Spike, then sort by Priority.
 - Security & Policy: use the UI filter builder for labels security OR privacy OR policy, then sort by Priority.
-- Roadmap: group by Platform and map Start Date/Target Date. Keep dates unset until roadmap commitments exist.
+- Roadmap: group by Platform and map Start Date/Target Date. Keep unscheduled KR-004–010/future-platform dates unset until commitments exist.
 - Verify workflow actions—not only their enabled names—are item added → Backlog, issue closed → Done and reopened → Backlog.
   The API exposed enabled workflow names but not action configuration; configure the missing reopened rule if the UI supports it.
 - Verify any enabled auto-add workflow is restricted to the intended repository/open-issue filter; keep auto-archive disabled during feasibility.
