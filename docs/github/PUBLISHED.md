@@ -134,3 +134,14 @@ restriction and preserved both latency samples. Zero qualification rows began, a
 
 Existing coarse telemetry answered the disposition question, so no equality/identity diagnostic or package allowlist was added. Exact task and
 component behaviour remains **UNSPECIFIED**. KR-003 remains Open/In Progress, PR #16 remains draft and KR-004 remains untouched.
+
+## Q4 bounded recovery-repair handoff — 2026-09-06
+
+Exact source `768aaa039ac4c774896f708591ac30d218405e39` adds only `FLAG_ACTIVITY_CLEAR_TOP` to the existing top-level Settings launch after Q3
+established transient NEW_TASK-only recovery. It does not change surface classification, allowlists, permissions or Accessibility collection.
+[CI run 34057645951](https://github.com/felipebarbosa4/KidRemote/actions/runs/34057645951) passed all three jobs, including native Windows
+PowerShell 5.1 and Android debug/release isolation checks; device calls were stubbed.
+
+The [immutable Q4 bundle, hashes, protocol and exact command](../test-plans/evidence/KR-003-Q4-BUNDLE-2026-09-06.md) were independently verified
+in mounted Windows storage. Physical execution is **Not run**. The repair remains unproven, 100 samples remain blocked, KR-003 remains Open/In
+Progress, PR #16 remains draft and KR-004 remains untouched.

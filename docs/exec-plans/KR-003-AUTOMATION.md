@@ -91,3 +91,5 @@ Q3 established that the labelled destination is classified ORDINARY_APP and that
 [Q4 decision/contract](../test-plans/KR-003-RECOVERY-REPAIR.md) adds only CLEAR_TOP to the Settings recovery intent; safe classification, event
 collection and permissions remain unchanged. The runner enforces a ten-second minimum before recovery PASS and still rejects multiple dispatches.
 Build/static evidence is not physical repair evidence; package and run Q4 only after exact-source CI passes.
+Source `768aaa0` passed all three CI jobs. The [immutable Q4 bundle and operator handoff](../test-plans/evidence/KR-003-Q4-BUNDLE-2026-09-06.md)
+were independently hash/source-byte verified. Physical Q4 execution is **Not run**.
