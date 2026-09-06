@@ -638,13 +638,13 @@ function Invoke-QualificationSafetyCheckpoint {
     }
     Save-Safety
 
-    $home=Read-DiagnosticResult 'HOME CHECK: press Home PHYSICALLY once. P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+    $homeResult=Read-DiagnosticResult 'HOME CHECK: press Home PHYSICALLY once. P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
         param($result)
         $script:Safety.HomePhysical=$result
         $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
         Save-Safety
     }
-    Stop-ForSafetyResult -Result $home -Step ($Phase.ToUpperInvariant() + '_HOME')
+    Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME')
     $null=Poll-SafetyHold
 
     Invoke-FocusedRecoveryDiagnostic -OutputName $script:Safety.RecoveryFile
