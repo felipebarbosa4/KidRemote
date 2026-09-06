@@ -184,5 +184,7 @@ No CI device call was real.
 
 The [immutable Q6 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q6-BUNDLE-2026-09-06.md) were independently verified in
 `C:\platform-tools\kr003-qualification-bundles\c9edbe5`. Its candidate and fixture APK hashes exactly match physical Q5. Physical Q6 execution
-is **Not run**; zero new qualification samples exist. Issue #3/PR #16 publication is pending, KR-003 remains Open/In Progress, PR #16 remains
-draft/Open and KR-004 remains untouched.
+is **Not run**; zero new qualification samples exist. Issue #3 and PR #16 were updated and read back with that exact boundary; all seven issue
+acceptance boxes remain open. [Issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562449024) and
+[PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562449104) link the same bundle/CI evidence. Project #3 was
+verified with KR-003 Open/In Progress and KR-004 Open/Backlog; PR #16 remains draft/Open. KR-004 was not changed.
