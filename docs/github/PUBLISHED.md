@@ -111,3 +111,14 @@ lowered SAFE requirement is authorized. The existing APKs, runner, bundle and or
 Evidence commit `bd5aa37` passed all three jobs in [CI run 34053924704](https://github.com/felipebarbosa4/KidRemote/actions/runs/34053924704):
 repository/Node/synthetic runner checks, Windows PowerShell runner checks with device calls stubbed, and Android JVM tests/debug-release
 lint/build/manifest/DEX audit. These automated results do not change the physical Settings FAIL or provide Play acceptance.
+
+## Q3 focused recovery diagnostic handoff — 2026-09-06
+
+Source `53327c50afb97c66620dd15780114b6f1a13ec33` implements the diagnostic-only, four-phase Settings/Digital Wellbeing/recovery checkpoint and
+lab-only CLEAR bailout without changing Android enforcement policy. It passed all three jobs in
+[CI run 34056094159](https://github.com/felipebarbosa4/KidRemote/actions/runs/34056094159), including native Windows PowerShell 5.1 synthetic tests,
+Android debug/release isolation checks and repository validation. Device calls were stubbed; this is not physical evidence.
+
+The [immutable Q3 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q3-DIAGNOSTIC-BUNDLE-2026-09-06.md) were independently
+verified in mounted Windows storage. Physical execution is **Not run**. KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004
+remains Open/Backlog. No qualification, enforcement-policy change, OEM allowlist or Play acceptance is claimed.

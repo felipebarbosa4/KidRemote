@@ -80,3 +80,5 @@ safe transition/removal or post-dispatch safe sample. Digital Wellbeing records 
 Repeated button attempts invalidate that phase. Normal finalization clears only the disposable timer and verifies the entire latency sample array
 is unchanged; the bundled standalone bailout covers a forcibly interrupted terminal. All physical failures remain evidence rather than retries.
 The equality diagnostic remains unimplemented because existing coarse telemetry is sufficient for this checkpoint. Physical execution is **Not run**.
+Exact source `53327c5` passed all three CI jobs; the [immutable bundle and operator handoff](../test-plans/evidence/KR-003-Q3-DIAGNOSTIC-BUNDLE-2026-09-06.md)
+were independently hash/source-byte verified. No device action occurred during packaging.
