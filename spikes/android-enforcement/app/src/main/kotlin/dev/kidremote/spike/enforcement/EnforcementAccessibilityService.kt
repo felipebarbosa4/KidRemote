@@ -62,23 +62,38 @@ class EnforcementAccessibilityService : AccessibilityService() {
         // Only the transient package identity is used to distinguish a known ordinary app from a safe/unknown surface.
         // No AccessibilityNodeInfo, text, content, history, screenshots, gestures, or package timeline is accessed.
         val observation = SurfacePolicy.observe(event?.packageName, packageName)
+        val resolvedDisposition = SurfaceEventResolver.resolve(
+            currentDisposition = surfaceDisposition,
+            observation = observation,
+            restrictionRequired = state.restrictionRequired,
+            overlayAttached = overlay != null,
+        )
         trace(
             kind = "accessibility_event",
             trigger = "event",
             eventType = event?.eventType ?: NO_EVENT_TYPE,
             identityClass = observation.identityClass,
-            nextDisposition = observation.disposition,
+            nextDisposition = resolvedDisposition,
         )
-        if (surfaceDisposition != observation.disposition) {
+        if (resolvedDisposition != observation.disposition) {
+            trace(
+                kind = "surface_preserved",
+                trigger = "overlay_own_event",
+                eventType = event?.eventType ?: NO_EVENT_TYPE,
+                identityClass = observation.identityClass,
+                nextDisposition = resolvedDisposition,
+            )
+        }
+        if (surfaceDisposition != resolvedDisposition) {
             trace(
                 kind = "surface_transition",
                 trigger = "event",
                 eventType = event?.eventType ?: NO_EVENT_TYPE,
                 identityClass = observation.identityClass,
-                nextDisposition = observation.disposition,
+                nextDisposition = resolvedDisposition,
             )
         }
-        surfaceDisposition = observation.disposition
+        surfaceDisposition = resolvedDisposition
         sampleAndApply(trigger = "accessibility_event")
     }
 

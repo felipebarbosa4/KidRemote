@@ -132,6 +132,24 @@ object SurfacePolicy {
         observe(observedPackage, ownPackage).disposition
 }
 
+object SurfaceEventResolver {
+    fun resolve(
+        currentDisposition: SurfaceDisposition,
+        observation: SurfaceObservation,
+        restrictionRequired: Boolean,
+        overlayAttached: Boolean,
+    ): SurfaceDisposition = if (
+        restrictionRequired &&
+        overlayAttached &&
+        currentDisposition == SurfaceDisposition.ORDINARY_APP &&
+        observation.identityClass == SurfaceIdentityClass.OWN_PACKAGE
+    ) {
+        currentDisposition
+    } else {
+        observation.disposition
+    }
+}
+
 data class LatencySummary(
     val samples: Int,
     val p50Millis: Long,
