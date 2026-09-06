@@ -12,7 +12,7 @@ Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
 
 | Row / gate | Class | Automation support / next bounded work | Remaining physical or approval boundary |
 | --- | --- | --- | --- |
-| AC-3 / TIME-04: 100 zero expiries | B,D | Debug clear/arm, fixed fixture, metric export, revision pairing, direct trace, CSV/JSON/statistics and failure journal prepared | One visual P/F/I/Q per expiry; calibration/recovery checklist; required physical versions |
+| AC-3 / TIME-04: 100 zero expiries | B,D | [Q6](KR-003-Q6-QUALIFICATION.md) fixes the calibrated APK pair, offline setup, clear/arm, fixture, pairing, trace, safety journals, statistics and fail-stop evidence | Owner runs one command; one visual P/F/I/Q per expiry plus two safety checklists; required physical versions remain |
 | TIME-01 eligible total / TIME-02 screen off / TIME-03 keyguard | A,B | Pure monotonic tests exist; use debug snapshots before/after screen changes; add phase runner after qualification | Physically toggle screen/keyguard; verify only eligible time falls; no automated unlock |
 | TIME-05 process death | B | Queue approved debug self-process-termination hook with journal-before-crash; relaunch/query and compare balance/revision | Do not substitute force-stop or killing the fixture. System-bound process may survive `am kill`; verify actual process transition |
 | TIME-06 app/service restart | A,B | Snapshot/revision/heartbeat controls prepared; explicit activity relaunch is supported | Relaunch alone does not prove process death; physically check recovered restriction |
@@ -70,8 +70,9 @@ Official device/testing sources reviewed 2026-09-06.
 ## Three separate gates
 
 1. **Technical evidence:** completed Mi 8 checkpoint, Q2/Q3/Q4 **physical Settings/recovery failures**, then one focused
-   [Q5 task-reset recovery PASS](evidence/KR-003-Q5-RECOVERY-2026-09-06.md). Q5 has zero qualification samples; the new 100-sample run, fresh
-   safety preflight/final check, remaining physical matrix and other device configurations are outstanding.
+   [Q5 task-reset recovery PASS](evidence/KR-003-Q5-RECOVERY-2026-09-06.md). Q5 has zero qualification samples; [Q6](KR-003-Q6-QUALIFICATION.md)
+   is prepared but physically **Not run**. Its 100-sample run, fresh safety preflight/final check, remaining physical matrix and other device
+   configurations are outstanding.
 2. **Policy design assessment:** ADR-0002 and POLICY document a conditional design and unresolved Android/Play purpose tension.
 3. **Actual Play review/acceptance:** no submission/review/approval evidence exists. Remains **UNSPECIFIED** and external.
 

@@ -16,6 +16,7 @@ Do not record device serial, accounts, real child identity or app/content histor
 
 The precise runner contract, failure handling and evidence fields are in [qualification v2](KR-003-QUALIFICATION.md). It reconciles the existing
 100-observation requirement with the Mi 8 persistence checkpoint and preserves the distinction between observation and attachment metrics.
+The exact Mi 8 offline execution specialization is [Q6](KR-003-Q6-QUALIFICATION.md); it is **Not run** until owner execution produces evidence.
 
 Use the same configuration for all samples. Reset local timing samples, enable both required accesses, arm the 10-second timer and move to an
 authorized disposable ordinary test app. A valid sample requires eligible interactive/unlocked time through expiry and a visibly perceived block.

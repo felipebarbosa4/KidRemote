@@ -129,8 +129,13 @@ $recovered.events=@(
 )
 Update-KRDiagnosticPhase $recovery $recovered
 Assert-Equal $recovery.Oracle 'FRESH_SAFE_TRANSITION_CORROBORATED'
+Assert-Equal (Test-KRDiagnosticStableSafe $recovery) $false
+$stable=New-Snapshot
+$stable.elapsed=41400; $stable.sampledAt=41390; $stable.traceHead=20; $stable.attached=$false; $stable.disposition='SAFE_SYSTEM'; $stable.events=@()
+Update-KRDiagnosticPhase $recovery $stable
+Assert-Equal (Test-KRDiagnosticStableSafe $recovery) $true
 $regressed=New-Snapshot
-$regressed.elapsed=31800; $regressed.sampledAt=31790; $regressed.traceHead=22; $regressed.attached=$true; $regressed.disposition='ORDINARY_APP'
+$regressed.elapsed=41800; $regressed.sampledAt=41790; $regressed.traceHead=22; $regressed.attached=$true; $regressed.disposition='ORDINARY_APP'
 $regressed.events=@(
     [PSCustomObject]@{sequence=21;line='t=31600 kind=surface_transition trigger=event identity=ORDINARY_APP disposition=SAFE_SYSTEM nextDisposition=ORDINARY_APP restriction=true overlay=DETACHED revision=2'},
     [PSCustomObject]@{sequence=22;line='t=31610 kind=overlay_attached trigger=accessibility_event disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED revision=2'}
@@ -138,6 +143,25 @@ $regressed.events=@(
 Update-KRDiagnosticPhase $recovery $regressed
 Assert-Equal $recovery.Oracle 'RECOVERY_REGRESSED_TO_ORDINARY'
 Assert-Equal $recovery.Reason 'SAFE_TRANSITION_DID_NOT_PERSIST'
+Assert-Equal (Test-KRDiagnosticStableSafe $recovery) $false
+$reattached=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
+Update-KRDiagnosticPhase $reattached $requestOnly
+Update-KRDiagnosticPhase $reattached $recovered
+$attachOnly=New-Snapshot
+$attachOnly.elapsed=41800; $attachOnly.sampledAt=41790; $attachOnly.traceHead=21; $attachOnly.attached=$false; $attachOnly.disposition='SAFE_SYSTEM'
+$attachOnly.events=@([PSCustomObject]@{sequence=21;line='t=41600 kind=overlay_attached trigger=accessibility_event disposition=SAFE_SYSTEM nextDisposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'})
+Update-KRDiagnosticPhase $reattached $attachOnly
+Assert-Equal $reattached.Oracle 'RECOVERY_OVERLAY_REATTACHED'
+Assert-Equal (Test-KRDiagnosticStableSafe $reattached) $false
+$unknownAfterSafe=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
+Update-KRDiagnosticPhase $unknownAfterSafe $requestOnly
+Update-KRDiagnosticPhase $unknownAfterSafe $recovered
+$unknownFrame=New-Snapshot
+$unknownFrame.elapsed=41800; $unknownFrame.sampledAt=41790; $unknownFrame.traceHead=21; $unknownFrame.attached=$false; $unknownFrame.disposition='UNKNOWN_FAIL_OPEN'
+$unknownFrame.events=@([PSCustomObject]@{sequence=21;line='t=41600 kind=surface_transition trigger=event identity=MISSING disposition=SAFE_SYSTEM nextDisposition=UNKNOWN_FAIL_OPEN restriction=true overlay=DETACHED revision=2'})
+Update-KRDiagnosticPhase $unknownAfterSafe $unknownFrame
+Assert-Equal $unknownAfterSafe.Oracle 'RECOVERY_REGRESSED_TO_UNKNOWN'
+Assert-Equal (Test-KRDiagnosticStableSafe $unknownAfterSafe) $false
 $duplicate=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
 $duplicateFrame=New-Snapshot
 $duplicateFrame.elapsed=31500; $duplicateFrame.sampledAt=31490; $duplicateFrame.traceHead=20
@@ -168,6 +192,11 @@ $verdictRecovery.PhysicalResult='PASS'; $verdictRecovery.Oracle='FRESH_SAFE_TRAN
 Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_FAILURE_RECORDED'
 $verdictDigital.PhysicalResult='INVALID'
 Assert-Equal (Get-KRFocusedDiagnosticReason @($verdictRoot,$verdictDigital,$verdictRecovery,$verdictPost)) 'PHYSICAL_INVALID_RECORDED'
+
+Assert-Equal (Get-KRSafetyCheckpointReason 'PASS' 'PHYSICAL_PASS_RECORDED' 'PASS' 'FIXTURE_COUNTER_INCREMENT') 'PHYSICAL_PASS_RECORDED'
+Assert-Equal (Get-KRSafetyCheckpointReason 'FAIL' 'PHYSICAL_PASS_RECORDED' 'PASS' 'FIXTURE_COUNTER_INCREMENT') 'PHYSICAL_FAILURE_RECORDED'
+Assert-Equal (Get-KRSafetyCheckpointReason 'INVALID' 'PHYSICAL_PASS_RECORDED' 'PASS' 'FIXTURE_COUNTER_INCREMENT') 'PHYSICAL_INVALID_RECORDED'
+Assert-Equal (Get-KRSafetyCheckpointReason 'PASS' 'SOFTWARE_FAILURE_RECORDED' 'PASS' 'FIXTURE_COUNTER_INCREMENT') 'SOFTWARE_FAILURE_RECORDED'
 
 $rows = @(1..100 | ForEach-Object { [PSCustomObject]@{Revision=$_;Observer='UNRECORDED';Automated='PASS';LatencyMs=123} })
 Assert-Equal (Get-KRRunVerdict $rows $true $true) 'INCOMPLETE'

@@ -100,7 +100,7 @@ test("least-privilege validator rejects new files, permissions, unprotected debu
   assert(validateAndroidSpike(dir).length>0,'New source files must be scanned too');
 }));
 
-test("focused recovery diagnostic is phase-local, diagnostic-only and has a non-destructive bailout",()=>{
+test("Q6 qualification remains phase-local, offline-only and has a non-destructive bailout",()=>{
   const runner=readFileSync(resolve('tools/kr003/Start-KR003.ps1'),'utf8');
   const module=readFileSync(resolve('tools/kr003/Qualification.psm1'),'utf8');
   const bailout=readFileSync(resolve('tools/kr003/Clear-KR003-Lab.ps1'),'utf8');
@@ -109,8 +109,10 @@ test("focused recovery diagnostic is phase-local, diagnostic-only and has a non-
     assert.match(runner,new RegExp(`Start-DiagnosticPhase '${phase}'`));
     assert.match(module,new RegExp(`'${phase}'`));
   }
-  assert.match(packager,/protocol:"KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION"/);
-  assert.match(packager,/diagnosticOnly:true/);
+  assert.match(packager,/protocol:"KR003-Q6-MI8-OFFLINE-QUALIFICATION"/);
+  assert.match(packager,/diagnosticOnly:false/);
+  assert.match(packager,/requiresOffline:true/);
+  assert.match(packager,/5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b/);
   assert.match(packager,/Clear-KR003-Lab\.ps1/);
   assert.match(runner,/EqualityDiagnosticImplemented=\$false/);
   assert.match(runner,/UsesRawPackageOrComponentIdentity=\$false/);
@@ -118,6 +120,43 @@ test("focused recovery diagnostic is phase-local, diagnostic-only and has a non-
   assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
   assert.doesNotMatch(bailout,/Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable/);
 });
+
+test("Q6 ingestion requires 100 physical rows, offline restoration and both phase-local safety checkpoints",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const candidate='5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b';
+  const fixture='6653f10b527cc9a273a8c0ea045cd250f6978c1acfb8e92b00b701f6c14f84bb';
+  const bundle={protocol:'KR003-Q6-MI8-OFFLINE-QUALIFICATION',sourceCommit:'d'.repeat(40),runnerVersion:6,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,calibratedBy:{runId:'run-20260906-171929-69a3abda'}};
+  save('manifest.json',{Bundle:bundle,OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,CalibrationOnly:false,RecoveryDiagnostic:false});
+  const calibration={Attempt:0,Phase:'CALIBRATION',Revision:99,Observer:'PASS',Automated:'PASS',LatencyMs:111,HoldMillis:10000};
+  const rows=Array.from({length:100},(_,i)=>({Attempt:i+1,Phase:'QUALIFICATION',Revision:100+i,Observer:'PASS',Automated:'PASS',LatencyMs:120+i%5,HoldMillis:10000}));
+  save('attempts.json',[calibration,...rows]); save('calibration.json',calibration);
+  const phaseRows=[
+    {Name:'SETTINGS_ROOT',PhysicalResult:'PASS',Oracle:'SAFE_TRANSITION_CORROBORATED',AfterSequence:1,LastSequence:5},
+    {Name:'DIGITAL_WELLBEING_ATTEMPT',PhysicalResult:'FAIL',Oracle:'ORDINARY_REATTACHMENT_CORROBORATED',AfterSequence:5,LastSequence:9},
+    {Name:'RECOVERY_BUTTON_ATTEMPT',PhysicalResult:'PASS',Oracle:'FRESH_SAFE_TRANSITION_CORROBORATED',AfterSequence:9,LastSequence:14,SafeTransitionElapsed:1000,LastElapsed:11000,LastDisposition:'SAFE_SYSTEM',LastAttached:false,ReattachedAfterSafe:false,UnknownAfterSafe:false},
+    {Name:'POST_RECOVERY_STATE',PhysicalResult:'UNRECORDED',Oracle:'SAFE_STATE_OBSERVED',AfterSequence:14,LastSequence:14},
+  ];
+  for(const phase of ['calibration','final']) {
+    save(`safety-${phase}.json`,{Protocol:bundle.protocol,Phase:phase,HomePhysical:'PASS',HoldOracle:'RESTRICTION_HELD',RecoveryFile:`recovery-${phase}.json`,RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ReentryOracle:'ORDINARY_RESTRICTION_HELD',ClearTouch:'FIXTURE_COUNTER_INCREMENT',Result:'PHYSICAL_PASS_RECORDED',IndependentExpirySamples:0});
+    save(`recovery-${phase}.json`,{Protocol:bundle.protocol,EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Phases:phaseRows});
+  }
+  save('diagnostic-bailout.json',{Status:'VERIFIED',RestrictionReleased:true,LatencySamplesPreserved:true,ConsumerRecoveryEvidence:false,AppDataCleared:false,Uninstalled:false,PermissionsAltered:false});
+  save('network-restoration.json',{Status:'RESTORED_AND_FLAGS_VERIFIED'});
+  save('final-metrics.json',{samples:rows.map(r=>r.LatencyMs),sampleCount:100});
+  const sorted=rows.map(r=>r.LatencyMs).sort((a,b)=>a-b);
+  const stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
+  const summary={Status:'PASSED_THIS_CONFIGURATION_ONLY',Reason:'COMPLETED',ValidPairedObservations:100,InternalPairedStatistics:stats,StatisticsAvailable:true,SafetyChecksPassed:true,Kr003Complete:false,Offline:true,FinalizationErrors:[],QualificationRequested:true,RecoveryDiagnosticRequested:false};
+  save('summary.json',summary);
+  assert.equal(ingestQualification(dir).validPairedObservations,100);
+  save('safety-final.json',{...JSON.parse(readFileSync(join(dir,'safety-final.json'))),HomePhysical:'FAIL'});
+  assert.throws(()=>ingestQualification(dir));
+  save('safety-final.json',{...JSON.parse(readFileSync(join(dir,'safety-calibration.json'))),Phase:'final',RecoveryFile:'recovery-final.json'});
+  save('recovery-final.json',{Protocol:bundle.protocol,EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Phases:phaseRows.map((p,i)=>i===2?{...p,LastElapsed:10999}:p)});
+  assert.throws(()=>ingestQualification(dir),/stable-safe interval/);
+  save('recovery-final.json',{Protocol:bundle.protocol,EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Phases:phaseRows});
+  save('network-restoration.json',{Status:'RESTORE_FAILED_OWNER_ACTION_REQUIRED'});
+  assert.throws(()=>ingestQualification(dir));
+}));
 
 test("focused diagnostic ingestion preserves physical and software outcomes without creating qualification samples",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));

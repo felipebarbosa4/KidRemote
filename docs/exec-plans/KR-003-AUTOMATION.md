@@ -109,3 +109,15 @@ the [immutable bundle and owner handoff](../test-plans/evidence/KR-003-Q5-BUNDLE
 The owner executed it once. [Preserved Q5 evidence](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) records expiry/root PASS, expected
 Digital Wellbeing blocking, a single persistent recovery PASS, safe post-state and verified lab CLEAR. Q5 has zero qualification rows. Prepare a
 new immutable qualification runner using the exact APK hash; do not pool earlier expiries or waive fresh calibration/final safety checks.
+
+## Q6 offline 100-sample qualification
+
+- **Goal:** Execute AC-3/TIME-04 once on the Mi 8 with 100 new paired physical expiries while offline.
+- **Context:** Q5 physically calibrated the final recovery route and exact candidate/fixture APK hashes; earlier run rows remain non-poolable.
+- **Constraints:** Runner/protocol only; exact Q5 APK bytes; owner-operated Windows ADB; no resume, destructive actions, enforcement changes or KR-004.
+- **Done when:** Exact-source CI and immutable bundle verification pass, then the owner runs one command; physical result is ingested without inflation.
+
+The [Q6 protocol](../test-plans/KR-003-Q6-QUALIFICATION.md) enforces offline opt-in, fresh excluded calibration, separately recorded Home/root/
+Digital Wellbeing/recovery/re-entry/Clear checkpoints before and after the set, one ten-second observer response for each of exactly 100 fresh
+revisions, exact internal-metric agreement, fail-stop evidence, sample-preserving bailout and independently verified radio restoration. Current
+physical status is **Not run**. Builds, synthetic rows and a packaged command are not physical evidence.

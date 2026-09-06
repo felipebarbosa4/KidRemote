@@ -1,8 +1,8 @@
 <#
-Goal: Owner-operated KR-003 focused Settings recovery diagnosis with reproducible, phase-local evidence.
-Context: Run only in RecoveryDiagnostic mode from an integrity-checked Q5 bundle produced by package.mjs.
-Constraints: No surface-policy change, raw identity, host/network/permission change, input injection, uninstall, data clear or reboot command.
-Done when: One labelled case is journalled and lab-only CLEAR releases the restriction without changing latency samples.
+Goal: Owner-operated KR-003 offline Mi 8 qualification with 100 paired physical expiry observations.
+Context: Run only from an integrity-checked Q6 bundle after the exact Q5 APK passed focused recovery calibration.
+Constraints: No raw identity, host/permission change, input injection, uninstall, data clear or reboot; only explicit reversible radio opt-in.
+Done when: Fresh calibration/safety checks and 100 attempts are journalled; cleanup preserves metrics and restores changed radios.
 #>
 param(
     [string]$Adb = 'C:\platform-tools\adb.exe',
@@ -45,6 +45,9 @@ $script:FinalizationErrors = @()
 $script:Recovery = $null
 $script:Diagnostic = $null
 $script:DiagnosticPhase = $null
+$script:DiagnosticFileName = 'recovery-diagnostic.json'
+$script:Safety = $null
+$script:SafetyFileName = 'safety-incomplete.json'
 $script:DiagnosticBailout = $null
 $script:LabControlReady = $false
 $script:StartedAt = [DateTime]::UtcNow.ToString('o')
@@ -224,7 +227,13 @@ function Read-Result {
 }
 
 function Read-DiagnosticResult {
-    param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved, [int]$MinimumPassSeconds = 0)
+    param(
+        [string]$Prompt,
+        [scriptblock]$Poll,
+        [scriptblock]$OnObserved,
+        [int]$MinimumPassSeconds = 0,
+        [scriptblock]$PassReady
+    )
     Check-EarlyStop
     Write-Host $Prompt -ForegroundColor Cyan
     Write-Host '[P] usable/success  [F] blocked/failure  [I] invalid/uncertain  [Q] stop and run cleanup'
@@ -236,9 +245,11 @@ function Read-DiagnosticResult {
             continue
         }
         $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
-        if ($key -eq 'P' -and $observation.Elapsed.TotalSeconds -lt $MinimumPassSeconds) {
-            Write-Host ("Keep observing; PASS is enabled after {0} seconds." -f $MinimumPassSeconds)
-            continue
+        if ($key -eq 'P') {
+            if ($observation.Elapsed.TotalSeconds -lt $MinimumPassSeconds -or ($null -ne $PassReady -and -not (& $PassReady))) {
+                Write-Host 'Keep observing; the required stable interval/software state is not complete yet.'
+                continue
+            }
         }
         if ($key -in @('P','F','I')) {
             $result = switch ($key) { 'P' { 'PASS' }; 'F' { 'FAIL' }; 'I' { 'INVALID' } }
@@ -293,7 +304,7 @@ function Clear-ToOrdinary {
 }
 
 function Invoke-DiagnosticBailout {
-    if (-not $RecoveryDiagnostic -or -not $script:LabControlReady) { return }
+    if (-not $script:LabControlReady) { return }
     $record = [PSCustomObject]@{
         Operation='CLEAR_LAB_TIMER_ONLY'; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
         Status='STARTED'; BeforeRevision=$null; AfterRevision=$null; BeforeSampleCount=$null; AfterSampleCount=$null
@@ -458,7 +469,7 @@ function Poll-Recovery {
 }
 
 function Save-Diagnostic {
-    if ($null -ne $script:Diagnostic) { Write-JsonFile 'recovery-diagnostic.json' $script:Diagnostic }
+    if ($null -ne $script:Diagnostic) { Write-JsonFile $script:DiagnosticFileName $script:Diagnostic }
 }
 
 function Start-DiagnosticPhase {
@@ -499,6 +510,9 @@ function Complete-DiagnosticPhase {
 }
 
 function Invoke-FocusedRecoveryDiagnostic {
+    param([string]$OutputName = 'recovery-diagnostic.json')
+    if ($OutputName -notmatch '^recovery-(calibration|final|diagnostic)\.json$') { throw 'INVALID:DIAGNOSTIC_OUTPUT_NAME' }
+    $script:DiagnosticFileName=$OutputName
     $start=Get-LabState
     Assert-KRHealth $start
     if (-not $start.restriction -or -not $start.attached -or $start.disposition -ne 'ORDINARY_APP') {
@@ -526,6 +540,13 @@ function Invoke-FocusedRecoveryDiagnostic {
         Save-Diagnostic
         return
     }
+    if ($script:DiagnosticPhase.Oracle -ne 'SAFE_TRANSITION_CORROBORATED') {
+        $script:Diagnostic.Result='PARTIAL'
+        $script:Diagnostic.Reason='SOFTWARE_INVALID_RECORDED'
+        $script:Diagnostic.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Diagnostic
+        return
+    }
 
     Start-DiagnosticPhase 'DIGITAL_WELLBEING_ATTEMPT'
     $digital=Read-DiagnosticResult 'DIGITAL_WELLBEING_ATTEMPT: from Settings, tap Digital Wellbeing & parental controls ONCE. P=destination usable, F=blocked/restriction returned, I=uncertain. Do not try other destinations.' -Poll { Poll-DiagnosticPhase } -OnObserved {
@@ -535,6 +556,20 @@ function Invoke-FocusedRecoveryDiagnostic {
         Save-Diagnostic
     }
     Complete-DiagnosticPhase $digital
+    if ($digital -ne 'FAIL') {
+        $script:Diagnostic.Result='PARTIAL'
+        $script:Diagnostic.Reason='DIGITAL_WELLBEING_UNEXPECTED_' + $digital
+        $script:Diagnostic.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Diagnostic
+        return
+    }
+    if ($script:DiagnosticPhase.Oracle -ne 'ORDINARY_REATTACHMENT_CORROBORATED') {
+        $script:Diagnostic.Result='PARTIAL'
+        $script:Diagnostic.Reason='SOFTWARE_INVALID_RECORDED'
+        $script:Diagnostic.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Diagnostic
+        return
+    }
 
     $beforeRecovery=Get-LabState
     if (-not $beforeRecovery.restriction -or -not $beforeRecovery.attached) {
@@ -545,7 +580,7 @@ function Invoke-FocusedRecoveryDiagnostic {
         Complete-DiagnosticPhase 'INVALID' 1
     } else {
         Start-DiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT'
-        $recovery=Read-DiagnosticResult 'RECOVERY_BUTTON_ATTEMPT: tap the overlay Open device settings button ONCE. Do not tap again. P=top-level Settings remains usable for 10 seconds, F=restriction returns/remains or recovery is unusable, I=uncertain.' -MinimumPassSeconds 10 -Poll { Poll-DiagnosticPhase } -OnObserved {
+        $recovery=Read-DiagnosticResult 'RECOVERY_BUTTON_ATTEMPT: tap the overlay Open device settings button ONCE. Do not tap again. P=top-level Settings remains usable for 10 seconds, F=restriction returns/remains or recovery is unusable, I=uncertain. The runner enables P only after a fresh safe transition remains stable for 10 seconds.' -Poll { Poll-DiagnosticPhase } -PassReady { Test-KRDiagnosticStableSafe -Evidence $script:DiagnosticPhase } -OnObserved {
             param($result)
             $script:DiagnosticPhase.PhysicalResult=$result
             $script:DiagnosticPhase.PhysicalObservedUtc=[DateTime]::UtcNow.ToString('o')
@@ -561,6 +596,115 @@ function Invoke-FocusedRecoveryDiagnostic {
     $script:Diagnostic.Reason=Get-KRFocusedDiagnosticReason -Phases @($script:Diagnostic.Phases)
     $script:Diagnostic.EndedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Diagnostic
+}
+
+function Save-Safety {
+    if ($null -ne $script:Safety) { Write-JsonFile $script:SafetyFileName $script:Safety }
+}
+
+function Poll-SafetyHold {
+    $snapshot=Get-LabState
+    Assert-KRHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:Safety.FixtureTaps -FixtureState (Get-FixtureState)
+    $script:Safety.LastElapsed=[long]$snapshot.elapsed
+    $script:Safety.HoldOracle='RESTRICTION_HELD'
+    Save-Safety
+    return $snapshot
+}
+
+function Stop-ForSafetyResult {
+    param([string]$Result, [string]$Step)
+    if ($Result -eq 'PASS') { return }
+    $class=if ($Result -eq 'FAIL') { 'FAIL' } else { 'INVALID' }
+    throw ($class + ':SAFETY_' + $Step)
+}
+
+function Invoke-QualificationSafetyCheckpoint {
+    param([ValidateSet('calibration','final')][string]$Phase)
+    $start=Get-LabState
+    Assert-KRHealth $start
+    if (-not $start.restriction -or -not $start.attached -or $start.disposition -ne 'ORDINARY_APP') {
+        throw ('INVALID:SAFETY_' + $Phase.ToUpperInvariant() + '_START')
+    }
+    $fixture=Get-FixtureState
+    $script:SafetyFileName='safety-' + $Phase + '.json'
+    $script:Safety=[PSCustomObject]@{
+        Schema=1; Protocol=$script:Bundle.protocol; Phase=$Phase; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
+        Revision=[long]$start.revision; StartedElapsed=[long]$start.elapsed; LastElapsed=[long]$start.elapsed
+        FixtureTaps=[long]$fixture.taps; HomePhysical='UNRECORDED'; HomeObservedUtc=$null; HoldOracle='PENDING'
+        RecoveryFile=('recovery-' + $Phase + '.json'); RecoveryReason='UNRECORDED'
+        ReentryPhysical='UNRECORDED'; ReentryObservedUtc=$null; ReentryOracle='PENDING'
+        ClearTouch='UNRECORDED'; ClearRevision=$null; ClearSampleCount=$null
+        Result='INCOMPLETE'; Reason=$null; IndependentExpirySamples=0
+    }
+    Save-Safety
+
+    $home=Read-DiagnosticResult 'HOME CHECK: press Home PHYSICALLY once. P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+        param($result)
+        $script:Safety.HomePhysical=$result
+        $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+    }
+    Stop-ForSafetyResult -Result $home -Step ($Phase.ToUpperInvariant() + '_HOME')
+    $null=Poll-SafetyHold
+
+    Invoke-FocusedRecoveryDiagnostic -OutputName $script:Safety.RecoveryFile
+    $script:Safety.RecoveryReason=$script:Diagnostic.Reason
+    Save-Safety
+    if ($script:Diagnostic.Reason -ne 'PHYSICAL_PASS_RECORDED') {
+        $hasPhysicalFailure=@($script:Diagnostic.Phases | Where-Object { $_.PhysicalResult -eq 'FAIL' }).Count -gt 0
+        $hasPhysicalInvalid=@($script:Diagnostic.Phases | Where-Object { $_.PhysicalResult -eq 'INVALID' }).Count -gt 0
+        $class=if ($hasPhysicalFailure -or $script:Diagnostic.Reason -in @('PHYSICAL_FAILURE_RECORDED','SOFTWARE_FAILURE_RECORDED') -or $script:Diagnostic.Reason -like 'DIGITAL_WELLBEING_UNEXPECTED_PASS') { 'FAIL' }
+            elseif ($hasPhysicalInvalid -or $script:Diagnostic.Reason -in @('PHYSICAL_INVALID_RECORDED','SOFTWARE_INVALID_RECORDED')) { 'INVALID' }
+            else { 'INVALID' }
+        throw ($class + ':SAFETY_' + $Phase.ToUpperInvariant() + '_RECOVERY')
+    }
+
+    $fixtureBefore=Get-FixtureState
+    Open-Fixture
+    $reentrySnapshot=Wait-LabCondition -Condition { param($s); Assert-KRHealth $s; return $s.restriction -and $s.attached -and $s.disposition -eq 'ORDINARY_APP' } -FailureCode ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_REENTRY')
+    $script:Safety.FixtureTaps=[long]$fixtureBefore.taps
+    $script:Safety.Revision=[long]$reentrySnapshot.revision
+    $script:Safety.HoldOracle='PENDING'
+    Save-Safety
+    $reentry=Read-DiagnosticResult 'ORDINARY RE-ENTRY: P=the disposable ordinary app is blocked again; F=ordinary use is possible/flickers; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+        param($result)
+        $script:Safety.ReentryPhysical=$result
+        $script:Safety.ReentryObservedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+    }
+    Stop-ForSafetyResult -Result $reentry -Step ($Phase.ToUpperInvariant() + '_REENTRY')
+    $null=Poll-SafetyHold
+    $script:Safety.ReentryOracle='ORDINARY_RESTRICTION_HELD'
+    Save-Safety
+
+    $beforeClear=Get-LabState
+    $beforeSamples=@($beforeClear.samples)
+    $null=Get-LabState 'CLEAR'
+    $released=Wait-LabCondition -Condition { param($s) -not $s.armed -and -not $s.restriction -and -not $s.attached } -FailureCode ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR')
+    if ($released.samples.Count -ne $beforeSamples.Count -or (($released.samples -join ',') -cne ($beforeSamples -join ','))) {
+        throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_CHANGED_METRICS')
+    }
+    Open-Fixture
+    $null=Wait-LabCondition -Condition { param($s) -not $s.restriction -and -not $s.attached -and $s.disposition -eq 'ORDINARY_APP' } -FailureCode ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_ORDINARY')
+    $null=Wait-FixtureFocus -Focused $true
+    $beforeTap=Get-FixtureState
+    Write-Host 'CLEAR CHECK: on the now-unblocked disposable surface, tap Test ordinary use once. No key is needed.' -ForegroundColor Cyan
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    do {
+        Check-EarlyStop
+        $afterTap=Get-FixtureState
+        if ($afterTap.taps -gt $beforeTap.taps) { break }
+        Start-Sleep -Milliseconds 250
+    } while ($watch.Elapsed.TotalSeconds -lt 60)
+    if ($afterTap.taps -ne $beforeTap.taps + 1) { throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_TOUCH') }
+    $script:Safety.ClearTouch='FIXTURE_COUNTER_INCREMENT'
+    $script:Safety.ClearRevision=[long]$released.revision
+    $script:Safety.ClearSampleCount=[long]$released.sampleCount
+    $script:Safety.Result=Get-KRSafetyCheckpointReason -Home $script:Safety.HomePhysical -Recovery $script:Safety.RecoveryReason -Reentry $script:Safety.ReentryPhysical -ClearTouch $script:Safety.ClearTouch
+    $script:Safety.Reason=$script:Safety.Result
+    $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-Safety
+    if ($script:Safety.Result -ne 'PHYSICAL_PASS_RECORDED') { throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_VERDICT') }
 }
 
 function Verify-InstalledApk {
@@ -653,7 +797,7 @@ function Write-FinalSummary {
 
 function Complete-LabRun {
     # No reporting failure can prevent restoration, another report attempt, or replace the primary terminal reason.
-    if ($RecoveryDiagnostic -and $script:LabControlReady) {
+    if ($script:LabControlReady) {
         Invoke-FinalStep 'DIAGNOSTIC_BAILOUT' { Invoke-DiagnosticBailout }
         if ($null -eq $script:DiagnosticBailout -or $script:DiagnosticBailout.Status -ne 'VERIFIED') {
             $script:FinalizationErrors += 'DIAGNOSTIC_BAILOUT_UNVERIFIED'
@@ -680,6 +824,15 @@ function Complete-LabRun {
             if ($null -eq $script:Recovery.Reason -and $script:Reason -ne 'COMPLETED') { $script:Recovery.Reason=$script:Reason }
             $script:Recovery.EndedUtc=[DateTime]::UtcNow.ToString('o')
             Save-Recovery
+        }
+    }
+    Invoke-FinalStep 'SAFETY_REPORT' {
+        if ($null -ne $script:Safety) {
+            if ($script:Safety.Result -eq 'INCOMPLETE') {
+                $script:Safety.Reason=$script:Reason
+            }
+            if ($null -eq $script:Safety.EndedUtc) { $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o') }
+            Save-Safety
         }
     }
     Invoke-FinalStep 'DIAGNOSTIC_REPORT' {
@@ -722,13 +875,13 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION' -or -not $script:Bundle.diagnosticOnly) { throw 'INVALID:BUNDLE_SCHEMA' }
-    if (-not $RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork) { throw 'INVALID:DIAGNOSTIC_MODE_REQUIRED' }
+    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q6-MI8-OFFLINE-QUALIFICATION' -or $script:Bundle.diagnosticOnly -or -not $script:Bundle.requiresOffline) { throw 'INVALID:BUNDLE_SCHEMA' }
+    if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
         if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'INVALID:BUNDLE_INTEGRITY' }
     }
-    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $false; OfflineOwnerConfirmed = $false; CalibrationOnly = $false; RecoveryDiagnostic = $true; PhysicalRun = $true }
+    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
     $script:Device = Read-DeviceConfiguration
@@ -745,16 +898,43 @@ try {
     $null = Get-LabState 'CLEAR'
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
+    Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
+    Enter-OfflineNetwork
+    $script:Manifest.Device=$script:Device
+    if ($script:Device.wifi_on -ne '0' -or $script:Device.mobile_data -ne '0') { throw 'INVALID:OFFLINE_RADIOS_NOT_DISABLED' }
+    $offlineResult=Read-DiagnosticResult 'OFFLINE CHECK: verify Wi-Fi and mobile data are off and this lab device has no other Internet path. P=confirmed, F/I=not established.'
+    if ($offlineResult -ne 'PASS') { throw 'INVALID:OFFLINE_OWNER_NOT_CONFIRMED' }
+    $script:Offline=$true
+    $script:Manifest.OfflineOwnerConfirmed=$true
     Write-JsonFile 'manifest.json' $script:Manifest
+    $null=Get-LabState 'RESET_METRICS'
+    $calibrationZero=Get-LabState
+    if ($calibrationZero.sampleCount -ne 0) { throw 'INVALID:CALIBRATION_METRICS_RESET_FAILED' }
     Invoke-Expiry -Attempt 0 -Calibration
-    Invoke-FocusedRecoveryDiagnostic
-    $script:Terminal='DIAGNOSTIC_COMPLETED_ONLY'
-    $script:Reason=$script:Diagnostic.Reason
+    Invoke-QualificationSafetyCheckpoint -Phase 'calibration'
+    $null=Get-LabState 'RESET_METRICS'
+    $zero=Get-LabState
+    if ($zero.sampleCount -ne 0) { throw 'INVALID:QUALIFICATION_METRICS_RESET_FAILED' }
+    for ($attempt=1; $attempt -le 100; $attempt++) {
+        Invoke-Expiry -Attempt $attempt
+    }
+    Invoke-QualificationSafetyCheckpoint -Phase 'final'
+    $script:SafetyPassed=$true
+    $final=Get-LabState
+    Write-JsonFile 'final-metrics.json' $final
+    $stats=Get-KRStatistics -Values @($script:Rows | ForEach-Object { $_.LatencyMs })
+    if ($final.sampleCount -ne 100 -or $final.samples.Count -ne 100 -or
+        (($final.samples -join ',') -cne (($script:Rows | ForEach-Object { $_.LatencyMs }) -join ',')) -or
+        $final.p50 -ne $stats.P50 -or $final.p95 -ne $stats.P95 -or $final.max -ne $stats.Max) {
+        throw 'INVALID:AGGREGATE_MISMATCH'
+    }
     $endDevice = Read-DeviceConfiguration
     Write-JsonFile 'end-device.json' $endDevice
     if (($endDevice | ConvertTo-Json -Compress) -cne ($script:Device | ConvertTo-Json -Compress)) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256 -NoInstall
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256 -NoInstall
+    $script:Terminal=Get-KRRunVerdict -Rows $script:Rows -SafetyPassed $script:SafetyPassed -Offline $script:Offline
+    $script:Reason='COMPLETED'
 } catch {
     $message = $_.Exception.Message
     if ($message -notmatch '^(FAIL|INVALID|INTERRUPTED):[A-Z0-9_]+$') { $message = 'INVALID:HOST_EXCEPTION' }
@@ -779,6 +959,8 @@ try {
     }
 }
 
-# Machine callers must not interpret a stopped or online-only run as offline qualification.
-if ($script:Terminal -eq 'DIAGNOSTIC_COMPLETED_ONLY' -and $script:FinalizationErrors.Count -eq 0 -and $null -ne $script:DiagnosticBailout -and $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
+# Machine callers must not interpret a stopped, online-only, cleanup-failed or reporting-failed run as qualification.
+if ($script:Terminal -eq 'PASSED_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
+    $script:RadioRestoreStatus -eq 'RESTORED_AND_FLAGS_VERIFIED' -and $script:FinalizationErrors.Count -eq 0 -and
+    $null -ne $script:DiagnosticBailout -and $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
 exit 2

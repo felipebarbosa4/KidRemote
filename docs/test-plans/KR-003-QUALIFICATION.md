@@ -15,6 +15,10 @@ The separately justified [Q5 Settings task reset](KR-003-RECOVERY-TASK-RESET.md)
 the prerequisite to prepare a new immutable qualification bundle. It does not start or reduce the 100 new samples, waive the fresh
 calibration/safety checks below, establish another device, or approve production/Play release.
 
+The resulting [Q6 specialization](KR-003-Q6-QUALIFICATION.md) fixes the candidate/fixture bytes to the Q5-calibrated hashes and requires one
+offline execution with fresh calibration, safety checks before and after, and 100 new rows. Physical Q6 execution is **Not run**. Preparation,
+synthetic tests, builds and hashes are not qualification evidence.
+
 ## Reconciled definitions
 
 The existing documents require **both** physical observations and latency samples. One sample is a new persisted 10-second allowance/revision,
@@ -31,8 +35,8 @@ wording 'observed usable restriction' requires the physical outcome too; attachm
 Human reaction time/visual-onset latency is **UNSPECIFIED** and is not relabelled as that metric.
 
 Home/Settings/re-entry have separate SAFE/TAMP obligations; the original AC-3 does **not** require all of them on every latency sample. The completed
-ten-cycle run already repeats them. The automated runner repeats a combined recovery/escape check during calibration and after sample 100. Each
-such checklist needs actual physical Home, the overlay's Settings button, and ordinary re-entry observation. This does not satisfy other SAFE rows.
+ten-cycle run already repeats them. Q6 repeats separately journalled Home, calibrated Settings/Digital Wellbeing/recovery, ordinary re-entry and
+clear checks during calibration and after sample 100. Each needs the specified physical observations. This does not satisfy other SAFE rows.
 
 ## Eligibility, failure and interruption
 
@@ -118,14 +122,15 @@ oracle is INVALID, not proof of a physical no-block. This wait does not change o
 
 ## Offline and device gates
 
-The no-INTERNET manifest is useful static evidence but does not itself execute TIME-04/NET-01. Record radio/settings state. An online run is labelled
-online-only; an offline physical run remains outstanding for AC-3. Executing the Windows runner with `-OfflineNetwork` explicitly authorizes
+The no-INTERNET manifest is useful static evidence but does not itself execute TIME-04/NET-01. Record radio/settings state. An offline physical
+run remains outstanding for AC-3. Q6 requires `-OfflineNetwork`; invoking it explicitly authorizes
 temporary Wi-Fi/mobile-data disabling on this lab device. It records original flags before modification, verifies disabled flags and restores only
 the flags it changed in `finally`. Wi-Fi and mobile recovery/readback are independently guarded; both recorded original flags are verified, even
 when only one was changed. `network-restoration.json` contains per-radio original/changed/observed/status fields and UTC. No airplane-mode, SIM,
 Bluetooth, account, permission or host settings are changed. The owner confirms no other
 Internet connection once; radio flags alone cannot establish connectivity. Failed restoration is recorded and requires owner recovery from
-`network-original.json`; a hard host/power kill cannot guarantee automatic restoration. Without that opt-in, radios are never changed.
+`network-original.json`; a hard host/power kill cannot guarantee automatic restoration. Without that opt-in, Q6 refuses to run and radios are
+never changed.
 
 The target-specific commands are verified against Android 10 AOSP [Wi-Fi svc](https://android.googlesource.com/platform/frameworks/base/+/android-10.0.0_r47/cmds/svc/src/com/android/commands/svc/WifiCommand.java)
 and [data svc](https://android.googlesource.com/platform/frameworks/base/+/android-10.0.0_r47/cmds/svc/src/com/android/commands/svc/DataCommand.java),

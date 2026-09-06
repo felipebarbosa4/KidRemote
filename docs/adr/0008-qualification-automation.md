@@ -187,3 +187,31 @@ and preserved four historical internal latency samples. Zero qualification rows 
 Decision consequence: the focused Q5 invalidation test passed on this exact Mi 8 and APK hash, so a separately immutable full qualification
 runner may be prepared. Its 100 samples must be new and retain fresh calibration/safety, failure-stop, evidence-integrity and offline requirements.
 Q5 does not prove the exact MIUI task mechanism, broad Settings safety, another configuration, production acceptance or Play approval.
+
+## Q6 offline qualification runner
+
+Q5 permits progression without changing enforcement code, but its single expiry and zero qualification rows cannot be pooled. Decision: package
+the exact Q5-calibrated candidate and ordinary-fixture APK bytes with [Q6](../test-plans/KR-003-Q6-QUALIFICATION.md), a new runner-only protocol.
+Q6 requires reversible offline setup, a fresh excluded calibration, the complete labelled recovery route and Home/re-entry/Clear checks before
+and after exactly 100 new expiry observations. Each expiry retains the physical ten-second observation and separately paired internal metric.
+
+Alternatives evaluated: reuse Q5 as calibration (rejected because the source contract requires fresh same-run preflight); run online first
+(rejected because it would leave the offline AC-3 condition unresolved); repeat Home/Settings on all 100 samples (rejected because AC-3 does not
+require it and the ten-cycle checkpoint already supplied repeated escape/recovery observations); replace visual results with telemetry (rejected
+as circular); permit resume/pooling (rejected because configuration/process continuity and failure integrity would be weakened).
+
+Security/privacy: Q6 adds no Android code, permission, event type, identity, node/content, screenshot, network privilege or release hook. It uses
+only the existing sender-protected debug controls and zero-permission fixture. The Windows runner may disable Wi-Fi/mobile data only through the
+explicit `-OfflineNetwork` invocation; original flags are journalled and restoration is independently verified. A sample-preserving lab CLEAR is
+cleanup, never consumer recovery evidence.
+
+Operational implications: one uninterrupted owner run is expected to take 40–60 minutes and needs 101 expiry responses plus two bounded safety
+checklists. Any FAIL/INVALID/interruption stops and remains evidence; no cross-run resume or replacement exists. Exit success also requires both
+safety checkpoints, exact 100-row/metric agreement, cleanup, radio restoration and no finalization error. A hard host/power loss remains outside
+the runner's cleanup guarantee.
+
+Reasons: this is the smallest run that simultaneously satisfies the established 100-observation contract, offline condition, Q5 recovery
+precondition and evidence integrity without modifying the physically calibrated enforcement APK. Risks are operator fatigue, physical-screen
+eligibility loss, OEM state drift and radio restoration failure. Invalidation tests: synthetic zero/partial/100-row finalization, first-failure
+stop, phase-floor isolation, ten-second stable-safe gating, safety field corruption, aggregate mismatch, release leakage and exact APK hash drift.
+Physical Q6 execution remains **Not run**; passing it would apply only to this Mi 8 configuration and would not close KR-003 or establish Play approval.

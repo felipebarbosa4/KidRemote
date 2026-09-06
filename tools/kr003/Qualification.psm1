@@ -115,9 +115,12 @@ function New-KRRecoveryEvidence {
         Phase=$Phase; Revision=[long]$Snapshot.revision; StartedElapsed=[long]$Snapshot.elapsed
         AfterSequence=[long]$Snapshot.traceHead; StartedUtc=[DateTime]::UtcNow.ToString('o')
         LastElapsed=[long]$Snapshot.elapsed; OwnerConfirmedUtc=$null; EndedUtc=$null
+        PhysicalHome='UNRECORDED'; HomeObservedUtc=$null
+        PhysicalSettings='UNRECORDED'; SettingsObservedUtc=$null
         PhysicalHomeAndSettings='UNRECORDED'; Reentry='UNRECORDED'; ClearTouch='UNRECORDED'
         OpenRequested=$false; OpenDispatched=$false; SafeSample=$false; SafeTransition=$false; Removed=$false
-        OpenRequestedSequence=-1L; OpenDispatchedElapsed=-1L
+        OpenRequestedSequence=-1L; OpenDispatchedElapsed=-1L; SafeTransitionElapsed=-1L
+        OrdinaryAfterSafe=$false; AttachedAfterSafe=$false
         Oracle='PENDING'; Reason=$null; IndependentExpirySamples=0
     }
 }
@@ -141,13 +144,43 @@ function Update-KRRecoveryEvidence {
             $Evidence.OpenDispatched=$true; $Evidence.OpenDispatchedElapsed=$eventTime
         }
         if ($Evidence.OpenDispatched -and $eventTime -ge $Evidence.OpenDispatchedElapsed) {
-            if ($entry.line -match ' kind=surface_transition .*identity=KNOWN_SAFE_SYSTEM .*nextDisposition=SAFE_SYSTEM restriction=true ') { $Evidence.SafeTransition=$true }
+            if ($entry.line -match ' kind=surface_transition .*identity=KNOWN_SAFE_SYSTEM .*nextDisposition=SAFE_SYSTEM restriction=true ') {
+                $Evidence.SafeTransition=$true
+                if ($Evidence.SafeTransitionElapsed -lt 0) { $Evidence.SafeTransitionElapsed=$eventTime }
+            }
             if ($entry.line -match ' kind=overlay_removed trigger=safe_surface .*restriction=true ') { $Evidence.Removed=$true }
+            if ($Evidence.SafeTransition -and $eventTime -ge $Evidence.SafeTransitionElapsed -and
+                $entry.line -match ' kind=surface_transition .*nextDisposition=ORDINARY_APP restriction=true ') {
+                $Evidence.OrdinaryAfterSafe=$true
+            }
+            if ($Evidence.SafeTransition -and $eventTime -ge $Evidence.SafeTransitionElapsed -and
+                $entry.line -match ' kind=overlay_attached .*restriction=true ') {
+                $Evidence.AttachedAfterSafe=$true
+            }
         }
     }
-    if ($Evidence.OpenDispatched -and $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed -and $Snapshot.restriction -and -not $Snapshot.attached -and $Snapshot.disposition -eq 'SAFE_SYSTEM') { $Evidence.SafeSample=$true }
-    # Retain correlated phase evidence even if a later snapshot has already returned to ordinary use.
-    if ($Evidence.OpenRequested -and $Evidence.OpenDispatched -and ($Evidence.SafeSample -or ($Evidence.SafeTransition -and $Evidence.Removed))) { $Evidence.Oracle='CORROBORATED' }
+    if ($Evidence.OpenDispatched -and $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed -and $Snapshot.restriction -and -not $Snapshot.attached -and $Snapshot.disposition -eq 'SAFE_SYSTEM') {
+        $Evidence.SafeSample=$true
+        if ($Evidence.SafeTransitionElapsed -lt 0) { $Evidence.SafeTransitionElapsed=[long]$Snapshot.sampledAt }
+    }
+    if ($Evidence.SafeTransitionElapsed -ge 0 -and $Snapshot.sampledAt -ge $Evidence.SafeTransitionElapsed -and
+        $Snapshot.restriction -and $Snapshot.attached -and $Snapshot.disposition -eq 'ORDINARY_APP') {
+        $Evidence.OrdinaryAfterSafe=$true
+        $Evidence.AttachedAfterSafe=$true
+    }
+    if ($Evidence.OrdinaryAfterSafe -and $Evidence.AttachedAfterSafe) {
+        $Evidence.Oracle='REGRESSED_TO_ORDINARY'
+        $Evidence.Reason='SAFE_TRANSITION_DID_NOT_PERSIST'
+    } elseif ($Evidence.OpenRequested -and $Evidence.OpenDispatched -and ($Evidence.SafeSample -or ($Evidence.SafeTransition -and $Evidence.Removed))) {
+        $Evidence.Oracle='CORROBORATED'
+    }
+}
+
+function Test-KRRecoveryStableSafe {
+    param($Evidence, [long]$RequiredMillis = 10000)
+    return $Evidence.Oracle -eq 'CORROBORATED' -and $Evidence.SafeTransitionElapsed -ge 0 -and
+        $Evidence.LastElapsed - $Evidence.SafeTransitionElapsed -ge $RequiredMillis -and
+        -not $Evidence.OrdinaryAfterSafe -and -not $Evidence.AttachedAfterSafe
 }
 
 function New-KRDiagnosticPhase {
@@ -162,13 +195,16 @@ function New-KRDiagnosticPhase {
         StartedElapsed=[long]$Snapshot.elapsed; LastElapsed=[long]$Snapshot.elapsed
         AfterSequence=[long]$Snapshot.traceHead; LastSequence=[long]$Snapshot.traceHead
         StartedDisposition=[string]$Snapshot.disposition; StartedAttached=[bool]$Snapshot.attached
+        LastDisposition=[string]$Snapshot.disposition; LastAttached=[bool]$Snapshot.attached
         PhysicalResult='UNRECORDED'; PhysicalObservedUtc=$null
         OpenRequested=$false; OpenRequestCount=0; OpenRequestedSequence=-1L
         OpenDispatched=$false; OpenDispatchCount=0; OpenDispatchedSequence=-1L; OpenDispatchedElapsed=-1L
-        SafeTransition=$false; SafeTransitionSequence=-1L
+        SafeTransition=$false; SafeTransitionSequence=-1L; SafeTransitionElapsed=-1L
         OrdinaryTransition=$false; OrdinaryTransitionSequence=-1L
         UnknownTransition=$false; UnknownTransitionSequence=-1L
+        UnknownAfterSafe=$false
         OverlayAttached=$false; OverlayAttachedSequence=-1L
+        ReattachedAfterSafe=$false
         OverlayRemoved=$false; OverlayRemovedSequence=-1L
         SafeSample=$false; OrdinaryAttachedSample=$false; UnknownSample=$false
         Oracle='PENDING'; Reason=$null
@@ -182,6 +218,8 @@ function Update-KRDiagnosticPhase {
     if ($Snapshot.traceLost) { throw 'INVALID:DIAGNOSTIC_TRACE_GAP' }
     $Evidence.LastElapsed=[long]$Snapshot.elapsed
     $Evidence.LastSequence=[long]$Snapshot.traceHead
+    $Evidence.LastDisposition=[string]$Snapshot.disposition
+    $Evidence.LastAttached=[bool]$Snapshot.attached
     foreach ($entry in $Snapshot.events) {
         if ($entry.sequence -le $Evidence.AfterSequence) { continue }
         if ($entry.line -notmatch '^t=(\d+) .* revision=(\d+)$') { throw 'INVALID:DIAGNOSTIC_TRACE_SCHEMA' }
@@ -201,15 +239,22 @@ function Update-KRDiagnosticPhase {
         }
         if ($entry.line -match ' kind=surface_transition .*identity=KNOWN_SAFE_SYSTEM .*nextDisposition=SAFE_SYSTEM restriction=true ') {
             $Evidence.SafeTransition=$true; $Evidence.SafeTransitionSequence=[long]$entry.sequence
+            if ($Evidence.SafeTransitionElapsed -lt 0) { $Evidence.SafeTransitionElapsed=$eventTime }
         }
         if ($entry.line -match ' kind=surface_transition .*identity=ORDINARY_APP .*nextDisposition=ORDINARY_APP restriction=true ') {
             $Evidence.OrdinaryTransition=$true; $Evidence.OrdinaryTransitionSequence=[long]$entry.sequence
         }
         if ($entry.line -match ' kind=surface_transition .*nextDisposition=UNKNOWN_FAIL_OPEN restriction=true ') {
             $Evidence.UnknownTransition=$true; $Evidence.UnknownTransitionSequence=[long]$entry.sequence
+            if ($Evidence.SafeTransition -and $entry.sequence -gt $Evidence.SafeTransitionSequence) {
+                $Evidence.UnknownAfterSafe=$true
+            }
         }
         if ($entry.line -match ' kind=overlay_attached .*restriction=true ') {
             $Evidence.OverlayAttached=$true; $Evidence.OverlayAttachedSequence=[long]$entry.sequence
+            if ($Evidence.SafeTransition -and $entry.sequence -gt $Evidence.SafeTransitionSequence) {
+                $Evidence.ReattachedAfterSafe=$true
+            }
         }
         if ($entry.line -match ' kind=overlay_removed trigger=safe_surface .*restriction=true ') {
             $Evidence.OverlayRemoved=$true; $Evidence.OverlayRemovedSequence=[long]$entry.sequence
@@ -263,6 +308,12 @@ function Update-KRDiagnosticPhase {
             if ($regressed) {
                 $Evidence.Oracle='RECOVERY_REGRESSED_TO_ORDINARY'
                 $Evidence.Reason='SAFE_TRANSITION_DID_NOT_PERSIST'
+            } elseif ($Evidence.UnknownAfterSafe) {
+                $Evidence.Oracle='RECOVERY_REGRESSED_TO_UNKNOWN'
+                $Evidence.Reason='UNKNOWN_SURFACE_AFTER_SAFE_TRANSITION'
+            } elseif ($Evidence.ReattachedAfterSafe) {
+                $Evidence.Oracle='RECOVERY_OVERLAY_REATTACHED'
+                $Evidence.Reason='OVERLAY_REATTACHED_AFTER_SAFE_TRANSITION'
             } elseif ($Evidence.OpenDispatched -and ($correlatedTrace -or $correlatedSample)) {
                 $Evidence.Oracle='FRESH_SAFE_TRANSITION_CORROBORATED'
             }
@@ -273,6 +324,16 @@ function Update-KRDiagnosticPhase {
             elseif ($Evidence.UnknownSample) { $Evidence.Oracle='UNKNOWN_FAIL_OPEN_OBSERVED' }
         }
     }
+}
+
+function Test-KRDiagnosticStableSafe {
+    param($Evidence, [long]$RequiredMillis = 10000)
+    return $Evidence.Name -eq 'RECOVERY_BUTTON_ATTEMPT' -and
+        $Evidence.Oracle -eq 'FRESH_SAFE_TRANSITION_CORROBORATED' -and
+        $Evidence.SafeTransitionElapsed -ge 0 -and
+        $Evidence.LastElapsed - $Evidence.SafeTransitionElapsed -ge $RequiredMillis -and
+        $Evidence.LastDisposition -eq 'SAFE_SYSTEM' -and -not $Evidence.LastAttached -and
+        -not $Evidence.ReattachedAfterSafe -and -not $Evidence.UnknownAfterSafe
 }
 
 function Get-KRFocusedDiagnosticReason {
@@ -308,4 +369,18 @@ function Get-KRFocusedDiagnosticReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Get-KRFocusedDiagnosticReason
+function Get-KRSafetyCheckpointReason {
+    param([string]$Home, [string]$Recovery, [string]$Reentry, [string]$ClearTouch)
+    if ($Home -eq 'INVALID' -or $Reentry -eq 'INVALID' -or $Recovery -eq 'PHYSICAL_INVALID_RECORDED') {
+        return 'PHYSICAL_INVALID_RECORDED'
+    }
+    if ($Home -ne 'PASS' -or $Reentry -ne 'PASS' -or $Recovery -eq 'PHYSICAL_FAILURE_RECORDED') {
+        return 'PHYSICAL_FAILURE_RECORDED'
+    }
+    if ($Recovery -ne 'PHYSICAL_PASS_RECORDED' -or $ClearTouch -ne 'FIXTURE_COUNTER_INCREMENT') {
+        return 'SOFTWARE_FAILURE_RECORDED'
+    }
+    return 'PHYSICAL_PASS_RECORDED'
+}
+
+Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

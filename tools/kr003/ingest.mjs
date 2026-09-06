@@ -25,7 +25,7 @@ export function ingestQualification(directory) {
   const read = name => JSON.parse(decode(resolve(directory,name)));
   const manifest = read("manifest.json"), rows = read("attempts.json");
   const summary = existsSync(resolve(directory,"summary.json")) ? read("summary.json") : null;
-  assert(["KR003-Q1","KR003-Q2"].includes(manifest.Bundle.protocol));
+  assert(["KR003-Q1","KR003-Q2","KR003-Q6-MI8-OFFLINE-QUALIFICATION"].includes(manifest.Bundle.protocol));
   assert.match(manifest.Bundle.sourceCommit,/^[a-f0-9]{40}$/);
   assert(Array.isArray(rows),"Attempt journal must be an array");
   const completed = rows.filter(r=>r.Phase==="QUALIFICATION"&&r.Observer==="PASS"&&r.Automated==="PASS");
@@ -65,20 +65,78 @@ export function ingestQualification(directory) {
     assert.equal(calibration.Phase,"CALIBRATION");
     assert.equal(calibration.Observer,"PASS");
     assert.equal(calibration.Automated,"PASS");
-    if(manifest.Bundle.protocol==='KR003-Q2') {
+    if(['KR003-Q2','KR003-Q6-MI8-OFFLINE-QUALIFICATION'].includes(manifest.Bundle.protocol)) {
       assert.equal(summary.QualificationRequested,true);
       assert.deepEqual(rows.filter(r=>r.Phase==='CALIBRATION'),[calibration],"Calibration must survive in the attempt journal");
+      if(manifest.Bundle.protocol==='KR003-Q6-MI8-OFFLINE-QUALIFICATION') {
+        assert.equal(calibration.HoldMillis>=10000,true,"Calibration physical hold is incomplete");
+      }
       assert.deepEqual(summary.FinalizationErrors,[],"Cleanup/reporting failure cannot qualify");
       const restored=read('network-restoration.json');
       assert(!String(restored.Status).includes('FAILED'),"Radio restoration must not be silently unverified");
     }
-    for(const phase of ["calibration","final"]) {
-      const safety=read(`safety-${phase}.json`);
-      assert.equal(safety.PhysicalHomeAndSettings,"OWNER_PASS");
-      assert.equal(safety.Reentry,"OWNER_PASS");
-      assert.equal(safety.ClearTouch,"FIXTURE_COUNTER_INCREMENT");
-      assert.equal(safety.IndependentExpirySamples,0);
-      if(manifest.Bundle.protocol==='KR003-Q2') assert.equal(safety.Oracle,'CORROBORATED');
+    if(manifest.Bundle.protocol==='KR003-Q6-MI8-OFFLINE-QUALIFICATION') {
+      assert.equal(manifest.Bundle.diagnosticOnly,false);
+      assert.equal(manifest.Bundle.requiresOffline,true);
+      assert.equal(manifest.Bundle.runnerVersion,6);
+      assert.equal(manifest.Bundle.candidateSha256,'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b');
+      assert.equal(manifest.Bundle.fixtureSha256,'6653f10b527cc9a273a8c0ea045cd250f6978c1acfb8e92b00b701f6c14f84bb');
+      assert.equal(manifest.Bundle.calibratedBy?.runId,'run-20260906-171929-69a3abda');
+      assert.equal(manifest.OfflineNetworkRequested,true);
+      assert.equal(manifest.OfflineOwnerConfirmed,true);
+      assert.equal(manifest.CalibrationOnly,false);
+      assert.equal(manifest.RecoveryDiagnostic,false);
+      assert.equal(summary.Offline,true);
+      assert.equal(summary.RecoveryDiagnosticRequested,false);
+      const bailout=read('diagnostic-bailout.json');
+      assert.equal(bailout.Status,'VERIFIED');
+      assert.equal(bailout.RestrictionReleased,true);
+      assert.equal(bailout.LatencySamplesPreserved,true);
+      assert.equal(bailout.ConsumerRecoveryEvidence,false);
+      assert.equal(bailout.AppDataCleared,false);
+      assert.equal(bailout.Uninstalled,false);
+      assert.equal(bailout.PermissionsAltered,false);
+      const restored=read('network-restoration.json');
+      assert.equal(restored.Status,'RESTORED_AND_FLAGS_VERIFIED');
+      for(const phase of ['calibration','final']) {
+        const safety=read(`safety-${phase}.json`), diagnostic=read(`recovery-${phase}.json`);
+        assert.equal(safety.Protocol,manifest.Bundle.protocol);
+        assert.equal(safety.Phase,phase);
+        assert.equal(safety.HomePhysical,'PASS');
+        assert.equal(safety.HoldOracle,'RESTRICTION_HELD');
+        assert.equal(safety.RecoveryFile,`recovery-${phase}.json`);
+        assert.equal(safety.RecoveryReason,'PHYSICAL_PASS_RECORDED');
+        assert.equal(safety.ReentryPhysical,'PASS');
+        assert.equal(safety.ReentryOracle,'ORDINARY_RESTRICTION_HELD');
+        assert.equal(safety.ClearTouch,'FIXTURE_COUNTER_INCREMENT');
+        assert.equal(safety.Result,'PHYSICAL_PASS_RECORDED');
+        assert.equal(safety.IndependentExpirySamples,0);
+        assert.equal(diagnostic.Protocol,manifest.Bundle.protocol);
+        assert.equal(diagnostic.EqualityDiagnosticImplemented,false);
+        assert.equal(diagnostic.UsesRawPackageOrComponentIdentity,false);
+        assert.deepEqual(diagnostic.Phases.map(p=>[p.Name,p.PhysicalResult,p.Oracle]),[
+          ['SETTINGS_ROOT','PASS','SAFE_TRANSITION_CORROBORATED'],
+          ['DIGITAL_WELLBEING_ATTEMPT','FAIL','ORDINARY_REATTACHMENT_CORROBORATED'],
+          ['RECOVERY_BUTTON_ATTEMPT','PASS','FRESH_SAFE_TRANSITION_CORROBORATED'],
+          ['POST_RECOVERY_STATE','UNRECORDED','SAFE_STATE_OBSERVED'],
+        ]);
+        const recovery=diagnostic.Phases[2];
+        assert(recovery.SafeTransitionElapsed>=0 && recovery.LastElapsed-recovery.SafeTransitionElapsed>=10000,'Recovery stable-safe interval is too short');
+        assert.equal(recovery.LastDisposition,'SAFE_SYSTEM');
+        assert.equal(recovery.LastAttached,false);
+        assert.equal(recovery.ReattachedAfterSafe,false);
+        assert.equal(recovery.UnknownAfterSafe,false);
+        for(let i=1;i<diagnostic.Phases.length;i++) assert(diagnostic.Phases[i].AfterSequence>=diagnostic.Phases[i-1].LastSequence,'Diagnostic phases overlap');
+      }
+    } else {
+      for(const phase of ["calibration","final"]) {
+        const safety=read(`safety-${phase}.json`);
+        assert.equal(safety.PhysicalHomeAndSettings,"OWNER_PASS");
+        assert.equal(safety.Reentry,"OWNER_PASS");
+        assert.equal(safety.ClearTouch,"FIXTURE_COUNTER_INCREMENT");
+        assert.equal(safety.IndependentExpirySamples,0);
+        if(manifest.Bundle.protocol==='KR003-Q2') assert.equal(safety.Oracle,'CORROBORATED');
+      }
     }
     const final=read("final-metrics.json");
     assert.deepEqual(final.samples,completed.map(r=>r.LatencyMs),"Final metrics must match paired rows");

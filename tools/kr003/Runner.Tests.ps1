@@ -1,6 +1,6 @@
 # Goal: test real finalization/recovery orchestration with synthetic evidence and no device execution.
-# Context: d81f19a calibration incident. Constraints: temporary directories only, every ADB call is a stub.
-# Done when: empty/partial/100-row paths, reporting/cleanup faults and phase disagreement preserve evidence.
+# Context: Q6 extends the hardened finalizer into a fail-stop offline qualification. Constraints: temporary directories only; ADB is stubbed.
+# Done when: empty/partial/100-row paths, safety journalling, cleanup faults and phase disagreement preserve evidence.
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
@@ -27,6 +27,7 @@ function Reset-Run([string]$Name) {
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
+    $script:DiagnosticFileName='recovery-diagnostic.json'; $script:Safety=$null; $script:SafetyFileName='safety-incomplete.json'
 }
 function Read-Json([string]$Name) { Get-Content -LiteralPath (Join-Path $runDirectory $Name) -Raw | ConvertFrom-Json }
 function Check-Summary([int]$Count,[string]$Reason) {
@@ -72,6 +73,14 @@ try {
     Assert-Equal @((Read-Json 'attempts.json')).Count 101
     Assert-Equal (Read-Json 'summary.json').InternalPairedStatistics.P95 195
     Assert-Equal (Read-Json 'summary.json').QualificationRequested $true
+
+    Reset-Run 'partial-safety-checkpoint'
+    $script:SafetyFileName='safety-calibration.json'
+    $script:Safety=[PSCustomObject]@{Phase='calibration';Result='INCOMPLETE';Reason=$null;EndedUtc=$null;HomePhysical='PASS';RecoveryReason='UNRECORDED';ReentryPhysical='UNRECORDED';ClearTouch='UNRECORDED'}
+    $script:Reason='SAFETY_CALIBRATION_RECOVERY'
+    Check-Summary 0 'SAFETY_CALIBRATION_RECOVERY'
+    Assert-Equal (Read-Json 'safety-calibration.json').HomePhysical 'PASS'
+    Assert-Equal (Read-Json 'safety-calibration.json').Reason 'SAFETY_CALIBRATION_RECOVERY'
 
     Reset-Run 'post-observer-oracle-disagreement'
     $script:Calibration=New-Row 0; $script:Calibration.Phase='CALIBRATION'
@@ -134,7 +143,7 @@ try {
     Assert-Equal (Read-Json 'safety-calibration.json').PhysicalHomeAndSettings 'OWNER_PASS'
     Assert-Equal (Read-Json 'safety-calibration.json').Oracle 'UNCORROBORATED'
 
-    # A correlated transient SAFE_SYSTEM/removal remains evidence after a later ordinary-app snapshot.
+    # A correlated SAFE_SYSTEM/removal is invalidated by later ordinary-app reattachment.
     $phase=New-KRRecoveryEvidence 'calibration' (New-Frame 1000)
     $safe=New-Frame 1200
     $safe.traceHead=18
@@ -146,7 +155,8 @@ try {
     )
     Update-KRRecoveryEvidence $phase $safe
     Update-KRRecoveryEvidence $phase (New-Frame 1300)
-    Assert-Equal $phase.Oracle 'CORROBORATED'
+    Assert-Equal $phase.Oracle 'REGRESSED_TO_ORDINARY'
+    Assert-Equal $phase.Reason 'SAFE_TRANSITION_DID_NOT_PERSIST'
     Assert-Equal $phase.PhysicalHomeAndSettings 'UNRECORDED'
     # A safe event before the actual Settings-button dispatch cannot satisfy the phase oracle.
     $unrelated=New-KRRecoveryEvidence 'calibration' (New-Frame 1000)
@@ -172,9 +182,42 @@ try {
     try { Update-KRRecoveryEvidence $stale $safe } catch { $reason=$_.Exception.Message }
     Assert-Equal $reason 'FAIL:RECOVERY_REVISION_CHANGED'
 
+    # Q6 safety orchestration keeps Home/recovery/re-entry/CLEAR separate and adds zero expiry samples.
+    Reset-Run 'q6-safety-checkpoint'
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-Q6-MI8-OFFLINE-QUALIFICATION'}
+    $script:ClearMode=$false; $script:OpenCount=0; $script:FixtureReadAfterClear=0
+    function New-SafetyFrame([bool]$Restricted) {
+        [PSCustomObject]@{
+            elapsed=20000;sampledAt=19990;revision=42;sampledRevision=42;restriction=$Restricted;armed=$Restricted
+            attached=$Restricted;disposition=$(if($Restricted){'ORDINARY_APP'}else{'ORDINARY_APP'});heartbeat=$true;usage=$true
+            accessibility=$true;uncertain=$false;eligible=$true;eligibilityLost=$false;adapter=$(if($Restricted){'APPLIED'}else{'NOT_REQUIRED'})
+            removals=0;samples=@(123);sampleCount=1;traceHead=20;traceLost=$false;events=@()
+        }
+    }
+    function Get-LabState { param($Operation='SNAPSHOT') if($Operation -eq 'CLEAR'){$script:ClearMode=$true}; return New-SafetyFrame (-not $script:ClearMode) }
+    function Get-FixtureState {
+        if($script:ClearMode -and $script:OpenCount -ge 2) { $script:FixtureReadAfterClear++; $taps=$(if($script:FixtureReadAfterClear -gt 1){1}else{0}) } else { $taps=0 }
+        [PSCustomObject]@{focused=$false;resumed=$true;taps=$taps;instance=1}
+    }
+    function Open-Fixture { $script:OpenCount++ }
+    function Wait-FixtureFocus { param($Focused) }
+    function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds) return New-SafetyFrame (-not $script:ClearMode) }
+    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); if($null -ne $Poll){& $Poll | Out-Null}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
+    function Invoke-FocusedRecoveryDiagnostic { param($OutputName); $script:Diagnostic=[PSCustomObject]@{Result='EVIDENCE_CAPTURED';Reason='PHYSICAL_PASS_RECORDED'} }
+    function Check-EarlyStop {}
+    function Start-Sleep {}
+    Invoke-QualificationSafetyCheckpoint -Phase 'calibration' 6>$null
+    $safety=Read-Json 'safety-calibration.json'
+    Assert-Equal $safety.HomePhysical 'PASS'
+    Assert-Equal $safety.RecoveryReason 'PHYSICAL_PASS_RECORDED'
+    Assert-Equal $safety.ReentryPhysical 'PASS'
+    Assert-Equal $safety.ClearTouch 'FIXTURE_COUNTER_INCREMENT'
+    Assert-Equal $safety.IndependentExpirySamples 0
+    Assert-Equal $safety.Result 'PHYSICAL_PASS_RECORDED'
+
     # Diagnostic CLEAR changes only timer state and preserves the complete latency sample array.
     Reset-Run 'diagnostic-bailout'
-    $script:RecoveryDiagnostic=$true; $script:LabControlReady=$true; $script:BailoutCleared=$false
+    $script:RecoveryDiagnostic=$false; $script:LabControlReady=$true; $script:BailoutCleared=$false
     function New-BailoutFrame([bool]$Restricted) {
         [PSCustomObject]@{revision=$(if($Restricted){42}else{43});sampleCount=2;samples=@(123,263);armed=$Restricted;restriction=$Restricted;attached=$Restricted}
     }
@@ -219,8 +262,12 @@ try {
     Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
     $runnerSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-KR003.ps1') -Raw
     Assert-Equal ([bool]($runnerSource -match '\[string\]::IsNullOrEmpty\(\$PhysicalResult\)')) $true
-    Assert-Equal ([bool]($runnerSource -match 'KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION')) $true
-    Assert-Equal ([bool]($runnerSource -match 'MinimumPassSeconds 10')) $true
+    Assert-Equal ([bool]($runnerSource -match 'KR003-Q6-MI8-OFFLINE-QUALIFICATION')) $true
+    Assert-Equal ([bool]($runnerSource -match 'for \(\$attempt=1; \$attempt -le 100; \$attempt\+\+\)')) $true
+    Assert-Equal ([bool]($runnerSource -match "Invoke-QualificationSafetyCheckpoint -Phase 'calibration'")) $true
+    Assert-Equal ([bool]($runnerSource -match "Invoke-QualificationSafetyCheckpoint -Phase 'final'")) $true
+    Assert-Equal ([bool]($runnerSource -match 'Test-KRDiagnosticStableSafe')) $true
+    Assert-Equal ([bool]($runnerSource -match 'OFFLINE_QUALIFICATION_MODE_REQUIRED')) $true
 } finally {
     # Only this test-created unique temporary tree; no real run directory is used or touched.
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force
