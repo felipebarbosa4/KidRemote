@@ -90,3 +90,24 @@ verified after packaging. Its new physical calibration is **Not run**; the old b
 Issue #3's Context/Results/Next paragraphs and
 [progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5560924249) were published and read back; all acceptance
 checkboxes were preserved. KR-003 is Open/In Progress and KR-004 Open/Backlog. PR #16 remains draft/Open; no closure, merge or KR-004 change occurred.
+
+## Q2 physical Settings/recovery failure — 2026-09-06
+
+The earlier Q2 NOT_RUN handoff is now historical. The owner executed the immutable `37ad70b` bundle; the finalized run is a
+**physical Settings/recovery FAIL:OBSERVER_4**, not an oracle-only INVALID. Expiry and Home PASS remain separate; no 100-sample qualification
+began. Sixteen original artefacts were read directly and hash/size verified; both zero-row summaries exist, finalization errors are empty and
+Wi-Fi/mobile flags were restored/read back 1/0. This does not establish connectivity or retroactively verify Q1 restoration.
+
+The [preserved Q2 evidence and proposed diagnostic](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) was committed/pushed as
+`bd5aa37b032ee6ae683e9f7f6eb6f7ce43cc73d3`. Issue #3's Context/Results/Incident/Next paragraphs, PR #16's incident/handoff paragraphs and
+[the new evidence comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561492498) were updated and read back exactly.
+All issue acceptance checkboxes and unrelated content were preserved. Project status was verified: KR-003 Open/In Progress, KR-004 Open/Backlog;
+PR #16 Open/draft. No closure, merge, new issue/Project, KR-004 work or production policy change occurred.
+
+The current candidate cannot qualify. Labelled per-destination/per-button diagnostics with existing coarse telemetry and a verified lab-only
+CLEAR bailout are **proposed**, not implemented or run. Any new identity collection requires narrow review; no guessed OEM allowlist or
+lowered SAFE requirement is authorized. The existing APKs, runner, bundle and original physical artefacts remain unchanged.
+
+Evidence commit `bd5aa37` passed all three jobs in [CI run 34053924704](https://github.com/felipebarbosa4/KidRemote/actions/runs/34053924704):
+repository/Node/synthetic runner checks, Windows PowerShell runner checks with device calls stubbed, and Android JVM tests/debug-release
+lint/build/manifest/DEX audit. These automated results do not change the physical Settings FAIL or provide Play acceptance.
