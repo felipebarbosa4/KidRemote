@@ -18,6 +18,10 @@ jobs:
           persist-credentials: false
       - name: Validate repository planning
         run: node tools/validate.mjs
+      - name: Test evidence ingestion and least-privilege rejection
+        run: node --test tools/kr003/*.test.mjs
+      - name: Test qualification runner without a device
+        run: pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
       - name: Check patch whitespace
         run: git show --format= --check HEAD
   android-enforcement-spike:
@@ -40,20 +44,6 @@ jobs:
           java -version
       - name: Build, unit test and lint isolated spike
         working-directory: spikes/android-enforcement
-        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
-      - name: Verify expected unit-test execution
-        working-directory: spikes/android-enforcement
-        run: |
-          test_count="$(grep -h '<testcase ' app/build/test-results/testDebugUnitTest/TEST-*.xml | wc -l)"
-          test "$test_count" -eq 12
-      - name: Audit merged spike manifest
-        working-directory: spikes/android-enforcement
-        run: |
-          manifest_path="$(find app/build/intermediates -path '*merged_manifest*' -name AndroidManifest.xml -print -quit)"
-          test -n "$manifest_path"
-          grep -q 'android.permission.PACKAGE_USAGE_STATS' "$manifest_path"
-          grep -q 'android.permission.RECEIVE_BOOT_COMPLETED' "$manifest_path"
-          if grep -q 'android.permission.INTERNET' "$manifest_path"; then
-            echo 'Unexpected Internet permission in merged manifest' >&2
-            exit 1
-          fi
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
+      - name: Audit executed tests, both merged manifests and release DEX isolation
+        run: node tools/kr003/audit-build.mjs

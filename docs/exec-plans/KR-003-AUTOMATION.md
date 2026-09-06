@@ -18,3 +18,12 @@
 The mounted observer CSV has exactly ten sequential unique cycles with all five recorded outcomes successful. The trace has only main/system
 buffer headers, with an empty stderr file. This is a trace-collection gap whose cause is **UNSPECIFIED**, not evidence of absent attachment.
 The next runner must verify direct telemetry availability before arming and preserve every failed/invalid attempt.
+
+## Completed repository work
+
+- Mounted checkpoint ingestion committed/pushed as `8786dc5`; the count is ten independent successful cycles, not fifty expiries.
+- Qualification contract v1 resolves paired physical/timing observations, the existing ten-second persistence rule, failure/invalid handling and no pooling.
+- ADR-0008 selects debug sender-protected controls plus an independent ordinary fixture; no enforcement decision or production permission was changed.
+- Desktop checks passed: 22 JVM cases, 41 synthetic PowerShell assertions, three Node suites, both debug/release lint/builds and manifest/DEX isolation.
+- Remaining matrix categorized and queued in [KR-003-REMAINING](../test-plans/KR-003-REMAINING.md); required API 28/35/36 hardware and policy evidence remain outstanding.
+- Owner operation of the new debug telemetry/calibration and 100-sample run is the next boundary. No new device commands ran in WSL.

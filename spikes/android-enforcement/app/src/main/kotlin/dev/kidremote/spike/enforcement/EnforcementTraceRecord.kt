@@ -12,6 +12,7 @@ data class EnforcementTraceRecord(
     val overlayAttached: Boolean,
     val adapterOutcome: AdapterOutcome,
     val nextAdapterOutcome: AdapterOutcome,
+    val revision: Long = 0,
 ) {
     fun toLogLine(): String = buildString {
         append("t=").append(elapsedRealtimeMillis)
@@ -25,5 +26,6 @@ data class EnforcementTraceRecord(
         append(" overlay=").append(if (overlayAttached) "ATTACHED" else "DETACHED")
         append(" adapter=").append(adapterOutcome.name)
         append(" nextAdapter=").append(nextAdapterOutcome.name)
+        append(" revision=").append(revision)
     }
 }

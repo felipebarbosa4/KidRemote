@@ -23,7 +23,7 @@ class EnforcementTraceRecordTest {
         assertEquals(
             "t=12345 kind=accessibility_event trigger=event eventType=32 identity=OWN_PACKAGE " +
                 "disposition=ORDINARY_APP nextDisposition=SAFE_SYSTEM restriction=true overlay=ATTACHED " +
-                "adapter=APPLIED nextAdapter=SAFE_SURFACE_AVAILABLE",
+                "adapter=APPLIED nextAdapter=SAFE_SURFACE_AVAILABLE revision=0",
             record.toLogLine(),
         )
     }

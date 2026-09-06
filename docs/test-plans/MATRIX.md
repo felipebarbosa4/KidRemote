@@ -119,7 +119,8 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 
 ## Evidence and physical device set
 
-Inventory/availability **UNSPECIFIED**. Proposed minimum: one current Google reference device, one Samsung phone/tablet,
+Known inventory: authorized Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29; [bounded evidence](evidence/KR-003-MI8-2026-09-06.md).
+Other inventory/availability **UNSPECIFIED**. Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
 Android 17 documentation exists; device availability/selected support version must be verified, not assumed.
 Emulators support deterministic/API tests but cannot certify OEM killing, safe mode, emergency handling, battery or push delivery.

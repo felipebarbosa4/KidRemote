@@ -29,6 +29,7 @@ class SurfacePolicyTest {
     @Test
     fun ordinaryAppIsCandidateForOverlay() {
         assertEquals(SurfaceDisposition.ORDINARY_APP, SurfacePolicy.classify("example.ordinary.app", ownPackage))
+        assertEquals(SurfaceDisposition.ORDINARY_APP, SurfacePolicy.classify("dev.kidremote.spike.ordinary", ownPackage))
     }
 
     @Test

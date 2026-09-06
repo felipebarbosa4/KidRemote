@@ -14,6 +14,9 @@ Do not record device serial, accounts, real child identity or app/content histor
 
 ## Expiry performance
 
+The precise runner contract, failure handling and evidence fields are in [qualification v1](KR-003-QUALIFICATION.md). It reconciles the existing
+100-observation requirement with the Mi 8 persistence checkpoint and preserves the distinction between observation and attachment metrics.
+
 Use the same configuration for all samples. Reset local timing samples, enable both required accesses, arm the 10-second timer and move to an
 authorized disposable ordinary test app. A valid sample requires eligible interactive/unlocked time through expiry and a visibly perceived block.
 Repeat at least 100 times. Record invalid/failed trials separately; never discard a slow valid sample.
@@ -61,10 +64,11 @@ Android 17 is currently a preview research target, not the stable production bas
 | Matrix IDs | Procedure | Pass observation |
 | --- | --- | --- |
 | TIME-01/02/03/04 | interactive/unlocked, screen off, keyguard, zero | Only eligible time falls; visible ordinary-app restriction at zero |
-| TIME-05/06 | terminate ordinary app process / relaunch | Durable balance restored; no fresh allowance; gap measured |
+| TIME-05/06 | terminate enforcement-agent process / relaunch (not just the ordinary fixture) | Durable balance restored; no fresh allowance; gap measured |
 | TIME-07/08 | reboot online, then reboot offline while expired | No invented credit; degraded clock truth; downloaded expired state returns after service recovery |
 | TIME-09/10/11 | wall clock ±24 h and timezone/date-line edit | No extra allowance within boot; household period contract unchanged |
-| TIME-14/16 | update and deep sleep/doze | State preserved; elapsed clock behaviour reconciled; expiry result measured |
+| TIME-13/14 | deep sleep/doze and update | State preserved; elapsed clock behaviour reconciled; expiry result measured |
+| TIME-16 | multi-window/PiP/launcher/video | Total counted once; safe enforcement across surfaces |
 | PERM-01 | revoke Usage Access mid-use | Permission required and uncertainty surfaced; no Healthy state |
 | PERM-02 | disable Accessibility while blocked | Applied status clears/degrades; no false acknowledgement |
 | PERM-03 | incomplete setup | No enforcement-ready claim |
@@ -73,11 +77,12 @@ Android 17 is currently a preview research target, not the stable production bas
 | TAMP-06 | battery optimization and OEM kill | Behaviour/recovery time recorded for each candidate setting |
 | TAMP-07 | ADB/developer options | Explicit adversarial boundary; never use a personal device |
 | TAMP-08 | root/unlocked bootloader | Research/authorized disposable hardware only; no unsupported assurance |
-| SAFE-01 | emergency call/recovery path while blocked | Accessible without hidden gestures or trapping |
-| SAFE-02 | TalkBack, IME, permission dialogs, settings, recents, split-screen/PiP | No accessibility/recovery trap; any ordinary-use bypass is recorded |
+| SAFE-01 | dialler/emergency, TalkBack, IME and permission dialogs while blocked | Accessible without hidden gestures or trapping; never call a live emergency service for testing |
+| SAFE-02 | offline local help/recovery/removal route | Approved recovery remains reachable; any ordinary-use bypass is recorded |
 
 Also test package identity missing/unrecognized, service interruption, storage commit failure where injectable, screen signal during process loss,
 and no UsageEvents in the reconciliation window. Unknown/safe surfaces are expected to fail open in this spike; that is not an automatic pass.
+These IDs follow MATRIX.md; the earlier physical table had placed TalkBack/IME under SAFE-02 and mislabelled deep sleep/multi-window.
 
 ## Evidence and decision
 

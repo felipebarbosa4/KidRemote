@@ -121,7 +121,8 @@ class EnforcementAccessibilityService : AccessibilityService() {
         if (!previousRestriction && state.wasEligible && now - state.lastElapsedRealtimeMillis >= state.remainingMillis) {
             pendingExpiryElapsed = state.lastElapsedRealtimeMillis + state.remainingMillis
         }
-        state = LabTimerReducer.sample(state, now, DeviceSignals.eligibleForConsumption(this))
+        val eligible = DeviceSignals.eligibleForConsumption(this)
+        state = LabTimerReducer.sample(state, now, eligible)
         if (now - persistedAtElapsed >= PERSIST_MILLIS || previousRestriction != state.restrictionRequired) {
             if (!store.save(state)) {
                 state = state.copy(accountingUncertain = true, wasEligible = false)
@@ -130,6 +131,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
             store.setServiceHeartbeat(now)
         }
         applyRestriction(state.restrictionRequired, trigger)
+        EnforcementTrace.sample(now, state, surfaceDisposition, overlay != null, eligible)
     }
 
     private fun applyRestriction(required: Boolean, trigger: String) {
@@ -211,6 +213,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
         EnforcementTrace.record(
             EnforcementTraceRecord(
                 elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
+                revision = state.revision,
                 kind = kind,
                 trigger = trigger,
                 eventType = eventType,

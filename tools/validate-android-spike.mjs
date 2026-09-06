@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 const spikeRoot = "spikes/android-enforcement";
@@ -58,13 +58,21 @@ export function validateAndroidSpike(root) {
   for (const forbidden of ["canPerformGestures", "flagRetrieveInteractiveWindows", "typeViewTextChanged", "typeViewClicked"])
     check(!serviceConfig.includes(forbidden), `Accessibility config contains unapproved capability ${forbidden}`);
 
-  const sourcePaths = [
-    "LabTimer.kt", "LabTimerStore.kt", "DeviceSignals.kt", "BootReceiver.kt", "MainActivity.kt", "EnforcementAccessibilityService.kt",
-    "EnforcementTraceRecord.kt",
-  ].map(name => `${spikeRoot}/app/src/main/kotlin/dev/kidremote/spike/enforcement/${name}`);
+  function walk(path) {
+    return readdirSync(resolve(root, path), { withFileTypes: true }).flatMap(entry => {
+      const next = `${path}/${entry.name}`;
+      return entry.isDirectory() ? walk(next) : [next];
+    });
+  }
+  const shipped = ["app", "ordinary-fixture"].flatMap(module =>
+    walk(`${spikeRoot}/${module}/src`).filter(path => /\/src\/(main|debug|release)\//.test(path)));
+  const tracePath = `${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`;
+  const sourcePaths = shipped.filter(path => path.endsWith(".kt") && path !== tracePath);
   const sources = sourcePaths.map(read).join("\n");
   for (const forbidden of [
     ".rootInActiveWindow", ".getSource()", ".source", "dispatchGesture(", "takeScreenshot(", "performGlobalAction(", "Log.",
+    "import android.view.accessibility.AccessibilityNodeInfo", "getRootInActiveWindow(", "getWindows(", "getText(",
+    "getContentDescription(", "System.out", "println(", "java.net.", "Build.SERIAL", "getSerial(",
   ]) check(!sources.includes(forbidden), `Android spike source contains unapproved access: ${forbidden}`);
   const debugTrace = read(`${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
   const releaseTrace = read(`${spikeRoot}/app/src/release/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`);
@@ -72,6 +80,22 @@ export function validateAndroidSpike(root) {
   check(debugTrace.includes("Log.i(TRACE_TAG, record.toLogLine())"), "Debug trace must log only the typed sanitized record");
   check(!debugTrace.includes("packageName") && !debugTrace.includes("AccessibilityEvent"), "Debug trace accepts sensitive/raw input");
   check(!releaseTrace.includes("android.util.Log") && !releaseTrace.includes("toLogLine"), "Release trace must remain a no-op");
+  check((releaseTrace.match(/= Unit/g) ?? []).length === 2 && !releaseTrace.includes("LabProbe"), "Release observation hooks must be no-ops");
+  check((debugTrace.match(/Log\./g) ?? []).length === 1, "Only one typed debug logging call is allowed");
+  for (const module of ["app", "ordinary-fixture"]) {
+    const debugManifest = read(`${spikeRoot}/${module}/src/debug/AndroidManifest.xml`);
+    check((debugManifest.match(/<receiver /g) ?? []).length === 1 &&
+      debugManifest.includes('android:permission="android.permission.DUMP"'), `${module}: protect the one debug receiver with sender DUMP permission`);
+    check(!debugManifest.includes("<uses-permission") && !debugManifest.includes("<activity"), `${module}: debug must not add privileges or control activities`);
+    const main = read(`${spikeRoot}/${module}/src/main/AndroidManifest.xml`);
+    check(!/LabControlReceiver|FixtureReceiver|android.permission.DUMP/.test(main), `${module}: debug control leaked into main manifest`);
+  }
+  for (const path of shipped.filter(path => path.endsWith("AndroidManifest.xml"))) {
+    const permissions = [...read(path).matchAll(/<uses-permission[^>]*android:name="([^"]+)"/g)].map(m => m[1]);
+    const allowed = path === `${spikeRoot}/app/src/main/AndroidManifest.xml`
+      ? ["android.permission.PACKAGE_USAGE_STATS", "android.permission.RECEIVE_BOOT_COMPLETED"] : [];
+    check(JSON.stringify(permissions.sort()) === JSON.stringify(allowed.sort()), `Unexpected permission set: ${path}`);
+  }
   check(sources.includes("SystemClock.elapsedRealtime()"), "Android spike must use the monotonic Android clock");
   check(sources.includes("UNKNOWN_FAIL_OPEN"), "Android spike must preserve the unknown-surface fail-open safety path");
   return errors;

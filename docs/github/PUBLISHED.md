@@ -59,4 +59,7 @@ GitHub's available API does not expose mutation inputs for view grouping/sorting
 `node tools/validate.mjs` and `git diff --check` passed during reconciliation. PR #13 later added an isolated KR-003 harness whose
 compile, 12 JVM tests, lint, debug APK assembly and merged-manifest audit passed in
 [run 33996873306](https://github.com/felipebarbosa4/KidRemote/actions/runs/33996873306).
-No Android runtime/physical-device test, Play approval, Supabase/RLS integration test, load test, production backend or store submission exists.
+That 2026-09-05 checkpoint contained no Android runtime evidence. It is superseded for physical status by the
+[Mi 8 evidence](../test-plans/evidence/KR-003-MI8-2026-09-06.md): one initial successful post-fix expiry and ten successful independent checkpoint
+cycles. This does not provide the 100-sample qualification, other-device/lifecycle/safety evidence, Play approval, Supabase/RLS integration tests,
+load tests, a production backend or store submission. KR-003 remains open/In Progress; KR-004 remains Backlog.
