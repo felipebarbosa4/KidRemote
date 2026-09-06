@@ -28,6 +28,9 @@ Before starting the 100-sample qualification after an enforcement-stability fix,
 configuration and APK hash. This staged checkpoint was adopted for the Mi 8 follow-up after the established overlay feedback-loop failure; it
 does not replace, reduce, or count as the 100-sample qualification.
 
+After preserving all earlier evidence, reset only the harness timing samples once before cycle 1 so the checkpoint's internal attachment metrics
+do not mix with pre-fix samples. Do not clear app data.
+
 Each cycle must start from a cleared restriction and a fresh arm/revision. Record the following observer results separately:
 
 1. clearing the lab restriction makes the disposable ordinary app usable;

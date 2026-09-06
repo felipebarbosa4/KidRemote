@@ -73,7 +73,7 @@ try {
 
     Read-Host 'If currently blocked, tap Open device settings. Press Enter when Settings or the unblocked harness is visible'
     Invoke-Adb -Arguments @('shell', 'am', 'start', '-n', $activity)
-    Read-Host 'Tap Clear lab timer once to establish the initial cleared state, then press Enter'
+    Read-Host 'Tap Reset local timing samples once, then tap Clear lab timer to establish the initial cleared state; press Enter'
 
     for ($cycle = 1; $cycle -le $cycles; $cycle++) {
         Write-Host "`n=== Independent attempted cycle $cycle of $cycles ===" -ForegroundColor Cyan
@@ -118,6 +118,9 @@ try {
 
         $results | Export-Csv -NoTypeInformation -Path $resultsPath
     }
+
+    Invoke-Adb -Arguments @('shell', 'am', 'start', '-n', $activity)
+    Read-Host 'Record the displayed attachment sample count and p50/p95/max separately, then press Enter to finish'
 }
 finally {
     if ($null -ne $logcat -and -not $logcat.HasExited) {
