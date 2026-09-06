@@ -161,6 +161,6 @@ candidate and hardens the software oracle against transient recovery. It passed 
 The [new immutable bundle, hashes and command](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) are verified; physical Q5 execution is
 **Not run**. Issue #3 and draft PR #16 were updated and read back: all seven acceptance checkboxes remain present, issue #3 remains Open/In
 Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog. The [issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562113931)
-and [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562114041) preserve the same boundary. Current-head
+and [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562114041) preserve the same boundary. The bundle-handoff commit's
 [CI run 34059402758](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059402758) passed all three jobs; device calls were stubbed and
 do not constitute physical Q5 evidence.
