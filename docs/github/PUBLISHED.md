@@ -63,3 +63,14 @@ That 2026-09-05 checkpoint contained no Android runtime evidence. It is supersed
 [Mi 8 evidence](../test-plans/evidence/KR-003-MI8-2026-09-06.md): one initial successful post-fix expiry and ten successful independent checkpoint
 cycles. This does not provide the 100-sample qualification, other-device/lifecycle/safety evidence, Play approval, Supabase/RLS integration tests,
 load tests, a production backend or store submission. KR-003 remains open/In Progress; KR-004 remains Backlog.
+
+## KR-003 publication — 2026-09-06
+
+[Draft PR #16](https://github.com/felipebarbosa4/KidRemote/pull/16) holds the bounded Mi 8 fix/evidence and qualification automation branch.
+Only stale context/status/results paragraphs of issue #3 were updated; existing acceptance checkboxes and other content were preserved.
+[The evidence progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5557545359) was posted and read back.
+Project #3 was re-read: KR-003 In Progress, KR-004 Backlog. No duplicate issue/Project, new sub-issue, closure, merge or KR-004 work occurred.
+
+Both CI jobs passed at source/build `d81f19a` in [run 34017273906](https://github.com/felipebarbosa4/KidRemote/actions/runs/34017273906).
+The [owner-run bundle](../test-plans/evidence/KR-003-BUNDLE-2026-09-06.md) was copied and hash-verified in mounted Windows storage; physical
+preflight/calibration/100-sample qualification remain **Not run**. This is a tooling/evidence handoff, not a completed feasibility gate.

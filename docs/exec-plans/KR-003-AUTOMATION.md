@@ -27,3 +27,5 @@ The next runner must verify direct telemetry availability before arming and pres
 - Desktop checks passed: 22 JVM cases, 43 synthetic PowerShell assertions, three Node suites, both debug/release lint/builds and manifest/DEX isolation.
 - Remaining matrix categorized and queued in [KR-003-REMAINING](../test-plans/KR-003-REMAINING.md); required API 28/35/36 hardware and policy evidence remain outstanding.
 - Owner operation of the new debug telemetry/calibration and 100-sample run is the next boundary. No new device commands ran in WSL.
+- Source `d81f19a` passed local and GitHub CI checks; [exact bundle/handoff](../test-plans/evidence/KR-003-BUNDLE-2026-09-06.md) is prepared in Windows storage.
+- KR-003 issue/Project were synchronized and verified; draft PR #16 is open, not merged. KR-004 remains Backlog and untouched.

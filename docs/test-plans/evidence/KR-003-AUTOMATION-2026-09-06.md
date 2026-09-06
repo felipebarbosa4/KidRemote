@@ -51,3 +51,9 @@ Sources: [Microsoft portable installation](https://learn.microsoft.com/powershel
 - Google Play review/acceptance, Supabase/RLS integration tests and production backend: no evidence; no such work performed here.
 
 This evidence permits owner-run calibration/qualification, not KR-003 closure or KR-004 implementation.
+
+## Published verification
+
+Automation source `34e566e` and focus-callback hardening `d81f19a` were committed/pushed. Both jobs passed for `d81f19a` in
+[GitHub Actions run 34017273906](https://github.com/felipebarbosa4/KidRemote/actions/runs/34017273906).
+The [exact packaged operator handoff](KR-003-BUNDLE-2026-09-06.md) records the verified mounted files and next command.
