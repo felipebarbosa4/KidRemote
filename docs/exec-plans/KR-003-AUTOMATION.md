@@ -106,4 +106,6 @@ ordinary enforcement returned 681 ms after the safe transition. Zero qualificati
 The [Q5 contract](../test-plans/KR-003-RECOVERY-TASK-RESET.md) treats this as the last flag-only candidate. The runner now explicitly records
 safe-then-ordinary reattachment as a regression rather than leaving the safe-transition label latched. Source `97173d2` passed all three CI jobs;
 the [immutable bundle and owner handoff](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) were independently hash/source-byte verified.
-Physical execution remains **Not run**.
+The owner executed it once. [Preserved Q5 evidence](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) records expiry/root PASS, expected
+Digital Wellbeing blocking, a single persistent recovery PASS, safe post-state and verified lab CLEAR. Q5 has zero qualification rows. Prepare a
+new immutable qualification runner using the exact APK hash; do not pool earlier expiries or waive fresh calibration/final safety checks.

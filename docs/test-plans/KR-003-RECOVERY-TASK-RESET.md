@@ -71,3 +71,14 @@ Q5 route PASS requires the physical results `PASS / FAIL / PASS` for root, desti
 ordinary transition/attachment, a final safe state and verified bailout. Any Settings flash followed by restriction, inability to regain Settings,
 ordinary destination usability, multiple recovery dispatches, trace/health failure or physical FAIL rejects the candidate. `I`, a missed view,
 an extra tap or an unavailable overlay makes the case invalid; the runner never silently retries it. Every result contains zero qualification rows.
+
+## Physical result
+
+The owner executed the immutable Q5 bundle on the authorized Mi 8. [The preserved result](evidence/KR-003-Q5-RECOVERY-2026-09-06.md) is
+`DIAGNOSTIC_COMPLETED_ONLY:PHYSICAL_PASS_RECORDED`: expiry PASS, root Settings PASS, expected Digital Wellbeing FAIL, recovery PASS, stable safe
+post-state and verified sample-preserving lab CLEAR. One recovery dispatch became safe after 180 ms and remained safe/detached for more than 30
+seconds of software sampling; the owner observed at least the required ten seconds. Q5 contributes zero qualification samples.
+
+This proves the focused route only on Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29 and APK
+`5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b`. Exact MIUI task mechanics and broader safe-surface coverage remain
+**UNSPECIFIED**. A separately immutable qualification bundle using this exact APK may proceed to its own fresh preflight; KR-003 remains open.

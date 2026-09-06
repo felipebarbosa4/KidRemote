@@ -5,14 +5,15 @@
 - **Constraints:** Authorized lab; owner executes Windows ADB; continuous human observation; no destructive operations; all attempts preserved.
 - **Done when:** One immutable run has 100 valid paired observations, zero enforcement failures, nearest-rank internal p95 ≤2,000 ms, and separately reported safety/preflight results. This is only AC-3 evidence for one configuration.
 
-**Current gate:** [Q2](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery; the
-[Q3 diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) isolated `ORDINARY_APP` reattachment; and
-[Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) physically rejected `NEW_TASK | CLEAR_TOP` because recovery was transient. Do not rerun these old
-commands or start 100 samples. A separately justified recovery candidate must pass a fresh focused calibration. The requirements below remain
-unchanged and are not waived by successful expiries.
+**Current gate:** [Q2](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) and the
+[Q3 diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) physically failed recovery; then
+[Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) physically rejected `NEW_TASK | CLEAR_TOP` because recovery was transient. Do not rerun those
+commands or pool their expiries into qualification.
 
-That separately justified candidate is the diagnostic-only [Q5 Settings task reset](KR-003-RECOVERY-TASK-RESET.md). It is the final flag-only
-experiment and has no physical result yet. Qualification remains blocked until Q5 passes; Q5 failure returns recovery to architecture review.
+The separately justified [Q5 Settings task reset](KR-003-RECOVERY-TASK-RESET.md) subsequently
+[passed its focused physical calibration](evidence/KR-003-Q5-RECOVERY-2026-09-06.md) on the exact Mi 8 and candidate APK hash. This clears only
+the prerequisite to prepare a new immutable qualification bundle. It does not start or reduce the 100 new samples, waive the fresh
+calibration/safety checks below, establish another device, or approve production/Play release.
 
 ## Reconciled definitions
 

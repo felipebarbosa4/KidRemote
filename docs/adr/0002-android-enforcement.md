@@ -8,11 +8,10 @@ Implementation evidence status: the isolated least-privilege harness and physica
 [`spikes/android-enforcement`](../../spikes/android-enforcement/README.md). A build is not physical evidence; no support boundary or
 production decision changes until [KR-003's protocol](../test-plans/KR-003-PHYSICAL.md) is completed.
 
-Current Mi 8 candidate: Q2 and the focused Q3 diagnostic **physically failed designated Settings/recovery**. Q4 then physically rejected the
-bounded `NEW_TASK | CLEAR_TOP` recovery candidate: Settings appeared transiently before `ORDINARY_APP` returned and enforcement reattached.
-[Recorded Q4 evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) blocks qualification and production acceptance; no safe-surface
-requirement or support-boundary exception is waived. Q5 may test one final standard task-root reset; no alternate enforcement architecture has
-been selected and Q5 has no physical result yet.
+Current Mi 8 candidate: Q2 and Q3 **physically failed designated Settings/recovery**, and Q4 physically rejected `NEW_TASK | CLEAR_TOP`.
+The final bounded Q5 `NEW_TASK | CLEAR_TASK` candidate then [passed one focused recovery calibration](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md)
+on the exact Mi 8/APK hash. It may enter a separately packaged fresh qualification preflight, but has zero qualification samples. No safe-surface
+requirement, broader device/lifecycle gate, support boundary, production acceptance or Play approval is waived.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

@@ -164,3 +164,13 @@ Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog. The [issue
 and [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562114041) preserve the same boundary. The bundle-handoff commit's
 [CI run 34059402758](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059402758) passed all three jobs; device calls were stubbed and
 do not constitute physical Q5 evidence.
+
+## Q5 physical recovery pass — 2026-09-06
+
+The owner executed the immutable Q5 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) records one expiry PASS,
+root Settings PASS, expected Digital Wellbeing blocking and one persistent recovery-button PASS. Exactly one dispatch became safe after 180 ms;
+no ordinary transition or overlay reattachment followed through more than 30 seconds of software sampling. Lab CLEAR passed, retained all four
+historical internal samples, and the run made no network change. Zero qualification rows began.
+
+This clears only the focused prerequisite to prepare a new immutable qualification runner using the exact APK hash. The 100 fresh samples,
+remaining physical/safety/lifecycle/device gates and Play evidence remain open. Publication to issue #3/PR #16 is pending; KR-004 is untouched.

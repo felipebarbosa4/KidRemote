@@ -1,8 +1,8 @@
 # ADR-0008 — Debug qualification controls and observation oracle
 
-Status: Accepted for the KR-003 disposable lab, 2026-09-06. Q1 controls operated on Mi 8; the recovery oracle disagreed with physical observation.
-Q2 physically failed Settings/recovery. Q3 reproduced the destination/recovery failure with phase-local evidence and verified its lab bailout.
-Q4 physically rejected the bounded `NEW_TASK | CLEAR_TOP` repair. Engineering safety/qualification remain blocked.
+Status: Accepted for the KR-003 disposable lab, 2026-09-06. Q1 controls operated on Mi 8; Q2/Q3 physically failed Settings/recovery, and Q4
+physically rejected `NEW_TASK | CLEAR_TOP`. Q5 physically passed its focused `NEW_TASK | CLEAR_TASK` route. The 100-sample, broader safety/device,
+lifecycle and external policy gates remain open.
 
 - **Goal:** Remove repetitive lab interaction while preserving independent physical evidence and release isolation.
 - **Context:** Ten Mi 8 cycles passed by owner observation; the captured log had only buffer headers. Persisted metric count was not transcribed.
@@ -170,9 +170,20 @@ are in [the Q5 contract](../test-plans/KR-003-RECOVERY-TASK-RESET.md).
 
 Security/privacy: no policy, permission, event, raw identity, node/content, screenshot, task-history log or network change. Operationally, the
 explicit recovery action can abandon in-progress Settings navigation, but does not deliberately clear persisted application data or system
-settings. Physical success remains **UNSPECIFIED** until the exact candidate passes the failed route for at least ten seconds.
+settings. Physical success was established only for the exact focused Mi 8 route; broader behaviour remains **UNSPECIFIED**.
 
 The phase reducer must now downgrade a latched safe transition to `RECOVERY_REGRESSED_TO_ORDINARY` when a later ordinary transition and overlay
 reattachment occur. A pure verdict treats Digital Wellbeing blocking as the expected precondition, while requiring persistent physical and
 software recovery plus a safe post-state. If Q5 fails, stop flag iteration and return the consumer recovery architecture to go/no-go review.
 [Intent flag API](https://developer.android.com/reference/android/content/Intent#FLAG_ACTIVITY_CLEAR_TASK), reviewed 2026-09-06.
+
+### Q5 physical result
+
+[Q5 evidence](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) records one expiry PASS, root Settings PASS, expected Digital Wellbeing
+blocking, and a single recovery-button PASS. The task-reset dispatch reached `KNOWN_SAFE_SYSTEM` after 180 ms, removed the overlay and had no
+later ordinary transition/reattachment through more than 30 seconds of phase/post sampling. Automatic CLEAR released only the lab restriction
+and preserved four historical internal latency samples. Zero qualification rows began.
+
+Decision consequence: the focused Q5 invalidation test passed on this exact Mi 8 and APK hash, so a separately immutable full qualification
+runner may be prepared. Its 100 samples must be new and retain fresh calibration/safety, failure-stop, evidence-integrity and offline requirements.
+Q5 does not prove the exact MIUI task mechanism, broad Settings safety, another configuration, production acceptance or Play approval.

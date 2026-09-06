@@ -37,7 +37,7 @@ Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
 | TAMP-07 ADB/developer options | A,B | Protected debug receiver/release audit and allowlisted evidence export prepared | Privileged ADB is outside consumer protection; sender-denial runtime test still queued |
 | TAMP-08 root/bootloader | C,D | Explicit unsupported boundary from ADR-0002 | No root/unlock/flash operation; physical testing only if separately authorized |
 | SAFE-01 emergency/dialler/TalkBack/IME/permission UI | C,D | Record technical state while an operator follows approved safety script | Settings success does not prove these; never dial a live emergency service for a test |
-| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2/Q3 **physical FAIL**; [Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) rejected `CLEAR_TOP`; Q5 task-reset candidate prepared, physical result **UNSPECIFIED** | Run Q5 once; pass then retest known-failed paths, fail then stop flag iteration and return to architecture review; prior top-level successes do not satisfy this gate; other safety surfaces outstanding |
+| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2/Q3 **physical FAIL**; [Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) rejected `CLEAR_TOP`; [Q5](evidence/KR-003-Q5-RECOVERY-2026-09-06.md) passed the exact focused task-reset route once | Preserve Q5 as one exact-device/path result; run fresh qualification preflight/final safety checks and remaining safe surfaces; no broad Settings/OEM conclusion |
 | Missing package, interruption, lost screen signal | A,B | Pure fail-open regression exists; queue service/lifecycle injections and observations | Unknown/safe fail-open is deliberate but not an enforcement pass |
 | AC-6 least privilege | A,B | Recursive source/permission checks, debug/release manifest and DEX audit, typed schema rejection tests | Runtime sender-denial/traffic audit still required; static absence of INTERNET is only static evidence |
 | AC-1/2 policy design packet | A,E | Existing ADR/disclosure/refusal/declaration docs; keep packet synced with actual code | Policy review/target-audience/account choices cannot be inferred from builds |
@@ -69,8 +69,9 @@ Official device/testing sources reviewed 2026-09-06.
 
 ## Three separate gates
 
-1. **Technical evidence:** completed Mi 8 checkpoint, followed by Q2/Q3/Q4 **physical Settings/recovery failures**. `CLEAR_TOP` is rejected and the
-   current build cannot qualify; [Q5](KR-003-RECOVERY-TASK-RESET.md), the remaining physical matrix and 100 samples are outstanding.
+1. **Technical evidence:** completed Mi 8 checkpoint, Q2/Q3/Q4 **physical Settings/recovery failures**, then one focused
+   [Q5 task-reset recovery PASS](evidence/KR-003-Q5-RECOVERY-2026-09-06.md). Q5 has zero qualification samples; the new 100-sample run, fresh
+   safety preflight/final check, remaining physical matrix and other device configurations are outstanding.
 2. **Policy design assessment:** ADR-0002 and POLICY document a conditional design and unresolved Android/Play purpose tension.
 3. **Actual Play review/acceptance:** no submission/review/approval evidence exists. Remains **UNSPECIFIED** and external.
 
