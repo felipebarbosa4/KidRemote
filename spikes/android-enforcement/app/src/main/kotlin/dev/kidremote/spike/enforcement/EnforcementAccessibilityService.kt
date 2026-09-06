@@ -20,6 +20,12 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
+internal object RecoverySettingsIntent {
+    val flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+
+    fun create(): Intent = Intent(Settings.ACTION_SETTINGS).addFlags(flags)
+}
+
 class EnforcementAccessibilityService : AccessibilityService() {
     private lateinit var store: LabTimerStore
     private lateinit var windowManager: WindowManager
@@ -253,7 +259,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
             isAllCaps = false
             setOnClickListener {
                 trace(kind = "recovery_open_requested", trigger = "settings_button")
-                startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                startActivity(RecoverySettingsIntent.create())
                 trace(kind = "recovery_open_dispatched", trigger = "settings_button")
             }
         })

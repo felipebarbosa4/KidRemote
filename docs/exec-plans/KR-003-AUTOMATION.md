@@ -84,3 +84,10 @@ recorded expiry/root PASS, Digital Wellbeing/recovery FAIL, phase-local ORDINARY
 [preserved evidence](../test-plans/evidence/KR-003-Q3-RECOVERY-2026-09-06.md).
 Exact source `53327c5` passed all three CI jobs; the [immutable bundle and operator handoff](../test-plans/evidence/KR-003-Q3-DIAGNOSTIC-BUNDLE-2026-09-06.md)
 were independently hash/source-byte verified. No device action occurred during packaging.
+
+## Q4 bounded recovery-launch calibration
+
+Q3 established that the labelled destination is classified ORDINARY_APP and that NEW_TASK-only recovery can be transient or absent. The bounded
+[Q4 decision/contract](../test-plans/KR-003-RECOVERY-REPAIR.md) adds only CLEAR_TOP to the Settings recovery intent; safe classification, event
+collection and permissions remain unchanged. The runner enforces a ten-second minimum before recovery PASS and still rejects multiple dispatches.
+Build/static evidence is not physical repair evidence; package and run Q4 only after exact-source CI passes.

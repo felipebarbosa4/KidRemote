@@ -109,7 +109,7 @@ test("focused recovery diagnostic is phase-local, diagnostic-only and has a non-
     assert.match(runner,new RegExp(`Start-DiagnosticPhase '${phase}'`));
     assert.match(module,new RegExp(`'${phase}'`));
   }
-  assert.match(packager,/protocol:"KR003-Q3-RECOVERY-DIAGNOSTIC"/);
+  assert.match(packager,/protocol:"KR003-Q4-RECOVERY-REPAIR-CALIBRATION"/);
   assert.match(packager,/diagnosticOnly:true/);
   assert.match(packager,/Clear-KR003-Lab\.ps1/);
   assert.match(runner,/EqualityDiagnosticImplemented=\$false/);
@@ -136,7 +136,10 @@ test("focused diagnostic ingestion preserves physical and software outcomes with
   save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
   assert.equal(ingestRecoveryDiagnostic(dir).phases[3].physicalResult,'UNRECORDED');
   phases[3].PhysicalResult='UNRECORDED';
+  save('manifest.json',{Bundle:{protocol:'KR003-Q4-RECOVERY-REPAIR-CALIBRATION',diagnosticOnly:true,sourceCommit:'b'.repeat(40)},RecoveryDiagnostic:true});
+  save('recovery-diagnostic.json',{Protocol:'KR003-Q4-RECOVERY-REPAIR-CALIBRATION',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
+  assert.equal(ingestRecoveryDiagnostic(dir).sourceCommit,'b'.repeat(40));
   phases[2].AfterSequence=19;
-  save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
+  save('recovery-diagnostic.json',{Protocol:'KR003-Q4-RECOVERY-REPAIR-CALIBRATION',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
   assert.throws(()=>ingestRecoveryDiagnostic(dir),/overlap|reuse/);
 }));

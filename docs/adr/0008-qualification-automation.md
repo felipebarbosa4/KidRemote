@@ -136,3 +136,16 @@ PASS, makes arbitrary external apps permanently safe, or again traps the user. E
 FAIL corroborated by ORDINARY_APP reattachment, and recovery FAIL. The first of two phase-local recovery dispatches was safe for only 682 ms before
 ordinary enforcement returned; the second produced no safe event. Two click-handler activations invalidate the single-attempt software oracle but
 do not erase the physical FAIL. Existing coarse telemetry answered the disposition question, so no equality diagnostic or raw identity is justified.
+
+## Q4 bounded recovery-launch decision
+
+Alternatives: expanding the safe allowlist is rejected without verified identity/surface safety; a time grace period is rejected because it can
+expose ordinary use; `CLEAR_TASK`/`MULTIPLE_TASK` are unnecessarily broad; collecting task/package history is rejected. Keep ACTION_SETTINGS and
+add only `FLAG_ACTIVITY_CLEAR_TOP` alongside `FLAG_ACTIVITY_NEW_TASK`. Android documents this pair as locating an existing activity in another
+task and putting it in position to handle the intent, clearing activities above the target where applicable.
+[Official task guidance](https://developer.android.com/guide/components/activities/tasks-and-back-stack#IntentFlags), reviewed 2026-09-06.
+
+Decision/reasons: use this only as a bounded candidate repair because Q3 directly observed NEW_TASK restoring a safe Settings surface transiently
+before the ordinary destination returned. It changes task navigation, not surface classification. Security/privacy and release collection remain
+unchanged. Operational risk is loss of in-progress Settings navigation above the root when the user explicitly requests recovery. Physical Q4
+must prove one click restores a continuously usable root without reattachment; failure rejects this repair. Other OEM/API and safety gates remain.

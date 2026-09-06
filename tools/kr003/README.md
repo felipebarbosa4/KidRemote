@@ -1,7 +1,7 @@
 # KR-003 qualification operator tooling
 
 - **Goal:** One owner-run Windows command, reproducible evidence, minimal repetitive interaction.
-- **Context:** [Q3 diagnostic contract](../../docs/test-plans/KR-003-RECOVERY-DIAGNOSTIC.md) follows the Q2 physical Settings/recovery failure.
+- **Context:** [Q4 repair calibration](../../docs/test-plans/KR-003-RECOVERY-REPAIR.md) follows the phase-local Q3 physical Settings/recovery failure.
 - **Constraints:** No Windows ADB execution from WSL; debug disposable APKs only; no automatic physical PASS, host changes, destructive tests or KR-004.
 - **Done when:** The diagnostic-only integrity-checked bundle retains one labelled recovery case and verifies the lab-only bailout.
 
@@ -25,15 +25,15 @@ Use the exact populated command in the latest handoff, of this form:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -RecoveryDiagnostic
 ```
 
-`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. Q3 rejects `-OfflineNetwork` and
+`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. Q4 rejects `-OfflineNetwork` and
 `-CalibrationOnly`: network state is not part of this diagnostic and no qualification path is available from its immutable bundle.
 Keep only the intended authorized Mi 8 connected: `get-state` fails on ambiguous devices, and model/codename/API are checked before installation.
 The runner installs in place and hashes pulled installed APKs; there is no uninstall fallback. Accept an OS installer prompt if it appears.
 Permissions must already be enabled through the disclosed setup flow. Refusal/MIUI denial stops; the runner never grants permissions or escalates.
 
-Q2 later physically failed broader Settings/recovery. Do not rerun it or start qualification. The next immutable bundle implements only the
-[Q3 focused diagnostic](../../docs/test-plans/KR-003-RECOVERY-DIAGNOSTIC.md). Run it with `-RecoveryDiagnostic`; the bundle rejects other modes,
-never starts the 100 rows and does not reset latency samples or change network state. Review its evidence before designing an enforcement fix.
+Q2 and Q3 physically failed Settings/recovery. Do not rerun them or start qualification. The next immutable bundle implements only the
+[Q4 bounded recovery-launch calibration](../../docs/test-plans/KR-003-RECOVERY-REPAIR.md). Run it with `-RecoveryDiagnostic`; the bundle rejects other modes,
+never starts the 100 rows and does not reset latency samples or change network state. Review its evidence before accepting or rejecting the repair.
 Do not change the device/user/settings or switch to personal apps during the run. The fixture is a separate zero-permission disposable ordinary app.
 
 ## What the operator does
@@ -41,7 +41,7 @@ Do not change the device/user/settings or switch to personal apps during the run
 1. Keep the Mi 8 unlocked and visible. Watch one fresh expiry remain continuous for ten seconds, then report P/F/I.
 2. `SETTINGS_ROOT`: tap the overlay Settings button once; report whether top-level Settings is usable.
 3. `DIGITAL_WELLBEING_ATTEMPT`: tap only Digital Wellbeing & parental controls once; report whether that destination is usable.
-4. `RECOVERY_BUTTON_ATTEMPT`: if the restriction overlay is visible, tap its Settings button once; report whether usable top-level Settings returns.
+4. `RECOVERY_BUTTON_ATTEMPT`: if the restriction overlay is visible, tap its Settings button exactly once, do not tap again, and watch whether usable top-level Settings remains for ten seconds.
 5. The runner records `POST_RECOVERY_STATE`, automatically clears only the lab restriction, verifies all latency samples remain and exits.
 
 Budget **4–7 minutes** including in-place install and responses (estimate, not measured). Do not press Home, explore other Settings destinations,

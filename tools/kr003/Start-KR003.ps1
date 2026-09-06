@@ -224,10 +224,11 @@ function Read-Result {
 }
 
 function Read-DiagnosticResult {
-    param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved)
+    param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved, [int]$MinimumPassSeconds = 0)
     Check-EarlyStop
     Write-Host $Prompt -ForegroundColor Cyan
     Write-Host '[P] usable/success  [F] blocked/failure  [I] invalid/uncertain  [Q] stop and run cleanup'
+    $observation=[Diagnostics.Stopwatch]::StartNew()
     while ($true) {
         if (-not [Console]::KeyAvailable) {
             if ($null -ne $Poll) { & $Poll | Out-Null }
@@ -235,6 +236,10 @@ function Read-DiagnosticResult {
             continue
         }
         $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
+        if ($key -eq 'P' -and $observation.Elapsed.TotalSeconds -lt $MinimumPassSeconds) {
+            Write-Host ("Keep observing; PASS is enabled after {0} seconds." -f $MinimumPassSeconds)
+            continue
+        }
         if ($key -in @('P','F','I')) {
             $result = switch ($key) { 'P' { 'PASS' }; 'F' { 'FAIL' }; 'I' { 'INVALID' } }
             if ($null -ne $OnObserved) { & $OnObserved $result }
@@ -500,7 +505,7 @@ function Invoke-FocusedRecoveryDiagnostic {
         throw 'INVALID:DIAGNOSTIC_START_NOT_BLOCKED'
     }
     $script:Diagnostic=[PSCustomObject]@{
-        Schema=1; Protocol='KR003-Q3-RECOVERY-DIAGNOSTIC'; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
+        Schema=1; Protocol=$script:Bundle.protocol; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
         Revision=[long]$start.revision; Phases=@(); EqualityDiagnosticImplemented=$false
         UsesRawPackageOrComponentIdentity=$false; Result='INCOMPLETE'; Reason=$null
     }
@@ -540,7 +545,7 @@ function Invoke-FocusedRecoveryDiagnostic {
         Complete-DiagnosticPhase 'INVALID' 1
     } else {
         Start-DiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT'
-        $recovery=Read-DiagnosticResult 'RECOVERY_BUTTON_ATTEMPT: tap the overlay Open device settings button ONCE. P=top-level Settings becomes usable, F=restriction remains/no usable recovery, I=uncertain.' -Poll { Poll-DiagnosticPhase } -OnObserved {
+        $recovery=Read-DiagnosticResult 'RECOVERY_BUTTON_ATTEMPT: tap the overlay Open device settings button ONCE. Do not tap again. P=top-level Settings remains usable for 10 seconds, F=restriction returns/remains or recovery is unusable, I=uncertain.' -MinimumPassSeconds 10 -Poll { Poll-DiagnosticPhase } -OnObserved {
             param($result)
             $script:DiagnosticPhase.PhysicalResult=$result
             $script:DiagnosticPhase.PhysicalObservedUtc=[DateTime]::UtcNow.ToString('o')
@@ -720,7 +725,7 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q3-RECOVERY-DIAGNOSTIC' -or -not $script:Bundle.diagnosticOnly) { throw 'INVALID:BUNDLE_SCHEMA' }
+    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q4-RECOVERY-REPAIR-CALIBRATION' -or -not $script:Bundle.diagnosticOnly) { throw 'INVALID:BUNDLE_SCHEMA' }
     if (-not $RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork) { throw 'INVALID:DIAGNOSTIC_MODE_REQUIRED' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }

@@ -93,14 +93,14 @@ export function ingestQualification(directory) {
 export function ingestRecoveryDiagnostic(directory) {
   const read = name => JSON.parse(decode(resolve(directory,name)));
   const manifest=read('manifest.json'), summary=read('summary.json'), diagnostic=read('recovery-diagnostic.json');
-  assert.equal(manifest.Bundle.protocol,'KR003-Q3-RECOVERY-DIAGNOSTIC');
+  assert(['KR003-Q3-RECOVERY-DIAGNOSTIC','KR003-Q4-RECOVERY-REPAIR-CALIBRATION'].includes(manifest.Bundle.protocol));
   assert.equal(manifest.Bundle.diagnosticOnly,true);
   assert.equal(manifest.RecoveryDiagnostic,true);
   assert.equal(summary.QualificationRequested,false);
   assert.equal(summary.RecoveryDiagnosticRequested,true);
   assert.equal(summary.Kr003Complete,false);
   assert.equal(summary.ProductionApproved,false);
-  assert.equal(diagnostic.Protocol,'KR003-Q3-RECOVERY-DIAGNOSTIC');
+  assert.equal(diagnostic.Protocol,manifest.Bundle.protocol);
   assert.equal(diagnostic.EqualityDiagnosticImplemented,false);
   assert.equal(diagnostic.UsesRawPackageOrComponentIdentity,false);
   assert(Array.isArray(diagnostic.Phases));
