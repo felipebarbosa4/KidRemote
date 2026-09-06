@@ -2,7 +2,7 @@
 
 Status: Accepted for the KR-003 disposable lab, 2026-09-06. Q1 controls operated on Mi 8; the recovery oracle disagreed with physical observation.
 Q2 physically failed Settings/recovery. Q3 reproduced the destination/recovery failure with phase-local evidence and verified its lab bailout.
-Engineering safety/qualification remain blocked.
+Q4 physically rejected the bounded `NEW_TASK | CLEAR_TOP` repair. Engineering safety/qualification remain blocked.
 
 - **Goal:** Remove repetitive lab interaction while preserving independent physical evidence and release isolation.
 - **Context:** Ten Mi 8 cycles passed by owner observation; the captured log had only buffer headers. Persisted metric count was not transcribed.
@@ -149,3 +149,14 @@ Decision/reasons: use this only as a bounded candidate repair because Q3 directl
 before the ordinary destination returned. It changes task navigation, not surface classification. Security/privacy and release collection remain
 unchanged. Operational risk is loss of in-progress Settings navigation above the root when the user explicitly requests recovery. Physical Q4
 must prove one click restores a continuously usable root without reattachment; failure rejects this repair. Other OEM/API and safety gates remain.
+
+### Q4 physical result
+
+[Q4 evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) records expiry/root PASS, expected Digital Wellbeing blocking and a
+single recovery-button physical FAIL. The dispatch reached `KNOWN_SAFE_SYSTEM` after 148 ms and removed the overlay, but `ORDINARY_APP` returned
+681 ms later and the overlay reattached 37 ms after that. This matches the owner's approximately one-second Settings flash. The post phase stayed
+ordinary/restricted/attached until the verified sample-preserving lab CLEAR.
+
+Decision consequence: reject `NEW_TASK | CLEAR_TOP` for this Mi 8 route. The fresh safe-transition oracle is transition corroboration only; it
+cannot satisfy persistent recovery in the presence of a later ordinary transition or physical FAIL. Exact MIUI activity/task behaviour remains
+**UNSPECIFIED**. Do not add an OEM allowlist, timing grace, raw identity collection or start qualification from this result.

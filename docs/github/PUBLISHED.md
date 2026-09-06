@@ -148,3 +148,10 @@ Progress, PR #16 remains draft and KR-004 remains untouched. Issue #3 and PR #16
 checkboxes remain present. The [Q3 ingestion/Q4 handoff comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561946765)
 records the same evidence boundary. Current-head [CI run 34057870919](https://github.com/felipebarbosa4/KidRemote/actions/runs/34057870919)
 passed all three jobs; its device calls were stubbed and do not constitute physical Q4 evidence.
+
+## Q4 physical recovery failure — 2026-09-06
+
+The owner executed the immutable Q4 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) records expiry/root PASS,
+expected Digital Wellbeing blocking and a single recovery-button physical FAIL. The safe transition lasted only 681 ms before `ORDINARY_APP`
+returned and the overlay reattached, matching the observed approximately one-second Settings flash. Zero qualification rows began; lab CLEAR
+passed and network state was not changed. `NEW_TASK | CLEAR_TOP` is rejected for this Mi 8 route. Publication to issue #3/PR #16 is pending.

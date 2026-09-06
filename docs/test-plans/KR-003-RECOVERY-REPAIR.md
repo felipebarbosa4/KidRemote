@@ -7,6 +7,10 @@
 
 Protocol: **`KR003-Q4-RECOVERY-REPAIR-CALIBRATION`**. This bundle is diagnostic-only and cannot enter the 100-sample loop.
 
+Executed result: **failed** on the authorized Mi 8. [Q4 evidence](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) records one dispatch reaching a safe
+surface transiently, followed 681 ms later by `ORDINARY_APP` and overlay reattachment. The physical recovery result was FAIL. This candidate is
+rejected for the tested route and must not be rerun as if untested.
+
 ## Bounded change
 
 The Settings button continues to launch `Settings.ACTION_SETTINGS`. It now adds `FLAG_ACTIVITY_CLEAR_TOP` to the required

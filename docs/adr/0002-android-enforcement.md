@@ -8,8 +8,9 @@ Implementation evidence status: the isolated least-privilege harness and physica
 [`spikes/android-enforcement`](../../spikes/android-enforcement/README.md). A build is not physical evidence; no support boundary or
 production decision changes until [KR-003's protocol](../test-plans/KR-003-PHYSICAL.md) is completed.
 
-Current Mi 8 candidate: Q2 and the focused Q3 diagnostic **physically failed designated Settings/recovery**, despite successful expiry/root observations.
-[Recorded Q3 evidence](../test-plans/evidence/KR-003-Q3-RECOVERY-2026-09-06.md) blocks qualification and production acceptance; no safe-surface
+Current Mi 8 candidate: Q2 and the focused Q3 diagnostic **physically failed designated Settings/recovery**. Q4 then physically rejected the
+bounded `NEW_TASK | CLEAR_TOP` recovery candidate: Settings appeared transiently before `ORDINARY_APP` returned and enforcement reattached.
+[Recorded Q4 evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) blocks qualification and production acceptance; no safe-surface
 requirement or support-boundary exception is waived, and no alternate enforcement architecture has been selected from this result.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.

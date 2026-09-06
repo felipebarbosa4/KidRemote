@@ -5,10 +5,11 @@
 - **Constraints:** Authorized lab; owner executes Windows ADB; continuous human observation; no destructive operations; all attempts preserved.
 - **Done when:** One immutable run has 100 valid paired observations, zero enforcement failures, nearest-rank internal p95 ≤2,000 ms, and separately reported safety/preflight results. This is only AC-3 evidence for one configuration.
 
-**Current gate:** the [Q2 owner-run calibration](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery. The subsequent
-[Q3 focused diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) reproduced the physical destination/recovery FAIL and established a phase-local
-ORDINARY_APP reattachment. Do not rerun either old command or start 100 samples. A bounded recovery repair must pass another focused calibration.
-The requirements below are unchanged, not waived by earlier expiry success.
+**Current gate:** [Q2](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery; the
+[Q3 diagnostic](evidence/KR-003-Q3-RECOVERY-2026-09-06.md) isolated `ORDINARY_APP` reattachment; and
+[Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) physically rejected `NEW_TASK | CLEAR_TOP` because recovery was transient. Do not rerun these old
+commands or start 100 samples. A separately justified recovery candidate must pass a fresh focused calibration. The requirements below remain
+unchanged and are not waived by successful expiries.
 
 ## Reconciled definitions
 

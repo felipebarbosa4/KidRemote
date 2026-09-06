@@ -92,4 +92,6 @@ Q3 established that the labelled destination is classified ORDINARY_APP and that
 collection and permissions remain unchanged. The runner enforces a ten-second minimum before recovery PASS and still rejects multiple dispatches.
 Build/static evidence is not physical repair evidence; package and run Q4 only after exact-source CI passes.
 Source `768aaa0` passed all three CI jobs. The [immutable Q4 bundle and operator handoff](../test-plans/evidence/KR-003-Q4-BUNDLE-2026-09-06.md)
-were independently hash/source-byte verified. Physical Q4 execution is **Not run**.
+were independently hash/source-byte verified. The owner then executed it: [Q4 evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md)
+records expiry/root PASS, expected Digital Wellbeing blocking and a single recovery physical FAIL. `CLEAR_TOP` reached Settings only transiently;
+ordinary enforcement returned 681 ms after the safe transition. Zero qualification rows began and the lab bailout passed. This candidate is rejected.
