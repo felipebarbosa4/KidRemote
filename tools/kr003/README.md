@@ -1,9 +1,9 @@
 # KR-003 qualification operator tooling
 
 - **Goal:** One owner-run Windows command, reproducible evidence, minimal repetitive interaction.
-- **Context:** [Contract KR003-Q2](../../docs/test-plans/KR-003-QUALIFICATION.md) follows the completed ten-cycle Mi 8 checkpoint and stopped calibration.
+- **Context:** [Q3 diagnostic contract](../../docs/test-plans/KR-003-RECOVERY-DIAGNOSTIC.md) follows the Q2 physical Settings/recovery failure.
 - **Constraints:** No Windows ADB execution from WSL; debug disposable APKs only; no automatic physical PASS, host changes, destructive tests or KR-004.
-- **Done when:** The integrity-checked bundle executes the requested calibration-only checkpoint or calibrated qualification, retaining every result.
+- **Done when:** The diagnostic-only integrity-checked bundle retains one labelled recovery case and verifies the lab-only bailout.
 
 ## Build and prepare (agent / WSL)
 
@@ -22,59 +22,54 @@ Source commit is the clean build commit, not a later documentation-only handoff 
 Use the exact populated command in the latest handoff, of this form:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -OfflineNetwork -CalibrationOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -RecoveryDiagnostic
 ```
 
-`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. `-OfflineNetwork` opts into reversible
-Wi-Fi/mobile-data changes for this authorized lab run, not a WSL/host change. Omit it only for an intentionally online-only investigation.
+`-ExecutionPolicy Bypass` applies only to that PowerShell process; no permanent policy change is made. Q3 rejects `-OfflineNetwork` and
+`-CalibrationOnly`: network state is not part of this diagnostic and no qualification path is available from its immutable bundle.
 Keep only the intended authorized Mi 8 connected: `get-state` fails on ambiguous devices, and model/codename/API are checked before installation.
 The runner installs in place and hashes pulled installed APKs; there is no uninstall fallback. Accept an OS installer prompt if it appears.
 Permissions must already be enabled through the disclosed setup flow. Refusal/MIUI denial stops; the runner never grants permissions or escalates.
 
-Q1 controls worked in the stopped calibration, but recovery telemetry disagreed with a physical Settings PASS. Q2 adds debug-only owned-window
-diagnostics and phase polling; their MIUI behaviour is not yet verified. **Keep `-CalibrationOnly` for the next diagnostic checkpoint.** It never
-starts the 100 rows. Review its evidence before a separate full command without that switch; a full run still repeats calibration first.
+Q2 later physically failed broader Settings/recovery. Do not rerun it or start qualification. The next immutable bundle implements only the
+[Q3 focused diagnostic](../../docs/test-plans/KR-003-RECOVERY-DIAGNOSTIC.md). Run it with `-RecoveryDiagnostic`; the bundle rejects other modes,
+never starts the 100 rows and does not reset latency samples or change network state. Review its evidence before designing an enforcement fix.
 Do not change the device/user/settings or switch to personal apps during the run. The fixture is a separate zero-permission disposable ordinary app.
 
 ## What the operator does
 
-1. Keep the Mi 8 unlocked and visible. Confirm once that disabled Wi-Fi/mobile data leaves no other Internet connection.
-2. Watch one calibration expiry and at least ten continuous blocked seconds; press **P** only after the prompt. A missing observation is **I**, not P.
-3. During the calibration checklist, physically press Home, verify it remains blocked, tap **Open device settings**, and verify Settings is usable.
-   One P confirms those two observed outcomes; remain in Settings until the runner navigates. State polling occurs throughout the prompt and your
-   response is saved before corroboration. The runner then opens the fixture: confirm restricted re-entry with P. After automatic Clear, tap
-   **Test ordinary use** once; the fixture records that physical touch itself.
-4. With `-CalibrationOnly`, stop here: the runner verifies end configuration/APK hashes, restores radios and writes reports. Budget **3–5 minutes**
-   including installation and responses (estimate, not measured). No new qualification sample starts.
-5. Only in a separately authorized full run: watch each of 100 new expiries and ten seconds of persistent restriction; one **P** per observation.
-   Repeat recovery after sample 100. No Home/Settings sequence is required in the other 99 samples.
+1. Keep the Mi 8 unlocked and visible. Watch one fresh expiry remain continuous for ten seconds, then report P/F/I.
+2. `SETTINGS_ROOT`: tap the overlay Settings button once; report whether top-level Settings is usable.
+3. `DIGITAL_WELLBEING_ATTEMPT`: tap only Digital Wellbeing & parental controls once; report whether that destination is usable.
+4. `RECOVERY_BUTTON_ATTEMPT`: if the restriction overlay is visible, tap its Settings button once; report whether usable top-level Settings returns.
+5. The runner records `POST_RECOVERY_STATE`, automatically clears only the lab restriction, verifies all latency samples remain and exits.
 
-At any time F = visible failure, I = invalid/missed observation, Q = stop. At prompts F/I opens a single-digit reason menu. Early P keys are discarded.
-Do not press P for a screen you did not watch. Every failure/invalid/interrupted attempt is preserved; the runner stops, never substitutes a retry.
-For a full run, the minimum countdown/hold duration is about 34 minutes (101 ×20 seconds), plus ADB and responses: budget **45–60 minutes**, an estimate until measured.
+Budget **4–7 minutes** including in-place install and responses (estimate, not measured). Do not press Home, explore other Settings destinations,
+rerun a prompt or turn radios/permissions on or off. This run cannot start a qualification sample.
+
+At each diagnostic prompt P = the named surface/result was usable, F = blocked/failed, I = uncertain/missed, and Q = stop into cleanup.
+Do not press P for a screen you did not watch. Digital/recovery F is journalled and does not get replaced by a retry.
 
 ## Evidence and recovery
 
 Each run creates a new `C:\platform-tools\kr003-qualification\run-*` directory with original/installed APK hashes, manifest, prior metrics,
-calibration, per-attempt JSON/CSV, fixture telemetry, typed traces, final metrics, safety records and summary. The agent reads it from `/mnt/c`.
+one calibration expiry row, per-attempt JSON/CSV, fixture telemetry, typed traces, phase diagnostic, bailout record and summary. The agent reads it from `/mnt/c`.
 No copying/log pasting, node/text/screenshot collection or broad dumpsys capture is needed.
 
-Failures preserve the current restriction for investigation; the designated Settings button remains the recovery route. Q exits safely and attempts
-radio restoration. Avoid closing/killing the terminal: a hard interruption cannot run `finally`. `network-original.json` and `network-touched.json`
-preserve the exact radio flags for owner-assisted recovery if restoration fails. No data clear, uninstall, force-stop, reboot or safe-mode command runs.
-`network-restoration.json` records per-radio readback. Reporting/cleanup steps cannot mask the primary reason; `FinalizationErrors` lists secondary
-problems. Zero-row runs still write zero-count JSON/Markdown summaries on writable storage. A physical Settings P plus absent corroboration stops
-as INVALID with the physical PASS retained; it is not classified as a failed physical recovery.
-Exit code 0 with `-CalibrationOnly` means **calibration completed only**, never qualification. Without it, code 0 means this configuration's offline
-qualification succeeded. Code 2 means inspect the summary (including online-only, invalid, physical failure or cleanup/reporting problems).
+The focused diagnostic captures the final state, then automatically clears only the lab timer and verifies latency samples are unchanged.
+Its bundle also includes `Clear-KR003-Lab.ps1` for a forcibly interrupted/trapped terminal. Neither bailout is consumer recovery evidence.
+Q exits through automatic CLEAR. Avoid closing/killing the terminal: a hard interruption cannot run `finally`; use the bundled bailout script from
+a second PowerShell window if needed. No data clear, uninstall, force-stop, permission, network, reboot or safe-mode command runs.
+Reporting/cleanup cannot replace physical results. Exit code 0 means **diagnostic evidence and bailout completed only**, never physical/product PASS.
+Code 2 means inspect the summary and `diagnostic-bailout.json`.
 Never close KR-003 based on that exit code: [remaining gates](../../docs/test-plans/KR-003-REMAINING.md) still apply.
 
 ```sh
-node tools/kr003/ingest.mjs qualification /mnt/c/platform-tools/kr003-qualification/ACTUAL_RUN_DIRECTORY
+node tools/kr003/ingest.mjs diagnostic /mnt/c/platform-tools/kr003-qualification/ACTUAL_RUN_DIRECTORY
 ```
 
-The ingester independently checks attempt/revision uniqueness, physical/software pairing, hold duration and statistics; it does not generate observer
-results. Retain failures and exact originals. Generated APKs and raw output directories are not automatically committed or uploaded.
+The ingester checks protocol/mode, ordered non-overlapping phase floors, allowed physical results, separate coarse oracles and bailout safety fields;
+it does not generate observer results. Retain failures and exact originals. Generated APKs and raw output directories are not automatically committed.
 
 ## Local test commands
 
@@ -89,5 +84,6 @@ git diff --check
 
 PowerShell tests execute synthetic state/observer inputs, including 100 scripted successful rows, failure rejection and reversible radio command
 selection. Finalization tests execute the actual runner functions with device calls stubbed, covering calibration/zero rows, interruption, sample 1,
-partial sets, 100 rows, writer failures, independent radio restoration and recovery-phase disagreement. Those are **not physical trials**.
+partial sets, 100 rows, writer failures, independent radio restoration, phase-local recovery, partial journalling and sample-preserving bailout.
+Those are **not physical trials**.
 CI also runs finalization tests using Windows PowerShell; this validates host-runtime compatibility, not Windows ADB or MIUI behaviour.

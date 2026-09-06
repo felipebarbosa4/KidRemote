@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { ingestCheckpoint, ingestQualification } from "./ingest.mjs";
+import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic } from "./ingest.mjs";
 import { validateAndroidSpike } from "../validate-android-spike.mjs";
 const temporary = fn => {
   const directory=mkdtempSync(join(tmpdir(),"kr003-synthetic-"));
@@ -98,4 +98,41 @@ test("least-privilege validator rejects new files, permissions, unprotected debu
   const extra=join(dir,path+'/ordinary-fixture/src/main/kotlin/dev/kidremote/spike/ordinary/Unreviewed.kt');
   writeFileSync(extra,'val forbidden = event.getSource()');
   assert(validateAndroidSpike(dir).length>0,'New source files must be scanned too');
+}));
+
+test("focused recovery diagnostic is phase-local, diagnostic-only and has a non-destructive bailout",()=>{
+  const runner=readFileSync(resolve('tools/kr003/Start-KR003.ps1'),'utf8');
+  const module=readFileSync(resolve('tools/kr003/Qualification.psm1'),'utf8');
+  const bailout=readFileSync(resolve('tools/kr003/Clear-KR003-Lab.ps1'),'utf8');
+  const packager=readFileSync(resolve('tools/kr003/package.mjs'),'utf8');
+  for(const phase of ['SETTINGS_ROOT','DIGITAL_WELLBEING_ATTEMPT','RECOVERY_BUTTON_ATTEMPT','POST_RECOVERY_STATE']) {
+    assert.match(runner,new RegExp(`Start-DiagnosticPhase '${phase}'`));
+    assert.match(module,new RegExp(`'${phase}'`));
+  }
+  assert.match(packager,/protocol:"KR003-Q3-RECOVERY-DIAGNOSTIC"/);
+  assert.match(packager,/diagnosticOnly:true/);
+  assert.match(packager,/Clear-KR003-Lab\.ps1/);
+  assert.match(runner,/EqualityDiagnosticImplemented=\$false/);
+  assert.match(runner,/UsesRawPackageOrComponentIdentity=\$false/);
+  assert.match(bailout,/Get-BailoutState 'CLEAR'/);
+  assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
+  assert.doesNotMatch(bailout,/Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable/);
+});
+
+test("focused diagnostic ingestion preserves physical and software outcomes without creating qualification samples",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  save('manifest.json',{Bundle:{protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',diagnosticOnly:true,sourceCommit:'a'.repeat(40)},RecoveryDiagnostic:true});
+  const names=['SETTINGS_ROOT','DIGITAL_WELLBEING_ATTEMPT','RECOVERY_BUTTON_ATTEMPT','POST_RECOVERY_STATE'];
+  const phases=names.map((Name,i)=>({Name,PhysicalResult:i===0?'PASS':i===1||i===2?'FAIL':'UNRECORDED',Oracle:['SAFE_TRANSITION_CORROBORATED','ORDINARY_REATTACHMENT_CORROBORATED','PENDING','ORDINARY_ATTACHED_OBSERVED'][i],AfterSequence:i*10,LastSequence:(i+1)*10}));
+  save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
+  save('diagnostic-bailout.json',{Operation:'CLEAR_LAB_TIMER_ONLY',Status:'VERIFIED',RestrictionReleased:true,LatencySamplesPreserved:true,ConsumerRecoveryEvidence:false,AppDataCleared:false,Uninstalled:false,PermissionsAltered:false});
+  save('summary.json',{Status:'DIAGNOSTIC_COMPLETED_ONLY',Reason:'PHYSICAL_FAILURE_RECORDED',QualificationRequested:false,RecoveryDiagnosticRequested:true,Kr003Complete:false,ProductionApproved:false,FinalizationErrors:[]});
+  const result=ingestRecoveryDiagnostic(dir);
+  assert.equal(result.qualificationSamples,0);
+  assert.equal(result.phases[1].physicalResult,'FAIL');
+  assert.equal(result.phases[1].oracle,'ORDINARY_REATTACHMENT_CORROBORATED');
+  assert.equal(result.bailout,'VERIFIED');
+  phases[2].AfterSequence=19;
+  save('recovery-diagnostic.json',{Protocol:'KR003-Q3-RECOVERY-DIAGNOSTIC',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
+  assert.throws(()=>ingestRecoveryDiagnostic(dir),/overlap|reuse/);
 }));

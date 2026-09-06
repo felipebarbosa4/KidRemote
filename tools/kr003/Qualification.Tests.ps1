@@ -69,6 +69,83 @@ $s = New-Snapshot; $f.focused=$true
 Assert-Reject { Assert-KRHold $s 2 0 $f } 'FAIL:ORDINARY_FIXTURE_ACTIVE'
 Assert-Reject { Assert-KRHealth $s 20001 } 'FAIL:CLOCK_DISCONTINUITY'
 
+# Focused recovery phases use their own trace floor; an earlier phase's safe event cannot satisfy a later phase.
+$rootStart=New-Snapshot
+$rootStart.elapsed=30000; $rootStart.sampledAt=29990; $rootStart.traceHead=10
+$root=New-KRDiagnosticPhase 'SETTINGS_ROOT' $rootStart
+$rootFrame=New-Snapshot
+$rootFrame.elapsed=30400; $rootFrame.sampledAt=30390; $rootFrame.traceHead=14; $rootFrame.attached=$false; $rootFrame.disposition='SAFE_SYSTEM'
+$rootFrame.events=@(
+    [PSCustomObject]@{sequence=11;line='t=30100 kind=recovery_open_requested trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=12;line='t=30110 kind=recovery_open_dispatched trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=13;line='t=30200 kind=surface_transition trigger=event identity=KNOWN_SAFE_SYSTEM disposition=ORDINARY_APP nextDisposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'},
+    [PSCustomObject]@{sequence=14;line='t=30210 kind=overlay_removed trigger=safe_surface disposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'}
+)
+Update-KRDiagnosticPhase $root $rootFrame
+Assert-Equal $root.Oracle 'SAFE_TRANSITION_CORROBORATED'
+
+$digital=New-KRDiagnosticPhase 'DIGITAL_WELLBEING_ATTEMPT' $rootFrame
+$digitalFrame=New-Snapshot
+$digitalFrame.elapsed=30800; $digitalFrame.sampledAt=30790; $digitalFrame.traceHead=16
+$digitalFrame.events=@(
+    [PSCustomObject]@{sequence=15;line='t=30700 kind=surface_transition trigger=event identity=ORDINARY_APP disposition=SAFE_SYSTEM nextDisposition=ORDINARY_APP restriction=true overlay=DETACHED revision=2'},
+    [PSCustomObject]@{sequence=16;line='t=30710 kind=overlay_attached trigger=accessibility_event disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED revision=2'}
+)
+Update-KRDiagnosticPhase $digital $digitalFrame
+Assert-Equal $digital.Oracle 'ORDINARY_REATTACHMENT_CORROBORATED'
+Assert-Equal $digital.SafeTransition $false
+
+$recovery=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
+$oldSafe=New-Snapshot
+$oldSafe.elapsed=30900; $oldSafe.sampledAt=30890; $oldSafe.traceHead=16; $oldSafe.events=$rootFrame.events
+Update-KRDiagnosticPhase $recovery $oldSafe
+Assert-Equal $recovery.Oracle 'PENDING'
+$requestOnly=New-Snapshot
+$requestOnly.elapsed=31200; $requestOnly.sampledAt=31190; $requestOnly.traceHead=18
+$requestOnly.events=@(
+    [PSCustomObject]@{sequence=17;line='t=31000 kind=recovery_open_requested trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=18;line='t=31010 kind=recovery_open_dispatched trigger=settings_button revision=2'}
+)
+Update-KRDiagnosticPhase $recovery $requestOnly
+Assert-Equal $recovery.Oracle 'PENDING'
+$preDispatch=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $rootStart
+$earlySafe=New-Snapshot
+$earlySafe.elapsed=30100; $earlySafe.sampledAt=30090; $earlySafe.traceHead=11; $earlySafe.attached=$false; $earlySafe.disposition='SAFE_SYSTEM'
+$earlySafe.events=@([PSCustomObject]@{sequence=11;line='t=30050 kind=surface_transition trigger=event identity=KNOWN_SAFE_SYSTEM disposition=ORDINARY_APP nextDisposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'})
+Update-KRDiagnosticPhase $preDispatch $earlySafe
+$lateDispatch=New-Snapshot
+$lateDispatch.elapsed=30300; $lateDispatch.sampledAt=30290; $lateDispatch.traceHead=13
+$lateDispatch.events=@(
+    [PSCustomObject]@{sequence=12;line='t=30200 kind=recovery_open_requested trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=13;line='t=30210 kind=recovery_open_dispatched trigger=settings_button revision=2'}
+)
+Update-KRDiagnosticPhase $preDispatch $lateDispatch
+Assert-Equal $preDispatch.Oracle 'PENDING'
+$recovered=New-Snapshot
+$recovered.elapsed=31500; $recovered.sampledAt=31490; $recovered.traceHead=20; $recovered.attached=$false; $recovered.disposition='SAFE_SYSTEM'
+$recovered.events=@(
+    [PSCustomObject]@{sequence=19;line='t=31300 kind=surface_transition trigger=event identity=KNOWN_SAFE_SYSTEM disposition=ORDINARY_APP nextDisposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'},
+    [PSCustomObject]@{sequence=20;line='t=31310 kind=overlay_removed trigger=safe_surface disposition=SAFE_SYSTEM restriction=true overlay=ATTACHED revision=2'}
+)
+Update-KRDiagnosticPhase $recovery $recovered
+Assert-Equal $recovery.Oracle 'FRESH_SAFE_TRANSITION_CORROBORATED'
+$duplicate=New-KRDiagnosticPhase 'RECOVERY_BUTTON_ATTEMPT' $digitalFrame
+$duplicateFrame=New-Snapshot
+$duplicateFrame.elapsed=31500; $duplicateFrame.sampledAt=31490; $duplicateFrame.traceHead=20
+$duplicateFrame.events=@(
+    [PSCustomObject]@{sequence=17;line='t=31000 kind=recovery_open_requested trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=18;line='t=31010 kind=recovery_open_dispatched trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=19;line='t=31100 kind=recovery_open_requested trigger=settings_button revision=2'},
+    [PSCustomObject]@{sequence=20;line='t=31110 kind=recovery_open_dispatched trigger=settings_button revision=2'}
+)
+Update-KRDiagnosticPhase $duplicate $duplicateFrame
+Assert-Equal $duplicate.Oracle 'INVALID_MULTIPLE_RECOVERY_ATTEMPTS'
+$post=New-KRDiagnosticPhase 'POST_RECOVERY_STATE' $recovered
+$postFrame=New-Snapshot
+$postFrame.elapsed=31700; $postFrame.sampledAt=31690; $postFrame.traceHead=20; $postFrame.attached=$false; $postFrame.disposition='SAFE_SYSTEM'
+Update-KRDiagnosticPhase $post $postFrame
+Assert-Equal $post.Oracle 'SAFE_STATE_OBSERVED'
+
 $rows = @(1..100 | ForEach-Object { [PSCustomObject]@{Revision=$_;Observer='UNRECORDED';Automated='PASS';LatencyMs=123} })
 Assert-Equal (Get-KRRunVerdict $rows $true $true) 'INCOMPLETE'
 $rows | ForEach-Object { $_.Observer='PASS' }

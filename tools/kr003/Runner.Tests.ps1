@@ -26,6 +26,7 @@ function Reset-Run([string]$Name) {
     $script:Terminal='FAIL'; $script:Reason='SETTINGS_RECOVERY'; $script:StartedAt='2026-09-06T00:00:00Z'
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true
+    $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
 }
 function Read-Json([string]$Name) { Get-Content -LiteralPath (Join-Path $runDirectory $Name) -Raw | ConvertFrom-Json }
 function Check-Summary([int]$Count,[string]$Reason) {
@@ -170,6 +171,52 @@ try {
     $reason=$null
     try { Update-KRRecoveryEvidence $stale $safe } catch { $reason=$_.Exception.Message }
     Assert-Equal $reason 'FAIL:RECOVERY_REVISION_CHANGED'
+
+    # Diagnostic CLEAR changes only timer state and preserves the complete latency sample array.
+    Reset-Run 'diagnostic-bailout'
+    $script:RecoveryDiagnostic=$true; $script:LabControlReady=$true; $script:BailoutCleared=$false
+    function New-BailoutFrame([bool]$Restricted) {
+        [PSCustomObject]@{revision=$(if($Restricted){42}else{43});sampleCount=2;samples=@(123,263);armed=$Restricted;restriction=$Restricted;attached=$Restricted}
+    }
+    function Get-LabState {
+        param($Operation='SNAPSHOT')
+        if($Operation -eq 'CLEAR') { $script:BailoutCleared=$true }
+        return New-BailoutFrame (-not $script:BailoutCleared)
+    }
+    function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds) return Get-LabState }
+    Invoke-DiagnosticBailout
+    Assert-Equal $script:DiagnosticBailout.Status 'VERIFIED'
+    Assert-Equal $script:DiagnosticBailout.RestrictionReleased $true
+    Assert-Equal $script:DiagnosticBailout.LatencySamplesPreserved $true
+    Assert-Equal $script:DiagnosticBailout.AppDataCleared $false
+    Assert-Equal $script:DiagnosticBailout.Uninstalled $false
+    Assert-Equal $script:DiagnosticBailout.PermissionsAltered $false
+    Assert-Equal $script:DiagnosticBailout.ConsumerRecoveryEvidence $false
+    Assert-Equal (Read-Json 'diagnostic-bailout.json').AfterSampleCount 2
+
+    # Finalization invokes diagnostic bailout before reporting and retains a physical-failure diagnostic journal.
+    Reset-Run 'diagnostic-finalization'
+    $script:RecoveryDiagnostic=$true; $script:LabControlReady=$true
+    $script:Diagnostic=[PSCustomObject]@{Result='EVIDENCE_CAPTURED';Reason='PHYSICAL_FAILURE_RECORDED';Phases=@([PSCustomObject]@{Name='DIGITAL_WELLBEING_ATTEMPT';PhysicalResult='FAIL'})}
+    $script:Terminal='DIAGNOSTIC_COMPLETED_ONLY'; $script:Reason='PHYSICAL_FAILURE_RECORDED'; $script:BailoutCalled=0
+    function Invoke-DiagnosticBailout {
+        $script:BailoutCalled++
+        $script:DiagnosticBailout=[PSCustomObject]@{Status='VERIFIED'}
+    }
+    Complete-LabRun 6>$null
+    Assert-Equal $script:BailoutCalled 1
+    Assert-Equal (Read-Json 'summary.json').DiagnosticResult 'EVIDENCE_CAPTURED'
+    Assert-Equal (Read-Json 'summary.json').DiagnosticReason 'PHYSICAL_FAILURE_RECORDED'
+    Assert-Equal (Read-Json 'summary.json').QualificationRequested $false
+
+    # Bailout entry point is syntactically valid and contains no destructive/device-permission actions.
+    $bailoutPath=Join-Path $PSScriptRoot 'Clear-KR003-Lab.ps1'
+    $bailoutTokens=$null; $bailoutErrors=$null
+    $null=[Management.Automation.Language.Parser]::ParseFile($bailoutPath,[ref]$bailoutTokens,[ref]$bailoutErrors)
+    Assert-Equal $bailoutErrors.Count 0
+    $bailoutSource=Get-Content -LiteralPath $bailoutPath -Raw
+    Assert-Equal ([bool]($bailoutSource -match "Get-BailoutState 'CLEAR'")) $true
+    Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
 } finally {
     # Only this test-created unique temporary tree; no real run directory is used or touched.
     Remove-Item -LiteralPath $temporaryRoot -Recurse -Force

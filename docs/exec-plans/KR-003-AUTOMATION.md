@@ -65,3 +65,18 @@ Ingestion confirms `FAIL:OBSERVER_4`, one successful calibration expiry, owner H
 no finalization errors and verified radio flags. [Q2 failure analysis](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) separates the
 established ordinary-classification/overlay chain from the unresolved destination/task cause. Proposed next work is labelled, bounded recovery
 diagnostics with a lab bailout; no APK/policy/runner change or physical execution occurred in this investigation.
+
+## Q3 focused diagnostic checkpoint
+
+- **Goal:** Make one Digital Wellbeing/recovery reproduction phase-local, privacy-bounded and recoverable.
+- **Context:** Q2's phase-wide latch could not attribute the final recovery attempt, while the existing coarse trace already distinguishes safe,
+  ordinary and unknown dispositions without raw identity.
+- **Constraints:** Diagnostic bundle only; no qualification path, Android policy/event change, identity equality capture, network change or KR-004.
+- **Done when:** Four phase journals, three separate physical fields, automatic/standalone CLEAR verification, ingestion and negative tests pass;
+  exact-source CI and immutable bundle are verified before owner execution.
+
+Implemented `KR003-Q3-RECOVERY-DIAGNOSTIC`: each phase receives a fresh trace/time floor; Settings-button corroboration requires a post-dispatch
+safe transition/removal or post-dispatch safe sample. Digital Wellbeing records ordinary reattachment, safe, unknown or pending independently.
+Repeated button attempts invalidate that phase. Normal finalization clears only the disposable timer and verifies the entire latency sample array
+is unchanged; the bundled standalone bailout covers a forcibly interrupted terminal. All physical failures remain evidence rather than retries.
+The equality diagnostic remains unimplemented because existing coarse telemetry is sufficient for this checkpoint. Physical execution is **Not run**.

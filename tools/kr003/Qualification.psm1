@@ -150,4 +150,122 @@ function Update-KRRecoveryEvidence {
     if ($Evidence.OpenRequested -and $Evidence.OpenDispatched -and ($Evidence.SafeSample -or ($Evidence.SafeTransition -and $Evidence.Removed))) { $Evidence.Oracle='CORROBORATED' }
 }
 
-Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence
+function New-KRDiagnosticPhase {
+    param(
+        [ValidateSet('SETTINGS_ROOT','DIGITAL_WELLBEING_ATTEMPT','RECOVERY_BUTTON_ATTEMPT','POST_RECOVERY_STATE')]
+        [string]$Name,
+        $Snapshot
+    )
+    [PSCustomObject]@{
+        Name=$Name; Revision=[long]$Snapshot.revision
+        StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
+        StartedElapsed=[long]$Snapshot.elapsed; LastElapsed=[long]$Snapshot.elapsed
+        AfterSequence=[long]$Snapshot.traceHead; LastSequence=[long]$Snapshot.traceHead
+        StartedDisposition=[string]$Snapshot.disposition; StartedAttached=[bool]$Snapshot.attached
+        PhysicalResult='UNRECORDED'; PhysicalObservedUtc=$null
+        OpenRequested=$false; OpenRequestCount=0; OpenRequestedSequence=-1L
+        OpenDispatched=$false; OpenDispatchCount=0; OpenDispatchedSequence=-1L; OpenDispatchedElapsed=-1L
+        SafeTransition=$false; SafeTransitionSequence=-1L
+        OrdinaryTransition=$false; OrdinaryTransitionSequence=-1L
+        UnknownTransition=$false; UnknownTransitionSequence=-1L
+        OverlayAttached=$false; OverlayAttachedSequence=-1L
+        OverlayRemoved=$false; OverlayRemovedSequence=-1L
+        SafeSample=$false; OrdinaryAttachedSample=$false; UnknownSample=$false
+        Oracle='PENDING'; Reason=$null
+    }
+}
+
+function Update-KRDiagnosticPhase {
+    param($Evidence, $Snapshot)
+    Assert-KRHealth $Snapshot -PreviousElapsed $Evidence.LastElapsed
+    if ($Snapshot.revision -ne $Evidence.Revision -or $Snapshot.sampledRevision -ne $Evidence.Revision) { throw 'FAIL:DIAGNOSTIC_REVISION_CHANGED' }
+    if ($Snapshot.traceLost) { throw 'INVALID:DIAGNOSTIC_TRACE_GAP' }
+    $Evidence.LastElapsed=[long]$Snapshot.elapsed
+    $Evidence.LastSequence=[long]$Snapshot.traceHead
+    foreach ($entry in $Snapshot.events) {
+        if ($entry.sequence -le $Evidence.AfterSequence) { continue }
+        if ($entry.line -notmatch '^t=(\d+) .* revision=(\d+)$') { throw 'INVALID:DIAGNOSTIC_TRACE_SCHEMA' }
+        $eventTime=[long]$Matches[1]; $eventRevision=[long]$Matches[2]
+        if ($eventTime -lt $Evidence.StartedElapsed -or $eventRevision -ne $Evidence.Revision) { continue }
+        if ($eventTime -gt $Snapshot.elapsed) { throw 'INVALID:DIAGNOSTIC_TRACE_TIME' }
+        if ($entry.line -match ' kind=recovery_open_requested ') {
+            $Evidence.OpenRequested=$true
+            $Evidence.OpenRequestCount++
+            $Evidence.OpenRequestedSequence=[long]$entry.sequence
+        }
+        if ($Evidence.OpenRequested -and $entry.sequence -gt $Evidence.OpenRequestedSequence -and $entry.line -match ' kind=recovery_open_dispatched ') {
+            $Evidence.OpenDispatched=$true
+            $Evidence.OpenDispatchCount++
+            $Evidence.OpenDispatchedSequence=[long]$entry.sequence
+            $Evidence.OpenDispatchedElapsed=$eventTime
+        }
+        if ($entry.line -match ' kind=surface_transition .*identity=KNOWN_SAFE_SYSTEM .*nextDisposition=SAFE_SYSTEM restriction=true ') {
+            $Evidence.SafeTransition=$true; $Evidence.SafeTransitionSequence=[long]$entry.sequence
+        }
+        if ($entry.line -match ' kind=surface_transition .*identity=ORDINARY_APP .*nextDisposition=ORDINARY_APP restriction=true ') {
+            $Evidence.OrdinaryTransition=$true; $Evidence.OrdinaryTransitionSequence=[long]$entry.sequence
+        }
+        if ($entry.line -match ' kind=surface_transition .*nextDisposition=UNKNOWN_FAIL_OPEN restriction=true ') {
+            $Evidence.UnknownTransition=$true; $Evidence.UnknownTransitionSequence=[long]$entry.sequence
+        }
+        if ($entry.line -match ' kind=overlay_attached .*restriction=true ') {
+            $Evidence.OverlayAttached=$true; $Evidence.OverlayAttachedSequence=[long]$entry.sequence
+        }
+        if ($entry.line -match ' kind=overlay_removed trigger=safe_surface .*restriction=true ') {
+            $Evidence.OverlayRemoved=$true; $Evidence.OverlayRemovedSequence=[long]$entry.sequence
+        }
+    }
+    if ($Snapshot.sampledAt -ge $Evidence.StartedElapsed -and $Snapshot.restriction) {
+        if (-not $Snapshot.attached -and $Snapshot.disposition -eq 'SAFE_SYSTEM') {
+            if ($Evidence.Name -notin @('SETTINGS_ROOT','RECOVERY_BUTTON_ATTEMPT') -or
+                ($Evidence.OpenDispatched -and $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed)) {
+                $Evidence.SafeSample=$true
+            }
+        }
+        if ($Snapshot.attached -and $Snapshot.disposition -eq 'ORDINARY_APP') { $Evidence.OrdinaryAttachedSample=$true }
+        if (-not $Snapshot.attached -and $Snapshot.disposition -eq 'UNKNOWN_FAIL_OPEN') { $Evidence.UnknownSample=$true }
+    }
+    if ($Evidence.OpenRequestCount -gt 1 -or $Evidence.OpenDispatchCount -gt 1) {
+        $Evidence.Oracle='INVALID_MULTIPLE_RECOVERY_ATTEMPTS'
+        $Evidence.Reason='MORE_THAN_ONE_BUTTON_ATTEMPT_IN_PHASE'
+        return
+    }
+    switch ($Evidence.Name) {
+        'SETTINGS_ROOT' {
+            $correlatedTrace=$Evidence.SafeTransition -and $Evidence.OverlayRemoved -and
+                $Evidence.SafeTransitionSequence -gt $Evidence.OpenDispatchedSequence -and
+                $Evidence.OverlayRemovedSequence -gt $Evidence.OpenDispatchedSequence
+            $correlatedSample=$Evidence.SafeSample -and $Evidence.OpenDispatchedElapsed -ge 0 -and
+                $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed
+            if ($Evidence.OpenDispatched -and ($correlatedTrace -or $correlatedSample)) {
+                $Evidence.Oracle='SAFE_TRANSITION_CORROBORATED'
+            }
+        }
+        'DIGITAL_WELLBEING_ATTEMPT' {
+            if (($Evidence.OrdinaryTransition -and $Evidence.OverlayAttached) -or $Evidence.OrdinaryAttachedSample) {
+                $Evidence.Oracle='ORDINARY_REATTACHMENT_CORROBORATED'
+            } elseif ($Evidence.UnknownTransition -or $Evidence.UnknownSample) {
+                $Evidence.Oracle='UNKNOWN_FAIL_OPEN_OBSERVED'
+            } elseif ($Evidence.SafeTransition -or $Evidence.SafeSample) {
+                $Evidence.Oracle='SAFE_SYSTEM_OBSERVED'
+            }
+        }
+        'RECOVERY_BUTTON_ATTEMPT' {
+            $correlatedTrace=$Evidence.SafeTransition -and $Evidence.OverlayRemoved -and
+                $Evidence.SafeTransitionSequence -gt $Evidence.OpenDispatchedSequence -and
+                $Evidence.OverlayRemovedSequence -gt $Evidence.OpenDispatchedSequence
+            $correlatedSample=$Evidence.SafeSample -and $Evidence.OpenDispatchedElapsed -ge 0 -and
+                $Snapshot.sampledAt -ge $Evidence.OpenDispatchedElapsed
+            if ($Evidence.OpenDispatched -and ($correlatedTrace -or $correlatedSample)) {
+                $Evidence.Oracle='FRESH_SAFE_TRANSITION_CORROBORATED'
+            }
+        }
+        'POST_RECOVERY_STATE' {
+            if ($Evidence.OrdinaryAttachedSample) { $Evidence.Oracle='ORDINARY_ATTACHED_OBSERVED' }
+            elseif ($Evidence.SafeSample) { $Evidence.Oracle='SAFE_STATE_OBSERVED' }
+            elseif ($Evidence.UnknownSample) { $Evidence.Oracle='UNKNOWN_FAIL_OPEN_OBSERVED' }
+        }
+    }
+}
+
+Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, New-KRDiagnosticPhase, Update-KRDiagnosticPhase

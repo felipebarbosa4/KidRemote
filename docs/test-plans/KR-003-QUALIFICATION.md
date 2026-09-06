@@ -6,7 +6,7 @@
 - **Done when:** One immutable run has 100 valid paired observations, zero enforcement failures, nearest-rank internal p95 ≤2,000 ms, and separately reported safety/preflight results. This is only AC-3 evidence for one configuration.
 
 **Current gate:** the [Q2 owner-run calibration](evidence/KR-003-Q2-SETTINGS-2026-09-06.md) physically failed Settings/recovery. Do not rerun the
-37ad70b qualification command or start 100 samples. The proposed labelled recovery diagnostic must be prepared with a verified lab bailout;
+37ad70b qualification command or start 100 samples. The [labelled Q3 recovery diagnostic](KR-003-RECOVERY-DIAGNOSTIC.md) must run with its verified lab bailout;
 a justified repair must pass another calibration-only verification. The requirements below are unchanged, not waived by earlier expiry success.
 
 ## Reconciled definitions
@@ -84,10 +84,9 @@ does not satisfy designated recovery if required destinations are blocked or ret
 paths are regression cases; no OEM package is declared safe merely because a Settings link opens it. Separate Home, destination and recovery
 observations in the next diagnostic; do not manufacture separate machine observations from the old combined field.
 
-The next owner run uses **`-CalibrationOnly`** because this disagreement remains unresolved. It installs/verifies the new immutable APK, performs
-one calibration expiry/recovery sequence and always stops before sample 1, even on success. A successful run reports `CALIBRATION_COMPLETED_ONLY`
-and zero qualification observations, not a qualification PASS. Inspect its evidence before authorizing a separate full run; that run still performs
-its own calibration. This diagnostic boundary does not lower or increase AC-3's 100 independent paired observations.
+Historical Q2 used **`-CalibrationOnly`** and exposed the physical recovery failure. The next owner run instead uses the diagnostic-only Q3
+contract and `-RecoveryDiagnostic`; it cannot start sample 1 under any result. Inspect that evidence before implementing a repair. A repaired build
+must later pass fresh calibration before a separately authorized full run. This boundary does not lower or increase AC-3's 100 independent samples.
 
 The runner creates an exclusive timestamped directory with bundle/installed APK hashes, source and runner/protocol hashes, start/end time, owner
 device class, automatically observable build/settings, calibration, pre-reset metric export, per-attempt JSON/CSV, typed trace JSONL, checkpoints

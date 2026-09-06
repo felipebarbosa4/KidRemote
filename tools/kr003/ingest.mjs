@@ -90,8 +90,51 @@ export function ingestQualification(directory) {
     status:summary.Status,physicalObserverSource:"operator entries",kr003Complete:false };
 }
 
+export function ingestRecoveryDiagnostic(directory) {
+  const read = name => JSON.parse(decode(resolve(directory,name)));
+  const manifest=read('manifest.json'), summary=read('summary.json'), diagnostic=read('recovery-diagnostic.json');
+  assert.equal(manifest.Bundle.protocol,'KR003-Q3-RECOVERY-DIAGNOSTIC');
+  assert.equal(manifest.Bundle.diagnosticOnly,true);
+  assert.equal(manifest.RecoveryDiagnostic,true);
+  assert.equal(summary.QualificationRequested,false);
+  assert.equal(summary.RecoveryDiagnosticRequested,true);
+  assert.equal(summary.Kr003Complete,false);
+  assert.equal(summary.ProductionApproved,false);
+  assert.equal(diagnostic.Protocol,'KR003-Q3-RECOVERY-DIAGNOSTIC');
+  assert.equal(diagnostic.EqualityDiagnosticImplemented,false);
+  assert.equal(diagnostic.UsesRawPackageOrComponentIdentity,false);
+  assert(Array.isArray(diagnostic.Phases));
+  const expected=['SETTINGS_ROOT','DIGITAL_WELLBEING_ATTEMPT','RECOVERY_BUTTON_ATTEMPT','POST_RECOVERY_STATE'];
+  assert.deepEqual(diagnostic.Phases.map(p=>p.Name),expected.slice(0,diagnostic.Phases.length));
+  for(let i=0;i<diagnostic.Phases.length;i++) {
+    const phase=diagnostic.Phases[i];
+    assert(['PASS','FAIL','INVALID','UNRECORDED'].includes(phase.PhysicalResult));
+    assert(Number.isInteger(phase.AfterSequence)&&Number.isInteger(phase.LastSequence)&&phase.LastSequence>=phase.AfterSequence);
+    if(i) assert(phase.AfterSequence>=diagnostic.Phases[i-1].LastSequence,'Diagnostic phases overlap or reuse an earlier trace floor');
+  }
+  const bailout=read('diagnostic-bailout.json');
+  assert.equal(bailout.Operation,'CLEAR_LAB_TIMER_ONLY');
+  assert.equal(bailout.ConsumerRecoveryEvidence,false);
+  assert.equal(bailout.AppDataCleared,false);
+  assert.equal(bailout.Uninstalled,false);
+  assert.equal(bailout.PermissionsAltered,false);
+  if(summary.Status==='DIAGNOSTIC_COMPLETED_ONLY') {
+    assert.equal(diagnostic.Phases.length,4);
+    assert.equal(diagnostic.Result,'EVIDENCE_CAPTURED');
+    assert.equal(bailout.Status,'VERIFIED');
+    assert.equal(bailout.RestrictionReleased,true);
+    assert.equal(bailout.LatencySamplesPreserved,true);
+    assert.deepEqual(summary.FinalizationErrors,[]);
+  }
+  return {
+    sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
+    phases:diagnostic.Phases.map(({Name,PhysicalResult,Oracle})=>({name:Name,physicalResult:PhysicalResult,oracle:Oracle})),
+    bailout:bailout.Status,qualificationSamples:0,kr003Complete:false,
+  };
+}
+
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

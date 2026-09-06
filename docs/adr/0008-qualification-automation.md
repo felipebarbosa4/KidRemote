@@ -97,31 +97,32 @@ window; owner PASS is lost on an oracle timeout; zero/partial rows or reporting 
 debug diagnostics leak into release. Tests cover phase ordering/stale evidence/revision changes, five requested row-count paths and fault injection.
 The actual Android discrepancy remains **UNSPECIFIED** until new evidence establishes it; the original own-package fix is not changed.
 
-## Q2 physical failure follow-up — diagnostic proposal only
+## Q2 physical failure follow-up — Q3 diagnostic checkpoint
 
 - **Goal:** Isolate the blocked Settings destination and recovery attempt without collecting an app history or guessing a safe set.
 - **Context:** [Q2 evidence](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) records physical Home PASS, Settings FAIL, ten known-safe-to-ordinary
   transitions and four final Settings launch-call returns without a new window event. The old phase latch remains true from earlier safe access.
 - **Constraints:** Existing SAFE requirement stays intact; no new runtime permission, node/content access, task clearing, production grace period,
   guessed vendor packages or new physical run during analysis.
-- **Done when:** Proposed diagnostics distinguish per-path and per-button outcomes; any further collection is reviewed before implementation;
-  a justified repair passes fresh physical calibration. Current evidence does not meet the last condition.
+- **Done when:** Diagnostics distinguish per-path and per-button outcomes; any further collection is reviewed before implementation;
+  the lab-only bailout is verified; a justified repair passes fresh physical calibration. Q3 is implemented but not run, so the last condition remains open.
 
 Alternatives: a blanket OEM/system-package exemption is rejected because provenance alone does not make every destination safe. Extending timeout
 is not justified by four returned launches plus 37 seconds of unchanged state after the last one. Reverting OWN_PACKAGE preservation would
 reintroduce the established flicker bug. Raw package/task-history logging exceeds the lab privacy contract. A labelled, one-destination diagnostic
 using existing telemetry is the smallest first step; only if still necessary consider the evidence note's case-local equality flags, not raw names.
 
-Decision: **keep the current candidate ineligible for qualification; propose runner-only phase/attempt correlation and a verified debug-CLEAR lab
-bailout before another controlled reproduction.** No diagnostic or policy implementation is approved/performed by this note. A future per-attempt
-result must not inherit an earlier button's safe latch. Existing `Oracle=CORROBORATED` remains valid as phase-existence evidence, not physical success.
+Decision: **keep the current candidate ineligible for qualification; implement runner-only phase/attempt correlation and verified debug-CLEAR lab
+bailout before another controlled reproduction.** Q3 now has four cursor/time-isolated phases and separate physical fields. A per-attempt result
+cannot inherit an earlier button's safe latch. No Android enforcement policy, event collection or equality diagnostic changed. Existing Q2
+`Oracle=CORROBORATED` remains valid only as historical phase-existence evidence, not physical success.
 
 Security/privacy: no broader collection is needed for the already established ORDINARY_APP classification chain. Any proposed equality slot is
 debug-only, short-lived, non-exporting for identities and isolated by explicit case; no stable hash or timeline. Exact OEM identity/OS-level task
 inspection needs a separate narrowly specified review if it becomes indispensable. Release remains absent/no-op; no permissions changed.
 
-Operations/reasons: record Home, named path usability, return-to-Settings and software evidence separately; preserve all failures and pre-bailout
-state. ADB lab CLEAR is a safety aid, **not** evidence of consumer recovery. After diagnosis/repair, repeat calibration-only and all newly failed
+Operations/reasons: record Settings root, named path usability, return-to-Settings and software evidence separately; preserve all failures and pre-bailout
+state. The debug-only automatic/standalone CLEAR verifies release and unchanged latency samples; it is **not** consumer recovery evidence. After diagnosis/repair, repeat calibration-only and all newly failed
 Settings regressions before the unchanged broader stability/qualification gates. Do not claim another APK or physical run exists.
 
 Risks/invalidation: a case label cannot precisely timestamp a gesture unless the phase boundary is recorded; package equality is not task identity;

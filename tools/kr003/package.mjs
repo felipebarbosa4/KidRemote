@@ -1,4 +1,4 @@
-// Goal: produce an immutable owner-run Windows bundle from a clean source commit and verified builds.
+// Goal: produce an immutable owner-run focused-recovery diagnostic bundle from a clean source commit and verified builds.
 // Context: KR-003 only. Constraints: no device execution, host changes, secrets or mutable "latest" overwrite.
 // Done when: all artefacts and source/protocol/runner identities are hashed in bundle.json.
 import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
@@ -20,8 +20,9 @@ execFileSync(process.execPath,[resolve(root,"tools/validate.mjs")],{cwd:root,std
 execFileSync(process.execPath,[resolve(root,"tools/kr003/audit-build.mjs")],{cwd:root,stdio:"inherit"});
 const mapping = {
   "Start-KR003.ps1": "tools/kr003/Start-KR003.ps1",
+  "Clear-KR003-Lab.ps1": "tools/kr003/Clear-KR003-Lab.ps1",
   "Qualification.psm1": "tools/kr003/Qualification.psm1",
-  "protocol.md": "docs/test-plans/KR-003-QUALIFICATION.md",
+  "protocol.md": "docs/test-plans/KR-003-RECOVERY-DIAGNOSTIC.md",
   "candidate.apk": "spikes/android-enforcement/app/build/outputs/apk/debug/app-debug.apk",
   "ordinary-fixture.apk": "spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk",
 };
@@ -30,7 +31,7 @@ const files = Object.entries(mapping).map(([name, source])=>{
   return { name, sha256:createHash("sha256").update(readFileSync(resolve(output,name))).digest("hex") };
 });
 const manifest = {
-  schema:1, protocol:"KR003-Q2", sourceCommit:commit, runnerVersion:2,
+  schema:1, protocol:"KR003-Q3-RECOVERY-DIAGNOSTIC", sourceCommit:commit, runnerVersion:3, diagnosticOnly:true,
   createdUtc:new Date().toISOString(), candidateSha256:files.find(f=>f.name==="candidate.apk").sha256,
   fixtureSha256:files.find(f=>f.name==="ordinary-fixture.apk").sha256, files,
   ownerDevice:{model:"Xiaomi Mi 8",miui:"MIUI Global 12.0.3",api:29,codename:"dipper"},
