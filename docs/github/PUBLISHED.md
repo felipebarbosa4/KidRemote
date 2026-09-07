@@ -219,3 +219,8 @@ Source `95937b95d585b93f9878f55503f224c61c590a26` adds a fixture-only diagnostic
 [immutable transport bundle and one-command handoff](../test-plans/evidence/KR-003-Q7-ORACLE-TRANSPORT-BUNDLE-2026-09-06.md) were hash-verified in
 mounted Windows storage; physical execution is **Not run**. Q7 must not be rerun and no MIUI setting should be changed until this tiny diagnostic
 is ingested. KR-003 remains Open/In Progress, PR #16 remains draft/Open and KR-004 remains Open/Backlog.
+
+Issue #3 and PR #16 were read back after their stale Q7 handoffs were replaced; all seven issue acceptance boxes remain open. The
+[issue evidence comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564307268) and
+[PR evidence comment](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564307393) preserve the same halt. Project #3 was re-read:
+KR-003 is Open/In Progress and KR-004 is Open/Backlog; PR #16 remains Open/draft. No Q7 rerun, setting change, closure, merge or KR-004 work occurred.
