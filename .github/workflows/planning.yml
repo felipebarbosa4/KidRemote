@@ -24,6 +24,7 @@ jobs:
         run: |
           pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
           pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
+          pwsh -NoProfile -File tools/kr003/UiAutomationTransport.Tests.ps1
       - name: Test finalization and recovery without a device
         run: pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
       - name: Check patch whitespace
@@ -64,3 +65,4 @@ jobs:
         run: |
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/OracleTransport.Tests.ps1
+          ./tools/kr003/UiAutomationTransport.Tests.ps1

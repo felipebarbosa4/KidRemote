@@ -254,3 +254,32 @@ as 100-way coverage. Synthetic tests reject tap leakage, focus regain, fixture/p
 blocked taps, missing/failed checkpoints and altered row/statistic counts. If physical preflight cannot prove both input delivery after CLEAR and
 input denial while blocked, Q7 is invalid and the original 100-human contract conflicts with the owner constraint; stop for explicit go/no-go or
 scope change.
+
+## UiAutomation transport experiment after Q7 input denial
+
+- **Goal:** Test a SIM-free software input transport while keeping the fixture as the independent outcome oracle.
+- **Context:** [Mounted evidence and owner configuration](../test-plans/evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md) establish shell INPUT_TAP exit 1 / SECURITY_EXCEPTION, normal debugging enabled and security debugging disabled behind a SIM requirement.
+- **Constraints:** Separate self-targeted debug package; one touch; no candidate control, hierarchy/content access, new permissions or setting changes.
+- **Done when:** [The tiny preflight](../test-plans/KR-003-UIAUTOMATION-TRANSPORT.md) records exact independent counter delivery or a typed rejection. Qualification adoption remains pending physical evidence.
+
+Alternatives evaluated: instrumenting the candidate or fixture would couple the test to their lifecycle/UID and is rejected. A separate package
+using cross-app UiAutomation is selected for this experiment. Monkey is reserved for evaluation only if the UiAutomation attempt fails. Guessed
+SIM-gate bypass writes, unrelated developer options and destructive device changes are not justified by current evidence.
+
+Decision/reasons: use public `getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)`, zero event subscriptions and one `injectInputEvent`
+DOWN/UP pair, with `finish` owning connection cleanup. The existing ordinary fixture remains unchanged and is queried independently by the host.
+The instrumentation can return input acceptance but cannot set the fixture counter or manufacture an enforcement pass.
+[Android API contract](https://developer.android.com/reference/android/app/Instrumentation#getUiAutomation(int)),
+[UiAutomation flags](https://developer.android.com/reference/android/app/UiAutomation) reviewed 2026-09-06.
+
+Security/privacy implications: no permission additions, candidate callbacks, node queries, screenshots, raw result storage or persistent identity.
+Injector/manifest entry exist only in debug; merged manifests and release DEX are audited. Android 10 still uses an automation Accessibility
+connection, which is an explicit infrastructure coupling even with suppression disabled and no event collection.
+
+Operational implications: one owner-run command performs the transport probe without physical-response prompts. Success permits preparation of
+a bounded service-continuity/positive/blocked calibration, not a direct Q7 run. No new device setting is requested. Rejection is preserved and
+triggers the conditional Monkey investigation. Q7's existing contract and three-human-checkpoint limit remain intact.
+
+Risks/tests that invalidate adoption: MIUI rejects UiAutomation, the fixture does not receive exactly one touch, the fixture is replaced/loses
+focus, reply correlation fails, instrumentation does not finish, candidate service is suppressed/restarted or any production artefact gains test
+capability. Synthetic parser/orchestration tests cannot prove runtime independence; blocked controls and service continuity remain **UNSPECIFIED**.

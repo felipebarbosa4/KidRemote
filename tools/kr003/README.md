@@ -61,6 +61,7 @@ node --test tools/kr003/*.test.mjs
 pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
 pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
+pwsh -NoProfile -File tools/kr003/UiAutomationTransport.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs
@@ -68,3 +69,11 @@ git diff --check
 ```
 
 PowerShell tests use synthetic state and observer stubs only. CI's native Windows PowerShell job validates host-runtime compatibility, not ADB, MIUI or physical enforcement.
+
+## Current transport investigation
+
+The Mi 8 rejects shell input with exit 1 / SECURITY_EXCEPTION; the owner observed the input-related security switch disabled and SIM-gated.
+See [preserved configuration evidence](../../docs/test-plans/evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md).
+Q7 stays halted. [The UiAutomation transport preflight](../../docs/test-plans/KR-003-UIAUTOMATION-TRANSPORT.md) tests one touch through separate
+debug instrumentation. Package a clean source with `node tools/kr003/package-uiautomation.mjs NEW_DIRECTORY`; execute only the resulting
+`Test-KR003-UiAutomationTransport.ps1` owner-side. Read its result with `node tools/kr003/ingest.mjs uiautomation ACTUAL_RUN_DIRECTORY`.

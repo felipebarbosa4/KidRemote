@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation
+        android:name=".OneTouchInstrumentation"
+        android:targetPackage="dev.kidremote.spike.inputprobe"
+        android:functionalTest="true" />
+</manifest>

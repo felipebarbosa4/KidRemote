@@ -12,6 +12,10 @@ rejected fixed operation to the unblocked fixture's `adb shell input tap`; zero 
 until the standalone [oracle-transport preflight](KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md) classifies and resolves that transport gate. See the
 [preserved INVALID evidence](evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md).
 
+Subsequent [transport/configuration evidence](evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md) confirms INPUT_TAP exit 1 / SECURITY_EXCEPTION and the
+disabled, SIM-gated input-security switch. The next test is the [single-touch UiAutomation preflight](KR-003-UIAUTOMATION-TRANSPORT.md).
+It supplies zero qualification samples and does not yet replace Q7's ADB transport or establish candidate-service non-interference.
+
 ## Evidence-contract change
 
 Q7 deliberately does **not** claim 100 human-visible observations. It replaces that operational requirement with:

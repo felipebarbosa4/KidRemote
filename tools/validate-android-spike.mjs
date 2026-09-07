@@ -64,7 +64,7 @@ export function validateAndroidSpike(root) {
       return entry.isDirectory() ? walk(next) : [next];
     });
   }
-  const shipped = ["app", "ordinary-fixture"].flatMap(module =>
+  const shipped = ["app", "ordinary-fixture", "input-probe"].flatMap(module =>
     walk(`${spikeRoot}/${module}/src`).filter(path => /\/src\/(main|debug|release)\//.test(path)));
   const tracePath = `${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`;
   const sourcePaths = shipped.filter(path => path.endsWith(".kt") && path !== tracePath);
@@ -98,6 +98,18 @@ export function validateAndroidSpike(root) {
       ? ["android.permission.PACKAGE_USAGE_STATS", "android.permission.RECEIVE_BOOT_COMPLETED"] : [];
     check(JSON.stringify(permissions.sort()) === JSON.stringify(allowed.sort()), `Unexpected permission set: ${path}`);
   }
+  const probeManifest = read(`${spikeRoot}/input-probe/src/debug/AndroidManifest.xml`);
+  check(probeManifest.includes('android:targetPackage="dev.kidremote.spike.inputprobe"') &&
+    (probeManifest.match(/<instrumentation\b/g) ?? []).length === 1 && !/<activity|<receiver|<service|sharedUserId/.test(probeManifest),
+    "Input probe must have only one self-targeted debug instrumentation entry");
+  check(!/instrumentation|sharedUserId|<activity|<receiver|<service/.test(read(`${spikeRoot}/input-probe/src/main/AndroidManifest.xml`)),
+    "Input probe entry must not leak into main/release");
+  const probe = read(`${spikeRoot}/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/OneTouchInstrumentation.kt`);
+  check(probe.includes("FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES") && probe.includes("info.eventTypes = 0") &&
+    probe.includes("finish(if (outcome"), "Input probe must preserve services, avoid events and finish");
+  for (const forbidden of ["getUiAutomation()", "setOnAccessibilityEventListener", "executeShellCommand", "adoptShellPermissionIdentity",
+    "sendPointerSync", "performClick", "FixtureState", "LabProbe", "getPackageManager", "sendBroadcast", "startActivity", "getSharedPreferences"])
+    check(!probe.includes(forbidden), `Input probe contains unapproved coupling/access: ${forbidden}`);
   check(sources.includes("SystemClock.elapsedRealtime()"), "Android spike must use the monotonic Android clock");
   check(sources.includes("UNKNOWN_FAIL_OPEN"), "Android spike must preserve the unknown-surface fail-open safety path");
   return errors;
