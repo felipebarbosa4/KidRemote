@@ -201,3 +201,8 @@ verified in `C:\platform-tools\kr003-qualification-bundles\4b886e4`. Physical Q7
 conditionally replaceable: the real Mi 8 preflight must prove the independent fixture's positive and blocked controls before sample 1. A failed
 preflight stops rather than weakening the gate. A future Q7 success means 100 active-oracle rows plus three human checkpoints, never 100 human-visible
 passes. KR-003 remains Open/In Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog.
+
+Issue #3 and PR #16 were updated and read back with the Q7 boundary; the issue retains all seven open acceptance boxes. The
+[issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564034383) and
+[PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564034552) link the same immutable handoff. Project #3 was
+re-read after publication: KR-003 is Open/In Progress and KR-004 is Open/Backlog. No issue/PR was closed or merged and no KR-004 work began.
