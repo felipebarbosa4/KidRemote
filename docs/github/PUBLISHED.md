@@ -254,3 +254,19 @@ and Android debug/release isolation. No setting/SIM requirement or Q7 gate has b
 Issue #3's Next paragraph and PR #16's transport paragraph now reflect the measured denial and bounded next experiment, preserving existing
 acceptance boxes and other content. KR-003 remains Open/In Progress, PR #16 Open/draft and KR-004 Open/Backlog. No Q7 execution, new issue,
 closure, merge, production change or KR-004 work occurred. If the bounded fallback fails, stop for a configuration/device/product decision.
+
+## Monkey denied; Q7 qualification blocked — 2026-09-07
+
+[The owner-run result](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md) was ingested directly from mounted Windows storage and committed
+in `9bcc2e9`: DOWN SECURITY_EXCEPTION, independent counter 0→0, verified temporary-helper removal. All five original files and previous bundles
+remain unchanged. No candidate control, radio/permission/setting changes or Q7 samples occurred. The push operation's OTHER stderr class is
+preserved without guessing its raw meaning; input denial is established by the correlated helper result, not a nonzero ADB exit.
+
+Issue #3 and PR #16 were updated and read back: qualification is explicitly BLOCKED pending an owner device/configuration/product decision.
+No tested transport satisfies the independent positive control; the per-cycle human fallback conflicts with the maximum-three-checkpoint constraint.
+All seven issue acceptance boxes remain open. Project #3 was re-read: KR-003 In Progress and KR-004 Backlog; issue #3 Open and PR #16 Open/draft.
+Those administrative states are retained, not evidence that the qualification gate is satisfied. No unchanged-configuration rerun is requested.
+
+This update changes documentation/evidence only. Mounted ingestion, all 16 Node evidence/security tests, repository validation and whitespace checks
+passed. Android/PowerShell suites were not rerun locally for this documentation-only update; their earlier results are recorded with the source bundle.
+No new APK, runner, physical result or Play approval is claimed. KR-004 remains untouched.
