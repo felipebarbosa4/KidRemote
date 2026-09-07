@@ -7,6 +7,11 @@
 
 Protocol: **`KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION`**, runner version 7. Q7 supersedes unexecuted Q6 for this owner constraint. It changes the evidence model, not the enforcement candidate.
 
+Physical status: three owner executions on 2026-09-06 stopped during attempt 0 before ARM with `INVALID:ADB_REJECTED`. Evidence localizes the
+rejected fixed operation to the unblocked fixture's `adb shell input tap`; zero Q7 samples and zero human checkpoints began. Q7 must not be rerun
+until the standalone [oracle-transport preflight](KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md) classifies and resolves that transport gate. See the
+[preserved INVALID evidence](evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md).
+
 ## Evidence-contract change
 
 Q7 deliberately does **not** claim 100 human-visible observations. It replaces that operational requirement with:

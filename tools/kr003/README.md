@@ -15,6 +15,9 @@ node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-qualification-bundles/N
 
 Packaging refuses a dirty tree or existing destination, rebuilds/tests/lints debug and release, audits merged permissions/release DEX, and hashes every payload. It refuses candidate drift from the Q5-calibrated APK and fixture drift from the reviewed Q7 oracle build. `candidateCalibratedBy` identifies Q5; the new fixture must pass Q7 preflight on-device. No physical run occurs during packaging.
 
+When Q7 input transport itself is under investigation, `Test-KR003-OracleTransport.ps1` runs only the disposable fixture receiver and one ADB tap.
+`package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
+
 ## Execute (owner / PowerShell)
 
 Use the exact populated command in the latest bundle handoff:
@@ -57,6 +60,7 @@ Exit zero means only `PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_TH
 node --test tools/kr003/*.test.mjs
 pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
 pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
+pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

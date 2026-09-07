@@ -276,8 +276,49 @@ export function ingestRecoveryDiagnostic(directory) {
   };
 }
 
+export function ingestOracleTransport(directory) {
+  const read=name=>JSON.parse(decode(resolve(directory,name)));
+  const summary=read('summary.json'),operations=read('operations.json');
+  assert.equal(summary.Protocol,'KR003-Q7-ORACLE-TRANSPORT-PREFLIGHT');
+  assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);
+  assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);
+  assert.equal(summary.RestrictionChanged,false);
+  assert.equal(summary.RadiosChanged,false);
+  assert.equal(summary.PermissionsChanged,false);
+  assert.equal(summary.DestructiveAction,false);
+  assert.equal(summary.Q7Samples,0);
+  assert(Array.isArray(operations)&&operations.length>=4);
+  const categories=['DEVICE_STATE','FIXTURE_INSTALL','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP'];
+  const classes=['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER'];
+  for(const operation of operations) {
+    assert.deepEqual(Object.keys(operation),['OperationCategory','ExitCode','StderrClass']);
+    assert(categories.includes(operation.OperationCategory));
+    assert(Number.isInteger(operation.ExitCode));
+    assert(classes.includes(operation.StderrClass));
+  }
+  assert(operations.some(x=>x.OperationCategory==='FIXTURE_STATE'&&x.ExitCode===0));
+  assert.equal(summary.FixtureReceiverWorked,true);
+  if(summary.Status==='PASSED_TRANSPORT_PREFLIGHT') {
+    assert.equal(summary.Reason,'FIXTURE_COUNTER_INCREMENTED_ONCE');
+    assert.equal(summary.CounterIncremented,true);
+    assert.equal(summary.AfterTaps,summary.BeforeTaps+1);
+    assert.equal(summary.RejectedOperation,null);
+  } else if(summary.Status==='INVALID'&&summary.Reason==='ADB_OPERATION_REJECTED') {
+    assert(categories.includes(summary.RejectedOperation));
+    const rejected=operations.findLast(x=>x.OperationCategory===summary.RejectedOperation&&x.ExitCode===summary.RejectedExitCode&&x.StderrClass===summary.RejectedStderrClass);
+    assert(rejected,'Rejected summary must match a sanitized operation record');
+    assert.equal(summary.CounterIncremented,false);
+  } else {
+    assert.equal(summary.Status,'FAILED');
+    assert.equal(summary.Reason,'INPUT_NOT_DELIVERED');
+  }
+  return {sourceCommit:summary.SourceCommit,status:summary.Status,reason:summary.Reason,receiverWorked:summary.FixtureReceiverWorked,
+    counterIncremented:summary.CounterIncremented,rejectedOperation:summary.RejectedOperation,rejectedExitCode:summary.RejectedExitCode,
+    rejectedStderrClass:summary.RejectedStderrClass,q7Samples:0,kr003Complete:false};
+}
+
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

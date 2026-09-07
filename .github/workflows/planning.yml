@@ -21,7 +21,9 @@ jobs:
       - name: Test evidence ingestion and least-privilege rejection
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
-        run: pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
+        run: |
+          pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
+          pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
       - name: Test finalization and recovery without a device
         run: pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
       - name: Check patch whitespace
@@ -59,4 +61,6 @@ jobs:
           persist-credentials: false
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
-        run: ./tools/kr003/Runner.Tests.ps1
+        run: |
+          ./tools/kr003/Runner.Tests.ps1
+          ./tools/kr003/OracleTransport.Tests.ps1

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic } from "./ingest.mjs";
+import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport } from "./ingest.mjs";
 import { validateAndroidSpike } from "../validate-android-spike.mjs";
 const temporary = fn => {
   const directory=mkdtempSync(join(tmpdir(),"kr003-synthetic-"));
@@ -243,3 +243,45 @@ test("focused diagnostic ingestion preserves physical and software outcomes with
   save('recovery-diagnostic.json',{Protocol:'KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION',EqualityDiagnosticImplemented:false,UsesRawPackageOrComponentIdentity:false,Result:'EVIDENCE_CAPTURED',Phases:phases});
   assert.throws(()=>ingestRecoveryDiagnostic(dir),/overlap|reuse/);
 }));
+
+test("oracle transport ingestion preserves only sanitized operation classes and never creates a Q7 sample",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const base={Protocol:'KR003-Q7-ORACLE-TRANSPORT-PREFLIGHT',SourceCommit:'a'.repeat(40),FixtureSha256:'b'.repeat(64),
+    StartedUtc:'2026-09-07T00:00:00Z',EndedUtc:'2026-09-07T00:00:01Z',FixtureReceiverWorked:true,BeforeTaps:3,AfterTaps:4,
+    CounterIncremented:true,RejectedOperation:null,RejectedExitCode:null,RejectedStderrClass:null,RestrictionChanged:false,RadiosChanged:false,
+    PermissionsChanged:false,DestructiveAction:false,Q7Samples:0};
+  const operations=[
+    {OperationCategory:'DEVICE_STATE',ExitCode:0,StderrClass:'NONE'},
+    {OperationCategory:'FIXTURE_INSTALL',ExitCode:0,StderrClass:'NONE'},
+    {OperationCategory:'FIXTURE_OPEN',ExitCode:0,StderrClass:'NONE'},
+    {OperationCategory:'FIXTURE_STATE',ExitCode:0,StderrClass:'NONE'},
+    {OperationCategory:'INPUT_TAP',ExitCode:0,StderrClass:'NONE'},
+    {OperationCategory:'FIXTURE_STATE',ExitCode:0,StderrClass:'NONE'},
+  ];
+  save('summary.json',{...base,Status:'PASSED_TRANSPORT_PREFLIGHT',Reason:'FIXTURE_COUNTER_INCREMENTED_ONCE'});
+  save('operations.json',operations);
+  let result=ingestOracleTransport(dir);
+  assert.equal(result.status,'PASSED_TRANSPORT_PREFLIGHT');
+  assert.equal(result.counterIncremented,true);
+  assert.equal(result.q7Samples,0);
+  save('summary.json',{...base,Status:'INVALID',Reason:'ADB_OPERATION_REJECTED',AfterTaps:null,CounterIncremented:false,
+    RejectedOperation:'INPUT_TAP',RejectedExitCode:255,RejectedStderrClass:'SECURITY_EXCEPTION'});
+  save('operations.json',[...operations.slice(0,4),{OperationCategory:'INPUT_TAP',ExitCode:255,StderrClass:'SECURITY_EXCEPTION'}]);
+  result=ingestOracleTransport(dir);
+  assert.equal(result.rejectedOperation,'INPUT_TAP');
+  assert.equal(result.rejectedStderrClass,'SECURITY_EXCEPTION');
+  save('operations.json',[...operations.slice(0,4),{OperationCategory:'INPUT_TAP',ExitCode:255,StderrClass:'SECURITY_EXCEPTION',Raw:'forbidden'}]);
+  assert.throws(()=>ingestOracleTransport(dir));
+}));
+
+test("oracle transport source is fixture-only and records no raw ADB output",()=>{
+  const runner=readFileSync(resolve('tools/kr003/Test-KR003-OracleTransport.ps1'),'utf8');
+  const packager=readFileSync(resolve('tools/kr003/package-transport.mjs'),'utf8');
+  assert.match(runner,/KR003-Q7-ORACLE-TRANSPORT-PREFLIGHT/);
+  assert.match(runner,/OperationCategory=\$Category; ExitCode=\$ExitCode; StderrClass=\$StderrClass|New-KRTransportOperationRecord/);
+  assert.match(runner,/Invoke-TransportAdb 'INPUT_TAP' @\('shell','input','tap'/);
+  assert.doesNotMatch(runner,/screencap|uiautomator|dumpsys\s+window|pm[^\n]+clear|uninstall|reboot|appops[^\n]+set|svc[^\n]+disable/i);
+  assert.doesNotMatch(runner,/Write-TransportJson[^\n]+(?:stdout|stderr)|RawStdout|RawStderr/i);
+  assert.match(packager,/diagnosticOnly:true/);
+  assert.match(packager,/223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc/);
+});
