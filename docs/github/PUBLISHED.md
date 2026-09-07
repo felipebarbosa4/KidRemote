@@ -188,3 +188,16 @@ is **Not run**; zero new qualification samples exist. Issue #3 and PR #16 were u
 acceptance boxes remain open. [Issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562449024) and
 [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562449104) link the same bundle/CI evidence. Project #3 was
 verified with KR-003 Open/In Progress and KR-004 Open/Backlog; PR #16 remains draft/Open. KR-004 was not changed.
+
+## Q7 active-oracle qualification handoff — 2026-09-06
+
+Q6 was never executed and is superseded by OD-29/Q7 because the owner permits at most three human checkpoint sessions. Exact source
+`4b886e494355ab7ec8625a8432a74ee3011e9dab` adds a separate ordinary fixture and active ADB-input/focus oracle; it does not change the physically
+calibrated Q5 enforcement APK. [CI run 34075139362](https://github.com/felipebarbosa4/KidRemote/actions/runs/34075139362) passed repository/Node,
+Linux and native Windows PowerShell, and Android debug/release jobs. All CI device calls were synthetic or stubbed.
+
+The [immutable Q7 bundle, complete hashes, evidence contract and one-command handoff](../test-plans/evidence/KR-003-Q7-BUNDLE-2026-09-06.md) are
+verified in `C:\platform-tools\kr003-qualification-bundles\4b886e4`. Physical Q7 execution is **Not run**. The per-sample human requirement is only
+conditionally replaceable: the real Mi 8 preflight must prove the independent fixture's positive and blocked controls before sample 1. A failed
+preflight stops rather than weakening the gate. A future Q7 success means 100 active-oracle rows plus three human checkpoints, never 100 human-visible
+passes. KR-003 remains Open/In Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog.
