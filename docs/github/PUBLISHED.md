@@ -224,3 +224,17 @@ Issue #3 and PR #16 were read back after their stale Q7 handoffs were replaced; 
 [issue evidence comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564307268) and
 [PR evidence comment](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564307393) preserve the same halt. Project #3 was re-read:
 KR-003 is Open/In Progress and KR-004 is Open/Backlog; PR #16 remains Open/draft. No Q7 rerun, setting change, closure, merge or KR-004 work occurred.
+
+## UiAutomation input-transport experiment — 2026-09-06
+
+The [mounted tiny transport result and owner configuration](../test-plans/evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md) now confirm INPUT_TAP
+exit 1 / SECURITY_EXCEPTION and the disabled SIM-gated input-security switch. This strongly supports the configuration explanation; the private
+MIUI implementation remains **UNSPECIFIED**. Source `8b16c1b53e5c76c5303492d49f1ddba63a3bfbbd` adds separate self-targeted debug UiAutomation
+instrumentation and a one-touch fixture-counter preflight. It changes no candidate/fixture APK bytes, developer settings or Q7 acceptance criteria.
+
+[CI run 34078820754](https://github.com/felipebarbosa4/KidRemote/actions/runs/34078820754) passed all three jobs, including native Windows PowerShell
+and Android debug/release isolation. The [new immutable bundle and hashes](../test-plans/evidence/KR-003-UIAUTOMATION-BUNDLE-2026-09-06.md) were verified
+in mounted Windows storage. Physical execution is **Not run**. Monkey remains conditional on UiAutomation failure; no SIM-free setting bypass is claimed.
+
+Issue #3's stale Next paragraph and PR #16's transport paragraph were updated and read back. All seven issue acceptance boxes remain open;
+KR-003 is Open/In Progress, PR #16 Open/draft, and KR-004 Open/Backlog. No new issue, closure, merge or KR-004 work occurred.
