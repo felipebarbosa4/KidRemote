@@ -8,7 +8,8 @@
 Source commit: `8b16c1b53e5c76c5303492d49f1ddba63a3bfbbd`.
 Protocol: `KR003-UIAUTOMATION-TRANSPORT-PREFLIGHT`, runner version 1.
 Directory: `C:\platform-tools\kr003-uiautomation-bundles\8b16c1b`.
-Physical execution: **Not run**.
+Physical execution at initial handoff: **Not run**. Subsequently [executed and ingested as INVALID: DOWN SecurityException, zero fixture taps](KR-003-UIAUTOMATION-DENIAL-2026-09-06.md).
+Do not rerun this historical bundle; its original bytes and hashes remain unchanged.
 
 | File | Bytes | SHA-256 |
 | --- | ---: | --- |

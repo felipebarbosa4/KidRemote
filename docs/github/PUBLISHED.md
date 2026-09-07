@@ -238,3 +238,19 @@ in mounted Windows storage. Physical execution is **Not run**. Monkey remains co
 
 Issue #3's stale Next paragraph and PR #16's transport paragraph were updated and read back. All seven issue acceptance boxes remain open;
 KR-003 is Open/In Progress, PR #16 Open/draft, and KR-004 Open/Backlog. No new issue, closure, merge or KR-004 work occurred.
+
+## UiAutomation denial and bounded Monkey transport — 2026-09-06
+
+The [owner-run UiAutomation evidence](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) was read directly from mounted storage:
+DOWN SECURITY_EXCEPTION, framework finish returned, fixture focused/resumed with counter 0→0. The original generic INVALID status is retained;
+cleanup failure and candidate enforcement failure are not inferred. Five original files remain unchanged; zero Q7 samples.
+
+Source `a10fd34043c0dac20c69a0558104e294a7dba243` adds only a debug Monkey touch-class helper, fixed-enum runner/parser and rejection tests.
+It avoids the full Monkey driver, uses no new permission or candidate command and preserves candidate/fixture APK bytes. The [new immutable bundle](../test-plans/evidence/KR-003-MONKEY-BUNDLE-2026-09-06.md)
+was independently hash-verified under `C:\platform-tools\kr003-monkey-bundles\a10fd34`. Physical execution is **Not run**.
+[CI run 34080865388](https://github.com/felipebarbosa4/KidRemote/actions/runs/34080865388) passed all three jobs, including native Windows PowerShell
+and Android debug/release isolation. No setting/SIM requirement or Q7 gate has been changed.
+
+Issue #3's Next paragraph and PR #16's transport paragraph now reflect the measured denial and bounded next experiment, preserving existing
+acceptance boxes and other content. KR-003 remains Open/In Progress, PR #16 Open/draft and KR-004 Open/Backlog. No Q7 execution, new issue,
+closure, merge, production change or KR-004 work occurred. If the bounded fallback fails, stop for a configuration/device/product decision.
