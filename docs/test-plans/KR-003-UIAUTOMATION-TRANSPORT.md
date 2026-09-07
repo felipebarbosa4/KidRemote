@@ -58,7 +58,9 @@ Execution is owner-operated PowerShell; WSL reads the generated directory direct
 
 ## Next-step decision
 
-Physical support, required MIUI settings for this mechanism and candidate-service non-interference remain **UNSPECIFIED** until measured.
+Owner execution is now ingested: [DOWN injection was denied with SecurityException; framework finish returned; fixture counter stayed zero](evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md).
+Physical input support failed on this tested configuration. Required MIUI settings for this mechanism and candidate-service non-interference remain **UNSPECIFIED**.
+The following conditional decision is retained; the next experiment is [Monkey touch-class transport](KR-003-MONKEY-TRANSPORT.md).
 If this test passes, prepare one bounded positive/blocked/non-interference calibration before changing Q7's transport contract. If it fails,
 evaluate a deterministic, fixture-bounded Monkey touch next; do not launch a random Monkey sequence. If both routes fail on this unchanged
 configuration, record software input automation as unavailable through the tested mechanisms and request a go/no-go/configuration decision.

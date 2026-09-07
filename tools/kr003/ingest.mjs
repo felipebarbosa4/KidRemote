@@ -317,37 +317,45 @@ export function ingestOracleTransport(directory) {
     rejectedStderrClass:summary.RejectedStderrClass,q7Samples:0,kr003Complete:false};
 }
 
-export function ingestUiAutomationTransport(directory) {
+export function ingestUiAutomationTransport(directory) { return ingestAlternateTransport(directory,false); }
+export function ingestMonkeyTransport(directory) { return ingestAlternateTransport(directory,true); }
+function ingestAlternateTransport(directory,monkey) {
   const read=name=>JSON.parse(decode(resolve(directory,name)));
   const s=read('summary.json'),ops=read('operations.json');
-  assert.equal(s.Protocol,'KR003-UIAUTOMATION-TRANSPORT-PREFLIGHT');
+  assert.equal(s.Protocol,monkey?'KR003-MONKEY-TRANSPORT-PREFLIGHT':'KR003-UIAUTOMATION-TRANSPORT-PREFLIGHT');
+  const touch=monkey?'MONKEY_TOUCH':'UIAUTOMATION_TAP';
   assert.match(s.SourceCommit,/^[a-f0-9]{40}$/);
-  for(const key of ['FixtureSha256','ProbeSha256']) assert.match(s[key],/^[a-f0-9]{64}$/);
+  for(const key of ['FixtureSha256',monkey?'HelperSha256':'ProbeSha256']) assert.match(s[key],/^[a-f0-9]{64}$/);
+  if(monkey) assert(['NOT_NEEDED','REMOVED_AND_VERIFIED','UNVERIFIED'].includes(s.HelperCleanup));
   for(const key of ['RestrictionChanged','RadiosChanged','PermissionsChanged','DestructiveAction']) assert.equal(s[key],false);
   assert.equal(s.Q7Samples,0);
   assert(Array.isArray(ops));
   for(const op of ops) {
     assert.deepEqual(Object.keys(op),['OperationCategory','ExitCode','StderrClass']);
-    assert(['DEVICE_STATE','FIXTURE_INSTALL','PROBE_INSTALL','FIXTURE_OPEN','FIXTURE_STATE','UIAUTOMATION_TAP'].includes(op.OperationCategory));
+    assert(['DEVICE_STATE','FIXTURE_INSTALL','FIXTURE_OPEN','FIXTURE_STATE',...(monkey?['MONKEY_TOOL_CHECK','HELPER_PUSH','MONKEY_TOUCH','HELPER_REMOVE','HELPER_ABSENCE']:['PROBE_INSTALL','UIAUTOMATION_TAP'])].includes(op.OperationCategory));
     assert(Number.isInteger(op.ExitCode));
     assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER'].includes(op.StderrClass));
   }
-  assert(ops.filter(o=>o.OperationCategory==='UIAUTOMATION_TAP').length<=1);
+  assert(ops.filter(o=>o.OperationCategory===touch).length<=1);
   if(s.ProbeResult!==null) {
     const p=read('probe.json'); assert.deepEqual(s.ProbeResult,p);
-    assert.deepEqual(Object.keys(p),['Request','Stage','Outcome','DownAccepted','UpAccepted','Cleanup']);
+    assert.deepEqual(Object.keys(p),['Request','Stage','Outcome','DownAccepted','UpAccepted',...(monkey?[]:['Cleanup'])]);
     assert(Number.isSafeInteger(p.Request)&&p.Request>0);
-    assert(['ARGUMENTS','CONNECT','CONFIGURE','DOWN','UP','COMPLETE'].includes(p.Stage));
-    assert(['INVALID_ARGUMENTS','CONNECT_UNAVAILABLE','INJECTED','INPUT_REJECTED','SECURITY_EXCEPTION','OTHER'].includes(p.Outcome));
+    assert(['ARGUMENTS','DOWN','UP','COMPLETE',...(monkey?['RESOLVE']:['CONNECT','CONFIGURE'])].includes(p.Stage));
+    assert(['INVALID_ARGUMENTS','INJECTED','INPUT_REJECTED','SECURITY_EXCEPTION','OTHER',monkey?'UNSUPPORTED':'CONNECT_UNAVAILABLE'].includes(p.Outcome));
     assert.equal(typeof p.DownAccepted,'boolean'); assert.equal(typeof p.UpAccepted,'boolean');
-    assert.equal(p.Cleanup,'FRAMEWORK_FINISH');
+    if(!monkey) assert.equal(p.Cleanup,'FRAMEWORK_FINISH');
   }
   if(s.Status==='PASSED_TRANSPORT_PREFLIGHT') {
     assert.equal(s.Reason,'FIXTURE_COUNTER_INCREMENTED_ONCE');
     assert(s.FixtureReceiverWorked&&s.CounterIncremented);
     assert.equal(s.RejectedOperation,null);
     assert(ops.every(o=>o.ExitCode===0&& !['SECURITY_EXCEPTION','PERMISSION_DENIAL'].includes(o.StderrClass)));
-    assert.equal(ops.filter(o=>o.OperationCategory==='UIAUTOMATION_TAP').length,1);
+    assert.equal(ops.filter(o=>o.OperationCategory===touch).length,1);
+    if(monkey) {
+      assert.equal(s.HelperCleanup,'REMOVED_AND_VERIFIED');
+      for(const category of ['HELPER_PUSH','HELPER_REMOVE','HELPER_ABSENCE']) assert.equal(ops.filter(o=>o.OperationCategory===category).length,1);
+    }
     assert.equal(s.ProbeResult.Outcome,'INJECTED');
     assert(s.ProbeResult.DownAccepted&&s.ProbeResult.UpAccepted);
     const before=read('fixture-before.json'),after=read('fixture-after.json');
@@ -362,6 +370,6 @@ export function ingestUiAutomationTransport(directory) {
 
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

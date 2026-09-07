@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport, ingestUiAutomationTransport } from "./ingest.mjs";
+import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport, ingestUiAutomationTransport, ingestMonkeyTransport } from "./ingest.mjs";
 import { validateAndroidSpike } from "../validate-android-spike.mjs";
 const temporary = fn => {
   const directory=mkdtempSync(join(tmpdir(),"kr003-synthetic-"));
@@ -91,6 +91,9 @@ test("least-privilege validator rejects new files, permissions, unprotected debu
     [path+'/input-probe/src/main/AndroidManifest.xml','\n<instrumentation android:targetPackage="synthetic" />'],
     [path+'/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/OneTouchInstrumentation.kt','\n// forbidden getRootInActiveWindow('],
     [path+'/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/OneTouchInstrumentation.kt','\n// forbidden sendPointerSync'],
+    [path+'/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/MonkeyTouchMain.kt','\nfun leak() { System.out.println("raw") }'],
+    [path+'/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/MonkeyTouchMain.kt','\n// forbidden setActivityController('],
+    [path+'/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/MonkeyTouchMain.kt','\n// forbidden setAccessible('],
   ];
   for(const [file,addition] of cases) {
     const target=join(dir,file),original=readFileSync(target,'utf8');
@@ -154,6 +157,38 @@ test("UiAutomation injection result cannot replace independent fixture delivery 
   save('probe.json',{...p,Stage:'DOWN',Outcome:'SECURITY_EXCEPTION',DownAccepted:false,UpAccepted:false});
   assert.equal(ingestUiAutomationTransport(dir).status,'INVALID');
 }));
+
+test("Monkey transport requires independent delivery and verified disposable-helper cleanup",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const p={Request:12,Stage:'COMPLETE',Outcome:'INJECTED',DownAccepted:true,UpAccepted:true};
+  const s={Protocol:'KR003-MONKEY-TRANSPORT-PREFLIGHT',SourceCommit:'a'.repeat(40),FixtureSha256:'b'.repeat(64),HelperSha256:'c'.repeat(64),
+    RestrictionChanged:false,RadiosChanged:false,PermissionsChanged:false,DestructiveAction:false,Q7Samples:0,ProbeResult:p,HelperCleanup:'REMOVED_AND_VERIFIED',
+    Status:'PASSED_TRANSPORT_PREFLIGHT',Reason:'FIXTURE_COUNTER_INCREMENTED_ONCE',FixtureReceiverWorked:true,CounterIncremented:true,RejectedOperation:null,BeforeTaps:4,AfterTaps:5};
+  const before={focused:true,resumed:true,probeReady:true,instance:20,probeX:540,probeY:1956,taps:4},after={...before,taps:5};
+  const ops=['DEVICE_STATE','FIXTURE_INSTALL','MONKEY_TOOL_CHECK','HELPER_PUSH','FIXTURE_OPEN','FIXTURE_STATE','MONKEY_TOUCH','FIXTURE_STATE','HELPER_REMOVE','HELPER_ABSENCE'].map(OperationCategory=>({OperationCategory,ExitCode:0,StderrClass:'NONE'}));
+  const reset=()=>{save('summary.json',s);save('probe.json',p);save('operations.json',ops);save('fixture-before.json',before);save('fixture-after.json',after);};
+  reset(); assert.equal(ingestMonkeyTransport(dir).q7Samples,0);
+  for(const changed of [{...after,taps:4},{...after,taps:6},{...after,instance:21},{...after,focused:false},{...after,probeX:500}]) {
+    reset();save('fixture-after.json',changed);assert.throws(()=>ingestMonkeyTransport(dir));
+  }
+  reset();save('summary.json',{...s,HelperCleanup:'UNVERIFIED'});assert.throws(()=>ingestMonkeyTransport(dir));
+  reset();save('operations.json',ops.filter(o=>o.OperationCategory!=='HELPER_REMOVE'));assert.throws(()=>ingestMonkeyTransport(dir));
+  reset();save('operations.json',[...ops,ops[6]]);assert.throws(()=>ingestMonkeyTransport(dir));
+  reset();save('probe.json',{...p,RawOutput:'forbidden'});assert.throws(()=>ingestMonkeyTransport(dir));
+  reset();const denied={...p,Stage:'DOWN',Outcome:'SECURITY_EXCEPTION',DownAccepted:false,UpAccepted:false};
+  save('summary.json',{...s,Status:'INVALID',Reason:'MONKEY_INJECTION',ProbeResult:denied,AfterTaps:4,CounterIncremented:false});save('probe.json',denied);
+  assert.equal(ingestMonkeyTransport(dir).status,'INVALID');
+}));
+
+test("Monkey helper cannot invoke the full driver, add permissions, or collect UI data",()=>{
+  const runner=readFileSync(resolve('tools/kr003/Test-KR003-MonkeyTransport.ps1'),'utf8');
+  const helper=readFileSync(resolve('spikes/android-enforcement/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/MonkeyTouchMain.kt'),'utf8');
+  assert.equal((runner.match(/'MONKEY_TOUCH' @/g)??[]).length,1);
+  assert.match(runner,/'timeout','-k','2','15'/);
+  assert.doesNotMatch(runner,/uiautomator|screencap|dumpsys|shell','input|appops|settings','put|LAB_ARM|svc','|uninstall/);
+  assert.match(helper,/inject.invoke\(event, null, null, 0\)/);
+  assert.doesNotMatch(helper,/Class.forName\("com.android.commands.monkey.Monkey"\)|setAccessible\(|getDeclaredMethod\(|printStackTrace\(/);
+});
 
 test("Q7 ingestion requires 100 active-oracle rows and exactly three passing human checkpoints",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));

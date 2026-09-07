@@ -10,7 +10,7 @@ function Get-KRTransportStderrClass {
 
 function New-KRTransportOperationRecord {
     param([string]$Category, [int]$ExitCode, [string]$StderrClass)
-    $categories=@('DEVICE_STATE','FIXTURE_INSTALL','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','PROBE_INSTALL','UIAUTOMATION_TAP')
+    $categories=@('DEVICE_STATE','FIXTURE_INSTALL','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','PROBE_INSTALL','UIAUTOMATION_TAP','MONKEY_TOOL_CHECK','HELPER_PUSH','MONKEY_TOUCH','HELPER_REMOVE','HELPER_ABSENCE')
     if ($Category -notin $categories) { throw 'INVALID:TRANSPORT_OPERATION_CATEGORY' }
     if ($StderrClass -notin @('NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER')) { throw 'INVALID:TRANSPORT_STDERR_CLASS' }
     [PSCustomObject]@{ OperationCategory=$Category; ExitCode=$ExitCode; StderrClass=$StderrClass }
@@ -36,4 +36,14 @@ function Convert-KRUiAutomationReply {
     [PSCustomObject]@{ Request=$Request; Stage=$m.Groups[2].Value; Outcome=$m.Groups[3].Value; DownAccepted=($m.Groups[4].Value -eq 'true'); UpAccepted=($m.Groups[5].Value -eq 'true'); Cleanup=$m.Groups[6].Value }
 }
 
-Export-ModuleMember -Function Get-KRTransportStderrClass, New-KRTransportOperationRecord, Get-KRTransportVerdict, Convert-KRUiAutomationReply
+function Convert-KRMonkeyReply {
+    param([string]$Raw,[long]$Request)
+    $pattern='(?m)^KR003_MONKEY:v1,([0-9]+),(ARGUMENTS|RESOLVE|DOWN|UP|COMPLETE),(INJECTED|INPUT_REJECTED|SECURITY_EXCEPTION|UNSUPPORTED|OTHER|INVALID_ARGUMENTS),(true|false),(true|false)\r?$'
+    $found=[regex]::Matches($Raw,$pattern)
+    if($found.Count -ne 1 -or ([regex]::Matches($Raw,'KR003_MONKEY:')).Count -ne 1){throw 'INVALID:MONKEY_REPLY'}
+    $m=$found[0]
+    if([long]$m.Groups[1].Value -ne $Request){throw 'INVALID:MONKEY_REQUEST'}
+    [PSCustomObject]@{Request=$Request;Stage=$m.Groups[2].Value;Outcome=$m.Groups[3].Value;DownAccepted=($m.Groups[4].Value -eq 'true');UpAccepted=($m.Groups[5].Value -eq 'true')}
+}
+
+Export-ModuleMember -Function Get-KRTransportStderrClass, New-KRTransportOperationRecord, Get-KRTransportVerdict, Convert-KRUiAutomationReply, Convert-KRMonkeyReply

@@ -283,3 +283,35 @@ triggers the conditional Monkey investigation. Q7's existing contract and three-
 Risks/tests that invalidate adoption: MIUI rejects UiAutomation, the fixture does not receive exactly one touch, the fixture is replaced/loses
 focus, reply correlation fails, instrumentation does not finish, candidate service is suppressed/restarted or any production artefact gains test
 capability. Synthetic parser/orchestration tests cannot prove runtime independence; blocked controls and service continuity remain **UNSPECIFIED**.
+
+## Bounded Monkey fallback after measured UiAutomation denial
+
+- **Goal:** Evaluate the owner's final software-only transport alternative without changing Q7's oracle gate.
+- **Context:** [The owner run](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) establishes DOWN SecurityException and zero fixture delivery, with framework finish returned.
+- **Constraints:** No candidate restriction, setting/permission change, full Monkey driver, new data collection or physical execution during preparation.
+- **Done when:** [One-touch preflight](../test-plans/KR-003-MONKEY-TRANSPORT.md) preserves independent delivery or typed failure and verified temporary-helper cleanup.
+
+Alternatives evaluated: a full scripted Monkey `Tap` is deterministic in coordinate selection but its driver installs a global activity controller
+and resets rotation, so it is rejected for this isolated experiment. Direct invocation of its touch-event class is the smaller experiment.
+Repeating denied UiAutomation, speculative SIM-gate writes and unrelated developer options have no evidentiary justification.
+[Android 10 driver](https://github.com/aosp-mirror/platform_development/blob/android10-release/cmds/monkey/src/com/android/commands/monkey/Monkey.java).
+
+Decision/reasons: a debug-only helper, loaded by a short-lived authorized shell process, invokes only `MonkeyTouchEvent` DOWN/UP with verbosity zero.
+Public tool methods are resolved reflectively without access overrides. The fixture's separately queried counter/focus is the outcome oracle;
+the candidate cannot report PASS. The AOSP implementation calls the same OS input manager, so this is not an elevation or a promised MIUI bypass.
+[Motion implementation](https://github.com/aosp-mirror/platform_development/blob/android10-release/cmds/monkey/src/com/android/commands/monkey/MonkeyMotionEvent.java), reviewed 2026-09-06.
+
+Security/privacy implications: no Accessibility connection, node/content inspection, permissions or logs beyond fixed enum/numeric records. The helper
+is a shell-UID tool, distinct from both app UIDs, with no shared app state/callbacks. Release code is absent. A typed single-output exception in the
+static validator is restricted to the exact debug file/sink; mutation tests verify new raw logging still fails. This is unsupported tool-internal
+integration, not production API use. MIUI's exact implementation and runtime side effects remain **UNSPECIFIED**.
+
+Operational implications: install the unchanged disposable fixture, upload one temporary helper APK, inject once under a native timeout, remove and
+verify absence of that exact temporary file. No candidate commands or radio/setting changes. Cleanup failure is independently recorded and prevents
+PASS. The old bundle and evidence remain immutable. A successful touch only permits subsequent blocked-control/service-continuity calibration.
+
+Risks/tests that invalidate the decision: unavailable classes/methods, permission denial, timeout, stale reply, wrong coordinate, zero/double taps,
+fixture replacement/focus loss, helper cleanup failure, production leakage, or service/configuration interference during any later calibration.
+Synthetic tests exercise these observable failures but do not establish physical support. If this route fails, report the safe tested software input
+paths unavailable on this exact configuration and the owner-constraint/qualification conflict; stop for a device/configuration/product decision.
+No change to 100-cycle evidence semantics, maximum three human checkpoints or visual-only limitations is approved by this experiment.

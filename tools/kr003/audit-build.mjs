@@ -33,7 +33,7 @@ for (const module of ["app","ordinary-fixture","input-probe"]) {
     const names = execFileSync("unzip",["-Z1",apk],{encoding:"utf8"}).trim().split("\n").filter(p=>/^classes\d*\.dex$/.test(p));
     const dex = Buffer.concat(names.map(name=>execFileSync("unzip",["-p",apk,name],{maxBuffer:32*1024*1024})));
     if (variant==="release") {
-      for (const name of ["LabControlReceiver","FixtureReceiver","LabProbe","TraceJournal","KidRemoteKR003","KR003:","OneTouchInstrumentation","injectInputEvent","kr003_probe"]) {
+      for (const name of ["LabControlReceiver","FixtureReceiver","LabProbe","TraceJournal","KidRemoteKR003","KR003:","OneTouchInstrumentation","injectInputEvent","kr003_probe","MonkeyTouchMain","KR003_MONKEY:"]) {
         assert(!dex.includes(Buffer.from(name)), "Release DEX contains " + name);
       }
     } else {

@@ -67,8 +67,12 @@ export function validateAndroidSpike(root) {
   const shipped = ["app", "ordinary-fixture", "input-probe"].flatMap(module =>
     walk(`${spikeRoot}/${module}/src`).filter(path => /\/src\/(main|debug|release)\//.test(path)));
   const tracePath = `${spikeRoot}/app/src/debug/kotlin/dev/kidremote/spike/enforcement/EnforcementTrace.kt`;
+  const monkeyPath = `${spikeRoot}/input-probe/src/debug/kotlin/dev/kidremote/spike/inputprobe/MonkeyTouchMain.kt`;
+  const monkey = read(monkeyPath);
+  const stdoutSink = 'System.out.println("KR003_MONKEY:v1,$request,$stage,$outcome,$down,$up")';
+  check(monkey.split(stdoutSink).length === 2, "Monkey tool must have exactly one typed result sink");
   const sourcePaths = shipped.filter(path => path.endsWith(".kt") && path !== tracePath);
-  const sources = sourcePaths.map(read).join("\n");
+  const sources = sourcePaths.map(path => path === monkeyPath ? read(path).replace(stdoutSink, "") : read(path)).join("\n");
   const debugTrace = read(tracePath);
   for (const forbidden of [
     ".rootInActiveWindow", ".getSource()", ".source", "dispatchGesture(", "takeScreenshot(", "performGlobalAction(", "Log.",
@@ -110,6 +114,11 @@ export function validateAndroidSpike(root) {
   for (const forbidden of ["getUiAutomation()", "setOnAccessibilityEventListener", "executeShellCommand", "adoptShellPermissionIdentity",
     "sendPointerSync", "performClick", "FixtureState", "LabProbe", "getPackageManager", "sendBroadcast", "startActivity", "getSharedPreferences"])
     check(!probe.includes(forbidden), `Input probe contains unapproved coupling/access: ${forbidden}`);
+  for (const forbidden of ["setActivityController", "freezeRotation", "thawRotation", "Settings.", "FixtureState", "LabProbe", "printStackTrace",
+    "getUiAutomation", "getRootInActiveWindow", "getWindows(", "getDeclaredMethod", "setAccessible", "Runtime.getRuntime", "ProcessBuilder"])
+    check(!monkey.includes(forbidden), `Monkey tool contains unapproved access: ${forbidden}`);
+  check(monkey.includes('Class.forName("com.android.commands.monkey.MonkeyTouchEvent")') &&
+    !monkey.includes('Class.forName("com.android.commands.monkey.Monkey")'), "Monkey tool may call only the touch-event class");
   check(sources.includes("SystemClock.elapsedRealtime()"), "Android spike must use the monotonic Android clock");
   check(sources.includes("UNKNOWN_FAIL_OPEN"), "Android spike must preserve the unknown-surface fail-open safety path");
   return errors;

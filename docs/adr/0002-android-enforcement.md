@@ -14,7 +14,9 @@ on the exact Mi 8/APK hash. It may enter a separately packaged fresh qualificati
 requirement, broader device/lifecycle gate, support boundary, production acceptance or Play approval is waived.
 [Q6](../test-plans/KR-003-Q6-QUALIFICATION.md) was packaged but never run. OD-29 supersedes it with
 [Q7](../test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md): the exact Q5 candidate plus a new independent fixture oracle, 100 unattended cycles and
-at most three human checkpoint sessions. Q7 physical preflight/execution is **Not run**.
+at most three human checkpoint sessions. Three Q7 preflight attempts stopped INVALID before ARM/sample 1. Shell input and the separate
+[UiAutomation transport](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) were denied. Q7 qualification has zero samples;
+the bounded [Monkey transport experiment](../test-plans/KR-003-MONKEY-TRANSPORT.md) is next, without changing enforcement or acceptance criteria.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.
