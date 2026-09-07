@@ -16,7 +16,8 @@ requirement, broader device/lifecycle gate, support boundary, production accepta
 [Q7](../test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md): the exact Q5 candidate plus a new independent fixture oracle, 100 unattended cycles and
 at most three human checkpoint sessions. Three Q7 preflight attempts stopped INVALID before ARM/sample 1. Shell input and the separate
 [UiAutomation transport](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) were denied. Q7 qualification has zero samples;
-the bounded [Monkey transport experiment](../test-plans/KR-003-MONKEY-TRANSPORT.md) is next, without changing enforcement or acceptance criteria.
+the bounded [Monkey transport also returned DOWN SECURITY_EXCEPTION](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+Q7 is blocked pending an owner device/configuration/product decision. Input denial neither rejects the enforcement candidate nor lowers its gate.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

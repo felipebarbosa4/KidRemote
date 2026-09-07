@@ -1,5 +1,8 @@
 # KR-003 Monkey touch-class transport preflight
 
+Status, 2026-09-07: [owner execution returned DOWN SECURITY_EXCEPTION, zero taps and verified cleanup](evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+The stop condition below is active. Do not rerun on the unchanged configuration; an owner device/configuration/product decision is required.
+
 - **Goal:** Test the final bounded software input alternative on the unchanged SIM-less Mi 8.
 - **Context:** Shell input and separate UiAutomation both returned SecurityException; [the latter run](evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) delivered zero fixture taps.
 - **Constraints:** One disposable-fixture touch, no candidate commands, settings/permissions/radios changes, nodes, content, screenshots, raw identities or package history. No Q7 execution.

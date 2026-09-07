@@ -47,6 +47,11 @@ No app/bootstrap dependency versions are chosen in this pass. The verified Actio
 
 ## Blockers and work that can proceed
 
+**2026-09-07 KR-003 qualification blocker:** [shell input, UiAutomation and bounded Monkey were all denied](test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+OD-29's independent input prerequisite is unmet. The per-cycle human fallback conflicts with the owner's maximum-three-checkpoint constraint.
+Owner device/configuration/product decision is **UNSPECIFIED**. Do not rerun on unchanged configuration, reduce the gate or start KR-004.
+OD-30's experiment has now failed input delivery; service non-interference remains **UNSPECIFIED**.
+
 Production consumer enforcement is blocked by the unproven safety/reliability boundary and policy tension in ADR-0002.
 Final pairing is blocked until OD-09/10/20 and the threat model tests are resolved.
 Client table exposure is blocked until RLS allow/deny tests exist and pass.

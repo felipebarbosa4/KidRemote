@@ -315,3 +315,15 @@ fixture replacement/focus loss, helper cleanup failure, production leakage, or s
 Synthetic tests exercise these observable failures but do not establish physical support. If this route fails, report the safe tested software input
 paths unavailable on this exact configuration and the owner-constraint/qualification conflict; stop for a device/configuration/product decision.
 No change to 100-cycle evidence semantics, maximum three human checkpoints or visual-only limitations is approved by this experiment.
+
+### Measured outcome and stop condition — 2026-09-07
+
+[Monkey evidence](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md) establishes DOWN SECURITY_EXCEPTION, counter 0→0 and verified cleanup.
+All three tested input routes are denied on this reported configuration. This invalidates adoption of these transports here, not prior bounded
+enforcement observations, and does not prove every conceivable transport impossible.
+
+Decision: apply the existing stop condition. Q7 cannot proceed; its unfulfilled oracle prerequisite and the maximum-three-human constraint
+currently conflict. Owner choice of another authorized physical device, supported explicitly approved configuration investigation, or pause/product
+scope review is **UNSPECIFIED**. Another device's results cannot be attributed to this Mi 8; any settings change creates a separately recorded
+configuration. Fresh input delivery, blocked controls and service continuity are required before reconsideration. No new code, security bypass,
+per-cycle manual replacement or gate reduction is justified. Security/privacy and operational constraints above remain unchanged.

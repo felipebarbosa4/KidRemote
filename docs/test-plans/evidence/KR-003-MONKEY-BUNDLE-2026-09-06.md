@@ -8,7 +8,8 @@
 Source: `a10fd34043c0dac20c69a0558104e294a7dba243`.
 Directory: `C:\platform-tools\kr003-monkey-bundles\a10fd34`.
 Protocol: `KR003-MONKEY-TRANSPORT-PREFLIGHT`, runner version 1.
-Physical execution: **Not run**. MIUI transport support and later candidate-service non-interference: **UNSPECIFIED**.
+Physical execution at initial handoff: **Not run**. Subsequently [executed: DOWN SECURITY_EXCEPTION, zero taps, cleanup verified](KR-003-MONKEY-DENIAL-2026-09-07.md).
+Do not rerun this historical bundle on the unchanged configuration. Bytes/hashes remain unchanged. Later service non-interference: **UNSPECIFIED**.
 
 | File | SHA-256 |
 | --- | --- |
