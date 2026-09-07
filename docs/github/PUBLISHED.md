@@ -206,3 +206,16 @@ Issue #3 and PR #16 were updated and read back with the Q7 boundary; the issue r
 [issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564034383) and
 [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564034552) link the same immutable handoff. Project #3 was
 re-read after publication: KR-003 is Open/In Progress and KR-004 is Open/Backlog. No issue/PR was closed or merged and no KR-004 work began.
+
+## Q7 ADB input-transport halt — 2026-09-06
+
+Three owner-run Q7 attempts stopped before ARM/sample 1 with `INVALID:ADB_REJECTED`. The [preserved evidence](../test-plans/evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md)
+establishes that the rejected fixed operation was the ordinary fixture's unblocked `adb shell input tap`; every run retained zero samples/checkpoints,
+verified lab bailout and restored/read back the recorded Wi-Fi/mobile flags. Exit code and stderr class were not retained by the historical wrapper,
+so the exact rejection mechanism and MIUI setting requirement remain **UNSPECIFIED**.
+
+Source `95937b95d585b93f9878f55503f224c61c590a26` adds a fixture-only diagnostic that stores only operation enum, exit code and coarse stderr class.
+[CI run 34076876172](https://github.com/felipebarbosa4/KidRemote/actions/runs/34076876172) passed all three jobs. The
+[immutable transport bundle and one-command handoff](../test-plans/evidence/KR-003-Q7-ORACLE-TRANSPORT-BUNDLE-2026-09-06.md) were hash-verified in
+mounted Windows storage; physical execution is **Not run**. Q7 must not be rerun and no MIUI setting should be changed until this tiny diagnostic
+is ingested. KR-003 remains Open/In Progress, PR #16 remains draft/Open and KR-004 remains Open/Backlog.
