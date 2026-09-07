@@ -28,6 +28,10 @@ function Convert-KRReply {
         $numbers = @('schema','request','elapsed','instance','taps')
         $booleans = @('focused','resumed')
         $extra = @()
+        if ($data.schema -eq 2) {
+            $numbers += @('focusGains','focusLosses','lastFocusChange','probeX','probeY')
+            $booleans += 'probeReady'
+        }
     } else {
         $numbers = @('schema','request','elapsed','versionCode','api','revision','remaining','sampledAt','sampledRevision','firstAttachedAt','removals','recordedRevision','sampleCount','p50','p95','max','traceHead')
         $booleans = @('armed','restriction','uncertain','usage','accessibility','heartbeat','eligible','attached','eligibilityLost','traceLost')
@@ -79,6 +83,52 @@ function Assert-KRHold {
     if ($Snapshot.eligibilityLost) { throw 'INVALID:ELIGIBILITY_INTERRUPTED' }
     if (-not $Snapshot.restriction -or -not $Snapshot.attached -or $Snapshot.adapter -ne 'APPLIED' -or $Snapshot.disposition -ne 'ORDINARY_APP' -or $Snapshot.removals -ne 0) { throw 'FAIL:RESTRICTION_LOST' }
     if ($FixtureState.focused -or $FixtureState.taps -ne $FixtureTaps) { throw 'FAIL:ORDINARY_FIXTURE_ACTIVE' }
+}
+
+function Assert-KRIndependentFixtureBlock {
+    param($Baseline, $Current)
+    if ($Baseline.schema -ne 2 -or $Current.schema -ne 2 -or -not $Baseline.probeReady -or -not $Current.probeReady) {
+        throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE'
+    }
+    if ($Baseline.instance -ne $Current.instance) { throw 'INVALID:FIXTURE_RESTARTED' }
+    if ($Baseline.probeX -ne $Current.probeX -or $Baseline.probeY -ne $Current.probeY) {
+        throw 'INVALID:FIXTURE_PROBE_MOVED'
+    }
+    if (-not $Current.resumed) { throw 'INVALID:FIXTURE_NOT_UNDER_TEST' }
+    if ($Current.focused -or $Current.focusGains -ne $Baseline.focusGains) {
+        throw 'FAIL:FIXTURE_REGAINED_FOCUS'
+    }
+    if ($Current.taps -ne $Baseline.taps) { throw 'FAIL:RESTRICTION_LEAKED_INPUT' }
+}
+
+function Get-KRAutomatedRunVerdict {
+    param([object[]]$Rows, [object[]]$HumanCheckpoints, [bool]$Offline)
+    if (@($Rows | Where-Object { $_.AutomatedOracle -eq 'FAIL' -or $_.InputOracle -eq 'FAIL' }).Count) { return 'FAILED' }
+    if ($Rows.Count -ne 100) { return 'INCOMPLETE' }
+    if (@($Rows | Where-Object {
+        $_.AutomatedOracle -ne 'PASS' -or $_.InputOracle -ne 'PASS' -or
+        $null -eq $_.LatencyMs -or $_.HoldMillis -lt 10000 -or $_.InjectedBlockedTaps -lt 20
+    }).Count) { return 'INCOMPLETE' }
+    if (@($Rows | ForEach-Object { $_.Revision } | Select-Object -Unique).Count -ne 100) { return 'INCOMPLETE' }
+    $requiredCheckpoints = @('PREFLIGHT_NORMAL_PASS','PREFLIGHT_NEGATIVE_CONTROL','POST_RUN_SAFETY')
+    if ($HumanCheckpoints.Count -ne 3 -or
+        @($HumanCheckpoints | Where-Object { $_.Result -ne 'PASS' }).Count -or
+        (($HumanCheckpoints | ForEach-Object { $_.Name }) -join ',') -cne ($requiredCheckpoints -join ',')) {
+        return 'INCOMPLETE'
+    }
+    $stats = Get-KRStatistics -Values @($Rows | ForEach-Object { $_.LatencyMs })
+    if ($stats.P95 -gt 2000) { return 'FAILED_P95' }
+    if (-not $Offline) { return 'ONLINE_ONLY_OFFLINE_GATE_OPEN' }
+    return 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY'
+}
+
+function Get-KRValidAutomatedRows {
+    param([object[]]$Rows = @())
+    foreach ($row in $Rows) {
+        if ($row.Phase -eq 'QUALIFICATION' -and $row.AutomatedOracle -eq 'PASS' -and
+            $row.InputOracle -eq 'PASS' -and $null -ne $row.LatencyMs -and
+            $row.HoldMillis -ge 10000 -and $row.InjectedBlockedTaps -ge 20) { $row }
+    }
 }
 
 function Get-KRPairedLatency {

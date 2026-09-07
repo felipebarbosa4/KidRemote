@@ -12,4 +12,4 @@ Accepted decisions are owner-approved architecture choices, not implementation o
 | [0005](0005-state-and-time.md) | Independent lock reasons, daily local budget | Accepted 2026-09-05 |
 | [0006](0006-backend-and-sync.md) | Supabase, transactional desired state and command audit | Accepted 2026-09-05 |
 | [0007](0007-future-platforms.md) | Fire/iOS/Windows boundary and research gates | Future-only |
-| [0008](0008-qualification-automation.md) | Debug qualification controls and observation oracle | Accepted; Q5 route calibrated, Q6 physical qualification pending |
+| [0008](0008-qualification-automation.md) | Debug qualification controls and observation oracle | Accepted; Q7 active-oracle redesign prepared, physical preflight pending |

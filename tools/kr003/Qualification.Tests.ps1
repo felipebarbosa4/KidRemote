@@ -37,6 +37,10 @@ $v2 | Add-Member NoteProperty windowVisibility 4
 $v2 | Add-Member NoteProperty windowFocused $false
 $v2 | Add-Member NoteProperty viewAttached $true
 Assert-Equal (Convert-KRReply (Encode-Reply $v2) 1).windowVisibility 4
+$fixtureReply=[PSCustomObject]@{schema=2;request=1;elapsed=100;instance=7;taps=2;focusGains=3;focusLosses=2;lastFocusChange=90;probeX=540;probeY=1900;focused=$true;resumed=$true;probeReady=$true}
+Assert-Equal (Convert-KRReply (Encode-Reply $fixtureReply) 1 -Fixture).probeY 1900
+$fixtureReply | Add-Member NoteProperty rawPackage 'forbidden'
+Assert-Reject { Convert-KRReply (Encode-Reply $fixtureReply) 1 -Fixture } 'INVALID:REPLY_SCHEMA'
 $v2.windowVisibility=123
 Assert-Reject { Convert-KRReply (Encode-Reply $v2) 1 } 'INVALID:WINDOW_VISIBILITY'
 Assert-Reject { Convert-KRReply (Encode-Reply $s) 2 } 'INVALID:STALE_REPLY'
@@ -68,6 +72,18 @@ Assert-Reject { Assert-KRHold $s 2 0 $f } 'INVALID:ELIGIBILITY_INTERRUPTED'
 $s = New-Snapshot; $f.focused=$true
 Assert-Reject { Assert-KRHold $s 2 0 $f } 'FAIL:ORDINARY_FIXTURE_ACTIVE'
 Assert-Reject { Assert-KRHealth $s 20001 } 'FAIL:CLOCK_DISCONTINUITY'
+
+$fixtureBaseline=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=4;focusGains=3;focusLosses=3}
+$fixtureBlocked=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=4;focusGains=3;focusLosses=3}
+Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked
+$fixtureBlocked.taps=5
+Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'FAIL:RESTRICTION_LEAKED_INPUT'
+$fixtureBlocked.taps=4; $fixtureBlocked.focusGains=4
+Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'FAIL:FIXTURE_REGAINED_FOCUS'
+$fixtureBlocked.focusGains=3; $fixtureBlocked.instance=8
+Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'INVALID:FIXTURE_RESTARTED'
+$fixtureBlocked.instance=7; $fixtureBlocked.probeX=541
+Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'INVALID:FIXTURE_PROBE_MOVED'
 
 # Focused recovery phases use their own trace floor; an earlier phase's safe event cannot satisfy a later phase.
 $rootStart=New-Snapshot
@@ -217,6 +233,25 @@ Assert-Equal (Get-KRRunVerdict $rows $true $true) 'FAILED_P95'
 $rows[94].LatencyMs=123
 Assert-Equal (Get-KRRunVerdict $rows $true $true) 'PASSED_THIS_CONFIGURATION_ONLY'
 
+$automatedRows=@(1..100 | ForEach-Object {
+    [PSCustomObject]@{Phase='QUALIFICATION';Revision=$_;AutomatedOracle='PASS';InputOracle='PASS';LatencyMs=123;HoldMillis=10000;InjectedBlockedTaps=20}
+})
+$checkpoints=@(
+    [PSCustomObject]@{Name='PREFLIGHT_NORMAL_PASS';Result='PASS'},
+    [PSCustomObject]@{Name='PREFLIGHT_NEGATIVE_CONTROL';Result='PASS'},
+    [PSCustomObject]@{Name='POST_RUN_SAFETY';Result='PASS'}
+)
+Assert-Equal (Get-KRAutomatedRunVerdict $automatedRows $checkpoints $true) 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY'
+$automatedRows[50].InputOracle='FAIL'
+Assert-Equal (Get-KRAutomatedRunVerdict $automatedRows $checkpoints $true) 'FAILED'
+$automatedRows[50].InputOracle='PASS'; $automatedRows[50].AutomatedOracle='FAIL'
+Assert-Equal (Get-KRAutomatedRunVerdict $automatedRows $checkpoints $true) 'FAILED'
+$automatedRows[50].AutomatedOracle='PASS'; $automatedRows[50].InjectedBlockedTaps=19
+Assert-Equal (Get-KRAutomatedRunVerdict $automatedRows $checkpoints $true) 'INCOMPLETE'
+$automatedRows[50].InjectedBlockedTaps=20; $checkpoints[1].Result='FAIL'
+Assert-Equal (Get-KRAutomatedRunVerdict $automatedRows $checkpoints $true) 'INCOMPLETE'
+$checkpoints[1].Result='PASS'
+
 # Parse the actual operator script without executing any device commands.
 $tokens=$null; $parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Start-KR003.ps1'),[ref]$tokens,[ref]$parseErrors)
@@ -272,11 +307,15 @@ $functionAst=$ast.Find({param($node) $node -is [Management.Automation.Language.F
 Invoke-Expression $functionAst.Extent.Text
 function Save-Progress {}
 function Clear-ToOrdinary {}
-function Wait-FixtureFocus { param($Focused) }
 function Assert-FixedSettings {}
 function Check-EarlyStop {}
 function Start-Sleep {}
-function Get-FixtureState { [PSCustomObject]@{focused=$false;taps=0} }
+function New-FixtureFrame { [PSCustomObject]@{schema=2;instance=1;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=0;focusGains=1;focusLosses=1} }
+function Get-FixtureState { New-FixtureFrame }
+function Assert-FixturePositiveControl { param($Before,$FailureCode); return $Before }
+function Assert-KRIndependentFixtureBlock { param($Baseline,$Current) }
+function Invoke-FixtureProbeTap { param($Fixture) }
+function Wait-FixtureFocus { param($Focused); return New-FixtureFrame }
 function Wait-LabCondition {
     param($Condition,$FailureCode,$TimeoutSeconds)
     $s=New-Snapshot
@@ -306,13 +345,11 @@ function Read-Result {
     return 'PASS'
 }
 $script:SimRevision=1; $script:SimSamples=@(); $script:SimElapsed=0
-$script:LastRevision=-1; $script:Rows=@(); $script:CurrentRow=$null; $script:SimObserver='PASS'
+$script:LastRevision=-1; $script:Rows=@(); $script:CurrentRow=$null; $script:SimObserver='PASS'; $script:ServiceConnections=0
 $script:AttachmentRevisions=@{}
 1..100 | ForEach-Object { Invoke-Expiry -Attempt $_ 6>$null }
 Assert-Equal $script:Rows.Count 100
-Assert-Equal (Get-KRRunVerdict $script:Rows $true $true) 'PASSED_THIS_CONFIGURATION_ONLY'
-$script:SimObserver='FAIL'
-Assert-Reject { Invoke-Expiry -Attempt 101 6>$null } 'FAIL:OBSERVER_1'
-Assert-Equal $script:Rows.Count 100
-Assert-Equal $script:CurrentRow.Observer 'UNRECORDED'
+Assert-Equal (Get-KRAutomatedRunVerdict $script:Rows $checkpoints $true) 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY'
+Assert-Equal $script:Rows[0].PhysicalObserver 'NOT_SAMPLED'
+Assert-Equal $script:Rows[0].InjectedBlockedTaps 20
 Write-Host "$script:Checks PowerShell assertions passed; orchestration used synthetic state, never a device."

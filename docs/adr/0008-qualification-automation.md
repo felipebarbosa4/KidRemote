@@ -215,3 +215,42 @@ precondition and evidence integrity without modifying the physically calibrated 
 eligibility loss, OEM state drift and radio restoration failure. Invalidation tests: synthetic zero/partial/100-row finalization, first-failure
 stop, phase-floor isolation, ten-second stable-safe gating, safety field corruption, aggregate mismatch, release leakage and exact APK hash drift.
 Physical Q6 execution remains **Not run**; passing it would apply only to this Mi 8 configuration and would not close KR-003 or establish Play approval.
+
+## Q7 owner-constrained active-oracle decision
+
+**Owner operating constraint, 2026-09-06:** no more than three human physical checkpoint sessions. This does not make three checks equivalent to
+100 visual observations. Q6 was not executed and is superseded by the explicit Q7 evidence model before any physical qualification began.
+
+Alternatives evaluated:
+
+1. Keep Q6 and ask for 100 P responses: rejected by the owner operating constraint.
+2. Treat candidate attachment telemetry as PASS: rejected as circular and contradicted by the original Mi 8 flicker incident.
+3. Use screenshots or UI-node inspection: rejected by the privacy/least-privilege constraint.
+4. Use current-window dumps as the primary oracle: rejected as OEM-fragile and capable of exposing unrelated titles/packages.
+5. Use a separate zero-permission ordinary fixture with real ADB input, interaction/focus counters and three physical calibration checkpoints: selected conditionally.
+
+Decision: Q7 uses the disposable fixture as an active oracle. Each cycle first proves that one real input-layer tap reaches the unblocked fixture.
+After expiry it sends 20 equivalent taps over at least ten seconds and requires zero counter increments and zero fixture focus gains. Fixture
+process/coordinate continuity is checked. Candidate telemetry separately supplies revision, service, removal and monotonic latency corroboration,
+but cannot independently produce PASS. The candidate APK stays byte-identical to Q5; the fixture and runner are new test artefacts.
+
+The three human sessions are: (1) an excluded normal visible expiry agreeing with input denial; (2) a controlled lab-CLEAR negative state in which
+the same injected input must visibly and technically reach the fixture; and (3) post-run visual agreement plus the guided Home/Settings/recovery/
+re-entry route. Attempts 1–100 run unattended. Result naming must say `100 active-oracle cycles + three human checkpoints`, not `100 physical passes`.
+
+Security/privacy implications: the fixture exposes only numeric counters, booleans, monotonic times and its own transient numeric probe coordinate
+through the existing sender-protected debug receiver. It has no permissions or shared state with the candidate. No Accessibility node/content,
+text, screenshot, window dump, raw package/component, task history, account, serial or app-history timeline is collected. Release receivers remain
+absent and the permission/DEX audit remains mandatory.
+
+Operational implications: the owner performs three sessions and the approximately 35–45 minute 100-cycle section is unattended. Any input leak,
+focus regain, service/process replacement, stale revision, overlay removal, permission/configuration drift or broken positive control stops and
+preserves evidence. No resume/pooling is allowed. Real Mi 8 ADB input/counter behaviour is not established by desktop tests; Q7 preflight must prove
+it before sample 1.
+
+Risks and invalidation tests: a transparent but touch-blocking overlay, rendering-only flash that does not change input focus, or unrelated visual
+occlusion can evade the active oracle. These remain human-only residual risks sampled by the two visible expiry checkpoints and must not be claimed
+as 100-way coverage. Synthetic tests reject tap leakage, focus regain, fixture/process/coordinate change, missing positive control, fewer than 20
+blocked taps, missing/failed checkpoints and altered row/statistic counts. If physical preflight cannot prove both input delivery after CLEAR and
+input denial while blocked, Q7 is invalid and the original 100-human contract conflicts with the owner constraint; stop for explicit go/no-go or
+scope change.

@@ -12,8 +12,9 @@ Current Mi 8 candidate: Q2 and Q3 **physically failed designated Settings/recove
 The final bounded Q5 `NEW_TASK | CLEAR_TASK` candidate then [passed one focused recovery calibration](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md)
 on the exact Mi 8/APK hash. It may enter a separately packaged fresh qualification preflight, but has zero qualification samples. No safe-surface
 requirement, broader device/lifecycle gate, support boundary, production acceptance or Play approval is waived.
-[Q6](../test-plans/KR-003-Q6-QUALIFICATION.md) fixes that exact APK pair for mandatory offline calibration, two safety checkpoints and 100 new
-expiry observations; physical Q6 execution is **Not run**.
+[Q6](../test-plans/KR-003-Q6-QUALIFICATION.md) was packaged but never run. OD-29 supersedes it with
+[Q7](../test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md): the exact Q5 candidate plus a new independent fixture oracle, 100 unattended cycles and
+at most three human checkpoint sessions. Q7 physical preflight/execution is **Not run**.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

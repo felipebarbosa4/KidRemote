@@ -1,9 +1,9 @@
 # KR-003 qualification operator tooling
 
-- **Goal:** One owner-run Windows command, reproducible evidence, and the minimum human input compatible with 100 genuine physical observations.
-- **Context:** [Q5](../../docs/test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) passed the final focused recovery route on one exact Mi 8/APK pair; Q6 runs the fresh offline qualification.
+- **Goal:** One owner-run Windows command, reproducible evidence, 100 unattended active-oracle cycles and at most three human checkpoint sessions.
+- **Context:** Q5 passed the candidate recovery route; unexecuted Q6 was superseded by the owner-constrained [Q7 contract](../../docs/test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md).
 - **Constraints:** No Windows ADB execution from WSL; disposable debug APKs only; no automatic physical PASS, host repair, destructive test, production implementation or KR-004.
-- **Done when:** An integrity-checked Q6 bundle records calibration, two safety checkpoints, 100 paired expiry observations, cleanup/restoration and a machine-verifiable summary.
+- **Done when:** An integrity-checked Q7 bundle records oracle calibration, three human checkpoints, 100 paired active-oracle cycles, cleanup/restoration and a machine-verifiable summary.
 
 ## Build and package (agent / WSL)
 
@@ -13,7 +13,7 @@ Use the existing JDK 17 and Android SDK. Run repository, Node, PowerShell and An
 node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-qualification-bundles/NEW_UNIQUE_COMMIT_DIRECTORY
 ```
 
-Packaging refuses a dirty tree or existing destination, rebuilds/tests/lints debug and release, audits merged permissions/release DEX, and hashes every payload. It also refuses candidate or fixture APK bytes that differ from the pair physically calibrated in Q5. Source commit identifies runner/protocol changes; `calibratedBy` identifies the prior physical APK calibration. No physical run occurs during packaging.
+Packaging refuses a dirty tree or existing destination, rebuilds/tests/lints debug and release, audits merged permissions/release DEX, and hashes every payload. It refuses candidate drift from the Q5-calibrated APK and fixture drift from the reviewed Q7 oracle build. `candidateCalibratedBy` identifies Q5; the new fixture must pass Q7 preflight on-device. No physical run occurs during packaging.
 
 ## Execute (owner / PowerShell)
 
@@ -23,15 +23,17 @@ Use the exact populated command in the latest bundle handoff:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -OfflineNetwork
 ```
 
-`-ExecutionPolicy Bypass` applies only to that process. Q6 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It journals original radio flags, disables enabled Wi-Fi/mobile data, obtains an explicit operator confirmation, and restores/read-backs each changed flag during independently guarded finalization. Keep only the authorized Mi 8 connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots or repairs host/WSL state.
+`-ExecutionPolicy Bypass` applies only to that process. Q7 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It journals original radio flags, disables enabled Wi-Fi/mobile data, obtains an explicit operator confirmation, and restores/read-backs each changed flag during independently guarded finalization. Keep only the authorized Mi 8 connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots or repairs host/WSL state.
 
-The full [Q6 contract](../../docs/test-plans/KR-003-Q6-QUALIFICATION.md) is bundled. Expected duration is 40–60 minutes. Keep the screen unlocked/interactive and watch every expiry. Enter P only after a visibly continuous ten-second restriction; F for flicker, disappearance, escape or unusable recovery; I if observation or eligibility was missed; Q to stop. Any non-P expiry stops and remains in the evidence—there is no replacement, resume or pooling.
+The full [Q7 contract](../../docs/test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 35–45 minutes; the screen must remain unlocked/interactive. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
 
-Calibration and final safety each require a physical Home attempt, the calibrated Settings root → Digital Wellbeing blocked → one-button Settings recovery route, ordinary-app re-entry, and one real fixture tap after lab CLEAR. These observations remain separate and contribute zero expiry samples. The runner rejects recovery P until a fresh safe transition remains stable for ten seconds.
+Q7 first asks for one normal visible expiry checkpoint, then one controlled unblocked negative checkpoint. The 100-cycle section has no P prompts:
+each cycle proves input reaches the fixture before arm, then injects 20 equivalent taps during restriction and requires zero delivery/focus regain.
+The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. These remain separate evidence.
 
 ## Evidence and bailout
 
-Every execution creates a new `C:\platform-tools\kr003-qualification\run-*` directory. It contains bundle/device/APK identity, prior/final metrics, calibration, attempt JSON/CSV, sanitized telemetry/trace, fixture counters, two safety and recovery journals, radio journals, sample-preserving bailout evidence and summaries. The agent reads it directly from `/mnt/c`; do not copy logs manually.
+Every execution creates a new `C:\platform-tools\kr003-qualification\run-*` directory. It contains bundle/device/APK identity, prior/final metrics, calibration, attempt JSON/CSV, human checkpoints, sanitized telemetry/trace, fixture counters, final safety/recovery, radio journals, sample-preserving bailout evidence and summaries. The agent reads it directly from `/mnt/c`; do not copy logs manually.
 
 Normal finalization automatically invokes debug CLEAR and verifies the complete timing sample array is unchanged. If the terminal is forcibly interrupted or the phone remains trapped, run the bundle's separate bailout from a second PowerShell window:
 
@@ -47,7 +49,7 @@ After a run, ingest without modifying originals:
 node tools/kr003/ingest.mjs qualification /mnt/c/platform-tools/kr003-qualification/ACTUAL_RUN_DIRECTORY
 ```
 
-Exit zero means only `PASSED_THIS_CONFIGURATION_ONLY` for this exact offline Mi 8/APK with both safety checkpoints, verified bailout/restoration and clean finalization. It does not close KR-003, establish other devices, complete remaining matrix rows or prove Play acceptance.
+Exit zero means only `PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY` for this exact offline Mi 8/build with verified bailout/restoration and clean finalization. It is not 100 human-visible passes and does not close KR-003, establish other devices, complete remaining matrix rows or prove Play acceptance.
 
 ## Local checks
 

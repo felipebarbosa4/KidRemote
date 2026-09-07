@@ -86,8 +86,10 @@ latencies and a bounded maximum of 500 numbers. It does not prove the overlay wa
 The [qualification runner guide](../../tools/kr003/README.md), [contract](../../docs/test-plans/KR-003-QUALIFICATION.md) and
 [ADR-0008](../../docs/adr/0008-qualification-automation.md) define the new debug-only control/metric export and zero-permission ordinary fixture.
 Neither the debug receivers nor trace/probe implementation ships in release. No production enforcement decision was changed for automation.
-The fixture provides independent focus/touch corroboration, never an automatic physical pass. The Mi 8's successful ten-cycle evidence applies
-to the previously recorded APK; the automation build requires calibration before its separate 100 observations.
+Q7's fixture provides an independent active input/focus oracle: every cycle proves input delivery after CLEAR, then requires 20 equivalent ADB
+taps to be denied while restricted. This can produce an automated-oracle result but never a human-visible claim. Three physical checkpoint sessions
+calibrate/spot-check the oracle. The Mi 8's successful ten-cycle evidence applies to the previously recorded candidate; the new fixture requires
+on-device Q7 preflight before 100 unattended cycles.
 
 ## Current official sources
 

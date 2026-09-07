@@ -112,6 +112,8 @@ new immutable qualification runner using the exact APK hash; do not pool earlier
 
 ## Q6 offline 100-sample qualification
 
+**Historical, superseded before execution by OD-29/Q7.** Q6 remains immutable and was never physically run.
+
 - **Goal:** Execute AC-3/TIME-04 once on the Mi 8 with 100 new paired physical expiries while offline.
 - **Context:** Q5 physically calibrated the final recovery route and exact candidate/fixture APK hashes; earlier run rows remain non-poolable.
 - **Constraints:** Runner/protocol only; exact Q5 APK bytes; owner-operated Windows ADB; no resume, destructive actions, enforcement changes or KR-004.
@@ -121,3 +123,16 @@ The [Q6 protocol](../test-plans/KR-003-Q6-QUALIFICATION.md) enforces offline opt
 Digital Wellbeing/recovery/re-entry/Clear checkpoints before and after the set, one ten-second observer response for each of exactly 100 fresh
 revisions, exact internal-metric agreement, fail-stop evidence, sample-preserving bailout and independently verified radio restoration. Current
 physical status is **Not run**. Builds, synthetic rows and a packaged command are not physical evidence.
+
+## Q7 active-oracle qualification redesign
+
+- **Goal:** Preserve 100-cycle latency/enforcement evidence while limiting the owner to three checkpoint sessions.
+- **Context:** The owner rejected 100 repetitive manual P responses and required proof of an independent automated oracle before changing the gate.
+- **Constraints:** Candidate APK unchanged; disposable fixture/runner only; real ADB input; no screenshot, nodes/content, window/package history, destructive action or KR-004.
+- **Done when:** Synthetic/build/release checks and exact-source CI pass, an immutable Q7 bundle is verified, then physical preflight validates the oracle before any unattended sample begins.
+
+Implement a fixture-owned bottom-screen target, interaction counter and monotonic focus counters behind the existing sender-protected debug
+receiver. Every cycle must positively prove one injected tap reaches the clear fixture, then prove 20 equivalent taps over at least ten restricted
+seconds produce no interaction or focus regain. Candidate revision/trace/health is supporting evidence. Run one visible normal checkpoint, one
+visible controlled-unblocked negative checkpoint, 100 unattended cycles, then one guided post-run safety/agreement checkpoint. If either active
+oracle side cannot be physically calibrated, stop before sample 1 and return to go/no-go rather than falling back silently.

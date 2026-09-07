@@ -1,8 +1,8 @@
 <#
-Goal: Owner-operated KR-003 offline Mi 8 qualification with 100 paired physical expiry observations.
-Context: Run only from an integrity-checked Q6 bundle after the exact Q5 APK passed focused recovery calibration.
-Constraints: No raw identity, host/permission change, input injection, uninstall, data clear or reboot; only explicit reversible radio opt-in.
-Done when: Fresh calibration/safety checks and 100 attempts are journalled; cleanup preserves metrics and restores changed radios.
+Goal: KR-003 offline Mi 8 qualification with 100 active-oracle cycles and no more than three human checkpoint sessions.
+Context: Q7 replaces Q6 before execution after the owner capped repetitive human observations at three.
+Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; reversible radio opt-in only.
+Done when: The independent input/focus oracle passes 100 cycles, all three human checkpoints pass, and cleanup restores state.
 #>
 param(
     [string]$Adb = 'C:\platform-tools\adb.exe',
@@ -36,6 +36,7 @@ $script:Bundle = $null
 $script:Device = $null
 $script:LastSnapshot = $null
 $script:AttachmentRevisions = @{}
+$script:ServiceConnections = 0L
 $script:Manifest = $null
 $script:RadioOriginal = $null
 $script:RadioTouched = @()
@@ -48,6 +49,7 @@ $script:DiagnosticPhase = $null
 $script:DiagnosticFileName = 'recovery-diagnostic.json'
 $script:Safety = $null
 $script:SafetyFileName = 'safety-incomplete.json'
+$script:HumanCheckpoints = @()
 $script:DiagnosticBailout = $null
 $script:LabControlReady = $false
 $script:StartedAt = [DateTime]::UtcNow.ToString('o')
@@ -103,6 +105,7 @@ function Get-LabState {
         $entry | ConvertTo-Json -Compress | Add-Content -LiteralPath (Join-Path $runDirectory 'trace.jsonl') -Encoding UTF8
         $script:Cursor = [long]$entry.sequence
         if ($entry.line -match ' kind=overlay_attached .* revision=(\d+)$') { $script:AttachmentRevisions[$Matches[1]] = $entry.sequence }
+        if ($entry.line -match ' kind=service_connected ') { $script:ServiceConnections++ }
     }
     $snapshot | ConvertTo-Json -Depth 8 -Compress | Add-Content -LiteralPath (Join-Path $runDirectory 'telemetry.jsonl') -Encoding UTF8
     if ($script:LastElapsed -gt $snapshot.elapsed) { throw 'FAIL:CLOCK_DISCONTINUITY' }
@@ -115,10 +118,49 @@ function Get-FixtureState {
     $script:Request++
     $raw = Invoke-LabAdb @('shell','am','broadcast','--receiver-foreground','-n',$fixtureReceiver,'--el','request',"$script:Request")
     $snapshot = Convert-KRReply -Raw $raw -Request $script:Request -Fixture
+    if ($snapshot.schema -ne 2) { throw 'INVALID:FIXTURE_INPUT_ORACLE_SCHEMA' }
     if ($script:FixtureInstance -ge 0 -and $script:FixtureInstance -ne $snapshot.instance) { throw 'INVALID:FIXTURE_RESTARTED' }
     $script:FixtureInstance = $snapshot.instance
     $snapshot | ConvertTo-Json -Compress | Add-Content -LiteralPath (Join-Path $runDirectory 'fixture.jsonl') -Encoding UTF8
     return $snapshot
+}
+
+function Save-HumanCheckpoints {
+    Write-JsonFile 'human-checkpoints.json' @($script:HumanCheckpoints)
+}
+
+function Add-HumanCheckpoint {
+    param([string]$Name, [string]$Result, [string]$Evidence)
+    if ($Name -notin @('PREFLIGHT_NORMAL_PASS','PREFLIGHT_NEGATIVE_CONTROL','POST_RUN_SAFETY')) { throw 'INVALID:HUMAN_CHECKPOINT_NAME' }
+    if ($Result -notin @('PASS','FAIL','INVALID')) { throw 'INVALID:HUMAN_CHECKPOINT_RESULT' }
+    if (@($script:HumanCheckpoints | Where-Object { $_.Name -eq $Name }).Count) { throw 'INVALID:DUPLICATE_HUMAN_CHECKPOINT' }
+    $script:HumanCheckpoints += [PSCustomObject]@{
+        Name=$Name; Result=$Result; Evidence=$Evidence; ObservedUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Save-HumanCheckpoints
+}
+
+function Invoke-FixtureProbeTap {
+    param($Fixture)
+    if ($Fixture.schema -ne 2 -or -not $Fixture.probeReady -or $Fixture.probeX -lt 1 -or $Fixture.probeX -gt 10000 -or
+        $Fixture.probeY -lt 1 -or $Fixture.probeY -gt 10000) { throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE' }
+    $null=Invoke-LabAdb @('shell','input','tap',([string]$Fixture.probeX),([string]$Fixture.probeY))
+}
+
+function Assert-FixturePositiveControl {
+    param($Before, [string]$FailureCode='INVALID:FIXTURE_POSITIVE_CONTROL_FAILED')
+    if ($Before.schema -ne 2 -or -not $Before.probeReady -or -not $Before.focused -or -not $Before.resumed) { throw $FailureCode }
+    Invoke-FixtureProbeTap $Before
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    do {
+        $after=Get-FixtureState
+        if ($after.instance -ne $Before.instance) { throw 'INVALID:FIXTURE_RESTARTED' }
+        if (-not $after.probeReady -or $after.probeX -ne $Before.probeX -or $after.probeY -ne $Before.probeY -or -not $after.focused -or -not $after.resumed) { throw $FailureCode }
+        if ($after.taps -eq $Before.taps + 1) { return $after }
+        if ($after.taps -ne $Before.taps) { throw $FailureCode }
+        Start-Sleep -Milliseconds 100
+    } while ($watch.Elapsed.TotalSeconds -lt 3)
+    throw $FailureCode
 }
 
 function Assert-FixedSettings {
@@ -290,7 +332,7 @@ function Save-Progress {
     try { Write-JsonFile 'attempts.json' @($journal) } finally {
         if ($journal.Count) { $journal | Export-Csv -NoTypeInformation -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8 }
         else {
-            '"Attempt","Phase","StartedUtc","EndedUtc","Revision","Observer","Automated","LatencyMs","InternalSampleCount","HoldMillis","Reason"' | Set-Content -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8
+            '"Attempt","Phase","StartedUtc","EndedUtc","Revision","PhysicalObserver","AutomatedOracle","InputOracle","LatencyMs","InternalSampleCount","HoldMillis","InjectedBlockedTaps","PositiveControlTap","FixtureFocusGainsBaseline","Reason"' | Set-Content -LiteralPath (Join-Path $runDirectory 'attempts.csv') -Encoding UTF8
         }
     }
 }
@@ -347,31 +389,45 @@ function Invoke-DiagnosticBailout {
 }
 
 function Invoke-Expiry {
-    param([int]$Attempt, [switch]$Calibration)
+    param([int]$Attempt, [switch]$Calibration, [switch]$PhysicalObservation)
     $script:CurrentRow = [PSCustomObject]@{
         Attempt = $Attempt; Phase = $(if ($Calibration) { 'CALIBRATION' } else { 'QUALIFICATION' })
         StartedUtc = [DateTime]::UtcNow.ToString('o'); EndedUtc = $null
-        Revision = $null; Observer = 'UNRECORDED'; Automated = 'UNRECORDED'
-        LatencyMs = $null; InternalSampleCount = $null; HoldMillis = $null; Reason = $null
+        Revision = $null; PhysicalObserver = $(if ($PhysicalObservation) { 'UNRECORDED' } else { 'NOT_SAMPLED' })
+        AutomatedOracle = 'UNRECORDED'; InputOracle = 'UNRECORDED'
+        LatencyMs = $null; InternalSampleCount = $null; HoldMillis = $null
+        InjectedBlockedTaps = 0; PositiveControlTap = 'UNRECORDED'; FixtureFocusGainsBaseline = $null; Reason = $null
+        ServiceConnectionBaseline = $script:ServiceConnections
     }
     Save-Progress
     Assert-FixedSettings
     Clear-ToOrdinary
     $before = Get-LabState
     Assert-KRHealth $before
-    $fixture = Get-FixtureState
+    $fixtureBeforeControl = Get-FixtureState
+    $fixture = Assert-FixturePositiveControl -Before $fixtureBeforeControl
+    $script:CurrentRow.PositiveControlTap='REACHED_FIXTURE'
     $armed = Get-LabState 'ARM'
     $revision = [long]$armed.revision
     $script:CurrentRow.Revision = $revision
     Save-Progress
     if (-not $armed.armed -or $armed.remaining -ne 10000 -or $revision -le $script:LastRevision) { throw 'FAIL:FRESH_ARM_FAILED' }
     $script:LastRevision = $revision
-    Write-Host ("Expiry {0}: watch the device. F/I/Q can stop at any time." -f $Attempt)
+    if ($PhysicalObservation) { Write-Host ("Physical checkpoint expiry {0}: watch the device. F/I/Q can stop at any time." -f $Attempt) }
+    else { Write-Host ("Automated expiry {0}/100" -f $Attempt) }
     $attached = Wait-LabCondition -TimeoutSeconds 22 -FailureCode 'FAIL:NO_ATTACHMENT' -Condition {
         param($s)
         Assert-KRHealth $s
+        if ($script:ServiceConnections -ne $script:CurrentRow.ServiceConnectionBaseline) { throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED' }
         if ($s.revision -ne $revision) { throw 'FAIL:REVISION_CHANGED' }
         if ($s.eligibilityLost) { throw 'INVALID:ELIGIBILITY_INTERRUPTED' }
+        if (-not $s.attached -and $s.elapsed - $armed.elapsed -ge 12000) {
+            $unblockedFixture=Get-FixtureState
+            if ($unblockedFixture.focused -and $unblockedFixture.resumed) {
+                $null=Assert-FixturePositiveControl -Before $unblockedFixture -FailureCode 'INVALID:NO_BLOCK_INPUT_ORACLE_FAILED'
+                throw 'FAIL:BLOCK_NEVER_APPEARED'
+            }
+        }
         if (-not $s.attached -and $s.elapsed - $armed.elapsed -ge 20000) { throw 'FAIL:NO_ATTACHMENT' }
         return $s.attached -and $s.sampledRevision -eq $revision -and $s.restriction
     }
@@ -379,26 +435,55 @@ function Invoke-Expiry {
     if (-not $script:AttachmentRevisions.ContainsKey([string]$revision)) { throw 'INVALID:MISSING_ATTACHMENT_TRACE' }
     $script:CurrentRow.LatencyMs = $latency
     $script:CurrentRow.InternalSampleCount = $attached.sampleCount
-    $null = Wait-FixtureFocus -Focused $false
+    $blockedFixture = Wait-FixtureFocus -Focused $false
+    if (-not $blockedFixture.resumed -or -not $blockedFixture.probeReady) { throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE' }
+    $script:CurrentRow.FixtureFocusGainsBaseline=[long]$blockedFixture.focusGains
     $startHold = (Get-LabState).elapsed
-    do {
+    for ($probe=1; $probe -le 20; $probe++) {
         Check-EarlyStop
+        if ($script:ServiceConnections -ne $script:CurrentRow.ServiceConnectionBaseline) { throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED' }
         $snapshot = Get-LabState
         $fixtureNow = Get-FixtureState
         Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureNow
+        Assert-KRIndependentFixtureBlock -Baseline $blockedFixture -Current $fixtureNow
+        Invoke-FixtureProbeTap $blockedFixture
+        $script:CurrentRow.InjectedBlockedTaps=$probe
+        Start-Sleep -Milliseconds 500
+        $fixtureAfterTap=Get-FixtureState
+        Assert-KRIndependentFixtureBlock -Baseline $blockedFixture -Current $fixtureAfterTap
+        $snapshot=Get-LabState
+        Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureAfterTap
         $script:CurrentRow.HoldMillis = $snapshot.elapsed - $startHold
-        Start-Sleep -Milliseconds 250
-    } while ($script:CurrentRow.HoldMillis -lt 10000)
-    $script:CurrentRow.Automated = 'PASS'
-    Save-Progress
-    $script:CurrentRow.Observer = Read-Result 'Did the restriction stay visibly continuous for the entire 10 seconds, with no flicker or ordinary use?' -OnObserved {
-        param($result)
-        $script:CurrentRow.Observer=$result
         Save-Progress
     }
-    # Check again after the owner response; do not trust a stale pre-prompt sample.
+    if ($script:CurrentRow.HoldMillis -lt 10000) {
+        $snapshot=Wait-LabCondition -TimeoutSeconds 3 -FailureCode 'INVALID:AUTOMATED_HOLD_TOO_SHORT' -Condition {
+            param($s)
+            $fixtureNow=Get-FixtureState
+            Assert-KRHold -Snapshot $s -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureNow
+            Assert-KRIndependentFixtureBlock -Baseline $blockedFixture -Current $fixtureNow
+            $script:CurrentRow.HoldMillis=$s.elapsed-$startHold
+            return $script:CurrentRow.HoldMillis -ge 10000
+        }
+    }
+    $script:CurrentRow.InputOracle = 'PASS'
+    $script:CurrentRow.AutomatedOracle = 'PASS'
+    Save-Progress
+    if ($PhysicalObservation) {
+        $script:CurrentRow.PhysicalObserver = Read-Result 'Did the restriction stay visibly continuous for the entire 10 seconds, with no flicker or ordinary use? This is a human checkpoint, not an automated inference.' -OnObserved {
+            param($result)
+            $script:CurrentRow.PhysicalObserver=$result
+            Save-Progress
+            if ($Calibration) {
+                Add-HumanCheckpoint -Name 'PREFLIGHT_NORMAL_PASS' -Result $result -Evidence 'TEN_SECOND_VISIBLE_RESULT_PLUS_ACTIVE_FIXTURE_INPUT_DENIAL'
+            }
+        }
+    }
+    # Check again after any owner response; do not trust a stale pre-prompt sample.
     $snapshot = Get-LabState
-    Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState (Get-FixtureState)
+    $fixtureFinal=Get-FixtureState
+    Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureFinal
+    Assert-KRIndependentFixtureBlock -Baseline $blockedFixture -Current $fixtureFinal
     $script:CurrentRow.EndedUtc = [DateTime]::UtcNow.ToString('o')
     if ($Calibration) {
         $script:Calibration = $script:CurrentRow
@@ -406,6 +491,24 @@ function Invoke-Expiry {
     } else { $script:Rows += $script:CurrentRow }
     $script:CurrentRow = $null
     Save-Progress
+}
+
+function Invoke-NegativeControlCheckpoint {
+    $start=Get-LabState
+    if (-not $start.restriction -or -not $start.attached) { throw 'INVALID:NEGATIVE_CONTROL_START_NOT_BLOCKED' }
+    $beforeSamples=@($start.samples)
+    $null=Get-LabState 'CLEAR'
+    $released=Wait-LabCondition -Condition { param($s) -not $s.armed -and -not $s.restriction -and -not $s.attached } -FailureCode 'FAIL:NEGATIVE_CONTROL_CLEAR'
+    if (($released.samples -join ',') -cne ($beforeSamples -join ',')) { throw 'FAIL:NEGATIVE_CONTROL_CHANGED_METRICS' }
+    Open-Fixture
+    $null=Wait-LabCondition -Condition { param($s) -not $s.restriction -and -not $s.attached -and $s.disposition -eq 'ORDINARY_APP' } -FailureCode 'INVALID:NEGATIVE_CONTROL_NOT_ORDINARY'
+    $null=Wait-FixtureFocus -Focused $true
+    $before=Get-FixtureState
+    $after=Assert-FixturePositiveControl -Before $before -FailureCode 'FAIL:NEGATIVE_CONTROL_INPUT_NOT_DETECTED'
+    $result=Read-DiagnosticResult 'HUMAN CHECKPOINT 2/3 — controlled negative: the runner deliberately cleared only the lab restriction and injected one real tap. P=overlay is absent and the fixture visibly shows ordinary use; F=still blocked/no visible response; I=uncertain.'
+    Add-HumanCheckpoint -Name 'PREFLIGHT_NEGATIVE_CONTROL' -Result $result -Evidence 'LAB_CLEAR_PLUS_REAL_ADB_INPUT_REACHED_FIXTURE'
+    Stop-ForSafetyResult -Result $result -Step 'NEGATIVE_CONTROL'
+    if ($after.taps -ne $before.taps + 1) { throw 'FAIL:NEGATIVE_CONTROL_INPUT_NOT_DETECTED' }
 }
 
 function Invoke-RecoveryObservation {
@@ -631,12 +734,23 @@ function Invoke-QualificationSafetyCheckpoint {
         Schema=1; Protocol=$script:Bundle.protocol; Phase=$Phase; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
         Revision=[long]$start.revision; StartedElapsed=[long]$start.elapsed; LastElapsed=[long]$start.elapsed
         FixtureTaps=[long]$fixture.taps; HomePhysical='UNRECORDED'; HomeObservedUtc=$null; HoldOracle='PENDING'
+        FinalVisibilityPhysical='UNRECORDED'; FinalVisibilityObservedUtc=$null
         RecoveryFile=('recovery-' + $Phase + '.json'); RecoveryReason='UNRECORDED'
         ReentryPhysical='UNRECORDED'; ReentryObservedUtc=$null; ReentryOracle='PENDING'
         ClearTouch='UNRECORDED'; ClearRevision=$null; ClearSampleCount=$null
         Result='INCOMPLETE'; Reason=$null; IndependentExpirySamples=0
     }
     Save-Safety
+
+    if ($Phase -eq 'final') {
+        $visibleResult=Read-DiagnosticResult 'POST-RUN VISIBLE CHECK: watch the current restriction continuously for 10 seconds. P=no flicker/disappearance/ordinary use; F=visible failure; I=uncertain.' -Poll { Poll-SafetyHold } -MinimumPassSeconds 10 -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+            param($result)
+            $script:Safety.FinalVisibilityPhysical=$result
+            $script:Safety.FinalVisibilityObservedUtc=[DateTime]::UtcNow.ToString('o')
+            Save-Safety
+        }
+        Stop-ForSafetyResult -Result $visibleResult -Step 'FINAL_VISIBILITY'
+    }
 
     $homeResult=Read-DiagnosticResult 'HOME CHECK: press Home PHYSICALLY once. P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
         param($result)
@@ -688,14 +802,8 @@ function Invoke-QualificationSafetyCheckpoint {
     $null=Wait-LabCondition -Condition { param($s) -not $s.restriction -and -not $s.attached -and $s.disposition -eq 'ORDINARY_APP' } -FailureCode ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_ORDINARY')
     $null=Wait-FixtureFocus -Focused $true
     $beforeTap=Get-FixtureState
-    Write-Host 'CLEAR CHECK: on the now-unblocked disposable surface, tap Test ordinary use once. No key is needed.' -ForegroundColor Cyan
-    $watch=[Diagnostics.Stopwatch]::StartNew()
-    do {
-        Check-EarlyStop
-        $afterTap=Get-FixtureState
-        if ($afterTap.taps -gt $beforeTap.taps) { break }
-        Start-Sleep -Milliseconds 250
-    } while ($watch.Elapsed.TotalSeconds -lt 60)
+    Write-Host 'CLEAR CHECK: injecting one real input-layer tap into the now-unblocked fixture.' -ForegroundColor Cyan
+    $afterTap=Assert-FixturePositiveControl -Before $beforeTap -FailureCode ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_TOUCH')
     if ($afterTap.taps -ne $beforeTap.taps + 1) { throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_CLEAR_TOUCH') }
     $script:Safety.ClearTouch='FIXTURE_COUNTER_INCREMENT'
     $script:Safety.ClearRevision=[long]$released.revision
@@ -705,6 +813,9 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
     if ($script:Safety.Result -ne 'PHYSICAL_PASS_RECORDED') { throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_VERDICT') }
+    if ($Phase -eq 'final') {
+        Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result 'PASS' -Evidence 'GUIDED_HOME_SETTINGS_RECOVERY_REENTRY_PLUS_AUTOMATED_CLEAR_INPUT'
+    }
 }
 
 function Verify-InstalledApk {
@@ -771,13 +882,14 @@ function Write-FinalSummary {
         $(if ($RecoveryDiagnostic) { '# KR-003 focused recovery diagnostic result' } else { '# KR-003 qualification result' })
         ''
         ('Primary status: ' + $Summary.Status + '; reason: ' + $Summary.Reason)
-        ('Valid paired qualification observations: ' + $Summary.ValidPairedObservations + '/100.')
+        ('Valid automated active-oracle cycles: ' + $Summary.ValidPairedObservations + '/100.')
+        ('Human checkpoint sessions: ' + $Summary.HumanCheckpointSessions + '/3; physical expiry observations: ' + $Summary.PhysicalExpiryObservations + '.')
         ('Internal paired statistics: ' + ($Summary.InternalPairedStatistics | ConvertTo-Json -Compress))
         ('Focused diagnostic result: ' + $Summary.DiagnosticResult + '; reason: ' + $Summary.DiagnosticReason)
         ('Lab-only bailout: ' + $Summary.DiagnosticBailoutStatus + '; never consumer recovery evidence.')
         ('Network restoration: ' + $Summary.NetworkRestoration)
         ('Finalization errors: ' + ($script:FinalizationErrors -join ', '))
-        'Calibration, Home and recovery observations are separate; they are not extra qualification samples.'
+        'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'
         'Partial/current attempts and physical recovery responses are retained. No KR-003 closure or Play approval is implied.'
     ) -join [Environment]::NewLine
     try { $markdown | Set-Content -LiteralPath (Join-Path $runDirectory 'SUMMARY.md') -Encoding UTF8 } catch {
@@ -819,6 +931,7 @@ function Complete-LabRun {
         }
     }
     Invoke-FinalStep 'ATTEMPT_REPORT' { Save-Progress }
+    Invoke-FinalStep 'HUMAN_CHECKPOINT_REPORT' { Save-HumanCheckpoints }
     Invoke-FinalStep 'RECOVERY_REPORT' {
         if ($null -ne $script:Recovery) {
             if ($null -eq $script:Recovery.Reason -and $script:Reason -ne 'COMPLETED') { $script:Recovery.Reason=$script:Reason }
@@ -857,9 +970,12 @@ function Complete-LabRun {
         DiagnosticResult=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Result })
         DiagnosticReason=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Reason })
         DiagnosticBailoutStatus=$(if ($null -eq $script:DiagnosticBailout) { 'NOT_REQUIRED_OR_NOT_STARTED' } else { $script:DiagnosticBailout.Status })
+        EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'
+        HumanCheckpointSessions=@($script:HumanCheckpoints | Where-Object { $_.Result -eq 'PASS' }).Count
+        PhysicalExpiryObservations=@($script:HumanCheckpoints | Where-Object { $_.Name -in @('PREFLIGHT_NORMAL_PASS','POST_RUN_SAFETY') -and $_.Result -eq 'PASS' }).Count
     }
     Invoke-FinalStep 'STATISTICS' {
-        $validRows = @(Get-KRValidRows -Rows @($script:Rows))
+        $validRows = @(Get-KRValidAutomatedRows -Rows @($script:Rows))
         $summary.InternalPairedStatistics = Get-KRStatistics -Values @($validRows | ForEach-Object { $_.LatencyMs })
         $summary.ValidPairedObservations=$validRows.Count
         $summary.StatisticsAvailable=$true
@@ -875,13 +991,13 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q6-MI8-OFFLINE-QUALIFICATION' -or $script:Bundle.diagnosticOnly -or -not $script:Bundle.requiresOffline) { throw 'INVALID:BUNDLE_SCHEMA' }
+    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION' -or $script:Bundle.runnerVersion -ne 7 -or $script:Bundle.diagnosticOnly -or -not $script:Bundle.requiresOffline) { throw 'INVALID:BUNDLE_SCHEMA' }
     if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
         if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'INVALID:BUNDLE_INTEGRITY' }
     }
-    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true }
+    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true; EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS' }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
     $script:Device = Read-DeviceConfiguration
@@ -910,15 +1026,23 @@ try {
     $null=Get-LabState 'RESET_METRICS'
     $calibrationZero=Get-LabState
     if ($calibrationZero.sampleCount -ne 0) { throw 'INVALID:CALIBRATION_METRICS_RESET_FAILED' }
-    Invoke-Expiry -Attempt 0 -Calibration
-    Invoke-QualificationSafetyCheckpoint -Phase 'calibration'
+    Write-Host 'HUMAN CHECKPOINT 1/3 — normal persistent restriction and active input denial.' -ForegroundColor Cyan
+    Invoke-Expiry -Attempt 0 -Calibration -PhysicalObservation
+    Invoke-NegativeControlCheckpoint
     $null=Get-LabState 'RESET_METRICS'
     $zero=Get-LabState
     if ($zero.sampleCount -ne 0) { throw 'INVALID:QUALIFICATION_METRICS_RESET_FAILED' }
     for ($attempt=1; $attempt -le 100; $attempt++) {
         Invoke-Expiry -Attempt $attempt
     }
-    Invoke-QualificationSafetyCheckpoint -Phase 'final'
+    Write-Host 'HUMAN CHECKPOINT 3/3 — post-run expiry agreement and guided Home/Settings/recovery safety route.' -ForegroundColor Cyan
+    try { Invoke-QualificationSafetyCheckpoint -Phase 'final' } catch {
+        if (-not @($script:HumanCheckpoints | Where-Object { $_.Name -eq 'POST_RUN_SAFETY' }).Count) {
+            $checkpointResult=if ($_.Exception.Message -like 'FAIL:*') { 'FAIL' } else { 'INVALID' }
+            Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result $checkpointResult -Evidence 'GUIDED_CHECKPOINT_STOPPED_WITH_PRESERVED_SUBSTEP_EVIDENCE'
+        }
+        throw
+    }
     $script:SafetyPassed=$true
     $final=Get-LabState
     Write-JsonFile 'final-metrics.json' $final
@@ -933,7 +1057,7 @@ try {
     if (($endDevice | ConvertTo-Json -Compress) -cne ($script:Device | ConvertTo-Json -Compress)) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256 -NoInstall
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256 -NoInstall
-    $script:Terminal=Get-KRRunVerdict -Rows $script:Rows -SafetyPassed $script:SafetyPassed -Offline $script:Offline
+    $script:Terminal=Get-KRAutomatedRunVerdict -Rows $script:Rows -HumanCheckpoints $script:HumanCheckpoints -Offline $script:Offline
     $script:Reason='COMPLETED'
 } catch {
     $message = $_.Exception.Message
@@ -942,8 +1066,8 @@ try {
     $script:Terminal = $parts[0]
     $script:Reason = $parts[1]
     if ($null -ne $script:CurrentRow) {
-        if ($script:Reason.StartsWith('OBSERVER')) { $script:CurrentRow.Observer = $script:Terminal }
-        else { $script:CurrentRow.Automated = $script:Terminal }
+        if ($script:Reason.StartsWith('OBSERVER')) { $script:CurrentRow.PhysicalObserver = $script:Terminal }
+        else { $script:CurrentRow.AutomatedOracle = $script:Terminal }
         $script:CurrentRow.Reason = $script:Reason
         $script:CurrentRow.EndedUtc = [DateTime]::UtcNow.ToString('o')
     }
@@ -960,7 +1084,7 @@ try {
 }
 
 # Machine callers must not interpret a stopped, online-only, cleanup-failed or reporting-failed run as qualification.
-if ($script:Terminal -eq 'PASSED_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
+if ($script:Terminal -eq 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
     $script:RadioRestoreStatus -eq 'RESTORED_AND_FLAGS_VERIFIED' -and $script:FinalizationErrors.Count -eq 0 -and
     $null -ne $script:DiagnosticBailout -and $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
 exit 2

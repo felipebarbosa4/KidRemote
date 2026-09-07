@@ -1,5 +1,5 @@
 # Goal: test real finalization/recovery orchestration with synthetic evidence and no device execution.
-# Context: Q6 extends the hardened finalizer into a fail-stop offline qualification. Constraints: temporary directories only; ADB is stubbed.
+# Context: Q7 extends the hardened finalizer into active-oracle qualification. Constraints: temporary directories only; ADB is stubbed.
 # Done when: empty/partial/100-row paths, safety journalling, cleanup faults and phase disagreement preserve evidence.
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
@@ -16,7 +16,7 @@ function Invoke-LabAdb { param($Arguments) throw 'UNEXPECTED_DEVICE_COMMAND_IN_U
 $temporaryRoot=Join-Path ([IO.Path]::GetTempPath()) ('kr003-finalizer-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
 function New-Row([int]$Number) {
-    [PSCustomObject]@{ Attempt=$Number; Phase='QUALIFICATION'; StartedUtc='2026-09-06T00:00:00Z'; EndedUtc='2026-09-06T00:00:30Z'; Revision=$Number+100; Observer='PASS'; Automated='PASS'; LatencyMs=100+$Number; InternalSampleCount=$Number; HoldMillis=10000; Reason=$null }
+    [PSCustomObject]@{ Attempt=$Number; Phase='QUALIFICATION'; StartedUtc='2026-09-06T00:00:00Z'; EndedUtc='2026-09-06T00:00:30Z'; Revision=$Number+100; PhysicalObserver='NOT_SAMPLED'; AutomatedOracle='PASS'; InputOracle='PASS'; LatencyMs=100+$Number; InternalSampleCount=$Number; HoldMillis=10000; InjectedBlockedTaps=20; PositiveControlTap='REACHED_FIXTURE'; FixtureFocusGainsBaseline=2; ServiceConnectionBaseline=1; Reason=$null }
 }
 function Reset-Run([string]$Name) {
     $script:runDirectory=Join-Path $temporaryRoot $Name
@@ -25,7 +25,7 @@ function Reset-Run([string]$Name) {
     $script:Manifest=[PSCustomObject]@{EndedUtc=$null}
     $script:Terminal='FAIL'; $script:Reason='SETTINGS_RECOVERY'; $script:StartedAt='2026-09-06T00:00:00Z'
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
-    $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true
+    $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
     $script:DiagnosticFileName='recovery-diagnostic.json'; $script:Safety=$null; $script:SafetyFileName='safety-incomplete.json'
 }
@@ -41,7 +41,7 @@ function Check-Summary([int]$Count,[string]$Reason) {
 }
 try {
     Reset-Run 'calibration-failure'
-    $script:CurrentRow=New-Row 0; $script:CurrentRow.Phase='CALIBRATION'; $script:CurrentRow.Automated='FAIL'
+    $script:CurrentRow=New-Row 0; $script:CurrentRow.Phase='CALIBRATION'; $script:CurrentRow.AutomatedOracle='FAIL'
     Check-Summary 0 'SETTINGS_RECOVERY'
     Assert-Equal @((Read-Json 'attempts.json')).Count 1
     Assert-Equal (Read-Json 'summary.json').InternalPairedStatistics.P95 $null
@@ -53,13 +53,13 @@ try {
     Assert-Equal @(Import-Csv -LiteralPath (Join-Path $runDirectory 'attempts.csv')).Count 0
 
     Reset-Run 'failure-sample-one'
-    $script:CurrentRow=New-Row 1; $script:CurrentRow.Automated='FAIL'; $script:CurrentRow.Observer='UNRECORDED'; $script:CurrentRow.LatencyMs=$null
+    $script:CurrentRow=New-Row 1; $script:CurrentRow.AutomatedOracle='FAIL'; $script:CurrentRow.PhysicalObserver='NOT_SAMPLED'; $script:CurrentRow.LatencyMs=$null
     Check-Summary 0 'SETTINGS_RECOVERY'
     Assert-Equal @((Read-Json 'attempts.json')).Count 1
 
     Reset-Run 'partial-seven'
     $script:Rows=@(1..7 | ForEach-Object { New-Row $_ })
-    $script:CurrentRow=New-Row 8; $script:CurrentRow.Automated='FAIL'
+    $script:CurrentRow=New-Row 8; $script:CurrentRow.AutomatedOracle='FAIL'
     Check-Summary 7 'SETTINGS_RECOVERY'
     Assert-Equal @((Read-Json 'attempts.json')).Count 8
     Assert-Equal (Read-Json 'summary.json').InternalPairedStatistics.P95 107
@@ -67,7 +67,12 @@ try {
     Reset-Run 'full-one-hundred'
     $script:Rows=@(1..100 | ForEach-Object { New-Row $_ })
     $script:Calibration=New-Row 0; $script:Calibration.Phase='CALIBRATION'
-    $script:Terminal='PASSED_THIS_CONFIGURATION_ONLY'; $script:Reason='COMPLETED'; $script:SafetyPassed=$true
+    $script:Terminal='PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY'; $script:Reason='COMPLETED'; $script:SafetyPassed=$true
+    $script:HumanCheckpoints=@(
+        [PSCustomObject]@{Name='PREFLIGHT_NORMAL_PASS';Result='PASS'},
+        [PSCustomObject]@{Name='PREFLIGHT_NEGATIVE_CONTROL';Result='PASS'},
+        [PSCustomObject]@{Name='POST_RUN_SAFETY';Result='PASS'}
+    )
     $script:CalibrationOnly=$false
     Check-Summary 100 'COMPLETED'
     Assert-Equal @((Read-Json 'attempts.json')).Count 101
@@ -88,12 +93,12 @@ try {
     $script:Terminal='INVALID'; $script:Reason='SETTINGS_RECOVERY_ORACLE_UNCORROBORATED'
     Check-Summary 0 'SETTINGS_RECOVERY_ORACLE_UNCORROBORATED'
     Assert-Equal (Read-Json 'safety-calibration.json').PhysicalHomeAndSettings 'OWNER_PASS'
-    Assert-Equal @(Import-Csv -LiteralPath (Join-Path $runDirectory 'attempts.csv'))[0].Observer 'PASS'
+    Assert-Equal @(Import-Csv -LiteralPath (Join-Path $runDirectory 'attempts.csv'))[0].PhysicalObserver 'NOT_SAMPLED'
 
     # A broken higher-level JSON writer cannot block cleanup, CSV, either summary, or alter the primary reason.
     Reset-Run 'writer-failure'
     function Write-JsonFile { param($Name,$Value) throw 'SYNTHETIC_WRITER_FAILURE' }
-    $script:CurrentRow=New-Row 1; $script:CurrentRow.Automated='FAIL'
+    $script:CurrentRow=New-Row 1; $script:CurrentRow.AutomatedOracle='FAIL'
     Complete-LabRun 6>$null
     Assert-Equal (Read-Json 'summary.json').Reason 'SETTINGS_RECOVERY'
     Assert-Equal (Read-Json 'summary.json').InternalPairedStatistics.Count 0
@@ -182,9 +187,9 @@ try {
     try { Update-KRRecoveryEvidence $stale $safe } catch { $reason=$_.Exception.Message }
     Assert-Equal $reason 'FAIL:RECOVERY_REVISION_CHANGED'
 
-    # Q6 safety orchestration keeps Home/recovery/re-entry/CLEAR separate and adds zero expiry samples.
-    Reset-Run 'q6-safety-checkpoint'
-    $script:Bundle=[PSCustomObject]@{protocol='KR003-Q6-MI8-OFFLINE-QUALIFICATION'}
+    # Q7 final safety orchestration remains one human checkpoint session and adds zero expiry samples.
+    Reset-Run 'q7-safety-checkpoint'
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION'}
     $script:ClearMode=$false; $script:OpenCount=0; $script:FixtureReadAfterClear=0
     function New-SafetyFrame([bool]$Restricted) {
         [PSCustomObject]@{
@@ -197,23 +202,27 @@ try {
     function Get-LabState { param($Operation='SNAPSHOT') if($Operation -eq 'CLEAR'){$script:ClearMode=$true}; return New-SafetyFrame (-not $script:ClearMode) }
     function Get-FixtureState {
         if($script:ClearMode -and $script:OpenCount -ge 2) { $script:FixtureReadAfterClear++; $taps=$(if($script:FixtureReadAfterClear -gt 1){1}else{0}) } else { $taps=0 }
-        [PSCustomObject]@{focused=$false;resumed=$true;taps=$taps;instance=1}
+        [PSCustomObject]@{schema=2;focused=$false;resumed=$true;taps=$taps;instance=1;probeReady=$true;probeX=540;probeY=1900;focusGains=1;focusLosses=1;lastFocusChange=1}
     }
     function Open-Fixture { $script:OpenCount++ }
     function Wait-FixtureFocus { param($Focused) }
+    function Assert-FixturePositiveControl { param($Before,$FailureCode); $copy=$Before.PSObject.Copy(); $copy.taps=$Before.taps+1; return $copy }
     function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds) return New-SafetyFrame (-not $script:ClearMode) }
     function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); if($null -ne $Poll){& $Poll | Out-Null}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
     function Invoke-FocusedRecoveryDiagnostic { param($OutputName); $script:Diagnostic=[PSCustomObject]@{Result='EVIDENCE_CAPTURED';Reason='PHYSICAL_PASS_RECORDED'} }
     function Check-EarlyStop {}
     function Start-Sleep {}
-    Invoke-QualificationSafetyCheckpoint -Phase 'calibration' 6>$null
-    $safety=Read-Json 'safety-calibration.json'
+    Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null
+    $safety=Read-Json 'safety-final.json'
+    Assert-Equal $safety.FinalVisibilityPhysical 'PASS'
     Assert-Equal $safety.HomePhysical 'PASS'
     Assert-Equal $safety.RecoveryReason 'PHYSICAL_PASS_RECORDED'
     Assert-Equal $safety.ReentryPhysical 'PASS'
     Assert-Equal $safety.ClearTouch 'FIXTURE_COUNTER_INCREMENT'
     Assert-Equal $safety.IndependentExpirySamples 0
     Assert-Equal $safety.Result 'PHYSICAL_PASS_RECORDED'
+    Assert-Equal $script:HumanCheckpoints.Count 1
+    Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
 
     # Diagnostic CLEAR changes only timer state and preserves the complete latency sample array.
     Reset-Run 'diagnostic-bailout'
@@ -262,9 +271,9 @@ try {
     Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
     $runnerSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-KR003.ps1') -Raw
     Assert-Equal ([bool]($runnerSource -match '\[string\]::IsNullOrEmpty\(\$PhysicalResult\)')) $true
-    Assert-Equal ([bool]($runnerSource -match 'KR003-Q6-MI8-OFFLINE-QUALIFICATION')) $true
+    Assert-Equal ([bool]($runnerSource -match 'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION')) $true
     Assert-Equal ([bool]($runnerSource -match 'for \(\$attempt=1; \$attempt -le 100; \$attempt\+\+\)')) $true
-    Assert-Equal ([bool]($runnerSource -match "Invoke-QualificationSafetyCheckpoint -Phase 'calibration'")) $true
+    Assert-Equal ([bool]($runnerSource -match 'Invoke-NegativeControlCheckpoint')) $true
     Assert-Equal ([bool]($runnerSource -match "Invoke-QualificationSafetyCheckpoint -Phase 'final'")) $true
     Assert-Equal ([bool]($runnerSource -match 'Test-KRDiagnosticStableSafe')) $true
     Assert-Equal ([bool]($runnerSource -match 'OFFLINE_QUALIFICATION_MODE_REQUIRED')) $true

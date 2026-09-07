@@ -5,6 +5,83 @@ import assert from "node:assert/strict";
 const decode = path => readFileSync(path,"utf8").replace(/^\uFEFF/,"");
 const hash = path => createHash("sha256").update(readFileSync(path)).digest("hex");
 
+function ingestQ7(directory, manifest, rows, summary, read) {
+  assert.equal(manifest.Bundle.runnerVersion,7);
+  assert.equal(manifest.Bundle.diagnosticOnly,false);
+  assert.equal(manifest.Bundle.requiresOffline,true);
+  assert.equal(manifest.Bundle.oracleModel,'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS');
+  assert.equal(manifest.Bundle.humanCheckpointMaximum,3);
+  assert.equal(manifest.Bundle.candidateSha256,'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b');
+  assert.match(manifest.Bundle.fixtureSha256,/^[a-f0-9]{64}$/);
+  assert.equal(manifest.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
+  assert.equal(summary.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
+  assert.equal(new Set(rows.map(r=>`${r.Phase}:${r.Attempt}`)).size,rows.length,'Duplicate attempt');
+  const qualificationRows=rows.filter(r=>r.Phase==='QUALIFICATION');
+  const completed=qualificationRows.filter(r=>r.AutomatedOracle==='PASS'&&r.InputOracle==='PASS');
+  assert(completed.every((r,i)=>r.Attempt===i+1),'Completed active-oracle attempts must be consecutive');
+  assert.equal(new Set(completed.map(r=>r.Revision)).size,completed.length,'Duplicate active-oracle revision');
+  const finalStatuses=['PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY','FAILED_P95'];
+  if(!finalStatuses.includes(summary.Status)) {
+    const checkpoints=existsSync(resolve(directory,'human-checkpoints.json'))?read('human-checkpoints.json'):[];
+    return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
+      automatedExpiryCycles:completed.length,humanCheckpointSessions:checkpoints.length,partial:true,kr003Complete:false};
+  }
+  assert.equal(manifest.OfflineNetworkRequested,true);
+  assert.equal(manifest.OfflineOwnerConfirmed,true);
+  const calibration=read('calibration.json');
+  assert.equal(calibration.Phase,'CALIBRATION');
+  assert.equal(calibration.PhysicalObserver,'PASS');
+  assert.equal(calibration.AutomatedOracle,'PASS');
+  assert.equal(calibration.InputOracle,'PASS');
+  assert.equal(qualificationRows.length,100);
+  assert.equal(completed.length,100);
+  assert(completed.every((r,i)=>r.Attempt===i+1&&r.PhysicalObserver==='NOT_SAMPLED'));
+  assert(completed.every(r=>Number.isInteger(r.LatencyMs)&&r.LatencyMs>=0&&r.HoldMillis>=10000&&r.InjectedBlockedTaps>=20&&r.PositiveControlTap==='REACHED_FIXTURE'));
+  assert.equal(new Set(completed.map(r=>r.Revision)).size,100);
+  const checkpoints=read('human-checkpoints.json');
+  assert.deepEqual(checkpoints.map(c=>[c.Name,c.Result]),[
+    ['PREFLIGHT_NORMAL_PASS','PASS'],
+    ['PREFLIGHT_NEGATIVE_CONTROL','PASS'],
+    ['POST_RUN_SAFETY','PASS'],
+  ]);
+  assert.equal(summary.HumanCheckpointSessions,3);
+  assert.equal(summary.PhysicalExpiryObservations,2);
+  const safety=read('safety-final.json'), diagnostic=read('recovery-final.json');
+  assert.equal(safety.Phase,'final');
+  assert.equal(safety.Result,'PHYSICAL_PASS_RECORDED');
+  assert.equal(safety.FinalVisibilityPhysical,'PASS');
+  assert.equal(safety.HomePhysical,'PASS');
+  assert.equal(safety.RecoveryReason,'PHYSICAL_PASS_RECORDED');
+  assert.equal(safety.ReentryPhysical,'PASS');
+  assert.equal(safety.ClearTouch,'FIXTURE_COUNTER_INCREMENT');
+  assert.deepEqual(diagnostic.Phases.map(p=>[p.Name,p.PhysicalResult,p.Oracle]),[
+    ['SETTINGS_ROOT','PASS','SAFE_TRANSITION_CORROBORATED'],
+    ['DIGITAL_WELLBEING_ATTEMPT','FAIL','ORDINARY_REATTACHMENT_CORROBORATED'],
+    ['RECOVERY_BUTTON_ATTEMPT','PASS','FRESH_SAFE_TRANSITION_CORROBORATED'],
+    ['POST_RECOVERY_STATE','UNRECORDED','SAFE_STATE_OBSERVED'],
+  ]);
+  const recovery=diagnostic.Phases[2];
+  assert(recovery.LastElapsed-recovery.SafeTransitionElapsed>=10000&&!recovery.ReattachedAfterSafe&&!recovery.UnknownAfterSafe);
+  const final=read('final-metrics.json');
+  assert.deepEqual(final.samples,completed.map(r=>r.LatencyMs));
+  assert.equal(final.sampleCount,100);
+  const sorted=completed.map(r=>r.LatencyMs).sort((a,b)=>a-b);
+  const stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
+  assert.deepEqual(summary.InternalPairedStatistics,stats);
+  assert.equal(summary.ValidPairedObservations,100);
+  assert.equal(summary.Status,stats.P95>2000?'FAILED_P95':'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY');
+  assert.equal(summary.Offline,true);
+  assert.equal(summary.SafetyChecksPassed,true);
+  assert.deepEqual(summary.FinalizationErrors,[]);
+  const restored=read('network-restoration.json'), bailout=read('diagnostic-bailout.json');
+  assert.equal(restored.Status,'RESTORED_AND_FLAGS_VERIFIED');
+  assert.equal(bailout.Status,'VERIFIED');
+  assert.equal(bailout.RestrictionReleased,true);
+  assert.equal(bailout.LatencySamplesPreserved,true);
+  return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,automatedExpiryCycles:100,
+    physicalExpiryObservations:2,humanCheckpointSessions:3,stats,kr003Complete:false};
+}
+
 export function ingestCheckpoint(csvPath, tracePath) {
   const lines = decode(csvPath).trim().split(/\r?\n/);
   const rows = lines.map(l=>l.split(",").map(cell=>{
@@ -25,9 +102,13 @@ export function ingestQualification(directory) {
   const read = name => JSON.parse(decode(resolve(directory,name)));
   const manifest = read("manifest.json"), rows = read("attempts.json");
   const summary = existsSync(resolve(directory,"summary.json")) ? read("summary.json") : null;
-  assert(["KR003-Q1","KR003-Q2","KR003-Q6-MI8-OFFLINE-QUALIFICATION"].includes(manifest.Bundle.protocol));
+  assert(["KR003-Q1","KR003-Q2","KR003-Q6-MI8-OFFLINE-QUALIFICATION","KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION"].includes(manifest.Bundle.protocol));
   assert.match(manifest.Bundle.sourceCommit,/^[a-f0-9]{40}$/);
   assert(Array.isArray(rows),"Attempt journal must be an array");
+  if(manifest.Bundle.protocol==='KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION') {
+    assert(summary,'Q7 requires a finalized summary');
+    return ingestQ7(directory,manifest,rows,summary,read);
+  }
   const completed = rows.filter(r=>r.Phase==="QUALIFICATION"&&r.Observer==="PASS"&&r.Automated==="PASS");
   assert.equal(new Set(rows.map(r=>`${r.Phase}:${r.Attempt}`)).size,rows.length,"Duplicate attempt");
   assert(completed.every((r,i)=>r.Attempt===i+1),"Completed attempts must be consecutive");

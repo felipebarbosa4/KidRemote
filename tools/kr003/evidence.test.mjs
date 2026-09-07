@@ -100,7 +100,7 @@ test("least-privilege validator rejects new files, permissions, unprotected debu
   assert(validateAndroidSpike(dir).length>0,'New source files must be scanned too');
 }));
 
-test("Q6 qualification remains phase-local, offline-only and has a non-destructive bailout",()=>{
+test("Q7 qualification uses an active fixture oracle, three human checkpoints and a non-destructive bailout",()=>{
   const runner=readFileSync(resolve('tools/kr003/Start-KR003.ps1'),'utf8');
   const module=readFileSync(resolve('tools/kr003/Qualification.psm1'),'utf8');
   const bailout=readFileSync(resolve('tools/kr003/Clear-KR003-Lab.ps1'),'utf8');
@@ -109,17 +109,75 @@ test("Q6 qualification remains phase-local, offline-only and has a non-destructi
     assert.match(runner,new RegExp(`Start-DiagnosticPhase '${phase}'`));
     assert.match(module,new RegExp(`'${phase}'`));
   }
-  assert.match(packager,/protocol:"KR003-Q6-MI8-OFFLINE-QUALIFICATION"/);
+  assert.match(packager,/protocol:"KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION"/);
+  assert.match(packager,/runnerVersion:7/);
+  assert.match(packager,/humanCheckpointMaximum:3/);
   assert.match(packager,/diagnosticOnly:false/);
   assert.match(packager,/requiresOffline:true/);
   assert.match(packager,/5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b/);
   assert.match(packager,/Clear-KR003-Lab\.ps1/);
   assert.match(runner,/EqualityDiagnosticImplemented=\$false/);
   assert.match(runner,/UsesRawPackageOrComponentIdentity=\$false/);
+  assert.match(runner,/shell','input','tap/);
+  assert.match(runner,/Assert-KRIndependentFixtureBlock/);
+  assert.match(runner,/PREFLIGHT_NORMAL_PASS/);
+  assert.match(runner,/PREFLIGHT_NEGATIVE_CONTROL/);
+  assert.match(runner,/POST_RUN_SAFETY/);
   assert.match(bailout,/Get-BailoutState 'CLEAR'/);
   assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
+  assert.doesNotMatch(runner,/uiautomator|screencap|dumpsys\s+window|input','(?:text|keyevent)|pm','clear|uninstall','/i);
+  assert.equal((runner.match(/'shell','input','tap'/g)??[]).length,1,'Only the reviewed fixture-owned input operation is allowed');
   assert.doesNotMatch(bailout,/Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable/);
 });
+
+test("Q7 ingestion requires 100 active-oracle rows and exactly three passing human checkpoints",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const candidate='5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b';
+  const fixture='f'.repeat(64);
+  const bundle={protocol:'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:7,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',humanCheckpointMaximum:3};
+  save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true});
+  const calibration={Attempt:0,Phase:'CALIBRATION',Revision:99,PhysicalObserver:'PASS',AutomatedOracle:'PASS',InputOracle:'PASS',LatencyMs:111,HoldMillis:10000,InjectedBlockedTaps:20,PositiveControlTap:'REACHED_FIXTURE'};
+  const rows=Array.from({length:100},(_,i)=>({Attempt:i+1,Phase:'QUALIFICATION',Revision:100+i,PhysicalObserver:'NOT_SAMPLED',AutomatedOracle:'PASS',InputOracle:'PASS',LatencyMs:120+i%5,HoldMillis:10000,InjectedBlockedTaps:20,PositiveControlTap:'REACHED_FIXTURE'}));
+  save('attempts.json',[calibration,...rows]); save('calibration.json',calibration);
+  save('human-checkpoints.json',[
+    {Name:'PREFLIGHT_NORMAL_PASS',Result:'PASS'},
+    {Name:'PREFLIGHT_NEGATIVE_CONTROL',Result:'PASS'},
+    {Name:'POST_RUN_SAFETY',Result:'PASS'},
+  ]);
+  const phases=[
+    {Name:'SETTINGS_ROOT',PhysicalResult:'PASS',Oracle:'SAFE_TRANSITION_CORROBORATED'},
+    {Name:'DIGITAL_WELLBEING_ATTEMPT',PhysicalResult:'FAIL',Oracle:'ORDINARY_REATTACHMENT_CORROBORATED'},
+    {Name:'RECOVERY_BUTTON_ATTEMPT',PhysicalResult:'PASS',Oracle:'FRESH_SAFE_TRANSITION_CORROBORATED',SafeTransitionElapsed:1000,LastElapsed:11000,ReattachedAfterSafe:false,UnknownAfterSafe:false},
+    {Name:'POST_RECOVERY_STATE',PhysicalResult:'UNRECORDED',Oracle:'SAFE_STATE_OBSERVED'},
+  ];
+  save('safety-final.json',{Phase:'final',Result:'PHYSICAL_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HomePhysical:'PASS',RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'});
+  save('recovery-final.json',{Phases:phases});
+  save('final-metrics.json',{samples:rows.map(r=>r.LatencyMs),sampleCount:100});
+  save('network-restoration.json',{Status:'RESTORED_AND_FLAGS_VERIFIED'});
+  save('diagnostic-bailout.json',{Status:'VERIFIED',RestrictionReleased:true,LatencySamplesPreserved:true});
+  const sorted=rows.map(r=>r.LatencyMs).sort((a,b)=>a-b), stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',HumanCheckpointSessions:3,PhysicalExpiryObservations:2,InternalPairedStatistics:stats,ValidPairedObservations:100,Status:'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY',Offline:true,SafetyChecksPassed:true,FinalizationErrors:[]});
+  assert.equal(ingestQualification(dir).automatedExpiryCycles,100);
+  rows[40].InputOracle='FAIL'; save('attempts.json',[calibration,...rows]);
+  assert.throws(()=>ingestQualification(dir));
+  rows[40].InputOracle='PASS'; save('attempts.json',[calibration,...rows]);
+  save('human-checkpoints.json',[{Name:'PREFLIGHT_NORMAL_PASS',Result:'PASS'}]);
+  assert.throws(()=>ingestQualification(dir));
+}));
+
+test("Q7 partial run preserves completed automated count without fabricating qualification",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const bundle={protocol:'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:7,diagnosticOnly:false,requiresOffline:true,candidateSha256:'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b',fixtureSha256:'f'.repeat(64),oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',humanCheckpointMaximum:3};
+  save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true});
+  const pass=i=>({Attempt:i,Phase:'QUALIFICATION',Revision:100+i,AutomatedOracle:'PASS',InputOracle:'PASS'});
+  save('attempts.json',[pass(1),pass(2),{...pass(3),AutomatedOracle:'FAIL',Reason:'RESTRICTION_LEAKED_INPUT'}]);
+  save('human-checkpoints.json',[{Name:'PREFLIGHT_NORMAL_PASS',Result:'PASS'},{Name:'PREFLIGHT_NEGATIVE_CONTROL',Result:'PASS'}]);
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'FAIL',Reason:'RESTRICTION_LEAKED_INPUT'});
+  const result=ingestQualification(dir);
+  assert.equal(result.automatedExpiryCycles,2);
+  assert.equal(result.humanCheckpointSessions,2);
+  assert.equal(result.partial,true);
+}));
 
 test("Q6 ingestion requires 100 physical rows, offline restoration and both phase-local safety checkpoints",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));

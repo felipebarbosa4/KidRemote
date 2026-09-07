@@ -1,6 +1,6 @@
-// Goal: produce an immutable owner-run Q6 offline Mi 8 qualification bundle from a clean source commit and verified builds.
-// Context: KR-003 only; Q5 calibrated one exact APK/recovery route. Constraints: no device execution, secrets or mutable overwrite.
-// Done when: all artefacts are hashed and the candidate/fixture bytes exactly match the physically calibrated Q5 pair.
+// Goal: produce an immutable owner-run Q7 active-oracle Mi 8 qualification bundle from a clean source commit.
+// Context: KR-003 only; Q5 calibrated the candidate and Q7 adds a disposable fixture input oracle. Constraints: no device execution, secrets or overwrite.
+// Done when: all artefacts are hashed, the candidate matches Q5, and the fixture matches the reviewed Q7 oracle build.
 import { mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, basename } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -22,7 +22,7 @@ const mapping = {
   "Start-KR003.ps1": "tools/kr003/Start-KR003.ps1",
   "Clear-KR003-Lab.ps1": "tools/kr003/Clear-KR003-Lab.ps1",
   "Qualification.psm1": "tools/kr003/Qualification.psm1",
-  "protocol.md": "docs/test-plans/KR-003-Q6-QUALIFICATION.md",
+  "protocol.md": "docs/test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md",
   "candidate.apk": "spikes/android-enforcement/app/build/outputs/apk/debug/app-debug.apk",
   "ordinary-fixture.apk": "spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk",
 };
@@ -31,16 +31,18 @@ const files = Object.entries(mapping).map(([name, source])=>{
   return { name, sha256:createHash("sha256").update(readFileSync(resolve(output,name))).digest("hex") };
 });
 const manifest = {
-  schema:1, protocol:"KR003-Q6-MI8-OFFLINE-QUALIFICATION", sourceCommit:commit, runnerVersion:6,
+  schema:1, protocol:"KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION", sourceCommit:commit, runnerVersion:7,
   diagnosticOnly:false, requiresOffline:true,
   createdUtc:new Date().toISOString(), candidateSha256:files.find(f=>f.name==="candidate.apk").sha256,
   fixtureSha256:files.find(f=>f.name==="ordinary-fixture.apk").sha256, files,
   ownerDevice:{model:"Xiaomi Mi 8",miui:"MIUI Global 12.0.3",api:29,codename:"dipper"},
   physicalExecution:"NOT_RUN", previousFixCommit:"de941a9",
-  calibratedBy:{protocol:"KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION",sourceCommit:"97173d207c8076219c6c4c8d780db43d8f9fc566",runId:"run-20260906-171929-69a3abda"},
+  candidateCalibratedBy:{protocol:"KR003-Q5-RECOVERY-TASK-RESET-CALIBRATION",sourceCommit:"97173d207c8076219c6c4c8d780db43d8f9fc566",runId:"run-20260906-171929-69a3abda"},
+  oracleModel:"ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS",
+  humanCheckpointMaximum:3,
 };
 assert.equal(manifest.candidateSha256,"5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b","Candidate APK no longer matches Q5 physical calibration");
-assert.equal(manifest.fixtureSha256,"6653f10b527cc9a273a8c0ea045cd250f6978c1acfb8e92b00b701f6c14f84bb","Fixture APK no longer matches Q5 physical calibration");
+assert.equal(manifest.fixtureSha256,"223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc","Fixture APK no longer matches the reviewed Q7 active-oracle build");
 assert.equal(git("status","--porcelain"), "", "Build unexpectedly changed tracked source");
 writeFileSync(resolve(output,"bundle.json"),JSON.stringify(manifest,null,2)+"\n",{flag:"wx"});
 process.stdout.write(JSON.stringify({output,bundle:basename(output),...manifest},null,2)+"\n");

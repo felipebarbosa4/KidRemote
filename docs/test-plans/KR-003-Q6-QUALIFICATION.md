@@ -1,5 +1,7 @@
 # KR-003 Q6 Mi 8 offline qualification
 
+> **Superseded before execution:** Q6 was never physically run. Owner decision OD-29 replaces its 100 repetitive human prompts with the independently calibrated Q7 active-oracle contract. Preserve this file and immutable bundle as historical planning evidence; do not execute it.
+
 - **Goal:** Execute the existing 100-sample physical expiry contract on the authorized Mi 8 while offline, using the exact APK pair that passed Q5 recovery calibration.
 - **Context:** The ten-cycle stability checkpoint passed, Q2/Q3/Q4 exposed recovery defects, and [Q5](evidence/KR-003-Q5-RECOVERY-2026-09-06.md) physically passed the final bounded recovery route once. Q5 contains zero qualification samples.
 - **Constraints:** Owner-operated Windows ADB; exact device/build/APKs; 100 new independent samples; no destructive action, input injection, raw identity, production implementation, result pooling or resume.

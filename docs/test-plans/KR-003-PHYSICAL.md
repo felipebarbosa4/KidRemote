@@ -3,7 +3,7 @@
 - **Goal:** Generate reproducible evidence that either supports or rejects the consumer Accessibility candidate.
 - **Context:** Desktop build/unit/static results cannot establish enforcement, emergency safety, lifecycle recovery or OEM behaviour.
 - **Constraints:** Authorized sanitized lab devices only; no destructive personal-device tests; one evidence set per exact model/OS/build/user/battery configuration.
-- **Done when:** Every required matrix row has actual evidence or an explicit unsupported boundary, each candidate has at least 100 valid expiry samples and owner go/no-go is recorded.
+- **Done when:** Every required matrix row has actual evidence or an explicit unsupported boundary, each candidate meets its explicitly approved expiry evidence contract, and owner go/no-go is recorded.
 
 ## Candidate record
 
@@ -14,16 +14,17 @@ Do not record device serial, accounts, real child identity or app/content histor
 
 ## Expiry performance
 
-The precise runner contract, failure handling and evidence fields are in [qualification v2](KR-003-QUALIFICATION.md). It reconciles the existing
-100-observation requirement with the Mi 8 persistence checkpoint and preserves the distinction between observation and attachment metrics.
-The exact Mi 8 offline execution specialization is [Q6](KR-003-Q6-QUALIFICATION.md); it is **Not run** until owner execution produces evidence.
+The precise runner contract, failure handling and evidence fields are in [qualification v3](KR-003-QUALIFICATION.md). OD-29 replaces the unexecuted
+100-human Q6 workflow with [Q7](KR-003-Q7-AUTOMATED-QUALIFICATION.md): 100 active-oracle cycles plus three human checkpoint sessions. This is an
+explicit evidence-model change, not a claim that telemetry became human observation.
 
-Use the same configuration for all samples. Reset local timing samples, enable both required accesses, arm the 10-second timer and move to an
-authorized disposable ordinary test app. A valid sample requires eligible interactive/unlocked time through expiry and a visibly perceived block.
-Repeat at least 100 times. Record invalid/failed trials separately; never discard a slow valid sample.
+Use the same configuration for all samples. Reset local timing samples, enable both required accesses, arm the 10-second timer and move to the
+authorized disposable fixture. Q7 requires a per-cycle working input positive control, eligible use through expiry, successful attachment, 20
+blocked real input taps and zero fixture focus regain across ten seconds. Repeat 100 times unattended. Human-visible evidence comes only from the
+three separately identified checkpoints; record invalid/failed trials and never discard a slow valid sample.
 
 Metric: elapsed milliseconds from the monotonic instant the local allowance mathematically reaches zero to successful overlay attachment.
-Report sample count, p50, p95 and maximum from the app plus independent observer failures. Gate: p95 ≤2,000 ms and zero silent no-block outcomes.
+Report sample count, p50, p95 and maximum plus fixture-oracle and human-checkpoint failures. Gate: p95 ≤2,000 ms and zero detected no-block/input-leak outcomes.
 This metric excludes push/backend latency and does not by itself prove safe or tamper-resistant enforcement.
 
 ### Pre-qualification stability checkpoint
