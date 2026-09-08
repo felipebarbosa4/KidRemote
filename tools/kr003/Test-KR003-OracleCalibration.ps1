@@ -25,6 +25,7 @@ $script:AttachmentRevisions=@{};$script:FixtureInstance=-1L;$script:Bundle=$null
 $script:PositiveControl=$false;$script:BlockedControl=$false;$script:ServiceContinuous=$false;$script:PhysicalAgreement='UNRECORDED'
 $script:CleanupVerified=$false;$script:LatencyMs=$null;$script:Revision=$null;$script:HoldMillis=0L;$script:BlockedTaps=0
 $script:Status='INVALID';$script:Reason='NOT_STARTED';$script:TransportSummary=$null;$script:TransportDevice=$null
+$script:PermissionVerification=New-KRCalibrationPermissionDiagnostic $null $null
 $startedUtc=[DateTime]::UtcNow.ToString('o')
 
 function Write-CalibrationJson([string]$Name,$Value){[IO.File]::WriteAllText((Join-Path $runDirectory $Name),(ConvertTo-Json -InputObject $Value -Depth 14),(New-Object Text.UTF8Encoding($false)))}
@@ -63,10 +64,17 @@ function Read-CalibrationDevice{
     $installed=(-not [string]::IsNullOrWhiteSpace($candidatePath));$usage=$null;$services=$null;$accessibility=$null
     if($installed){
         $usage=Invoke-CalibrationAdb 'USAGE_ACCESS_STATE' @('shell','cmd','appops','get',$candidatePackage,'GET_USAGE_STATS') -Optional
-        $services=Invoke-CalibrationAdb 'ACCESSIBILITY_STATE' @('shell','settings','get','secure','enabled_accessibility_services') -Optional
-        $accessibility=Invoke-CalibrationAdb 'ACCESSIBILITY_STATE' @('shell','settings','get','secure','accessibility_enabled') -Optional
+        $services=Invoke-CalibrationAdb 'ACCESSIBILITY_STATE' @('shell','settings','--user','current','get','secure','enabled_accessibility_services') -Optional
+        $accessibility=Invoke-CalibrationAdb 'ACCESSIBILITY_STATE' @('shell','settings','--user','current','get','secure','accessibility_enabled') -Optional
     }
     New-KRDeviceMetadataRecord $manufacturer $model $android $api $patch $build $batterySaver $adaptiveBattery $appStandby $installed $usage $services $accessibility $candidateService
+}
+
+function Assert-CalibrationPermissionVerification($Device,$Snapshot,[bool]$PreviouslyEstablished){
+    $script:PermissionVerification=New-KRCalibrationPermissionDiagnostic $Device.RunnerPermissionVerification $Snapshot
+    Write-CalibrationJson 'permission-verification.json' $script:PermissionVerification
+    $failure=Get-KRRequiredPermissionFailure $script:PermissionVerification $PreviouslyEstablished
+    if($null -ne $failure){throw $failure}
 }
 
 function Assert-SameConfiguration($Expected,$Actual){
@@ -164,7 +172,7 @@ try{
     New-Item -ItemType Directory -Path $runDirectory|Out-Null
     if(-not (Test-Path -LiteralPath $Adb)){throw 'INVALID:ADB_MISSING'}
     $script:Bundle=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw|ConvertFrom-Json
-    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 1 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
+    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 2 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
     foreach($entry in $script:Bundle.files){if($entry.name -notmatch '^[A-Za-z0-9_.-]+$'){throw 'INVALID:BUNDLE_PATH'};if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -cne $entry.sha256){throw 'INVALID:BUNDLE_INTEGRITY'}}
     $script:TransportSummary=Get-Content -LiteralPath (Join-Path $TransportEvidence 'summary.json') -Raw|ConvertFrom-Json
     $script:TransportDevice=Get-Content -LiteralPath (Join-Path $TransportEvidence 'device.json') -Raw|ConvertFrom-Json
@@ -178,10 +186,12 @@ try{
     $ready=Wait-Candidate {param($s)$s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain} 300 'INVALID:REQUIRED_PERMISSION_OR_UNLOCK_SETUP'
     Assert-KRHealth $ready
     $configured=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $configured;Write-CalibrationJson 'device.json' $configured
-    if($configured.RequiredPermissionState.UsageAccess -ne 'GRANTED' -or $configured.RequiredPermissionState.AccessibilityService -ne 'GRANTED'){throw 'INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED'}
+    Assert-CalibrationPermissionVerification $configured $ready $false
     $null=Invoke-CalibrationAdb 'FIXTURE_OPEN' @('shell','am','start','-n',$fixtureActivity);$fixture=Wait-Fixture $true
     $fixture=Assert-PositiveControl $fixture;$script:PositiveControl=$true;$script:PositiveFixtureTaps=[long]$fixture.taps
     $before=Get-CandidateState;Assert-KRHealth $before;$beforeSamples=@($before.samples);$script:ConnectionBaseline=$script:ServiceConnections
+    $preArmDevice=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $preArmDevice
+    Assert-CalibrationPermissionVerification $preArmDevice $before $true
     $armed=Get-CandidateState 'ARM';$script:Armed=$true;$script:Revision=[long]$armed.revision
     if(-not $armed.armed -or $armed.remaining -ne 10000){throw 'FAIL:FRESH_ARM_FAILED'}
     $attached=Wait-Candidate {param($s)Assert-KRHealth $s;if($script:ServiceConnections -ne $script:ConnectionBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'};return $s.attached -and $s.restriction -and $s.sampledRevision -eq $script:Revision} 22 'FAIL:NO_ATTACHMENT'
@@ -197,6 +207,9 @@ try{
         $script:HoldMillis=[long]$candidate.elapsed-$holdStart
     }
     if($script:HoldMillis -lt 10000){$candidate=Wait-Candidate {param($s)$fixtureNow=Get-FixtureState;Assert-KRHold $s $script:Revision $script:PositiveFixtureTaps $fixtureNow;Assert-KRIndependentFixtureBlock $script:BlockedBaseline $fixtureNow;$script:HoldMillis=[long]$s.elapsed-$holdStart;return $script:HoldMillis -ge 10000} 3 'INVALID:AUTOMATED_HOLD_TOO_SHORT'}
+    $postHold=Get-CandidateState;Assert-KRHealth $postHold
+    $postHoldDevice=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $postHoldDevice
+    Assert-CalibrationPermissionVerification $postHoldDevice $postHold $true
     $script:BlockedControl=$true;$script:ServiceContinuous=($script:ServiceConnections -eq $script:ConnectionBaseline)
     $script:PhysicalAgreement=Read-PhysicalAgreement
     if($script:PhysicalAgreement -eq 'FAIL'){throw 'FAIL:PHYSICAL_ORACLE_DISAGREEMENT'};if($script:PhysicalAgreement -ne 'PASS'){throw 'INVALID:PHYSICAL_OBSERVATION_UNCERTAIN'}
@@ -212,12 +225,14 @@ try{
             $script:Reason=$(if($script:Status -eq 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'){'COMPLETED'}else{'VERDICT_REJECTED'})
         }
         try{Save-CalibrationOperations}catch{}
+        try{Write-CalibrationJson 'permission-verification.json' $script:PermissionVerification}catch{}
         $summary=[PSCustomObject]@{
             Protocol='KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION';Status=$script:Status;Reason=$script:Reason;SourceCommit=$(if($null -eq $script:Bundle){$null}else{$script:Bundle.sourceCommit})
             CandidateSha256=$(if($null -eq $script:Bundle){$null}else{$script:Bundle.candidateSha256});FixtureSha256=$(if($null -eq $script:Bundle){$null}else{$script:Bundle.fixtureSha256})
             TransportEvidenceProtocol=$(if($null -eq $script:TransportSummary){$null}else{$script:TransportSummary.Protocol});StartedUtc=$startedUtc;EndedUtc=[DateTime]::UtcNow.ToString('o')
             TransportDeviceEvidenceSha256=$(if($null -eq $script:TransportSummary){$null}else{$script:TransportSummary.DeviceEvidenceSha256})
             PositiveControl=$script:PositiveControl;BlockedControl=$script:BlockedControl;ServiceContinuous=$script:ServiceContinuous;PhysicalAgreement=$script:PhysicalAgreement
+            PermissionVerification=$script:PermissionVerification
             CleanupVerified=$script:CleanupVerified;Revision=$script:Revision;LatencyMs=$script:LatencyMs;HoldMillis=$script:HoldMillis;InjectedBlockedTaps=$script:BlockedTaps
             CalibrationSamples=$(if($null -eq $script:LatencyMs){0}else{1});QualificationSamples=0;CandidateTelemetryCorroboratingOnly=$true
             FixtureIndependentPackageAndUid=$true;SharedState=$false;NodeTextContentAccess=$false;Screenshots=$false;NetworkChanged=$false;PermissionsChangedByRunner=$false;DestructiveAction=$false

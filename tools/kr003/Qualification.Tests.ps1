@@ -263,7 +263,7 @@ Assert-Equal ($topLevelExits[0].Extent.StartOffset -gt ($ast.EndBlock.Statements
 # Exercise actual process argument binding with portable PowerShell as a harmless subprocess, never ADB.
 $processAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-LabAdb'},$true)
 Invoke-Expression $processAst.Extent.Text
-$Adb=Join-Path $PSHOME 'pwsh'
+$Adb=Join-Path $PSHOME $(if($PSVersionTable.PSEdition -eq 'Core'){'pwsh'}else{'powershell.exe'})
 Assert-Equal (Invoke-LabAdb @('-NoProfile','-Command','Write-Output synthetic')).Trim() 'synthetic'
 Assert-Reject { Invoke-LabAdb @('unsafe"argument') } 'INVALID:ADB_ARGUMENT'
 

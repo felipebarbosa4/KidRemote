@@ -5,6 +5,13 @@
 - **Constraints:** Run only after a preserved generic transport PASS; exact disposable candidate/fixture hashes; no network/configuration mutation, screenshots, UI nodes/text/content, raw identity/history, destructive action, result pooling or qualification loop.
 - **Done when:** One unblocked tap increments the fixture exactly once, one armed expiry produces a ten-second blocked hold with input/focus denial and candidate service continuity, one operator agreement response is preserved, cleanup is verified, and zero qualification rows exist.
 
+Runner v2 independently verifies Usage Access from the `GET_USAGE_STATS` AppOp and Accessibility from current-user secure settings before ARM and
+after the blocked hold. Accessibility component identifiers are parsed using Android `ComponentName` short/full equivalence; raw strings are never
+persisted. `ENABLED`, `DISABLED` and `UNKNOWN` plus verification-source/parse-result enums are retained. Candidate heartbeat and candidate-health
+enums are recorded separately. Any `UNKNOWN` fails closed; permission/service loss after initial success is FAIL, not a reusable setup result.
+[Android 16 AccessibilityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java)
+and [ComponentName](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/core/java/android/content/ComponentName.java), reviewed 2026-09-08.
+
 ## Bounded workflow
 
 The separate calibration bundle performs only this sequence:
@@ -25,5 +32,7 @@ Candidate telemetry is corroborating evidence only. The fixture has an independe
 - **PASS — `PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY`:** all four technical controls and the one physical agreement check pass, cleanup is verified, and exactly one excluded calibration sample is retained.
 - **FAIL:** visible disagreement, delivered blocked input, focus regain, missing block, permission/service loss or cleanup failure. Stop before qualification.
 - **INVALID:** transport, hash, configuration identity, evidence correlation or operator observation was unavailable/uncertain. Stop before qualification.
+
+The three source-`5a46f75` Samsung attempts remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED`; v2 diagnostics do not retroactively relabel them.
 
 A PASS permits preparation of a new configuration-specific 100-cycle qualification bundle; it does not authorize that run by itself and is never counted among its 100 rows. The exact required OS/API/OEM matrix mapping must be recorded first. Human-only rendering/safe-surface residual risks remain separate even if calibration passes.

@@ -1,7 +1,7 @@
 # KR-003 generic next-device bundles — 2026-09-08
 
 - **Goal:** Publish a transport-first handoff for one newly authorized Android configuration, followed only on transport PASS by a bounded active-oracle calibration.
-- **Context:** Shell input, UiAutomation and bounded Monkey input are all denied on the preserved Mi 8 configuration. The expected Samsung tablet's exact model, Android/API/build/power configuration and transport capability are **UNSPECIFIED** until owner execution.
+- **Context:** Shell input, UiAutomation and bounded Monkey input are all denied on the preserved Mi 8 configuration. This file preserves the source-`5a46f75` handoff later executed on the Samsung SM-X400; transport passed and three v1 calibrations stopped INVALID.
 - **Constraints:** Repository packaging only; no device command or physical claim; no Mi 8 change; no cross-configuration evidence transfer; no candidate in the first bundle; no timer, Accessibility setup, network change, destructive action, qualification sample or KR-004 work.
 - **Done when:** Both clean-source bundles are independently hash-verified, exact owner commands and stop criteria are recorded, and exact-source automated checks pass.
 
@@ -20,7 +20,7 @@ handoff. Do not use the `bbdaefc` directories.
 | `bundle.json` SHA-256 | `c2deacd58738e9969a1cc6712cf122af892437711f589907574c484185dd5721` |
 | Fixture SHA-256 | `223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc` |
 | Candidate included | `false` |
-| Physical execution | **Not run** |
+| Physical execution | **PASS** — `device-20260908-092640-d3b5053b` |
 
 Verified payload:
 
@@ -45,7 +45,7 @@ Expected duration after ADB authorization is about one minute. The runner verifi
 - **FAIL — `FAIL:INPUT_NOT_DELIVERED`:** preserve the evidence and stop before installing the candidate.
 - **INVALID:** preserve the evidence and stop. Authorization, metadata, hashes, fixture state, command acceptance or evidence integrity was not established.
 
-## Conditional calibration handoff
+## Executed v1 calibration handoff
 
 Do not use this bundle unless the generic transport result above is PASS and its evidence directory is available.
 
@@ -59,7 +59,7 @@ Do not use this bundle unless the generic transport result above is PASS and its
 | Candidate SHA-256 | `5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b` |
 | Fixture SHA-256 | `223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc` |
 | Qualification samples | `0` |
-| Physical execution | **Not run** |
+| Physical execution | **Three INVALID attempts** — runner Accessibility state not verified |
 
 Verified payload:
 
@@ -89,4 +89,7 @@ Allow roughly three to seven minutes, including owner permission setup and one a
 
 Both current bundles were created from the clean exact commit and then independently checked: every manifest-listed SHA-256 passed, every copied runner/module/protocol/APK matched its repository build byte-for-byte, and the fixture/candidate hashes remained the reviewed Q7/Q5 hashes. [Exact-source CI run 34190844982](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190844982) covers repository/Node/PowerShell and Android debug/release jobs. CI device calls are synthetic or stubbed.
 
-No physical device command was run while preparing either bundle. Samsung metadata, transport and calibration remain **UNSPECIFIED**. A future result belongs only to its recorded API/OEM/build/power/permission configuration and does not extend Mi 8, Pixel, another Samsung build or another OEM evidence. The existing 100-cycle, remaining lifecycle/safety/device and external Play gates stay open.
+No physical device command was run while preparing either bundle. The owner later ran them: the Samsung SM-X400 transport passed, while three v1
+calibrations remained INVALID with zero samples. See [the ingested evidence and verifier analysis](KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md).
+A corrected v2 calibration handoff is recorded separately; these v1 runs and bundle hashes remain immutable. No result extends Mi 8, Pixel,
+another Samsung build or another OEM evidence. The 100-cycle, remaining lifecycle/safety/device and external Play gates stay open.

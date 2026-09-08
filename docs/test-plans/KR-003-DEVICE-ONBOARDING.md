@@ -1,7 +1,7 @@
 # KR-003 generic authorized-device onboarding
 
 - **Goal:** Identify one authorized Android configuration and test only the shell-input transport needed by the independent fixture oracle.
-- **Context:** The existing Mi 8 result is configuration-specific. A prospective Samsung tablet is expected, but its exact device facts and shell-input capability are **UNSPECIFIED** until this protocol runs.
+- **Context:** The existing Mi 8 result is configuration-specific. This protocol subsequently produced a transport PASS on the exact Samsung SM-X400 / Android 16 API 36 / build `BP4A.251205.006` configuration; its later calibration remains separate and INVALID.
 - **Constraints:** One authorized, unlocked device; fixture only; no candidate installation, timer, Accessibility setup, network/configuration mutation, screenshot, UI node/text/content, serial/account/app-history capture or destructive action.
 - **Done when:** A sanitized configuration record and exact hash evidence exist, one fixture tap produces exactly one counter increment or a typed FAIL/INVALID result is preserved, and the procedure stops.
 

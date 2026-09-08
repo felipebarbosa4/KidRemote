@@ -20,4 +20,8 @@ Repository work stops after the generic bundles, validation, GitHub synchronizat
 
 ## Repository checkpoint
 
-Source `5a46f75e3dad68ccbf520bce327a6d1f1c03c77c` completed steps 1–5, including the synthetic no-delivery ingestion correction. The two current immutable, independently rehashed mounted-Windows handoffs are recorded in [KR-003-NEXT-DEVICE-BUNDLES-2026-09-08](../test-plans/evidence/KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md). Their physical execution state is **Not run**. Earlier implementation/handoff checkpoints passed all three CI jobs; exact-source run 34190844982 verifies the corrected source. Issue #3 and PR #16 were updated/read back, KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004 remains Open/Backlog. Repository-local readiness work is complete; the next new evidence requires owner operation of an authorized device.
+Source `5a46f75e3dad68ccbf520bce327a6d1f1c03c77c` completed steps 1–5, including the synthetic no-delivery ingestion correction. The two immutable, independently rehashed mounted-Windows handoffs are recorded in [KR-003-NEXT-DEVICE-BUNDLES-2026-09-08](../test-plans/evidence/KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md). At that checkpoint their physical execution state was **Not run**. Earlier implementation/handoff checkpoints passed all three CI jobs; exact-source run 34190844982 verifies the corrected source. Issue #3 and PR #16 were updated/read back, KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004 remains Open/Backlog. Repository-local readiness work was complete pending owner operation of an authorized device.
+
+Superseding physical state: the source-`5a46f75` transport bundle passed on Samsung SM-X400; three calibration runs remain INVALID at runner-side
+Accessibility verification. Continue only under [the bounded verifier correction](KR-003-SAMSUNG-PERMISSION-VERIFIER.md). The earlier readiness
+checkpoint remains historical and is not rewritten as a calibration PASS.

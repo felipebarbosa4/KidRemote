@@ -56,6 +56,10 @@ Recheck current docs at implementation and before release. No exact mobile/backe
 | [Android API levels](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html) | Android 17 maps to API 37 | 2026-09-08 |
 | [Hardware device setup](https://developer.android.com/studio/run/device) | USB debugging, device authorization and ADB connection verification | 2026-09-08 |
 | [Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby) | Generic power modes and user battery-optimization state do not establish OEM policy | 2026-09-08 |
+| [Android 16 AccessibilityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java) | Current-user enabled-service persistence/parsing uses colon-delimited `ComponentName` values; not a stable `dumpsys` text contract | 2026-09-08 |
+| [Android ComponentName](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/core/java/android/content/ComponentName.java) | Full and leading-dot short flattened class forms normalize to the same package/class identity | 2026-09-08 |
+| [Android 16 AppOps](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/core/java/android/app/AppOps.md) | App-op names are stable relative to integer codes; absent/default/non-allowed state cannot be promoted to allowed | 2026-09-08 |
+| [AOSP multi-user testing](https://source.android.com/docs/devices/admin/multi-user-testing) | Resolve current foreground user and explicitly scope user-aware shell commands | 2026-09-08 |
 | [Direct Boot](https://developer.android.com/privacy-and-security/direct-boot) | Device/credential-encrypted storage and component availability | 2026-09-05 |
 | [Android Keystore](https://developer.android.com/privacy-and-security/keystore) | Key storage/wrapping boundary; compromised OS limitations | 2026-09-05 |
 | [Auto Backup](https://developer.android.com/identity/data/autobackup) | Backup/device-transfer exclusion requirements | 2026-09-05 |

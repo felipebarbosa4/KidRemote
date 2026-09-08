@@ -17,9 +17,11 @@ requirement, broader device/lifecycle gate, support boundary, production accepta
 at most three human checkpoint sessions. Three Q7 preflight attempts stopped INVALID before ARM/sample 1. Shell input and the separate
 [UiAutomation transport](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) were denied. Q7 qualification has zero samples;
 the bounded [Monkey transport also returned DOWN SECURITY_EXCEPTION](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
-Q7 is blocked on the unchanged Mi 8 configuration. OD-31 authorizes a transport-first evaluation on an expected Samsung tablet, but its exact
-model/Android/API/build/power configuration and input capability are **UNSPECIFIED** until sanitized discovery. Input denial neither rejects the
-enforcement candidate nor lowers its gate, and evidence from one device/configuration cannot be transferred to another.
+Q7 is blocked on the unchanged Mi 8 configuration. Under OD-31, shell transport passed on the exact Samsung SM-X400 / Android 16 API 36 / build
+`BP4A.251205.006` configuration. Three subsequent calibration attempts remain INVALID: runner AppOps verification passed, but its secure-settings
+Accessibility check disagreed with healthy candidate/service telemetry. Runner v2 applies Android `ComponentName` semantics and typed
+fail-closed diagnostics; its fresh calibration is Not run. The transport PASS neither proves enforcement nor lowers the gate, and evidence from
+one device/configuration cannot be transferred to another. See [Samsung evidence](../test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md).
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

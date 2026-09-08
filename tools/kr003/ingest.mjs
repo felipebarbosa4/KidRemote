@@ -330,8 +330,8 @@ function validateDeviceOperations(operations,allowEmpty=false) {
   }
 }
 function validateGenericDevice(device) {
-  assert.deepEqual(Object.keys(device),['Schema','Manufacturer','Model','AndroidVersion','ApiLevel','SecurityPatch','BuildId','BatteryManagement','RequiredPermissionState']);
-  assert.equal(device.Schema,1);
+  assert([1,2].includes(device.Schema));
+  assert.deepEqual(Object.keys(device),['Schema','Manufacturer','Model','AndroidVersion','ApiLevel','SecurityPatch','BuildId','BatteryManagement','RequiredPermissionState',...(device.Schema===2?['RunnerPermissionVerification']:[])]);
   for(const key of ['Manufacturer','Model','AndroidVersion','BuildId']) assert.match(device[key],/^[A-Za-z0-9][A-Za-z0-9 ._+()/:,-]{0,119}$/);
   assert.match(device.ApiLevel,/^[0-9]{1,3}$/);
   assert.match(device.SecurityPatch,/^20[0-9]{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/);
@@ -340,7 +340,29 @@ function validateGenericDevice(device) {
   assert.equal(device.BatteryManagement.OemBatteryManagement,'UNSPECIFIED');
   assert.deepEqual(Object.keys(device.RequiredPermissionState),['UsageAccess','AccessibilityService']);
   for(const value of Object.values(device.RequiredPermissionState)) assert(['GRANTED','NOT_GRANTED','UNSPECIFIED','NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED'].includes(value));
+  if(device.Schema===2) validateRunnerPermissionVerification(device.RunnerPermissionVerification);
   for(const forbidden of ['Serial','Account','AndroidId','BuildFingerprint','PackageHistory']) assert.equal(Object.hasOwn(device,forbidden),false);
+}
+
+function validateRunnerPermissionVerification(value) {
+  assert.deepEqual(Object.keys(value),['UsageAccessRunner','AccessibilityRunner','UsageAccessVerificationSource','AccessibilityVerificationSource','UsageAccessParseResult','AccessibilityParseResult']);
+  for(const key of ['UsageAccessRunner','AccessibilityRunner']) assert(['ENABLED','DISABLED','UNKNOWN','NOT_APPLICABLE'].includes(value[key]));
+  assert(['CMD_APPOPS_GET_GET_USAGE_STATS','NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED','UNAVAILABLE'].includes(value.UsageAccessVerificationSource));
+  assert(['SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME','NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED','UNAVAILABLE'].includes(value.AccessibilityVerificationSource));
+  assert(['MODE_ALLOWED','MODE_NOT_ALLOWED','UNPARSEABLE_OR_MISSING','NOT_APPLICABLE','UNAVAILABLE'].includes(value.UsageAccessParseResult));
+  assert(['GLOBAL_ENABLED_COMPONENT_MATCH_SHORT','GLOBAL_ENABLED_COMPONENT_MATCH_FULL','GLOBAL_STATE_UNPARSEABLE_OR_MISSING','GLOBAL_COMPONENT_STATE_INCONSISTENT','COMPONENT_LIST_UNPARSEABLE','COMPONENT_LIST_EMPTY','COMPONENT_ABSENT','EXPECTED_COMPONENT_INVALID','NOT_APPLICABLE','UNAVAILABLE'].includes(value.AccessibilityParseResult));
+}
+
+function validateCalibrationPermissionVerification(value) {
+  assert.deepEqual(Object.keys(value),['UsageAccessRunner','AccessibilityRunner','ServiceHeartbeat','CandidateHealth','CandidateEligible','UsageAccessVerificationSource','AccessibilityVerificationSource','UsageAccessParseResult','AccessibilityParseResult']);
+  validateRunnerPermissionVerification({
+    UsageAccessRunner:value.UsageAccessRunner,AccessibilityRunner:value.AccessibilityRunner,
+    UsageAccessVerificationSource:value.UsageAccessVerificationSource,AccessibilityVerificationSource:value.AccessibilityVerificationSource,
+    UsageAccessParseResult:value.UsageAccessParseResult,AccessibilityParseResult:value.AccessibilityParseResult,
+  });
+  assert(['FRESH','STALE','UNKNOWN'].includes(value.ServiceHeartbeat));
+  assert(['HEALTHY','PERMISSION_REQUIRED','ENFORCEMENT_DEGRADED','UNKNOWN'].includes(value.CandidateHealth));
+  assert(['ELIGIBLE','INELIGIBLE','UNKNOWN'].includes(value.CandidateEligible));
 }
 
 export function ingestDeviceTransport(directory) {
@@ -377,11 +399,18 @@ export function ingestOracleCalibration(directory) {
   assert.equal(summary.QualificationSamples,0);assert.equal(summary.CandidateTelemetryCorroboratingOnly,true);
   for(const key of ['FixtureIndependentPackageAndUid']) assert.equal(summary[key],true);
   for(const key of ['SharedState','NodeTextContentAccess','Screenshots','NetworkChanged','PermissionsChangedByRunner','DestructiveAction']) assert.equal(summary[key],false);
+  const permissionPath=resolve(directory,'permission-verification.json');
+  if(existsSync(permissionPath)) {
+    const permission=read('permission-verification.json');validateCalibrationPermissionVerification(permission);assert.deepEqual(summary.PermissionVerification,permission);
+  } else assert.equal(Object.hasOwn(summary,'PermissionVerification'),false);
   if(summary.Status==='PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY') {
     assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.CandidateSha256,/^[a-f0-9]{64}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);
     assert.equal(summary.TransportEvidenceProtocol,'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT');assert.match(summary.TransportDeviceEvidenceSha256,/^[a-f0-9]{64}$/);
-    const device=read('device.json');validateGenericDevice(device);
+    const device=read('device.json');validateGenericDevice(device);assert.equal(device.Schema,2);
     assert.equal(device.RequiredPermissionState.UsageAccess,'GRANTED');assert.equal(device.RequiredPermissionState.AccessibilityService,'GRANTED');
+    assert(existsSync(permissionPath));assert.equal(summary.PermissionVerification.UsageAccessRunner,'ENABLED');assert.equal(summary.PermissionVerification.AccessibilityRunner,'ENABLED');
+    assert.equal(summary.PermissionVerification.ServiceHeartbeat,'FRESH');assert.equal(summary.PermissionVerification.CandidateHealth,'HEALTHY');assert.equal(summary.PermissionVerification.CandidateEligible,'ELIGIBLE');
+    for(const key of Object.keys(device.RunnerPermissionVerification)) assert.equal(summary.PermissionVerification[key],device.RunnerPermissionVerification[key]);
     assert.equal(summary.Reason,'COMPLETED');assert.equal(summary.PositiveControl,true);assert.equal(summary.BlockedControl,true);
     assert.equal(summary.ServiceContinuous,true);assert.equal(summary.PhysicalAgreement,'PASS');assert.equal(summary.CleanupVerified,true);
     assert.equal(summary.CalibrationSamples,1);assert(Number.isInteger(summary.LatencyMs)&&summary.LatencyMs>=0);

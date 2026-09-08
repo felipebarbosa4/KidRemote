@@ -374,9 +374,14 @@ test("generic device transport ingestion accepts only sanitized metadata and one
 
 test("bounded generic oracle calibration cannot create qualification rows or promote telemetry",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
-  const device={Schema:1,Manufacturer:'samsung',Model:'SM-X000',AndroidVersion:'16',ApiLevel:'36',SecurityPatch:'2026-08-05',BuildId:'BP2A.260805.001',
+  const runnerPermission={UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',
+    AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',UsageAccessParseResult:'MODE_ALLOWED',AccessibilityParseResult:'GLOBAL_ENABLED_COMPONENT_MATCH_FULL'};
+  const permission={UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE',
+    UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',
+    UsageAccessParseResult:'MODE_ALLOWED',AccessibilityParseResult:'GLOBAL_ENABLED_COMPONENT_MATCH_FULL'};
+  const device={Schema:2,Manufacturer:'samsung',Model:'SM-X000',AndroidVersion:'16',ApiLevel:'36',SecurityPatch:'2026-08-05',BuildId:'BP2A.260805.001',
     BatteryManagement:{BatterySaver:'DISABLED',AdaptiveBattery:'ENABLED',AppStandby:'ENABLED',OemBatteryManagement:'UNSPECIFIED'},
-    RequiredPermissionState:{UsageAccess:'GRANTED',AccessibilityService:'GRANTED'}};
+    RequiredPermissionState:{UsageAccess:'GRANTED',AccessibilityService:'GRANTED'},RunnerPermissionVerification:runnerPermission};
   const operations=['ADB_STATE','DEVICE_METADATA','BATTERY_STATE','CANDIDATE_INSTALL','CANDIDATE_PATH','CANDIDATE_PULL','FIXTURE_INSTALL','FIXTURE_PATH','FIXTURE_PULL','CANDIDATE_OPEN','CANDIDATE_STATE','CANDIDATE_CLEAR','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','CANDIDATE_ARM']
     .map(OperationCategory=>({OperationCategory,ExitCode:0,StderrClass:'NONE'}));
   const summary={Protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',Status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',Reason:'COMPLETED',
@@ -384,20 +389,30 @@ test("bounded generic oracle calibration cannot create qualification rows or pro
     TransportDeviceEvidenceSha256:'d'.repeat(64),
     PositiveControl:true,BlockedControl:true,ServiceContinuous:true,PhysicalAgreement:'PASS',CleanupVerified:true,Revision:8,LatencyMs:120,HoldMillis:10010,
     InjectedBlockedTaps:20,CalibrationSamples:1,QualificationSamples:0,CandidateTelemetryCorroboratingOnly:true,FixtureIndependentPackageAndUid:true,
-    SharedState:false,NodeTextContentAccess:false,Screenshots:false,NetworkChanged:false,PermissionsChangedByRunner:false,DestructiveAction:false};
-  save('device.json',device);save('operations.json',operations);save('summary.json',summary);
+    SharedState:false,NodeTextContentAccess:false,Screenshots:false,NetworkChanged:false,PermissionsChangedByRunner:false,DestructiveAction:false,
+    PermissionVerification:permission};
+  save('device.json',device);save('permission-verification.json',permission);save('operations.json',operations);save('summary.json',summary);
   assert.equal(ingestOracleCalibration(dir).qualificationSamples,0);
   save('summary.json',{...summary,PhysicalAgreement:'UNRECORDED'});assert.throws(()=>ingestOracleCalibration(dir));
   save('summary.json',{...summary,QualificationSamples:1});assert.throws(()=>ingestOracleCalibration(dir));
   save('summary.json',{...summary,CandidateTelemetryCorroboratingOnly:false});assert.throws(()=>ingestOracleCalibration(dir));
+  save('summary.json',summary);save('permission-verification.json',{...permission,AccessibilityRunner:'UNKNOWN'});assert.throws(()=>ingestOracleCalibration(dir));
+  rmSync(join(dir,'permission-verification.json'));
+  const {PermissionVerification,...historicalSummary}=summary;
+  save('summary.json',{...historicalSummary,Status:'INVALID',Reason:'REQUIRED_PERMISSION_STATE_NOT_VERIFIED',PositiveControl:false,BlockedControl:false,
+    ServiceContinuous:false,PhysicalAgreement:'UNRECORDED',Revision:null,LatencyMs:null,HoldMillis:0,InjectedBlockedTaps:0,CalibrationSamples:0});
+  assert.equal(ingestOracleCalibration(dir).status,'INVALID');
 }));
 
 test("new-device runners stay transport-first, generic and privacy bounded",()=>{
   const transport=readFileSync(resolve('tools/kr003/Test-KR003-DeviceTransport.ps1'),'utf8');
   const calibration=readFileSync(resolve('tools/kr003/Test-KR003-OracleCalibration.ps1'),'utf8');
   const preflightPackager=readFileSync(resolve('tools/kr003/package-device-preflight.mjs'),'utf8');
+  const calibrationPackager=readFileSync(resolve('tools/kr003/package-oracle-calibration.mjs'),'utf8');
   assert.match(transport,/CandidateInstalledByRunner=\$false/);assert.doesNotMatch(preflightPackager,/'candidate\.apk'/);
   assert.match(transport,/Invoke-DeviceAdb 'INPUT_TAP'/);assert.match(calibration,/QualificationSamples=0/);
+  assert.match(calibration,/permission-verification\.json/);assert.match(calibration,/settings','--user','current','get','secure','enabled_accessibility_services/);
+  assert.match(calibrationPackager,/runnerVersion:2/);
   for(const source of [transport,calibration]) assert.doesNotMatch(source,/ro\.serialno|ro\.build\.fingerprint|ANDROID_ID|screencap|uiautomator|dumpsys\s+window/i);
   assert.doesNotMatch(calibration,/for\([^\n]+-le 100|OfflineNetwork|svc[^\n]+disable/i);
 });

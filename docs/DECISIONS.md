@@ -43,15 +43,14 @@ budgets, package names or provider configuration; those remain **UNSPECIFIED** u
 | OD-30 | **OWNER-AUTHORIZED TRANSPORT EXPERIMENT 2026-09-06:** after Mi 8 shell input denial, test one coordinate touch through separate self-targeted UiAutomation instrumentation with unchanged developer settings | Fixture counter remains the independent oracle; physical success and candidate-service non-interference are **UNSPECIFIED**; evaluate bounded Monkey only if this fails; no Q7 rerun or KR-004 | KR-003 |
 | OD-31 | **OWNER-AUTHORIZED NEXT-DEVICE PATH 2026-09-08:** prepare a generic transport-first evaluation for an expected authorized Samsung tablet; exact model/Android/API/build/power state remain **UNSPECIFIED** until sanitized discovery | Install only the independent fixture first; stop after one counter-correlated shell tap. Candidate installation requires transport PASS and a separate bounded oracle calibration; no Mi 8/Samsung/other-OEM evidence transfer | KR-003 |
 | OD-32 | **CURRENT PLATFORM FACT 2026-09-08:** Android 17 is API 37; current mobile Play submission floor remains API 36+ from 2026-08-31 | Existing KR-003 API 28/35/36 gates remain; whether API 37 is added to the supported-device gate and the production compile/target migration are **UNSPECIFIED** owner decisions | KR-003/release |
+| OD-33 | **SPIKE EVIDENCE 2026-09-08:** shell-input transport passed on the exact Samsung SM-X400 / Android 16 API 36 / build `BP4A.251205.006` configuration; three subsequent calibration attempts stopped INVALID because runner Accessibility verification disagreed with healthy candidate/service telemetry | Preserve all INVALID runs; correct only version-compatible fail-closed verification, then permit one fresh calibration rerun. No 100 samples, enforcement support or cross-device transfer is inferred | KR-003 |
 
 Exact Kotlin, Compose, Room, Gradle, AGP, Java toolchain, Android SDK, Flutter, Supabase CLI/client, Deno/Edge runtime and FCM SDK versions: **UNSPECIFIED**.
 No app/bootstrap dependency versions are chosen in this pass. The verified Actions checkout pin is documented in TOOLING.
 
 ## Blockers and work that can proceed
 
-**2026-09-08 KR-003 Mi 8 qualification blocker:** [shell input, UiAutomation and bounded Monkey were all denied](test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
-OD-29's independent input prerequisite remains unmet on that exact configuration. The per-cycle human fallback conflicts with the owner's maximum-three-checkpoint constraint.
-OD-31 authorizes preparation for another device, expected to be a Samsung tablet; its exact facts and capability remain **UNSPECIFIED**. Do not rerun or change the Mi 8, reduce the gate or start KR-004.
+**2026-09-08 KR-003 device status:** [shell input, UiAutomation and bounded Monkey were all denied on the Mi 8](test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md), so OD-29's independent input prerequisite remains unmet there. The exact [Samsung SM-X400 transport passed, then three calibrations stopped INVALID](test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md) at runner-side Accessibility verification despite healthy candidate/service telemetry. One corrected calibration rerun is next; do not start 100 samples, change the Mi 8, reduce the gate or start KR-004.
 OD-30's experiment has now failed input delivery; service non-interference remains **UNSPECIFIED**.
 
 Production consumer enforcement is blocked by the unproven safety/reliability boundary and policy tension in ADR-0002.

@@ -13,8 +13,8 @@ not interchangeable evidence. `Prepared` is tooling; `Not run` remains the physi
 
 | Row / gate | Class | Automation support / next bounded work | Remaining physical or approval boundary |
 | --- | --- | --- | --- |
-| New-device metadata / transport | A,B,D | [Generic onboarding](KR-003-DEVICE-ONBOARDING.md), hash-pinned fixture-only runner, strict ingestion and synthetic privacy/failure tests are implemented | Owner authorizes ADB once and operates one command; exact Samsung facts/result are **Not run** |
-| Active-oracle calibration | A,B,C,D | [Bounded calibration](KR-003-ACTIVE-ORACLE-CALIBRATION.md) and synthetic anti-promotion tests are implemented; zero qualification rows are enforced | Conditional on transport PASS, manual permission setup and one visible agreement check |
+| New-device metadata / transport | A,B,D | [Samsung SM-X400 / Android 16 API 36 transport passed](evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md); exact metadata and one counter-correlated tap are preserved | Complete for transport only on that exact configuration; no enforcement inference |
+| Active-oracle calibration | A,B,C,D | Three source-`5a46f75` runs remain INVALID at runner Accessibility verification; v2 adds semantic component parsing and typed fail-closed diagnostics | Run the corrected calibration once, including one visible agreement response; stop again on FAIL/INVALID |
 | AC-3 / TIME-04: 100 zero expiries | B,C,D | Q7 remains the Mi 8 specialization; a new configuration-specific bundle is prepared only after generic calibration PASS | 100 fresh active-oracle rows plus the approved human checkpoints; no Mi 8/Samsung pooling |
 | TIME-01 eligible total / TIME-02 screen off / TIME-03 keyguard | A,B,C | Pure monotonic cases pass; future phase runner can journal state before/after | Owner physically toggles screen/keyguard and observes eligibility; no automated unlock |
 | TIME-05 process death | B,C | Prepare a journal-before/after debug self-termination phase after qualification | Verify the candidate process actually changes; do not substitute fixture kill or force-stop |
@@ -49,9 +49,8 @@ UsageEvents reconciliation, grants, pairing, cloud outage sync or deletion cover
 Apply the exact [device-to-matrix mapping](KR-003-DEVICE-MATRIX-MAPPING.md) to each validated onboarding record.
 
 The physical protocol requires **API 28**, **Android 15/API 35**, **Android 16/API 36**, and each proposed OEM support variant. These are hard
-physical gates under the current contract. Completed inventory: Mi 8/API 29 only. An authorized Samsung tablet is expected, but exact metadata is
-**UNSPECIFIED** until onboarding and therefore satisfies zero matrix rows tonight. Required 28/35/36 configurations remain unavailable/unrun unless
-the read Samsung metadata later establishes exactly one of those rows.
+physical gates under the current contract. The Samsung record establishes an Android 16/API 36 plus exact Samsung-variant configuration and passes
+their transport prerequisite only. Calibration/enforcement is INVALID/Not run, so neither physical enforcement row is passed. API 28 and 35 remain unavailable/unrun.
 Android 17/API 37 is now an official platform. Adding it to the required support set remains **UNSPECIFIED**; any API 37 result is supplemental
 until that owner decision and cannot satisfy the existing API 36 row.
 The broader matrix proposes a current Google reference, Samsung phone/tablet and restrictive tablet/OEM; exact approved support variants remain

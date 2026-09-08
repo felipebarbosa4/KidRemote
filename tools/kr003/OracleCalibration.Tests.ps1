@@ -11,6 +11,10 @@ Assert-Equal ([bool]($source -match 'QualificationSamples=0')) $true
 Assert-Equal ([bool]($source -match 'Read-PhysicalAgreement')) $true
 Assert-Equal ([bool]($source -match 'ENFORCEMENT_SERVICE_RESTARTED')) $true
 Assert-Equal ([bool]($source -match 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY')) $true
+Assert-Equal ([bool]($source -match 'runnerVersion -ne 2')) $true
+Assert-Equal ([bool]($source -match "settings','--user','current','get','secure','enabled_accessibility_services")) $true
+Assert-Equal ([bool]($source -match "Write-CalibrationJson 'permission-verification.json'")) $true
+Assert-Equal ([bool]($source -match 'Get-KRRequiredPermissionFailure')) $true
 Assert-Equal ([bool]($source -match 'for\([^\r\n]+-le 100|attempt.+100|RESET_METRICS|OfflineNetwork|svc[^\r\n]+(?:disable|enable)|\buninstall\b|\breboot\b|pm[^\r\n]+clear|appops[^\r\n]+set|screencap|uiautomator|dumpsys\s+window|ro\.build\.fingerprint|ro\.serialno|ANDROID_ID')) $false
 Assert-Equal ([bool]($source -match 'getRootInActiveWindow|getWindows\(|getText\(|getContentDescription|takeScreenshot')) $false
 Write-Host "$script:Checks oracle-calibration assertions passed; no device command was executed."

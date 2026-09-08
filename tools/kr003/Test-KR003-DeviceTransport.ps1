@@ -71,8 +71,8 @@ function Read-DeviceMetadata {
     $usage=$null; $services=$null; $accessibility=$null
     if($candidateInstalled) {
         $usage=Invoke-DeviceAdb 'USAGE_ACCESS_STATE' @('shell','cmd','appops','get',$candidatePackage,'GET_USAGE_STATS') -Optional
-        $services=Invoke-DeviceAdb 'ACCESSIBILITY_STATE' @('shell','settings','get','secure','enabled_accessibility_services') -Optional
-        $accessibility=Invoke-DeviceAdb 'ACCESSIBILITY_STATE' @('shell','settings','get','secure','accessibility_enabled') -Optional
+        $services=Invoke-DeviceAdb 'ACCESSIBILITY_STATE' @('shell','settings','--user','current','get','secure','enabled_accessibility_services') -Optional
+        $accessibility=Invoke-DeviceAdb 'ACCESSIBILITY_STATE' @('shell','settings','--user','current','get','secure','accessibility_enabled') -Optional
     }
     $result=New-KRDeviceMetadataRecord $manufacturer $model $android $api $patch $build $batterySaver $adaptiveBattery $appStandby $candidateInstalled $usage $services $accessibility $candidateService
     $script:MetadataComplete=Test-KRDeviceMetadataComplete $result
