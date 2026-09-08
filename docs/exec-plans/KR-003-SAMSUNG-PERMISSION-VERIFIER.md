@@ -16,3 +16,9 @@
 ## Stop point
 
 Stop after publishing one exact PowerShell calibration command. Do not run it, start a 100-cycle qualification, generalize to Mi 8/another Samsung configuration, close KR-003, merge PR #16 or touch KR-004.
+
+## Repository checkpoint
+
+Source `c74d6569ea4e4d179922c389790a4a96d1a9c2fe` implements and validates runner v2. Its clean immutable bundle and exact stopped handoff are recorded in
+[KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md).
+Physical execution remains Not run; Issue #3 / PR #16 synchronization and exact-source CI remain the final administrative steps.

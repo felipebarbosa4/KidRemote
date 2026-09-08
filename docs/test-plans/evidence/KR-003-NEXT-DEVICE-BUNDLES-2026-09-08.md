@@ -91,5 +91,5 @@ Both current bundles were created from the clean exact commit and then independe
 
 No physical device command was run while preparing either bundle. The owner later ran them: the Samsung SM-X400 transport passed, while three v1
 calibrations remained INVALID with zero samples. See [the ingested evidence and verifier analysis](KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md).
-A corrected v2 calibration handoff is recorded separately; these v1 runs and bundle hashes remain immutable. No result extends Mi 8, Pixel,
+A [corrected v2 calibration handoff](KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) is recorded separately; these v1 runs and bundle hashes remain immutable. No result extends Mi 8, Pixel,
 another Samsung build or another OEM evidence. The 100-cycle, remaining lifecycle/safety/device and external Play gates stay open.
