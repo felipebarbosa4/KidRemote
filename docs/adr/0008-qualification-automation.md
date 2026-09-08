@@ -323,7 +323,30 @@ All three tested input routes are denied on this reported configuration. This in
 enforcement observations, and does not prove every conceivable transport impossible.
 
 Decision: apply the existing stop condition. Q7 cannot proceed; its unfulfilled oracle prerequisite and the maximum-three-human constraint
-currently conflict. Owner choice of another authorized physical device, supported explicitly approved configuration investigation, or pause/product
-scope review is **UNSPECIFIED**. Another device's results cannot be attributed to this Mi 8; any settings change creates a separately recorded
-configuration. Fresh input delivery, blocked controls and service continuity are required before reconsideration. No new code, security bypass,
+currently conflict on the Mi 8. OD-31 now selects another authorized physical-device path, expected to be a Samsung tablet; exact configuration
+facts remain **UNSPECIFIED** until read. Another device's results cannot be attributed to this Mi 8; any settings change creates a separately
+recorded configuration. Fresh input delivery, blocked controls and service continuity are required before reconsideration. No new security bypass,
 per-cycle manual replacement or gate reduction is justified. Security/privacy and operational constraints above remain unchanged.
+
+## Generic device and oracle gate separation — 2026-09-08
+
+The Q7 evidence model is portable, while the Q7 bundle, its Mi 8 hashes and all Q7 physical failures remain configuration-specific historical
+evidence. New-device work therefore uses four separate protocols instead of changing or relabelling Q7:
+
+1. [generic onboarding/transport](../test-plans/KR-003-DEVICE-ONBOARDING.md) discovers only approved sanitized fields, installs the independent
+   fixture, correlates one shell tap with exactly one counter increment and stops;
+2. [generic oracle calibration](../test-plans/KR-003-ACTIVE-ORACLE-CALIBRATION.md), available only after transport PASS, installs the exact
+   disposable candidate and tests an unblocked positive control, one blocked input/focus control, service continuity and one physical agreement;
+3. a future configuration-specific 100-cycle bundle may be prepared only after calibration PASS and matrix mapping; its rows are fresh and
+   cannot pool with Mi 8 or another device;
+4. rendering-only flicker, exact visible coverage/readability and safe-surface usability remain human observations outside the counter oracle.
+
+The fixture remains a separate package/UID with no shared state, candidate callback, network permission or Accessibility capability. It exports
+only its own instance, focus/resume/focus-gain and tap counters and probe coordinate. No node/text/content, screenshot, build fingerprint, serial,
+account, raw enabled-service list or package history is persisted. Candidate telemetry corroborates revision, timing, health and service continuity;
+it cannot turn a fixture or physical failure into PASS. Transport success does not imply oracle calibration, and calibration success creates zero
+qualification rows.
+
+This decomposition keeps OD-29 intact and applies it to any newly proposed configuration without assuming Samsung, Pixel or other OEM behaviour.
+Invalidation tests reject missing/extra counter increments, changed fixture identity/coordinate, input/focus leakage, service reconnect, permission
+loss, telemetry-only success, identifier fields, raw command output and any calibration summary with a nonzero qualification count.

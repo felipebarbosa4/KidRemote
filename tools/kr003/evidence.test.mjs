@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
-import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport, ingestUiAutomationTransport, ingestMonkeyTransport } from "./ingest.mjs";
+import { createHash } from "node:crypto";
+import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport, ingestDeviceTransport, ingestOracleCalibration, ingestUiAutomationTransport, ingestMonkeyTransport } from "./ingest.mjs";
 import { validateAndroidSpike } from "../validate-android-spike.mjs";
 const temporary = fn => {
   const directory=mkdtempSync(join(tmpdir(),"kr003-synthetic-"));
@@ -344,4 +345,57 @@ test("oracle transport source is fixture-only and records no raw ADB output",()=
   assert.doesNotMatch(runner,/Write-TransportJson[^\n]+(?:stdout|stderr)|RawStdout|RawStderr/i);
   assert.match(packager,/diagnosticOnly:true/);
   assert.match(packager,/223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc/);
+});
+
+test("generic device transport ingestion accepts only sanitized metadata and one fixture tap",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const device={Schema:1,Manufacturer:'samsung',Model:'SM-X000',AndroidVersion:'16',ApiLevel:'36',SecurityPatch:'2026-08-05',BuildId:'BP2A.260805.001',
+    BatteryManagement:{BatterySaver:'DISABLED',AdaptiveBattery:'ENABLED',AppStandby:'ENABLED',OemBatteryManagement:'UNSPECIFIED'},
+    RequiredPermissionState:{UsageAccess:'NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED',AccessibilityService:'NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED'}};
+  const operations=['ADB_STATE',...Array(6).fill('DEVICE_METADATA'),...Array(3).fill('BATTERY_STATE'),'CANDIDATE_INSTALL_STATE','FIXTURE_INSTALL','FIXTURE_PATH','FIXTURE_PULL','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','FIXTURE_STATE']
+    .map(OperationCategory=>({OperationCategory,ExitCode:0,StderrClass:'NONE'}));
+  const summary={Protocol:'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT',Status:'PASSED_TRANSPORT_PREFLIGHT',Reason:'FIXTURE_COUNTER_INCREMENTED_ONCE',
+    SourceCommit:'a'.repeat(40),FixtureSha256:'b'.repeat(64),DeviceEvidenceSha256:null,AdbAuthorized:true,MetadataComplete:true,BundleVerified:true,InstalledFixtureHashVerified:true,
+    FixtureReady:true,BeforeTaps:4,AfterTaps:5,CounterIncremented:true,RejectedOperation:null,CandidateInstalledByRunner:false,TimerUsed:false,
+    RestrictionChanged:false,RadiosChanged:false,PermissionsChanged:false,DestructiveAction:false,QualificationSamples:0};
+  save('device.json',device);summary.DeviceEvidenceSha256=createHash('sha256').update(readFileSync(join(dir,'device.json'))).digest('hex');save('operations.json',operations);save('summary.json',summary);
+  const result=ingestDeviceTransport(dir);assert.equal(result.status,'PASSED_TRANSPORT_PREFLIGHT');assert.equal(result.candidateInstalledByRunner,false);
+  save('device.json',{...device,Serial:'forbidden'});assert.throws(()=>ingestDeviceTransport(dir));
+  save('device.json',device);save('operations.json',operations.map((entry,i)=>i===0?{...entry,Raw:'forbidden'}:entry));assert.throws(()=>ingestDeviceTransport(dir));
+  save('operations.json',operations);save('summary.json',{...summary,AfterTaps:6});assert.throws(()=>ingestDeviceTransport(dir));
+  rmSync(join(dir,'device.json'));save('operations.json',[{OperationCategory:'ADB_STATE',ExitCode:1,StderrClass:'OTHER'}]);
+  save('summary.json',{...summary,Status:'INVALID',Reason:'ADB_OPERATION_REJECTED',SourceCommit:null,FixtureSha256:null,DeviceEvidenceSha256:null,
+    AdbAuthorized:false,MetadataComplete:false,BundleVerified:false,InstalledFixtureHashVerified:false,FixtureReady:false,BeforeTaps:null,AfterTaps:null,
+    CounterIncremented:false,RejectedOperation:'ADB_STATE'});
+  assert.equal(ingestDeviceTransport(dir).status,'INVALID');
+}));
+
+test("bounded generic oracle calibration cannot create qualification rows or promote telemetry",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const device={Schema:1,Manufacturer:'samsung',Model:'SM-X000',AndroidVersion:'16',ApiLevel:'36',SecurityPatch:'2026-08-05',BuildId:'BP2A.260805.001',
+    BatteryManagement:{BatterySaver:'DISABLED',AdaptiveBattery:'ENABLED',AppStandby:'ENABLED',OemBatteryManagement:'UNSPECIFIED'},
+    RequiredPermissionState:{UsageAccess:'GRANTED',AccessibilityService:'GRANTED'}};
+  const operations=['ADB_STATE','DEVICE_METADATA','BATTERY_STATE','CANDIDATE_INSTALL','CANDIDATE_PATH','CANDIDATE_PULL','FIXTURE_INSTALL','FIXTURE_PATH','FIXTURE_PULL','CANDIDATE_OPEN','CANDIDATE_STATE','CANDIDATE_CLEAR','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','CANDIDATE_ARM']
+    .map(OperationCategory=>({OperationCategory,ExitCode:0,StderrClass:'NONE'}));
+  const summary={Protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',Status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',Reason:'COMPLETED',
+    SourceCommit:'a'.repeat(40),CandidateSha256:'b'.repeat(64),FixtureSha256:'c'.repeat(64),TransportEvidenceProtocol:'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT',
+    TransportDeviceEvidenceSha256:'d'.repeat(64),
+    PositiveControl:true,BlockedControl:true,ServiceContinuous:true,PhysicalAgreement:'PASS',CleanupVerified:true,Revision:8,LatencyMs:120,HoldMillis:10010,
+    InjectedBlockedTaps:20,CalibrationSamples:1,QualificationSamples:0,CandidateTelemetryCorroboratingOnly:true,FixtureIndependentPackageAndUid:true,
+    SharedState:false,NodeTextContentAccess:false,Screenshots:false,NetworkChanged:false,PermissionsChangedByRunner:false,DestructiveAction:false};
+  save('device.json',device);save('operations.json',operations);save('summary.json',summary);
+  assert.equal(ingestOracleCalibration(dir).qualificationSamples,0);
+  save('summary.json',{...summary,PhysicalAgreement:'UNRECORDED'});assert.throws(()=>ingestOracleCalibration(dir));
+  save('summary.json',{...summary,QualificationSamples:1});assert.throws(()=>ingestOracleCalibration(dir));
+  save('summary.json',{...summary,CandidateTelemetryCorroboratingOnly:false});assert.throws(()=>ingestOracleCalibration(dir));
+}));
+
+test("new-device runners stay transport-first, generic and privacy bounded",()=>{
+  const transport=readFileSync(resolve('tools/kr003/Test-KR003-DeviceTransport.ps1'),'utf8');
+  const calibration=readFileSync(resolve('tools/kr003/Test-KR003-OracleCalibration.ps1'),'utf8');
+  const preflightPackager=readFileSync(resolve('tools/kr003/package-device-preflight.mjs'),'utf8');
+  assert.match(transport,/CandidateInstalledByRunner=\$false/);assert.doesNotMatch(preflightPackager,/'candidate\.apk'/);
+  assert.match(transport,/Invoke-DeviceAdb 'INPUT_TAP'/);assert.match(calibration,/QualificationSamples=0/);
+  for(const source of [transport,calibration]) assert.doesNotMatch(source,/ro\.serialno|ro\.build\.fingerprint|ANDROID_ID|screencap|uiautomator|dumpsys\s+window/i);
+  assert.doesNotMatch(calibration,/for\([^\n]+-le 100|OfflineNetwork|svc[^\n]+disable/i);
 });

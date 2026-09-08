@@ -1,8 +1,9 @@
 # KR-003 Q7 active-oracle Mi 8 qualification
 
-Status, 2026-09-07: **BLOCKED before sample 1**. [All three bounded input transports were denied](evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+Status, 2026-09-08: **BLOCKED before sample 1 on the unchanged Mi 8 configuration**. [All three bounded input transports were denied](evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
 The independent oracle prerequisite is unsatisfied; the per-cycle visual fallback conflicts with the maximum-three-human constraint.
-Do not run Q7 on the unchanged configuration. Owner device/configuration/product decision: **UNSPECIFIED**. The contract below is not weakened.
+Do not run Q7 on the unchanged configuration. OD-31 selects a separate generic transport-first path for the expected authorized Samsung tablet;
+its exact facts and input capability remain **UNSPECIFIED**. Q7 and its Mi 8 evidence stay historical/configuration-specific, and the contract below is not weakened.
 
 - **Goal:** Measure 100 offline expiry cycles without 100 repetitive human confirmations while retaining an independently calibrated enforcement oracle.
 - **Context:** Q6 was packaged but not run. The owner limits this redesign to at most three human checkpoint sessions and does not authorize silently weakening the evidence gate.

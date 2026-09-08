@@ -33,7 +33,7 @@ Verified 2026-09-05:
 | Android Gradle Plugin | 9.4.0 | Current stable AGP; official compatibility table |
 | Gradle | 9.6.0 | AGP 9.4 default/minimum; wrapper distribution checksum pinned |
 | JDK toolchain | 17 | AGP 9.4 requirement and explicit Android build recommendation |
-| compile / target SDK | 36 | Current stable Android 16 platform and current Play submission floor |
+| compile / target SDK | 36 | Current mobile Play submission floor; Android 17/API 37 exists, but changing this disposable pin is **UNSPECIFIED** |
 | minimum SDK | 28 | Architecture candidate for the event set; support remains **UNSPECIFIED** pending tests |
 | Build Tools | 36.0.0 | AGP 9.4 default; supplied by an authorized Android SDK installation |
 
@@ -68,6 +68,10 @@ The first compile/unit/lint/APK/merged-manifest run is recorded in
 Never install this spike on a child's or other personal device. Use an explicitly authorized, recoverable lab device with no personal content.
 Follow [the KR-003 physical protocol](../../docs/test-plans/KR-003-PHYSICAL.md) and record results in
 [`docs/test-plans/evidence`](../../docs/test-plans/evidence/README.md).
+
+For a newly authorized device, use [generic fixture-only onboarding](../../docs/test-plans/KR-003-DEVICE-ONBOARDING.md) before installing this
+candidate. A transport PASS only permits the separate [bounded oracle calibration](../../docs/test-plans/KR-003-ACTIVE-ORACLE-CALIBRATION.md);
+it is not enforcement evidence or authorization for a 100-cycle run.
 
 Basic smoke path:
 

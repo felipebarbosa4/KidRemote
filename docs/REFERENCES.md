@@ -5,7 +5,8 @@
 - **Constraints:** Official primary sources only. Review date is not policy approval, test execution, or a claim about future stability.
 - **Done when:** Claims link next to their use and decision gaps are explicit.
 
-All entries below were reviewed on **2026-09-05** using official pages, official indexed documentation, vendor DocC JSON, or official GitHub API/CLI documentation.
+Entries were initially reviewed on **2026-09-05** using official pages, official indexed documentation, vendor DocC JSON, or official GitHub API/CLI documentation.
+Rows with a later verification date were rechecked independently; this does not imply every other row was re-reviewed on that date.
 Where a web reader returned only JavaScript, Apple framework contents were additionally obtained from its official documentation JSON.
 Page modification dates are listed only where observed; otherwise publisher modification date is **UNSPECIFIED**.
 Recheck current docs at implementation and before release. No exact mobile/backend SDK versions are selected here.
@@ -51,7 +52,10 @@ Recheck current docs at implementation and before release. No exact mobile/backe
 | [Dedicated-device provisioning](https://developer.android.com/work/dpc/dedicated-devices) | Factory reset and managed enrollment; different from consumer pairing | 2026-09-05 |
 | [Lock Task](https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode) | DPC allowlisting vs user-exitable pinning | 2026-09-05 |
 | [Android stopped-package changes](https://developer.android.com/about/versions/15/behavior-changes-all) | Force-stop persists until user interaction; pending intents cancelled | 2026-09-05 |
-| [Android 17 changes](https://developer.android.com/about/versions/17/summary) | Current API 37 platform changes; no automatic SDK selection | 2026-09-05 |
+| [Android 17](https://developer.android.com/about/versions/17/) | Current API 37 platform; no automatic SDK/support selection | 2026-09-08 |
+| [Android API levels](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html) | Android 17 maps to API 37 | 2026-09-08 |
+| [Hardware device setup](https://developer.android.com/studio/run/device) | USB debugging, device authorization and ADB connection verification | 2026-09-08 |
+| [Doze and App Standby](https://developer.android.com/training/monitoring-device-state/doze-standby) | Generic power modes and user battery-optimization state do not establish OEM policy | 2026-09-08 |
 | [Direct Boot](https://developer.android.com/privacy-and-security/direct-boot) | Device/credential-encrypted storage and component availability | 2026-09-05 |
 | [Android Keystore](https://developer.android.com/privacy-and-security/keystore) | Key storage/wrapping boundary; compromised OS limitations | 2026-09-05 |
 | [Auto Backup](https://developer.android.com/identity/data/autobackup) | Backup/device-transfer exclusion requirements | 2026-09-05 |
@@ -66,7 +70,7 @@ Recheck current docs at implementation and before release. No exact mobile/backe
 | --- | --- | --- |
 | [Sensitive permissions and APIs](https://support.google.com/googleplay/android-developer/answer/16558241) | Broader declared Accessibility uses, parental exception and security-control prohibition | 2026-09-05 |
 | [Accessibility declaration and use](https://support.google.com/googleplay/android-developer/answer/10964491) | Disclosure/consent/declaration/video; deterministic automation distinction | 2026-09-05 |
-| [Target API requirements](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en) | New mobile apps/updates API 36+ from 2026-08-31 | 2026-09-05 |
+| [Target API requirements](https://developer.android.com/google/play/requirements/target-sdk) | New mobile apps/updates API 36+ from 2026-08-31 | 2026-09-08 |
 | [Target audience](https://support.google.com/googleplay/android-developer/answer/9867159) | Accurate audience classification; owner choice not inferred | 2026-09-05 |
 | [Families](https://support.google.com/googleplay/android-developer/answer/9893335?hl=en) | Children's data/identifier and SDK constraints | 2026-09-05 |
 | [Data safety](https://support.google.com/googleplay/android-developer/answer/10787469) | Actual collection/sharing declarations | 2026-09-05 |

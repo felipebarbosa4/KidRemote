@@ -17,7 +17,9 @@ requirement, broader device/lifecycle gate, support boundary, production accepta
 at most three human checkpoint sessions. Three Q7 preflight attempts stopped INVALID before ARM/sample 1. Shell input and the separate
 [UiAutomation transport](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) were denied. Q7 qualification has zero samples;
 the bounded [Monkey transport also returned DOWN SECURITY_EXCEPTION](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
-Q7 is blocked pending an owner device/configuration/product decision. Input denial neither rejects the enforcement candidate nor lowers its gate.
+Q7 is blocked on the unchanged Mi 8 configuration. OD-31 authorizes a transport-first evaluation on an expected Samsung tablet, but its exact
+model/Android/API/build/power configuration and input capability are **UNSPECIFIED** until sanitized discovery. Input denial neither rejects the
+enforcement candidate nor lowers its gate, and evidence from one device/configuration cannot be transferred to another.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.
@@ -54,7 +56,7 @@ Never auto-enable, mislabel, or suppress platform warnings. Sideloading/restrict
 **Versions:** candidate API 28+ for screen/keyguard usage events; current target/compile SDK **UNSPECIFIED**.
 Test oldest candidate, Android 15/16, and current Android 17 where available; use published platform changes, not stale SDK assumptions.
 [Usage events](https://developer.android.com/reference/android/app/usage/UsageEvents.Event),
-[Android 17 changes](https://developer.android.com/about/versions/17/summary).
+[Android 17 changes](https://developer.android.com/about/versions/17/), reviewed 2026-09-08.
 **Play:** declaration, dedicated disclosure and demo video, listing explanation, least-privilege rationale; approval **UNSPECIFIED**.
 **Disable/uninstall resistance:** no guaranteed resistance; user/system can remove privileges or stop the app.
 Do not build uninstall interception in MVP; the policy exception does not supply an OS capability or approve circumvention.

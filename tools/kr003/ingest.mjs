@@ -317,6 +317,80 @@ export function ingestOracleTransport(directory) {
     rejectedStderrClass:summary.RejectedStderrClass,q7Samples:0,kr003Complete:false};
 }
 
+const deviceOperationCategories=['ADB_STATE','DEVICE_METADATA','BATTERY_STATE','CANDIDATE_INSTALL_STATE','USAGE_ACCESS_STATE','ACCESSIBILITY_STATE',
+  'FIXTURE_INSTALL','FIXTURE_PATH','FIXTURE_PULL','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','CANDIDATE_INSTALL','CANDIDATE_PATH',
+  'CANDIDATE_PULL','CANDIDATE_OPEN','CANDIDATE_STATE','CANDIDATE_CLEAR','CANDIDATE_ARM'];
+function validateDeviceOperations(operations,allowEmpty=false) {
+  assert(Array.isArray(operations)&&(allowEmpty||operations.length>0));
+  for(const operation of operations) {
+    assert.deepEqual(Object.keys(operation),['OperationCategory','ExitCode','StderrClass']);
+    assert(deviceOperationCategories.includes(operation.OperationCategory));
+    assert(Number.isInteger(operation.ExitCode));
+    assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER'].includes(operation.StderrClass));
+  }
+}
+function validateGenericDevice(device) {
+  assert.deepEqual(Object.keys(device),['Schema','Manufacturer','Model','AndroidVersion','ApiLevel','SecurityPatch','BuildId','BatteryManagement','RequiredPermissionState']);
+  assert.equal(device.Schema,1);
+  for(const key of ['Manufacturer','Model','AndroidVersion','BuildId']) assert.match(device[key],/^[A-Za-z0-9][A-Za-z0-9 ._+()/:,-]{0,119}$/);
+  assert.match(device.ApiLevel,/^[0-9]{1,3}$/);
+  assert.match(device.SecurityPatch,/^20[0-9]{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/);
+  assert.deepEqual(Object.keys(device.BatteryManagement),['BatterySaver','AdaptiveBattery','AppStandby','OemBatteryManagement']);
+  for(const key of ['BatterySaver','AdaptiveBattery','AppStandby']) assert(['ENABLED','DISABLED','UNSPECIFIED'].includes(device.BatteryManagement[key]));
+  assert.equal(device.BatteryManagement.OemBatteryManagement,'UNSPECIFIED');
+  assert.deepEqual(Object.keys(device.RequiredPermissionState),['UsageAccess','AccessibilityService']);
+  for(const value of Object.values(device.RequiredPermissionState)) assert(['GRANTED','NOT_GRANTED','UNSPECIFIED','NOT_APPLICABLE_CANDIDATE_NOT_INSTALLED'].includes(value));
+  for(const forbidden of ['Serial','Account','AndroidId','BuildFingerprint','PackageHistory']) assert.equal(Object.hasOwn(device,forbidden),false);
+}
+
+export function ingestDeviceTransport(directory) {
+  const read=name=>JSON.parse(decode(resolve(directory,name))),summary=read('summary.json'),operations=read('operations.json');
+  assert.equal(summary.Protocol,'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT');
+  const deviceExists=existsSync(resolve(directory,'device.json')),device=deviceExists?read('device.json'):null;
+  if(deviceExists) { validateGenericDevice(device);assert.match(summary.DeviceEvidenceSha256,/^[a-f0-9]{64}$/);assert.equal(summary.DeviceEvidenceSha256,hash(resolve(directory,'device.json'))); }
+  validateDeviceOperations(operations,summary.Status==='INVALID');
+  for(const key of ['CandidateInstalledByRunner','TimerUsed','RestrictionChanged','RadiosChanged','PermissionsChanged','DestructiveAction']) assert.equal(summary[key],false);
+  assert.equal(summary.QualificationSamples,0);
+  if(summary.Status==='PASSED_TRANSPORT_PREFLIGHT') {
+    assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);assert(deviceExists);
+    assert.equal(summary.AdbAuthorized,true);assert.equal(summary.MetadataComplete,true);assert.equal(summary.BundleVerified,true);
+    assert(operations.some(operation=>operation.OperationCategory==='DEVICE_METADATA'&&operation.ExitCode===0));
+    assert(operations.some(operation=>operation.OperationCategory==='FIXTURE_PULL'&&operation.ExitCode===0));
+    assert.equal(operations.filter(operation=>operation.OperationCategory==='INPUT_TAP').length,1);
+    assert.equal(summary.Reason,'FIXTURE_COUNTER_INCREMENTED_ONCE');assert.equal(summary.InstalledFixtureHashVerified,true);assert.equal(summary.FixtureReady,true);
+    assert.equal(summary.CounterIncremented,true);assert.equal(summary.AfterTaps,summary.BeforeTaps+1);assert.equal(summary.RejectedOperation,null);
+  } else if(summary.Status==='FAILED') {
+    assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);assert(deviceExists);
+    assert.equal(summary.AdbAuthorized,true);assert.equal(summary.MetadataComplete,true);assert.equal(summary.BundleVerified,true);
+    assert.equal(operations.filter(operation=>operation.OperationCategory==='INPUT_TAP').length,1);
+    assert.equal(summary.Reason,'INPUT_NOT_DELIVERED');assert.equal(summary.CounterIncremented,false);
+  } else {
+    assert.equal(summary.Status,'INVALID');if(summary.RejectedOperation!==null) assert(deviceOperationCategories.includes(summary.RejectedOperation));
+  }
+  return {sourceCommit:summary.SourceCommit,status:summary.Status,reason:summary.Reason,device,counterIncremented:summary.CounterIncremented,
+    candidateInstalledByRunner:false,qualificationSamples:0,kr003Complete:false};
+}
+
+export function ingestOracleCalibration(directory) {
+  const read=name=>JSON.parse(decode(resolve(directory,name))),summary=read('summary.json'),operations=read('operations.json');
+  assert.equal(summary.Protocol,'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION');validateDeviceOperations(operations,summary.Status==='INVALID');
+  assert.equal(summary.QualificationSamples,0);assert.equal(summary.CandidateTelemetryCorroboratingOnly,true);
+  for(const key of ['FixtureIndependentPackageAndUid']) assert.equal(summary[key],true);
+  for(const key of ['SharedState','NodeTextContentAccess','Screenshots','NetworkChanged','PermissionsChangedByRunner','DestructiveAction']) assert.equal(summary[key],false);
+  if(summary.Status==='PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY') {
+    assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.CandidateSha256,/^[a-f0-9]{64}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);
+    assert.equal(summary.TransportEvidenceProtocol,'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT');assert.match(summary.TransportDeviceEvidenceSha256,/^[a-f0-9]{64}$/);
+    const device=read('device.json');validateGenericDevice(device);
+    assert.equal(device.RequiredPermissionState.UsageAccess,'GRANTED');assert.equal(device.RequiredPermissionState.AccessibilityService,'GRANTED');
+    assert.equal(summary.Reason,'COMPLETED');assert.equal(summary.PositiveControl,true);assert.equal(summary.BlockedControl,true);
+    assert.equal(summary.ServiceContinuous,true);assert.equal(summary.PhysicalAgreement,'PASS');assert.equal(summary.CleanupVerified,true);
+    assert.equal(summary.CalibrationSamples,1);assert(Number.isInteger(summary.LatencyMs)&&summary.LatencyMs>=0);
+    assert(Number.isInteger(summary.Revision)&&summary.Revision>=0);assert(summary.HoldMillis>=10000);assert.equal(summary.InjectedBlockedTaps,20);
+  } else assert(['FAIL','INVALID'].includes(summary.Status));
+  return {sourceCommit:summary.SourceCommit,status:summary.Status,reason:summary.Reason,calibrationSamples:summary.CalibrationSamples,
+    qualificationSamples:0,physicalAgreement:summary.PhysicalAgreement,kr003Complete:false};
+}
+
 export function ingestUiAutomationTransport(directory) { return ingestAlternateTransport(directory,false); }
 export function ingestMonkeyTransport(directory) { return ingestAlternateTransport(directory,true); }
 function ingestAlternateTransport(directory,monkey) {
@@ -370,6 +444,6 @@ function ingestAlternateTransport(directory,monkey) {
 
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="device" ? ingestDeviceTransport(first) : kind==="calibration" ? ingestOracleCalibration(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

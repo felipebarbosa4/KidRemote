@@ -1,5 +1,10 @@
 # KR-003 qualification contract v3 (KR003-Q7) — 2026-09-06
 
+Portability note, 2026-09-08: the independent active-oracle semantics apply to any explicitly authorized candidate configuration, but the Q7
+bundle and results below remain the Mi 8 specialization. A new device must first pass [generic fixture-only transport](KR-003-DEVICE-ONBOARDING.md),
+then [generic bounded oracle calibration](KR-003-ACTIVE-ORACLE-CALIBRATION.md), before a fresh configuration-specific 100-cycle bundle is prepared.
+No metadata, calibration or sample is transferable between Mi 8, Samsung, Pixel, another OEM or a changed build/power/permission configuration.
+
 - **Goal:** Produce 100 valid offline expiry/latency cycles using an independently calibrated active fixture oracle and no more than three human checkpoint sessions per candidate configuration.
 - **Context:** KR-003 AC-3, [physical protocol](KR-003-PHYSICAL.md), [matrix](MATRIX.md), [capacity target](CAPACITY.md), ADR-0002/0008, the Mi 8 ten-cycle checkpoint, and owner operating constraint OD-29.
 - **Constraints:** Authorized lab; owner executes one Windows command; no destructive operations, screenshot/node/content inspection, hidden physical inference, result pooling or more than three human checkpoint sessions.

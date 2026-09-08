@@ -7,7 +7,10 @@
 
 ## Candidate record
 
-Before testing record: evidence ID, date/timezone, observer, git commit/APK SHA-256, app version, device manufacturer/model,
+For a new device, first use the [generic onboarding protocol](KR-003-DEVICE-ONBOARDING.md). It records only manufacturer/model, Android/API,
+security patch/build ID, readable battery-management flags and required permission state; it does not install the candidate before transport PASS.
+
+After transport PASS and before candidate testing, extend that record with: evidence ID, date/timezone, observer, git commit/APK SHA-256, app version,
 Android version/API/security patch/build fingerprint, primary/secondary user, Google Play system status, launcher,
 battery optimization and OEM power settings, Accessibility/Usage Access state, network state and whether developer options/ADB are enabled.
 Do not record device serial, accounts, real child identity or app/content history.
@@ -59,7 +62,13 @@ Report internal expiry-to-attachment samples and p50/p95/maximum independently f
 safe-surface checks, Home attempts or re-entry checks are not additional expiry trials.
 
 Repeat the candidate run at minimum on the oldest proposed API 28 configuration, Android 15, Android 16 and any proposed OEM support variants.
-Android 17 is currently a preview research target, not the stable production baseline.
+Current official documentation identifies Android 17 as API 37. Whether it is added to the approved KR-003 support matrix is **UNSPECIFIED**;
+it cannot substitute for the existing API 36 gate without an owner support-boundary decision. See [Android 17](https://developer.android.com/about/versions/17/)
+and [API levels](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html), reviewed 2026-09-08.
+
+Map each newly read configuration to those requirements before candidate installation. An expected Samsung tablet may satisfy one API/OS row and
+one Samsung/OEM-variant row only when its exact metadata establishes both. It cannot satisfy Pixel/current-Google or another OEM rows. Mi 8/API 29
+evidence cannot satisfy a Samsung row, and Samsung evidence cannot retroactively change the Mi 8 outcome.
 
 ## Required functional/failure rows
 

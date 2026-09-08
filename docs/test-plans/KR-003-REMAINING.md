@@ -7,49 +7,53 @@
 
 ## Classification and queue
 
-A = fully automatable checks; B = mostly automated with physical observation; C = human judgement; D = additional physical configuration; E = external policy evidence.
-Multiple letters identify dependencies. 'Prepared' is tooling, not execution.
+A = fully automatable repository/local synthetic work; B = automatable on a device after one owner authorization/setup; C = physical human
+observation; D = evidence from another Android/API/OEM configuration; E = external Google Play evidence. Multiple letters identify real dependencies,
+not interchangeable evidence. `Prepared` is tooling; `Not run` remains the physical result.
 
 | Row / gate | Class | Automation support / next bounded work | Remaining physical or approval boundary |
 | --- | --- | --- | --- |
-| AC-3 / TIME-04: 100 zero expiries | A,B,D | [Q7](KR-003-Q7-AUTOMATED-QUALIFICATION.md) retains the calibrated candidate and adds a real-input/focus fixture oracle, per-cycle positive control, 100 unattended rows, trace/statistics and fail-stop evidence | Owner runs one command and at most three checkpoint sessions; oracle preflight and required physical versions remain |
-| TIME-01 eligible total / TIME-02 screen off / TIME-03 keyguard | A,B | Pure monotonic tests exist; use debug snapshots before/after screen changes; add phase runner after qualification | Physically toggle screen/keyguard; verify only eligible time falls; no automated unlock |
-| TIME-05 process death | B | Queue approved debug self-process-termination hook with journal-before-crash; relaunch/query and compare balance/revision | Do not substitute force-stop or killing the fixture. System-bound process may survive `am kill`; verify actual process transition |
-| TIME-06 app/service restart | A,B | Snapshot/revision/heartbeat controls prepared; explicit activity relaunch is supported | Relaunch alone does not prove process death; physically check recovered restriction |
-| TIME-07 reboot online | B | Queue snapshot → approved reboot → bounded device wait → snapshot/diff, boot-gap timestamps | Separate reboot approval and owner keyguard unlock; do not waive pre-unlock coverage |
-| TIME-08 reboot offline | B | Same sequence with recorded offline condition and unchanged durable expired balance | Separate reboot/network-change approval; restored uncertainty/restriction and gap observed |
-| TIME-09/10 wall clock +/-24h | A,B | Domain monotonic tests exist; snapshot comparison ready; queue reversible settings phase with exact initial-value journal | Shell cannot be assumed allowed to set time on MIUI; owner Settings step if denied; restore approved original configuration |
-| TIME-11 timezone | A,B | Compare monotonic balance and state snapshots around a reversible timezone change | Approval before global settings change; household-day production semantics remain KR-008 |
-| TIME-13 deep sleep | B,D | Queue idle/awake phase with monotonic before/after and heartbeat | Screen/Doze/OEM behaviour needs physical run; no invented exact sleep timer |
-| TIME-14 app update | A,B | Runner verifies installed APK by pulling/hash; queue old → new in-place install with durable snapshot comparison | Snapshot actual update recovery; don't uninstall on signing mismatch |
-| TIME-15 missing UsageEvents | A,B | Queue synthetic reconciliation/diagnostic fixtures with explicit uncertainty | Current UsageEvents code is only a probe; no claim production reconciliation is implemented |
-| TIME-16 multi-window/PiP/launcher/video | B,C,D | Reuse fixture and technical snapshots around each surface | Human validates safe visible behaviour; app focus is insufficient |
-| TIME-18 storage write failure | A,B | Queue injected persistence failure in disposable tests; no clear-data/corruption command on device | Separate isolated test design before touching durable state; report degradation |
-| NET-01 network lost before expiry | B | Offline calibration expiries observed; Q2 radio restore/readback verified; full qualification still blocked by Settings failure | Mid-session network-loss/recovery not isolated; flags alone do not prove connectivity; no backend-recovery claim |
-| PERM-01 Usage Access remove/regrant | B | Read-only Usage Access query prepared; queue original AppOps state capture → approved change → restore | Explicit execution approval; no automatic grant to conceal refusal |
-| PERM-02 Accessibility disable/re-enable | B,C | Service/permission freshness checks prepared; direct snapshots can observe loss | Explicit execution approval; use Settings rather than overwriting enabled-services lists and affecting other services |
-| PERM-03 incomplete setup/refusal | B,C | Debug preflight refuses unhealthy setup; queue clean consent/refusal UI test | Observe actual explanation/refusal; do not clear data to manufacture a fresh install |
-| TAMP-01 force-stop | B | Queue as separate unsupported-boundary test, not normal process death | Explicit disruptive execution approval; no guarantee after force-stop |
-| TAMP-02 uninstall / TAMP-03 clear data | C | Document unsupported consequence; no enabled runner commands | Explicit destructive approval required; never part of qualification cleanup |
-| TAMP-04 safe mode | C,D | Research/record unsupported consumer boundary | Explicit approval and disposable hardware; no automatic safe-mode action |
-| TAMP-05 secondary user/guest | B,D | Queue read-only user-scope snapshot and separately approved user-switch procedure | No enrolled-primary-user result generalized to another user |
-| TAMP-06 battery/OEM survival | B,D | Heartbeat/state export ready; queue timed screen-off/awake soak and power-setting manifest | Owner-approved reversible OEM setting changes; measure actual recovery, don't generalize |
-| TAMP-07 ADB/developer options | A,B | Protected debug receiver/release audit and allowlisted evidence export prepared | Privileged ADB is outside consumer protection; sender-denial runtime test still queued |
-| TAMP-08 root/bootloader | C,D | Explicit unsupported boundary from ADR-0002 | No root/unlock/flash operation; physical testing only if separately authorized |
-| SAFE-01 emergency/dialler/TalkBack/IME/permission UI | C,D | Record technical state while an operator follows approved safety script | Settings success does not prove these; never dial a live emergency service for a test |
-| SAFE-02 offline local help/removal and other recovery | B,C,D | Q2/Q3 **physical FAIL**; [Q4](evidence/KR-003-Q4-RECOVERY-2026-09-06.md) rejected `CLEAR_TOP`; [Q5](evidence/KR-003-Q5-RECOVERY-2026-09-06.md) passed the exact focused task-reset route once | Preserve Q5 as one exact-device/path result; run fresh qualification preflight/final safety checks and remaining safe surfaces; no broad Settings/OEM conclusion |
-| Missing package, interruption, lost screen signal | A,B | Pure fail-open regression exists; queue service/lifecycle injections and observations | Unknown/safe fail-open is deliberate but not an enforcement pass |
-| AC-6 least privilege | A,B | Recursive source/permission checks, debug/release manifest and DEX audit, typed schema rejection tests | Runtime sender-denial/traffic audit still required; static absence of INTERNET is only static evidence |
-| AC-1/2 policy design packet | A,E | Existing ADR/disclosure/refusal/declaration docs; keep packet synced with actual code | Policy review/target-audience/account choices cannot be inferred from builds |
-| AC-7 go/no-go | C,E | Assemble completed run manifests and unsupported boundary matrix | Owner accepts tested support boundary; policy tension resolved with evidence |
+| New-device metadata / transport | A,B,D | [Generic onboarding](KR-003-DEVICE-ONBOARDING.md), hash-pinned fixture-only runner, strict ingestion and synthetic privacy/failure tests are implemented | Owner authorizes ADB once and operates one command; exact Samsung facts/result are **Not run** |
+| Active-oracle calibration | A,B,C,D | [Bounded calibration](KR-003-ACTIVE-ORACLE-CALIBRATION.md) and synthetic anti-promotion tests are implemented; zero qualification rows are enforced | Conditional on transport PASS, manual permission setup and one visible agreement check |
+| AC-3 / TIME-04: 100 zero expiries | B,C,D | Q7 remains the Mi 8 specialization; a new configuration-specific bundle is prepared only after generic calibration PASS | 100 fresh active-oracle rows plus the approved human checkpoints; no Mi 8/Samsung pooling |
+| TIME-01 eligible total / TIME-02 screen off / TIME-03 keyguard | A,B,C | Pure monotonic cases pass; future phase runner can journal state before/after | Owner physically toggles screen/keyguard and observes eligibility; no automated unlock |
+| TIME-05 process death | B,C | Prepare a journal-before/after debug self-termination phase after qualification | Verify the candidate process actually changes; do not substitute fixture kill or force-stop |
+| TIME-06 app/service restart | B,C | Snapshot/revision/heartbeat controls exist | Physical restriction recovery remains observed evidence |
+| TIME-07 reboot online / TIME-08 reboot offline | B,C | Prepare snapshot → approved reboot → bounded reconnect → snapshot/diff workflow | Reboot/network authorization and owner unlock/observation required; pre-unlock gap stays measured |
+| TIME-09/10 wall clock +/-24h / TIME-11 timezone | A,B,C | Domain monotonic rollback cases pass; prepare reversible initial-value journal | Global setting edits/restoration need owner action where shell is denied; production household-day semantics remain KR-008 |
+| TIME-13 deep sleep / TIME-14 update | B,C,D | State/hash/heartbeat capture exists; package update remains in-place only | Physical sleep/OEM and installed-update recovery evidence required |
+| TIME-15 missing UsageEvents | A,B | Current UsageEvents feature is explicitly diagnostic; pure timer uncertainty/rollback cases exist | A production reconciliation design is outside this spike; device absence case remains unrun |
+| TIME-16 multi-window/PiP/launcher/video | B,C,D | Reuse typed candidate/fixture snapshots without content capture | Human validates visible/safe behaviour; focus alone is insufficient |
+| TIME-18 storage write failure | A,B | Current store fail path marks accounting uncertain in memory; a deterministic storage-failure adapter would require a separate bounded refactor | No on-device data corruption/clear; observable degradation remains unrun |
+| NET-01 network lost before expiry | B,C | Existing offline calibration evidence and Q2 radio restore/readback stay configuration-specific | Mid-session loss/recovery and actual connectivity remain unrun; flags are not connectivity proof |
+| PERM-01 Usage Access / PERM-02 Accessibility removal | B,C | Read-only permission/state parsing, heartbeat and health assertions exist | Owner changes and restores settings manually; never overwrite another service list |
+| PERM-03 incomplete setup/refusal | B,C | Preflight refuses unhealthy setup | Human verifies explanation/refusal UI; do not clear data merely to manufacture a state |
+| TAMP-01 force-stop | B,C | Treat as a separate unsupported-boundary test | Explicit disruptive authorization; never relabel normal process death |
+| TAMP-02 uninstall / TAMP-03 clear data | C | Documented consumer bypass; no runner command is enabled | Destructive execution needs separate explicit approval and is outside qualification cleanup |
+| TAMP-04 safe mode / TAMP-08 root/bootloader | C,D | Unsupported-boundary plans only | Authorized disposable hardware/human procedure; no root/unlock/flash is planned |
+| TAMP-05 secondary user/guest | B,C,D | Read-only user-scope capture can be prepared after a target supports the mode | Owner switches users; primary-user result never transfers |
+| TAMP-06 battery/OEM survival | B,C,D | Generic flags are collected; candidate heartbeat/state soak can be automated | Exact OEM setting and physical survival/recovery are configuration-specific |
+| TAMP-07 ADB/developer options | A,B | Protected receiver, typed export, manifest/DEX isolation and source rejection pass | Runtime unauthorized-sender boundary remains an owner-authorized device test |
+| SAFE-01 emergency/dialler/TalkBack/IME/permission UI | C,D | Technical state can be correlated without content collection | Human-only safety/usability; never call a live emergency service |
+| SAFE-02 local help/removal/recovery | B,C,D | Q2/Q3/Q4 failures and one Q5 exact-route PASS remain preserved | Repeat and expand safe-surface observation per configuration; no broad Settings/OEM inference |
+| Missing package / interruption / lost screen signal | A,B | Pure missing/unknown fail-open and health regressions exist | Device lifecycle behavior remains unrun and fail-open is not an enforcement pass |
+| AC-6 least privilege | A,B | Source, permission, debug/release manifest, DEX, typed-schema and new identifier/raw-output rejection tests pass | Runtime sender denial/traffic audit remains; static absence of INTERNET is only static evidence |
+| AC-1/2 policy packet | A,E | ADR/disclosure/refusal/declaration packet exists and stays synced | Current Play review/target-audience/declaration acceptance requires external account evidence |
+| AC-7 go/no-go | C,E | Assemble exact configuration and unsupported-boundary results | Owner accepts support boundary after technical and external policy evidence |
 
 TIME-12/17/19 and backend/command/identity rows remain their own KR-001/007/008/009 work; the spike cannot claim production daily reset,
 UsageEvents reconciliation, grants, pairing, cloud outage sync or deletion coverage. KR-004 remains untouched.
 
 ## Device matrix
 
+Apply the exact [device-to-matrix mapping](KR-003-DEVICE-MATRIX-MAPPING.md) to each validated onboarding record.
+
 The physical protocol requires **API 28**, **Android 15/API 35**, **Android 16/API 36**, and each proposed OEM support variant. These are hard
-physical gates under the current contract. Available: Mi 8/API 29 only. Required 28/35/36 configurations remain unavailable/unrun.
+physical gates under the current contract. Completed inventory: Mi 8/API 29 only. An authorized Samsung tablet is expected, but exact metadata is
+**UNSPECIFIED** until onboarding and therefore satisfies zero matrix rows tonight. Required 28/35/36 configurations remain unavailable/unrun unless
+the read Samsung metadata later establishes exactly one of those rows.
+Android 17/API 37 is now an official platform. Adding it to the required support set remains **UNSPECIFIED**; any API 37 result is supplemental
+until that owner decision and cannot satisfy the existing API 36 row.
 The broader matrix proposes a current Google reference, Samsung phone/tablet and restrictive tablet/OEM; exact approved support variants remain
 **UNSPECIFIED**. Do not convert that proposal into a promise of support.
 

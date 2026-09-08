@@ -41,15 +41,17 @@ budgets, package names or provider configuration; those remain **UNSPECIFIED** u
 | OD-28 | **QUALIFICATION CONTRACT 2026-09-06:** Q6 uses the exact Q5 APK pair, mandatory reversible offline mode, fresh calibration, two safety checkpoints and 100 new physical expiry observations | Execute once owner-side; failure/invalid stops with no replacement/resume/pooling; Q6 cannot close other KR-003 gates | KR-003 |
 | OD-29 | **OWNER OPERATING CONSTRAINT / REVISED EVIDENCE CONTRACT 2026-09-06:** do not execute Q6; Q7 may use 100 independently active fixture-oracle cycles with at most three human checkpoint sessions | Q7 must physically calibrate real input delivery/denial before sample 1; report 100 automated cycles + three checkpoints, never 100 physical passes; if calibration fails, stop for go/no-go/scope decision | KR-003 |
 | OD-30 | **OWNER-AUTHORIZED TRANSPORT EXPERIMENT 2026-09-06:** after Mi 8 shell input denial, test one coordinate touch through separate self-targeted UiAutomation instrumentation with unchanged developer settings | Fixture counter remains the independent oracle; physical success and candidate-service non-interference are **UNSPECIFIED**; evaluate bounded Monkey only if this fails; no Q7 rerun or KR-004 | KR-003 |
+| OD-31 | **OWNER-AUTHORIZED NEXT-DEVICE PATH 2026-09-08:** prepare a generic transport-first evaluation for an expected authorized Samsung tablet; exact model/Android/API/build/power state remain **UNSPECIFIED** until sanitized discovery | Install only the independent fixture first; stop after one counter-correlated shell tap. Candidate installation requires transport PASS and a separate bounded oracle calibration; no Mi 8/Samsung/other-OEM evidence transfer | KR-003 |
+| OD-32 | **CURRENT PLATFORM FACT 2026-09-08:** Android 17 is API 37; current mobile Play submission floor remains API 36+ from 2026-08-31 | Existing KR-003 API 28/35/36 gates remain; whether API 37 is added to the supported-device gate and the production compile/target migration are **UNSPECIFIED** owner decisions | KR-003/release |
 
 Exact Kotlin, Compose, Room, Gradle, AGP, Java toolchain, Android SDK, Flutter, Supabase CLI/client, Deno/Edge runtime and FCM SDK versions: **UNSPECIFIED**.
 No app/bootstrap dependency versions are chosen in this pass. The verified Actions checkout pin is documented in TOOLING.
 
 ## Blockers and work that can proceed
 
-**2026-09-07 KR-003 qualification blocker:** [shell input, UiAutomation and bounded Monkey were all denied](test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
-OD-29's independent input prerequisite is unmet. The per-cycle human fallback conflicts with the owner's maximum-three-checkpoint constraint.
-Owner device/configuration/product decision is **UNSPECIFIED**. Do not rerun on unchanged configuration, reduce the gate or start KR-004.
+**2026-09-08 KR-003 Mi 8 qualification blocker:** [shell input, UiAutomation and bounded Monkey were all denied](test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+OD-29's independent input prerequisite remains unmet on that exact configuration. The per-cycle human fallback conflicts with the owner's maximum-three-checkpoint constraint.
+OD-31 authorizes preparation for another device, expected to be a Samsung tablet; its exact facts and capability remain **UNSPECIFIED**. Do not rerun or change the Mi 8, reduce the gate or start KR-004.
 OD-30's experiment has now failed input delivery; service non-interference remains **UNSPECIFIED**.
 
 Production consumer enforcement is blocked by the unproven safety/reliability boundary and policy tension in ADR-0002.
@@ -58,6 +60,6 @@ Client table exposure is blocked until RLS allow/deny tests exist and pass.
 GitHub planning publication is complete for machine-supported fields; UI-only view/workflow checks remain in docs/github/PROJECT.md.
 Store submission is blocked by functioning UI/evidence, audience declarations, real screenshots, and launch decisions.
 
-Ready now: product review, documentation/CI checks, physical feasibility spike design/execution on approved test devices,
+Ready now: product review, documentation/CI checks, generic transport-first physical feasibility execution on the approved next device,
 local-only schema/RLS fixtures, pairing protocol review, deterministic domain fixtures using explicitly provisional semantics.
 No physical devices, Play Console approval, or deployed backend are assumed.

@@ -119,9 +119,14 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 
 ## Evidence and physical device set
 
-Known inventory: authorized Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29; [bounded evidence](evidence/KR-003-MI8-2026-09-06.md).
-Other inventory/availability **UNSPECIFIED**. Proposed minimum: one current Google reference device, one Samsung phone/tablet,
+Known completed inventory: authorized Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29; [bounded evidence](evidence/KR-003-MI8-2026-09-06.md).
+Expected next inventory: one owner-authorized Samsung tablet; manufacturer family is owner-supplied, while exact model/Android/API/build/security
+patch/battery configuration and all runtime capability remain **UNSPECIFIED** until [generic onboarding](KR-003-DEVICE-ONBOARDING.md).
+Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
-Android 17 documentation exists; device availability/selected support version must be verified, not assumed.
+Android 17/API 37 is the current documented platform; whether to add it to the approved physical support gate remains **UNSPECIFIED** and it does
+not replace any existing API row. Device availability/selected support version must be verified, not assumed.
 Emulators support deterministic/API tests but cannot certify OEM killing, safe mode, emergency handling, battery or push delivery.
 No destructive wipe/root/bootloader tests on a personal device without its owner's authorization.
+Each evidence set maps only to the exact rows its read metadata establishes. Mi 8 evidence is not Samsung evidence; Samsung evidence is not Pixel,
+another OEM, another API/build or another battery/permission configuration.
