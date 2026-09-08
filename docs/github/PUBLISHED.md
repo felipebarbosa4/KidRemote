@@ -274,15 +274,17 @@ No new APK, runner, physical result or Play approval is claimed. KR-004 remains 
 ## Generic next-device readiness — 2026-09-08
 
 OD-31 records the owner's authorized next-device path: an expected Samsung tablet, with exact manufacturer/model/Android/API/build/power state
-and shell-input capability **UNSPECIFIED** until sanitized discovery. Source `bbdaefcdcf6393d21f6541e6dbba02d0a702b34d` adds a fixture-only
+and shell-input capability **UNSPECIFIED** until sanitized discovery. Final source `5a46f75e3dad68ccbf520bce327a6d1f1c03c77c` adds a fixture-only
 transport preflight and a separate calibration workflow that cannot run without transport PASS. The first workflow attempts exactly one shell tap
 and stops before candidate installation. The second performs one positive control, one blocked hold, service continuity and one physical agreement
 check, then stops with zero qualification samples.
 
 The [immutable mounted-Windows bundles, complete hashes and exact commands](../test-plans/evidence/KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md)
-were independently rehashed and matched the clean source/build bytes. Their physical execution is **Not run**. Exact-source
-[CI run 34189822315](https://github.com/felipebarbosa4/KidRemote/actions/runs/34189822315) and handoff
-[CI run 34190208397](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190208397) passed all three jobs. Automated device calls were
+were independently rehashed and matched the clean source/build bytes. Their physical execution is **Not run**. The initial `bbdaefc` handoff was
+never run and is superseded by `5a46f75`, which fixes a synthetic `FAIL`/`FAILED` ingestion mismatch. Earlier exact-source
+[CI run 34189822315](https://github.com/felipebarbosa4/KidRemote/actions/runs/34189822315), handoff
+[CI run 34190208397](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190208397), and final corrected-source
+[CI run 34190844982](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190844982) cover all three jobs. Automated device calls were
 synthetic or stubbed and do not establish Samsung evidence.
 
 Issue #3 was updated and read back with all seven acceptance boxes open and the stale owner-selection paragraph removed. The
