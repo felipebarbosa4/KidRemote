@@ -299,3 +299,25 @@ The superseding bundle correction was then published and read back on
 [PR #16](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5579817014); the PR body now links only the current `5a46f75` handoff.
 Final handoff commit `7bf5383e8b8c3826d81cbdd926540b5daa9b5fba` passed all three jobs in
 [CI run 34191036816](https://github.com/felipebarbosa4/KidRemote/actions/runs/34191036816).
+
+## Samsung transport, calibration INVALIDs and verifier-v2 handoff — 2026-09-08
+
+The [mounted Samsung evidence](../test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md) records one configuration-specific
+fixture-only transport PASS on SM-X400 / Android 16 / API 36 / build `BP4A.251205.006`, followed by three source-`5a46f75` calibrations that
+remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED`. Every calibration stopped before positive control, ARM and sample 1. Runner Usage
+Access verification passed; runner Accessibility enabled-state verification was the exact failed sub-check while retained candidate telemetry
+reported Usage Access, Accessibility, fresh service heartbeat, healthy state and eligibility. The evidence retains no raw secure-setting output,
+so the exact Samsung representation and whether it is Android-16- or Samsung-specific remain **UNSPECIFIED**.
+
+Source `c74d6569ea4e4d179922c389790a4a96d1a9c2fe` replaces short-form-only lexical service matching with semantic component parsing, explicit
+current-user reads and typed fail-closed verification. It adds pre-ARM and post-blocked-hold revocation checks; it does not grant permissions,
+bypass consent or add a Samsung exception. All three historical INVALID classifications pass strict reingestion. The
+[immutable verifier-v2 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) is published from that exact source;
+physical execution is **Not run**, and no 100-sample qualification began.
+
+Publication source `a8ecc3826a4c16f65347ce801f6e13f9f47565cf` passed all three jobs in
+[CI run 34251608096](https://github.com/felipebarbosa4/KidRemote/actions/runs/34251608096). Issue #3 and PR #16 were updated and read back;
+the [issue handoff](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5588553857) and
+[PR handoff](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5588554114) preserve the established/inferred/UNSPECIFIED boundary.
+All seven issue acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open, and KR-004 is Open/Backlog. No merge, closure,
+physical rerun, 100-sample run, production move or KR-004 work occurred.

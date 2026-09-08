@@ -21,4 +21,6 @@ Stop after publishing one exact PowerShell calibration command. Do not run it, s
 
 Source `c74d6569ea4e4d179922c389790a4a96d1a9c2fe` implements and validates runner v2. Its clean immutable bundle and exact stopped handoff are recorded in
 [KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md).
-Physical execution remains Not run; Issue #3 / PR #16 synchronization and exact-source CI remain the final administrative steps.
+Physical execution remains Not run. Issue #3 and draft PR #16 were synchronized at publication source
+`a8ecc3826a4c16f65347ce801f6e13f9f47565cf`; [CI run 34251608096](https://github.com/felipebarbosa4/KidRemote/actions/runs/34251608096)
+passed all three jobs. All seven issue acceptance boxes remain open, KR-003 remains Open/In Progress, and KR-004 remains Open/Backlog.
