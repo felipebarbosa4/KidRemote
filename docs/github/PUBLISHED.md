@@ -293,3 +293,9 @@ Issue #3 was updated and read back with all seven acceptance boxes open and the 
 [PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5579705819) was read back. The PR remains draft/Open and mergeable.
 Project #3 was re-read: KR-003 is Open/In Progress and KR-004 is Open/Backlog. No physical command, Mi 8 change, gate reduction, merge, closure,
 production move, store action or KR-004 work occurred.
+
+The superseding bundle correction was then published and read back on
+[issue #3](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5579816839) and
+[PR #16](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5579817014); the PR body now links only the current `5a46f75` handoff.
+Final handoff commit `7bf5383e8b8c3826d81cbdd926540b5daa9b5fba` passed all three jobs in
+[CI run 34191036816](https://github.com/felipebarbosa4/KidRemote/actions/runs/34191036816).
