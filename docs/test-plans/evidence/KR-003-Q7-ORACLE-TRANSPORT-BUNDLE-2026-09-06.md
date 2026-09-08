@@ -49,7 +49,7 @@ Possible results:
 
 - `PASSED_TRANSPORT_PREFLIGHT:FIXTURE_COUNTER_INCREMENTED_ONCE`: input transport works; investigate why the earlier Q7 environment differed before rerunning Q7.
 - `INVALID:ADB_OPERATION_REJECTED`: use the recorded `INPUT_TAP` exit code and coarse stderr class to determine whether the MIUI security switch is actually required.
-- `FAILED:INPUT_NOT_DELIVERED`: ADB accepted the command but the independent fixture did not receive it; investigate coordinate/focus/input delivery without weakening Q7.
+- `FAIL:INPUT_NOT_DELIVERED`: ADB accepted the command but the independent fixture did not receive it; investigate coordinate/focus/input delivery without weakening Q7.
 
 The generated evidence contains only fixed operation enums, exit codes, coarse stderr classes, numeric fixture counters and protocol/build hashes.
 Raw stdout/stderr, package history, content, UI text, screenshots, accounts, serials and device identifiers are not persisted.

@@ -363,6 +363,8 @@ test("generic device transport ingestion accepts only sanitized metadata and one
   save('device.json',{...device,Serial:'forbidden'});assert.throws(()=>ingestDeviceTransport(dir));
   save('device.json',device);save('operations.json',operations.map((entry,i)=>i===0?{...entry,Raw:'forbidden'}:entry));assert.throws(()=>ingestDeviceTransport(dir));
   save('operations.json',operations);save('summary.json',{...summary,AfterTaps:6});assert.throws(()=>ingestDeviceTransport(dir));
+  save('summary.json',{...summary,Status:'FAIL',Reason:'INPUT_NOT_DELIVERED',AfterTaps:4,CounterIncremented:false});
+  assert.equal(ingestDeviceTransport(dir).status,'FAIL');
   rmSync(join(dir,'device.json'));save('operations.json',[{OperationCategory:'ADB_STATE',ExitCode:1,StderrClass:'OTHER'}]);
   save('summary.json',{...summary,Status:'INVALID',Reason:'ADB_OPERATION_REJECTED',SourceCommit:null,FixtureSha256:null,DeviceEvidenceSha256:null,
     AdbAuthorized:false,MetadataComplete:false,BundleVerified:false,InstalledFixtureHashVerified:false,FixtureReady:false,BeforeTaps:null,AfterTaps:null,

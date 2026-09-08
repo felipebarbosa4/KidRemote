@@ -25,7 +25,7 @@ For every fixed ADB operation, `operations.json` contains only an operation cate
 before/after counters and the rejected enum/class. No package history, UI text/content, screenshot, account, serial or identifier is retained.
 
 `PASSED_TRANSPORT_PREFLIGHT:FIXTURE_COUNTER_INCREMENTED_ONCE` establishes only Q7 input transport. `INVALID:ADB_OPERATION_REJECTED` preserves the
-rejected category/class. `FAILED:INPUT_NOT_DELIVERED` means ADB reported success but the independent counter did not increment. None is an expiry pass.
+rejected category/class. `FAIL:INPUT_NOT_DELIVERED` means ADB reported success but the independent counter did not increment. None is an expiry pass.
 
 Android Open Source Project documents that the shell identity normally receives the input-injection permission used by `adb shell input`; a vendor
 denial is a configuration/vendor divergence, not permission to bypass Q7. [AOSP input-injection security change](https://android.googlesource.com/platform/frameworks/base/+/edff3851325467a3f56ebe87af67df326b00a318)

@@ -32,10 +32,10 @@ Assert-Equal (($record.PSObject.Properties.Name)-join ',') 'OperationCategory,Ex
 Assert-Reject {New-KRDeviceOperationRecord 'ADB_DEVICES_RAW' 0 'NONE'} 'INVALID:DEVICE_OPERATION_CATEGORY'
 Assert-Reject {New-KRDeviceOperationRecord 'INPUT_TAP' 0 'RAW'} 'INVALID:DEVICE_STDERR_CLASS'
 Assert-Equal (Get-KRDeviceTransportVerdict $true $true $true $true $true 7 8 $null) 'PASSED_TRANSPORT_PREFLIGHT'
-Assert-Equal (Get-KRDeviceTransportVerdict $true $true $true $true $true 7 7 $null) 'FAILED'
+Assert-Equal (Get-KRDeviceTransportVerdict $true $true $true $true $true 7 7 $null) 'FAIL'
 Assert-Equal (Get-KRDeviceTransportVerdict $true $true $true $true $true 7 8 'INPUT_TAP') 'INVALID'
 Assert-Equal (Get-KROracleCalibrationVerdict $true $true $true 'PASS' $true 0) 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'
-Assert-Equal (Get-KROracleCalibrationVerdict $true $false $true 'PASS' $true 0) 'FAILED'
+Assert-Equal (Get-KROracleCalibrationVerdict $true $false $true 'PASS' $true 0) 'FAIL'
 Assert-Equal (Get-KROracleCalibrationVerdict $true $true $true 'INVALID' $true 0) 'INVALID'
 Assert-Equal (Get-KROracleCalibrationVerdict $true $true $true 'PASS' $true 1) 'INVALID'
 $tokens=$null;$errors=$null

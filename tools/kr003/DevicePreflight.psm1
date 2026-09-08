@@ -91,13 +91,13 @@ function Get-KRDeviceTransportVerdict {
     param([bool]$Authorized,[bool]$MetadataComplete,[bool]$BundleVerified,[bool]$InstalledHashVerified,[bool]$FixtureReady,[long]$BeforeTaps,[long]$AfterTaps,[AllowNull()][string]$RejectedOperation)
     if (-not $Authorized -or -not $MetadataComplete -or -not $BundleVerified -or -not $InstalledHashVerified -or -not $FixtureReady -or -not [string]::IsNullOrEmpty($RejectedOperation)) { return 'INVALID' }
     if ($AfterTaps -eq $BeforeTaps + 1) { return 'PASSED_TRANSPORT_PREFLIGHT' }
-    return 'FAILED'
+    return 'FAIL'
 }
 
 function Get-KROracleCalibrationVerdict {
     param([bool]$PositiveControl,[bool]$BlockedControl,[bool]$ServiceContinuous,[string]$PhysicalAgreement,[bool]$CleanupVerified,[int]$QualificationSamples)
     if ($QualificationSamples -ne 0 -or $PhysicalAgreement -eq 'INVALID') { return 'INVALID' }
-    if (-not $PositiveControl -or -not $BlockedControl -or -not $ServiceContinuous -or $PhysicalAgreement -eq 'FAIL' -or -not $CleanupVerified) { return 'FAILED' }
+    if (-not $PositiveControl -or -not $BlockedControl -or -not $ServiceContinuous -or $PhysicalAgreement -eq 'FAIL' -or -not $CleanupVerified) { return 'FAIL' }
     if ($PhysicalAgreement -ne 'PASS') { return 'INVALID' }
     return 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'
 }

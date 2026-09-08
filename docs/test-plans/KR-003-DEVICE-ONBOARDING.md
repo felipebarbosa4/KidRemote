@@ -46,7 +46,7 @@ Expected duration after ADB authorization: about one minute. Preserve the printe
 ## Result contract
 
 - **PASS — `PASSED_TRANSPORT_PREFLIGHT:FIXTURE_COUNTER_INCREMENTED_ONCE`:** the same fixture instance/coordinate remained focused and its counter changed by exactly one. This establishes shell-input transport only.
-- **FAIL — `FAILED:INPUT_NOT_DELIVERED`:** ADB accepted the tap operation, but the independent counter did not increment exactly once. Stop before candidate installation.
+- **FAIL — `FAIL:INPUT_NOT_DELIVERED`:** ADB accepted the tap operation, but the independent counter did not increment exactly once. Stop before candidate installation.
 - **INVALID:** authorization/device state, hash, fixture readiness, command acceptance, metadata integrity or evidence finalization was not established. Stop and preserve the evidence.
 
 No result is an enforcement, latency, safety, other-device or Play-policy result. A Samsung result applies only to the recorded Samsung configuration. It cannot be attributed to the Mi 8, Pixel, another Samsung build or another OEM.

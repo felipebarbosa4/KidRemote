@@ -359,7 +359,7 @@ export function ingestDeviceTransport(directory) {
     assert.equal(operations.filter(operation=>operation.OperationCategory==='INPUT_TAP').length,1);
     assert.equal(summary.Reason,'FIXTURE_COUNTER_INCREMENTED_ONCE');assert.equal(summary.InstalledFixtureHashVerified,true);assert.equal(summary.FixtureReady,true);
     assert.equal(summary.CounterIncremented,true);assert.equal(summary.AfterTaps,summary.BeforeTaps+1);assert.equal(summary.RejectedOperation,null);
-  } else if(summary.Status==='FAILED') {
+  } else if(summary.Status==='FAIL') {
     assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);assert(deviceExists);
     assert.equal(summary.AdbAuthorized,true);assert.equal(summary.MetadataComplete,true);assert.equal(summary.BundleVerified,true);
     assert.equal(operations.filter(operation=>operation.OperationCategory==='INPUT_TAP').length,1);
