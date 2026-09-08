@@ -17,3 +17,7 @@
 ## Stop point
 
 Repository work stops after the generic bundles, validation, GitHub synchronization and morning handoff are complete. Physical metadata, transport and calibration outcomes remain **UNSPECIFIED** until owner execution. A transport FAIL/INVALID stops before candidate installation; a calibration FAIL/INVALID stops before 100 cycles.
+
+## Repository checkpoint
+
+Source `bbdaefcdcf6393d21f6541e6dbba02d0a702b34d` completed steps 1–5 and passed all three jobs in exact-source CI run 34189822315. The two immutable, independently rehashed mounted-Windows handoffs are recorded in [KR-003-NEXT-DEVICE-BUNDLES-2026-09-08](../test-plans/evidence/KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md). Their physical execution state is **Not run**. GitHub synchronization remains the final repository-local step.
