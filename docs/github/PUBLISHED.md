@@ -321,3 +321,25 @@ the [issue handoff](https://github.com/felipebarbosa4/KidRemote/issues/3#issueco
 [PR handoff](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5588554114) preserve the established/inferred/UNSPECIFIED boundary.
 All seven issue acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open, and KR-004 is Open/Backlog. No merge, closure,
 physical rerun, 100-sample run, production move or KR-004 work occurred.
+
+## Samsung runner-v2 host exception and runner-v3 handoff — 2026-09-08
+
+The [mounted runner-v2 evidence](../test-plans/evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) remains
+`INVALID:HOST_EXCEPTION`. Strict reconstruction places the failure in `ARM`: the ARM operation succeeded and telemetry captured the armed
+state, but the summary never committed the returned revision. Permission verification v2 passed Usage Access, Accessibility enabled state,
+fresh service heartbeat and healthy/eligible candidate state. No attachment check, blocked hold, denial-oracle query or owner prompt started,
+so this run establishes neither physical enforcement success nor failure. Runner v2 discarded the original exception class/message; the exact
+immediate cause is therefore **UNSPECIFIED**.
+
+Source `cf7b2e97fa12bd3397ea8ba7a40174456df27ba0` adds a bounded runner-v3 `HostDiagnostic` containing only whitelisted stage, exception class,
+primary reason, finalization status and cleanup status. It preserves the first primary result across cleanup failures, still attempts cleanup,
+fails closed on unknown/unparseable state, and adds no permission grant, consent bypass, Samsung exception or enforcement-semantic change.
+The [immutable mounted-Windows runner-v3 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08.md) was independently
+hash-verified at `C:\platform-tools\kr003-oracle-calibration-bundles\cf7b2e9`; physical execution is **Not run**.
+
+Publication commit `fba7dd3e5b9ddc1ec55070cb57a4b199b6699654` passed all three jobs in
+[CI run 34282753641](https://github.com/felipebarbosa4/KidRemote/actions/runs/34282753641). Issue #3 and PR #16 were updated and read back; the
+[issue checkpoint](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5592353046) and
+[PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5592353261) preserve the same stopped handoff. All seven issue
+acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open and mergeable, and KR-004 is Open/Backlog. No rerun, 100-sample
+qualification, merge, closure, production move or KR-004 work occurred.

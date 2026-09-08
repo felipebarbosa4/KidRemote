@@ -22,4 +22,6 @@ Stop after publishing one exact PowerShell calibration command. Do not execute i
 Source `cf7b2e97fa12bd3397ea8ba7a40174456df27ba0` implements the typed host/finalization record and preserves strict historical ingestion.
 Its clean immutable runner-v3 bundle and stopped handoff are recorded in
 [KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08.md).
-Physical execution remains Not run; Issue #3 / PR #16 synchronization and exact-source CI remain administrative steps.
+Physical execution remains Not run. Issue #3 and draft PR #16 were synchronized and read back after the stopped handoff; KR-003 remains Open/In Progress and KR-004 remains
+Open/Backlog. Publication commit `fba7dd3e5b9ddc1ec55070cb57a4b199b6699654` passed all three jobs in CI run `34282753641`.
+No calibration rerun, qualification sample, merge, closure, production move or KR-004 work occurred.
