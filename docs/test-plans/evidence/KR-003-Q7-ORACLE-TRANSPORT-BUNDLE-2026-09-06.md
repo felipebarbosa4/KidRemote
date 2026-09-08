@@ -14,7 +14,7 @@
 | Runner version | `1` |
 | Windows directory | `C:\platform-tools\kr003-oracle-transport-bundles\95937b9` |
 | `bundle.json` SHA-256 | `d65e22bf1922e8b9c04e2195d53a97c34b662eb8d2d75f3a13adce8f508fbb24` |
-| Physical execution | **Not run** |
+| Physical execution at initial handoff | **Not run**; subsequently executed and ingested as `INVALID:ADB_OPERATION_REJECTED` / `SECURITY_EXCEPTION` |
 
 Verified payload:
 
@@ -28,6 +28,10 @@ Verified payload:
 
 The bundle was produced from a clean exact source commit and then independently re-hashed in mounted Windows storage. It is separate from the
 three failed Q7 run directories and does not modify them.
+
+The later owner execution is preserved in [Mi 8 shell-input denial evidence](KR-003-MI8-INPUT-DENIAL-2026-09-06.md): INPUT_TAP exit 1,
+`SECURITY_EXCEPTION`, counter 0 with no after-state increment, and zero Q7 samples. This table retains the initial handoff state while linking its
+subsequent outcome. Do not rerun this historical Mi 8 command.
 
 ## Owner command
 

@@ -55,6 +55,6 @@ AOSP documents that the shell identity normally receives input-injection permiss
 reports point to MIUI's separate `USB debugging (Security settings)` switch, but no official Xiaomi documentation for this exact build or evidence
 of the switch's current state is available. The setting requirement is therefore **inferred, not established**.
 
-The next step is the standalone [Q7 oracle-transport preflight](../KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md). It installs/opens only the existing
-ordinary fixture, runs one state query and one tap, stores only operation category/exit/stderr class plus numeric counter result, then stops. It
-does not arm enforcement or change radios/settings/permissions. Do not rerun Q7 or change the MIUI setting until that result is ingested.
+At this checkpoint, the next step was the standalone [Q7 oracle-transport preflight](../KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md). It later
+returned INPUT_TAP exit 1 / `SECURITY_EXCEPTION`; [that preserved result](KR-003-MI8-INPUT-DENIAL-2026-09-06.md) and the subsequent UiAutomation
+and bounded Monkey denials now block Q7 on the unchanged Mi 8. No result armed enforcement, changed radios/settings/permissions or created a Q7 sample.

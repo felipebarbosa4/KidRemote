@@ -1,11 +1,14 @@
 # KR-003 Q3 focused recovery diagnostic handoff — 2026-09-06
 
+Historical handoff: the owner executed this bundle and the [preserved result](KR-003-Q3-RECOVERY-2026-09-06.md) records Digital Wellbeing and
+recovery-button physical FAIL. The immutable bundle remains unchanged; the physical status below is its initial handoff state.
+
 - **Goal:** Provide one immutable, diagnostic-only Windows command for the labelled Mi 8 Digital Wellbeing/recovery case.
 - **Context:** Q2 physical Settings/recovery FAIL; Q3 source `53327c50afb97c66620dd15780114b6f1a13ec33` passed exact-source CI.
 - **Constraints:** Owner-operated Windows ADB; no Q2 rerun, 100 samples, policy/allowlist change, identity capture, network mutation or KR-004.
 - **Done when:** Bundle/source/APK identities are verified and the owner has one command plus an independently callable lab-only bailout.
 
-Physical execution: **Not run**. This is a tooling handoff, not Mi 8 diagnostic evidence, enforcement success, qualification or Play acceptance.
+Physical execution at initial handoff: **Not run**. It was subsequently executed with the outcome linked above.
 
 ## Immutable bundle
 

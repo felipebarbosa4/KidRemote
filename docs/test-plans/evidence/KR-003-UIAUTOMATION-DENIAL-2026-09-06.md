@@ -46,5 +46,6 @@ qualification checkpoint occurred. This is not an enforcement failure or pass. O
 | probe.json | `52e8b10f60d0e88213beb31bf8d2189f78fa12774dbd268a6c481de4927f85e0` |
 | summary.json | `23fb217bc9822f34eb7c9197ec8c5fb9f13deb2a565ea54a16da008bf760a71d` |
 
-Next: the [bounded Monkey touch-class experiment](../KR-003-MONKEY-TRANSPORT.md), not the full Monkey driver or Q7.
+At this checkpoint the next bounded experiment was the [Monkey touch-class transport](../KR-003-MONKEY-TRANSPORT.md). It subsequently returned
+[DOWN `SECURITY_EXCEPTION`, zero taps and verified cleanup](KR-003-MONKEY-DENIAL-2026-09-07.md). Q7 is blocked on the unchanged Mi 8.
 KR-003 stays Open/In Progress; PR #16 draft; KR-004 untouched. No SIM-free setting bypass or Play acceptance is claimed.

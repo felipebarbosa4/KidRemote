@@ -34,8 +34,9 @@ The private internal MIUI code path has not been inspected and remains **UNSPECI
 No verified official method to enable this exact toggle without a SIM was located; no speculative settings writes or security-app modification
 were performed. A SIM is not requested for the next diagnostic.
 
-## Next diagnostic
+## Diagnostic disposition
 
-The [separate UiAutomation transport probe](../KR-003-UIAUTOMATION-TRANSPORT.md) is prepared for one unblocked fixture touch. Physical outcome:
-**Not run**. It preserves the observed developer settings. Monkey is a conditional fallback only after this probe fails.
-KR-003 remains Open/In Progress; Q7 remains halted; PR #16 remains draft; KR-004 is untouched.
+At this checkpoint the separate [UiAutomation transport probe](../KR-003-UIAUTOMATION-TRANSPORT.md) was the next unblocked fixture test.
+It subsequently returned [DOWN `SECURITY_EXCEPTION` and zero fixture taps](KR-003-UIAUTOMATION-DENIAL-2026-09-06.md); the bounded Monkey fallback
+then returned [the same denial class and zero taps](KR-003-MONKEY-DENIAL-2026-09-07.md). All three tested transports are therefore denied on the
+unchanged Mi 8 configuration. KR-003 remains Open/In Progress; Q7 remains halted there; PR #16 remains draft; KR-004 is untouched.

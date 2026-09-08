@@ -13,13 +13,14 @@ its exact facts and input capability remain **UNSPECIFIED**. Q7 and its Mi 8 evi
 Protocol: **`KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION`**, runner version 7. Q7 supersedes unexecuted Q6 for this owner constraint. It changes the evidence model, not the enforcement candidate.
 
 Physical status: three owner executions on 2026-09-06 stopped during attempt 0 before ARM with `INVALID:ADB_REJECTED`. Evidence localizes the
-rejected fixed operation to the unblocked fixture's `adb shell input tap`; zero Q7 samples and zero human checkpoints began. Q7 must not be rerun
-until the standalone [oracle-transport preflight](KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md) classifies and resolves that transport gate. See the
-[preserved INVALID evidence](evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md).
+rejected fixed operation to the unblocked fixture's `adb shell input tap`; zero Q7 samples and zero human checkpoints began. See the
+[preserved INVALID evidence](evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md). The later standalone
+[oracle-transport preflight](KR-003-Q7-ORACLE-TRANSPORT-PREFLIGHT.md) classified the shell denial; it did not resolve the transport gate.
 
 Subsequent [transport/configuration evidence](evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md) confirms INPUT_TAP exit 1 / SECURITY_EXCEPTION and the
-disabled, SIM-gated input-security switch. The next test is the [single-touch UiAutomation preflight](KR-003-UIAUTOMATION-TRANSPORT.md).
-It supplies zero qualification samples and does not yet replace Q7's ADB transport or establish candidate-service non-interference.
+disabled, SIM-gated input-security switch. Separate [UiAutomation](evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) and
+[bounded Monkey](evidence/KR-003-MONKEY-DENIAL-2026-09-07.md) preflights subsequently returned `SECURITY_EXCEPTION` with zero fixture taps.
+Together these results block Q7 on the unchanged Mi 8 and supply zero qualification samples.
 
 ## Evidence-contract change
 
