@@ -16,3 +16,10 @@
 ## Stop point
 
 Stop after publishing one exact PowerShell calibration command. Do not execute it, start a 100-cycle qualification, relabel the v2 INVALID as an enforcement failure, close KR-003, merge PR #16 or touch KR-004.
+
+## Repository checkpoint
+
+Source `cf7b2e97fa12bd3397ea8ba7a40174456df27ba0` implements the typed host/finalization record and preserves strict historical ingestion.
+Its clean immutable runner-v3 bundle and stopped handoff are recorded in
+[KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08.md).
+Physical execution remains Not run; Issue #3 / PR #16 synchronization and exact-source CI remain administrative steps.
