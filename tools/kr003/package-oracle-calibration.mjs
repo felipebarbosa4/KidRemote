@@ -17,6 +17,7 @@ execFileSync(process.execPath,[resolve(root,'tools/validate.mjs')],{cwd:root,std
 execFileSync(process.execPath,[resolve(root,'tools/kr003/audit-build.mjs')],{cwd:root,stdio:'inherit'});
 const mapping={
   'Test-KR003-OracleCalibration.ps1':'tools/kr003/Test-KR003-OracleCalibration.ps1',
+  'CalibrationHost.psm1':'tools/kr003/CalibrationHost.psm1',
   'DevicePreflight.psm1':'tools/kr003/DevicePreflight.psm1',
   'OracleTransport.psm1':'tools/kr003/OracleTransport.psm1',
   'Qualification.psm1':'tools/kr003/Qualification.psm1',
@@ -28,7 +29,7 @@ const files=Object.entries(mapping).map(([name,source])=>{copyFileSync(resolve(r
 const candidateSha256=files.find(file=>file.name==='candidate.apk').sha256,fixtureSha256=files.find(file=>file.name==='ordinary-fixture.apk').sha256;
 assert.equal(candidateSha256,'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b','Candidate drifted from the Q5-calibrated APK');
 assert.equal(fixtureSha256,'223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc','Fixture drifted from reviewed independent Q7 fixture');
-const manifest={schema:1,protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',sourceCommit:commit,runnerVersion:2,calibrationOnly:true,
+const manifest={schema:1,protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',sourceCommit:commit,runnerVersion:3,calibrationOnly:true,
   physicalExecution:'NOT_RUN',candidateSha256,fixtureSha256,files,transportPrerequisite:'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT',
   oracleModel:'SHELL_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',qualificationSamples:0,humanAgreementChecks:1};
 assert.equal(git('status','--porcelain'),'','Build unexpectedly changed source');

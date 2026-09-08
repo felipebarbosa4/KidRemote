@@ -365,6 +365,23 @@ function validateCalibrationPermissionVerification(value) {
   assert(['ELIGIBLE','INELIGIBLE','UNKNOWN'].includes(value.CandidateEligible));
 }
 
+const calibrationHostStages=['STARTUP','BUNDLE_HASH_VERIFICATION','TRANSPORT_EVIDENCE_INGESTION','ADB_PREFLIGHT','DEVICE_METADATA',
+  'APK_VERIFICATION','CANDIDATE_INITIALIZATION','CANDIDATE_STATE_QUERY','PERMISSION_VERIFICATION','FIXTURE_POSITIVE_CONTROL','PRE_ARM_PERMISSION_VERIFICATION',
+  'ARM','WAIT_FOR_ATTACHMENT','FIXTURE_ORACLE_QUERY','BLOCKED_HOLD','POST_HOLD_PERMISSION_VERIFICATION','OWNER_PROMPT','CLEANUP','FINALIZATION','COMPLETED'];
+const calibrationExceptionClasses=['NONE','TYPED_RUNNER_RESULT','PROPERTY_NOT_FOUND_EXCEPTION','PARAMETER_BINDING_EXCEPTION',
+  'METHOD_INVOCATION_EXCEPTION','PIPELINE_STOPPED_EXCEPTION','UNAUTHORIZED_ACCESS_EXCEPTION','IO_EXCEPTION','TIMEOUT_EXCEPTION',
+  'ARGUMENT_EXCEPTION','INVALID_OPERATION_EXCEPTION','POWERSHELL_RUNTIME_EXCEPTION','OTHER_HOST_EXCEPTION'];
+function validateCalibrationHostDiagnostic(value,summary) {
+  assert.deepEqual(Object.keys(value),['Schema','HostStage','ExceptionClass','PrimaryReason','FinalizationStatus','CleanupStatus']);
+  assert.equal(value.Schema,1);assert(calibrationHostStages.includes(value.HostStage));assert(calibrationExceptionClasses.includes(value.ExceptionClass));
+  assert.match(value.PrimaryReason,/^(FAIL|INVALID|PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY):[A-Z0-9_]+$/);
+  assert.equal(value.PrimaryReason,`${summary.Status}:${summary.Reason}`);
+  assert(['NOT_STARTED','IN_PROGRESS','COMPLETED','FAILED'].includes(value.FinalizationStatus));
+  assert(['NOT_ATTEMPTED','NOT_REQUIRED','IN_PROGRESS','VERIFIED','FAILED'].includes(value.CleanupStatus));
+  for(const forbidden of ['ExceptionMessage','RawException','StackTrace','CommandOutput']) assert.equal(Object.hasOwn(value,forbidden),false);
+  if(summary.Reason==='HOST_EXCEPTION'){assert.notEqual(value.ExceptionClass,'NONE');assert.notEqual(value.HostStage,'COMPLETED');}
+}
+
 export function ingestDeviceTransport(directory) {
   const read=name=>JSON.parse(decode(resolve(directory,name))),summary=read('summary.json'),operations=read('operations.json');
   assert.equal(summary.Protocol,'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT');
@@ -403,6 +420,21 @@ export function ingestOracleCalibration(directory) {
   if(existsSync(permissionPath)) {
     const permission=read('permission-verification.json');validateCalibrationPermissionVerification(permission);assert.deepEqual(summary.PermissionVerification,permission);
   } else assert.equal(Object.hasOwn(summary,'PermissionVerification'),false);
+  let hostStage='UNSPECIFIED',hostStageSource='UNSPECIFIED',exceptionClass='UNSPECIFIED_V2_NOT_RETAINED';
+  let finalizationStatus='SUMMARY_WRITTEN_V2',cleanupStatus=summary.CleanupVerified?'VERIFIED':'UNVERIFIED';
+  if(Object.hasOwn(summary,'HostDiagnostic')) {
+    validateCalibrationHostDiagnostic(summary.HostDiagnostic,summary);
+    ({HostStage:hostStage,ExceptionClass:exceptionClass,FinalizationStatus:finalizationStatus,CleanupStatus:cleanupStatus}=summary.HostDiagnostic);
+    hostStageSource='CAPTURED_RUNNER_V3';
+  } else if(summary.Status==='INVALID'&&summary.Reason==='HOST_EXCEPTION'&&summary.PositiveControl===true&&summary.BlockedControl===false&&
+    summary.LatencyMs===null&&summary.HoldMillis===0&&summary.InjectedBlockedTaps===0&&summary.PhysicalAgreement==='UNRECORDED') {
+    const arm=operations.findLastIndex(operation=>operation.OperationCategory==='CANDIDATE_ARM'&&operation.ExitCode===0);
+    const afterArm=arm<0?[]:operations.slice(arm+1).map(operation=>operation.OperationCategory);
+    if(arm>=0&&afterArm.every(category=>['CANDIDATE_STATE','CANDIDATE_CLEAR'].includes(category))&&afterArm.at(-1)==='CANDIDATE_CLEAR') {
+      hostStage=summary.Revision===null?'ARM':Number.isInteger(summary.Revision)?'WAIT_FOR_ATTACHMENT':'UNSPECIFIED';
+      if(hostStage!=='UNSPECIFIED') hostStageSource='DERIVED_FROM_V2_ARTIFACT_SEQUENCE';
+    }
+  }
   if(summary.Status==='PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY') {
     assert.match(summary.SourceCommit,/^[a-f0-9]{40}$/);assert.match(summary.CandidateSha256,/^[a-f0-9]{64}$/);assert.match(summary.FixtureSha256,/^[a-f0-9]{64}$/);
     assert.equal(summary.TransportEvidenceProtocol,'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT');assert.match(summary.TransportDeviceEvidenceSha256,/^[a-f0-9]{64}$/);
@@ -415,9 +447,14 @@ export function ingestOracleCalibration(directory) {
     assert.equal(summary.ServiceContinuous,true);assert.equal(summary.PhysicalAgreement,'PASS');assert.equal(summary.CleanupVerified,true);
     assert.equal(summary.CalibrationSamples,1);assert(Number.isInteger(summary.LatencyMs)&&summary.LatencyMs>=0);
     assert(Number.isInteger(summary.Revision)&&summary.Revision>=0);assert(summary.HoldMillis>=10000);assert.equal(summary.InjectedBlockedTaps,20);
+    if(Object.hasOwn(summary,'HostDiagnostic')) {assert.equal(hostStage,'COMPLETED');assert.equal(exceptionClass,'NONE');assert.equal(finalizationStatus,'COMPLETED');assert.equal(cleanupStatus,'VERIFIED');}
   } else assert(['FAIL','INVALID'].includes(summary.Status));
+  const permissionVerificationPassed=Object.hasOwn(summary,'PermissionVerification')&&summary.PermissionVerification.UsageAccessRunner==='ENABLED'&&
+    summary.PermissionVerification.AccessibilityRunner==='ENABLED'&&summary.PermissionVerification.ServiceHeartbeat==='FRESH'&&
+    summary.PermissionVerification.CandidateHealth==='HEALTHY'&&summary.PermissionVerification.CandidateEligible==='ELIGIBLE';
   return {sourceCommit:summary.SourceCommit,status:summary.Status,reason:summary.Reason,calibrationSamples:summary.CalibrationSamples,
-    qualificationSamples:0,physicalAgreement:summary.PhysicalAgreement,kr003Complete:false};
+    qualificationSamples:0,physicalAgreement:summary.PhysicalAgreement,permissionVerificationPassed,hostStage,hostStageSource,exceptionClass,
+    finalizationStatus,cleanupStatus,kr003Complete:false};
 }
 
 export function ingestUiAutomationTransport(directory) { return ingestAlternateTransport(directory,false); }

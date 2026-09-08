@@ -404,6 +404,34 @@ test("bounded generic oracle calibration cannot create qualification rows or pro
   assert.equal(ingestOracleCalibration(dir).status,'INVALID');
 }));
 
+test("runner-v2 host exception preserves completed stages and derives the ARM boundary without inventing its class",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const permission={UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE',
+    UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',
+    UsageAccessParseResult:'MODE_ALLOWED',AccessibilityParseResult:'GLOBAL_ENABLED_COMPONENT_MATCH_FULL'};
+  const operations=['ADB_STATE','FIXTURE_OPEN','FIXTURE_STATE','INPUT_TAP','FIXTURE_STATE','CANDIDATE_STATE','CANDIDATE_ARM','CANDIDATE_STATE','CANDIDATE_CLEAR']
+    .map(OperationCategory=>({OperationCategory,ExitCode:0,StderrClass:'NONE'}));
+  const summary={Protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',Status:'INVALID',Reason:'HOST_EXCEPTION',SourceCommit:'c'.repeat(40),
+    CandidateSha256:'a'.repeat(64),FixtureSha256:'b'.repeat(64),TransportEvidenceProtocol:'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT',
+    TransportDeviceEvidenceSha256:'d'.repeat(64),PositiveControl:true,BlockedControl:false,ServiceContinuous:false,PhysicalAgreement:'UNRECORDED',
+    PermissionVerification:permission,CleanupVerified:true,Revision:null,LatencyMs:null,HoldMillis:0,InjectedBlockedTaps:0,CalibrationSamples:0,
+    QualificationSamples:0,CandidateTelemetryCorroboratingOnly:true,FixtureIndependentPackageAndUid:true,SharedState:false,NodeTextContentAccess:false,
+    Screenshots:false,NetworkChanged:false,PermissionsChangedByRunner:false,DestructiveAction:false};
+  save('permission-verification.json',permission);save('operations.json',operations);save('summary.json',summary);
+  let result=ingestOracleCalibration(dir);
+  assert.equal(result.permissionVerificationPassed,true);
+  assert.equal(result.hostStage,'ARM');
+  assert.equal(result.hostStageSource,'DERIVED_FROM_V2_ARTIFACT_SEQUENCE');
+  assert.equal(result.exceptionClass,'UNSPECIFIED_V2_NOT_RETAINED');
+  assert.equal(result.cleanupStatus,'VERIFIED');
+  const host={Schema:1,HostStage:'ARM',ExceptionClass:'POWERSHELL_RUNTIME_EXCEPTION',PrimaryReason:'INVALID:HOST_EXCEPTION',
+    FinalizationStatus:'COMPLETED',CleanupStatus:'VERIFIED'};
+  save('summary.json',{...summary,HostDiagnostic:host});result=ingestOracleCalibration(dir);
+  assert.equal(result.hostStageSource,'CAPTURED_RUNNER_V3');assert.equal(result.exceptionClass,'POWERSHELL_RUNTIME_EXCEPTION');
+  save('summary.json',{...summary,HostDiagnostic:{...host,ExceptionMessage:'forbidden raw detail'}});
+  assert.throws(()=>ingestOracleCalibration(dir));
+}));
+
 test("new-device runners stay transport-first, generic and privacy bounded",()=>{
   const transport=readFileSync(resolve('tools/kr003/Test-KR003-DeviceTransport.ps1'),'utf8');
   const calibration=readFileSync(resolve('tools/kr003/Test-KR003-OracleCalibration.ps1'),'utf8');
@@ -412,7 +440,8 @@ test("new-device runners stay transport-first, generic and privacy bounded",()=>
   assert.match(transport,/CandidateInstalledByRunner=\$false/);assert.doesNotMatch(preflightPackager,/'candidate\.apk'/);
   assert.match(transport,/Invoke-DeviceAdb 'INPUT_TAP'/);assert.match(calibration,/QualificationSamples=0/);
   assert.match(calibration,/permission-verification\.json/);assert.match(calibration,/settings','--user','current','get','secure','enabled_accessibility_services/);
-  assert.match(calibrationPackager,/runnerVersion:2/);
+  assert.match(calibrationPackager,/runnerVersion:3/);
+  assert.match(calibration,/HostDiagnostic=Get-KRCalibrationHostDiagnostic/);
   for(const source of [transport,calibration]) assert.doesNotMatch(source,/ro\.serialno|ro\.build\.fingerprint|ANDROID_ID|screencap|uiautomator|dumpsys\s+window/i);
   assert.doesNotMatch(calibration,/for\([^\n]+-le 100|OfflineNetwork|svc[^\n]+disable/i);
 });

@@ -3,7 +3,7 @@
 - **Goal:** Publish one immutable, calibration-only rerun bundle that diagnoses and corrects the Samsung required-permission verifier without weakening the oracle gate.
 - **Context:** Samsung SM-X400 transport passed under source `5a46f75`; three v1 calibration attempts remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED` with runner Usage Access granted, runner Accessibility not granted, and healthy candidate/service telemetry.
 - **Constraints:** Exact unchanged Q5 candidate and reviewed independent fixture; no raw AppOps/settings/dumpsys output, device serial, account/content/history, permission mutation, Samsung allowlist, network change, qualification loop, production code or KR-004 work.
-- **Done when:** A clean committed source builds/tests, runner v2 and every payload are hash-pinned and independently byte-compared, one exact owner command is recorded, and physical execution remains Not run.
+- **Done when:** A clean committed source builds/tests, runner v2 and every payload are hash-pinned and independently byte-compared, and its later physical result is linked without changing the immutable bundle.
 
 ## Immutable handoff
 
@@ -16,7 +16,7 @@
 | Candidate SHA-256 | `5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b` |
 | Fixture SHA-256 | `223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc` |
 | Calibration / qualification maximum | one excluded calibration / `0` qualification samples |
-| Physical execution | **Not run** |
+| Physical execution | Executed once: [`INVALID:HOST_EXCEPTION`](KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) |
 
 | Payload | SHA-256 |
 | --- | --- |
@@ -29,11 +29,11 @@
 | `ordinary-fixture.apk` | `223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc` |
 
 The packager rebuilt/tested debug and release variants, ran repository validation and release isolation, then wrote a new non-overwriting directory.
-An independent `sha256sum` plus byte-for-byte comparison matched every source/protocol/APK payload to commit `c74d656`. No device command ran.
+An independent `sha256sum` plus byte-for-byte comparison matched every source/protocol/APK payload to commit `c74d656`. Packaging ran no device command.
 
-## Exact single rerun command
+## Historical executed command
 
-With only the exact authorized Samsung SM-X400 connected, unlocked and interactive, run once in Windows PowerShell:
+The owner later ran this command once on the exact authorized Samsung SM-X400:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-oracle-calibration-bundles\c74d656\Test-KR003-OracleCalibration.ps1" -TransportEvidence "C:\platform-tools\kr003-device-preflight\device-20260908-092640-d3b5053b"
@@ -43,7 +43,7 @@ Do not change or auto-grant permissions. Keep Usage Access and the disposable Ac
 physical agreement prompt, watch the full blocked hold and press `P` only if restriction remains visibly continuous with no ordinary use/flicker;
 press `F` on a visible failure or `I` if missed/uncertain. Preserve the printed evidence directory and stop on PASS, FAIL or INVALID.
 
-No 100-cycle qualification is authorized by this handoff. A calibration PASS would permit only repository review and preparation of a separately
+Do not rerun this superseded v2 bundle. No 100-cycle qualification is authorized by this handoff. A calibration PASS would permit only repository review and preparation of a separately
 authorized configuration-specific bundle; it would not close KR-003 or establish safety/lifecycle/Play support.
 
 ## Verification

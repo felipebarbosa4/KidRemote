@@ -121,7 +121,9 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 
 Known inventory: authorized Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29 with [bounded evidence](evidence/KR-003-MI8-2026-09-06.md), and
 authorized Samsung SM-X400 / Android 16 API 36 / build `BP4A.251205.006` with [transport PASS and three calibration INVALID attempts](evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md).
-The Samsung configuration establishes its metadata and shell transport only; enforcement, latency, safety, lifecycle and qualification remain Not run.
+The subsequent [runner-v2 calibration](evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) separately passed permission verification and the
+fixture positive control, then stopped INVALID in ARM before the blocked hold. The Samsung configuration establishes metadata, shell transport
+and current permission-verifier compatibility only; enforcement, latency, safety, lifecycle and qualification remain Not run.
 Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
 Android 17/API 37 is the current documented platform; whether to add it to the approved physical support gate remains **UNSPECIFIED** and it does

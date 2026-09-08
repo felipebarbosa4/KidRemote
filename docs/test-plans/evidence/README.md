@@ -6,7 +6,7 @@ production-support claim. No Supabase integration or Play review has been perfor
 The [Samsung SM-X400 evidence](KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md) records transport PASS and three calibration INVALID attempts
 on Android 16/API 36. Never transfer it to Mi 8, Pixel/another OEM, another Samsung model, API, build or power/permission configuration.
 [The generic next-device bundles](KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md) distinguish the executed source-`5a46f75` bundle from the corrected calibration-only handoff.
-[The verifier v2 bundle](KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) is the only current Samsung calibration rerun handoff; its physical execution is Not run.
+[The verifier v2 bundle](KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) was executed once; its [HOST_EXCEPTION evidence](KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) remains INVALID after permission verification and positive control passed but before any blocked hold.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
