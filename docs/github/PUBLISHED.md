@@ -427,3 +427,26 @@ is published from source `532bc22df0084b62e202a0cda0158dc61331f180` at `C:\platf
 `bundle.json` SHA-256 is `1689917375f274e28e82b0ae23e12dba6c1454acb81773217e78adb67507eab7`. It has not been physically executed.
 [CI run 34313431060](https://github.com/felipebarbosa4/KidRemote/actions/runs/34313431060) passed repository/Node/PowerShell 7, native Windows
 PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+
+## Samsung 100-cycle checkpoint-3 INVALID and runner-v10 handoff — 2026-09-09
+
+Strict ingestion of `run-20260909-012601-0d666cb9` preserves the complete run as `INVALID:SCREEN_OR_KEYGUARD`; it is not resumable or
+poolable. The [retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md) contains exactly 100 distinct
+qualification rows. Every automated row passed its active oracle: the independent fixture positive control reached the fixture, all 2,000
+blocked taps were denied, no focus regain occurred, and permission, heartbeat and health checks remained good through the completed cycles.
+Attachment latency was p50 221 ms, p95 317 ms and max 334 ms. Human checkpoints 1 and 2 passed. Checkpoint 3 retained about 298 seconds of
+healthy restriction monitoring before combined screen/keyguard eligibility became false; its physical substeps were not recorded. Screen off,
+keyguard or both cannot be distinguished, and USB/charging changes and the precise trigger remain **UNSPECIFIED**. Finalizer CLEAR released the
+restriction at revision 231, Wi-Fi restoration was verified, and mobile data was correctly not applicable. No formal matrix row passed.
+
+OD-37 records the bounded runner defect: v9 did not establish a powered lab stay-awake state while the owner was absent. Runner-v10 requires an
+initially unlocked/eligible device and a recognized power source; journals only the original integer stay-awake setting and coarse power-source
+class; enables Android's supported stay-awake-while-plugged-in setting when needed; verifies it at cycle and safety boundaries; and restores and
+readbacks the exact original setting during finalization. Unknown state, unplugging, enable/readback failure or restoration failure remains
+INVALID. It does not remove or weaken lock security and does not change candidate, permission, enforcement or oracle semantics.
+
+The [immutable runner-v10 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V10-BUNDLE-2026-09-09.md) is published from source
+`fd9824943c35f70d393f7b0e0b252c2a8253a2d9` at `C:\platform-tools\kr003-qualification-bundles\fd98249`; its `bundle.json` SHA-256 is
+`f4bf6e52b6cc7e61fa335ac1f93a6828085779f3a988bd217bb31443b1f294b2`. Physical execution is **Not run**. Exact-source
+[CI run 34357242810](https://github.com/felipebarbosa4/KidRemote/actions/runs/34357242810) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.

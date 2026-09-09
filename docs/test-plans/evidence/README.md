@@ -18,8 +18,8 @@ preparation but supplies zero qualification rows. The resulting immutable [runne
 was invoked once; its [network-preflight INVALID](KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) remains zero-cycle evidence, not an
 enforcement failure. Runner-v9's immutable [bundle and hashes](KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md) remain preserved. Its later
 [physical execution](KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md) retained 100 automated PASS rows at p95 317 ms but stopped
-`INVALID:SCREEN_OR_KEYGUARD` before checkpoint-3 physical agreement. It is one non-resumable INVALID, not a qualification PASS. Runner-v10 is
-the current unexecuted stay-awake-aware handoff.
+`INVALID:SCREEN_OR_KEYGUARD` before checkpoint-3 physical agreement. It is one non-resumable INVALID, not a qualification PASS. The immutable
+[runner-v10 bundle](KR-003-SAMSUNG-QUALIFICATION-V10-BUNDLE-2026-09-09.md) is the current unexecuted stay-awake-aware handoff.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
