@@ -56,6 +56,6 @@ The helper sends only the disposable lab `CLEAR`, verifies the restriction/overl
 - Native Windows PowerShell 5.1.26100.9168: 480 source assertions passed without a device; the mounted bundle then passed the reserved-variable scan and actual entrypoint startup test before any device command.
 - Android isolated suite: 24/24 JVM executions, debug/release lint and builds passed; merged permissions/receiver protection/release DEX isolation passed for all three modules.
 - Repository validation, strict calibration reingestion, bundle payload rehash and `git diff --check` passed.
-- PowerShell 7 execution is delegated to CI because `pwsh` is unavailable in the local environment.
+- Exact pushed head `5719a0983ccdd0f6b4fd30ea3817f08d3ffc73cc` passed all three jobs in [CI run 34309000050](https://github.com/felipebarbosa4/KidRemote/actions/runs/34309000050), including PowerShell 7, native Windows PowerShell 5.1 and the Android isolation job. Local `pwsh` was unavailable; the local native Windows PowerShell result is independently recorded above.
 
 These are synthetic/host/build results only. They do not create a qualification row or change the calibration verdict.

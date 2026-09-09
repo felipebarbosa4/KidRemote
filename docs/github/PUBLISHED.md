@@ -401,6 +401,11 @@ is published at `C:\platform-tools\kr003-qualification-bundles\33c2b36`; its `bu
 `a828d4689bfc552411f016262df1bd44f6b606c37efe1be66b73858bced4e4a0`. It is bound to the passed calibration, exact captured configuration and
 APK hashes. Physical execution is **Not run**.
 
+Exact pushed head `5719a0983ccdd0f6b4fd30ea3817f08d3ffc73cc` passed all three jobs in
+[CI run 34309000050](https://github.com/felipebarbosa4/KidRemote/actions/runs/34309000050), including PowerShell 7, native Windows PowerShell 5.1,
+Node evidence/security, repository validation and Android debug/release isolation. The actual mounted bundle also passed native Windows PowerShell
+5.1 reserved-variable and redirected-input entrypoint checks with no device command.
+
 The calibration prerequisite advances only for this exact configuration. Formal TIME-04 remains open with no offline 100-cycle p95, and no
 lifecycle, revocation, tamper, safety, Play or production gate advances. All earlier Samsung INVALID records remain unchanged; the Mi 8 is not
 reinterpreted; KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
