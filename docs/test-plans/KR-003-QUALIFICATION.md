@@ -25,6 +25,8 @@ The resulting [Q6 specialization](KR-003-Q6-QUALIFICATION.md) was packaged but n
 input-layer/focus oracle. Preparation, synthetic tests, builds and hashes are not physical evidence. Q7 must first calibrate the oracle on the Mi 8;
 if calibration fails, it stops before sample 1 and the three-checkpoint constraint is incompatible with the former 100-human-observation gate.
 
+The separate Samsung path has now satisfied transport and the standalone [active-oracle calibration](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) on one exact configuration. Its [configuration-bound runner-v8 specialization](KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md) retains this contract but does not transfer the Mi 8 identity or physical results. Physical 100-cycle execution remains Not run.
+
 ## Reconciled definitions
 
 Q7 explicitly changes the former per-sample observer requirement. One automated sample is a new persisted 10-second allowance/revision, ordinary

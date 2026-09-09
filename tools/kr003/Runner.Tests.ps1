@@ -4,6 +4,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'DevicePreflight.psm1') -Force
 $script:Checks=0
 function Assert-Equal($Actual,$Expected) { $script:Checks++; if ($Actual -cne $Expected) { throw "Expected $Expected; got $Actual" } }
 function Assert-True($Value) { Assert-Equal ([bool]$Value) $true }
@@ -189,7 +190,7 @@ try {
 
     # Q7 final safety orchestration remains one human checkpoint session and adds zero expiry samples.
     Reset-Run 'q7-safety-checkpoint'
-    $script:Bundle=[PSCustomObject]@{protocol='KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION'}
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
     $script:ClearMode=$false; $script:OpenCount=0; $script:FixtureReadAfterClear=0
     function New-SafetyFrame([bool]$Restricted) {
         [PSCustomObject]@{
@@ -246,6 +247,35 @@ try {
     Assert-Equal $script:DiagnosticBailout.ConsumerRecoveryEvidence $false
     Assert-Equal (Read-Json 'diagnostic-bailout.json').AfterSampleCount 2
 
+    # The version-compatible shell verifier agrees with healthy telemetry, then treats revocation after establishment as FAIL.
+    Reset-Run 'qualification-permission-verification'
+    $script:candidatePackage='dev.kidremote.spike.enforcement'
+    $script:candidateService='dev.kidremote.spike.enforcement/.EnforcementAccessibilityService'
+    $script:RequiredPermissionsEstablished=$false
+    $permissionSnapshot=New-SafetyFrame $false
+    function Invoke-LabAdb {
+        param($Arguments)
+        $command=$Arguments -join ' '
+        if($command -like '*appops*'){return 'GET_USAGE_STATS: allow'}
+        if($command -like '*enabled_accessibility_services*'){return 'dev.kidremote.spike.enforcement/dev.kidremote.spike.enforcement.EnforcementAccessibilityService'}
+        if($command -like '*accessibility_enabled*'){return '1'}
+        throw 'UNEXPECTED_DEVICE_COMMAND_IN_UNIT_TEST'
+    }
+    Assert-QualificationPermissionState $permissionSnapshot
+    Assert-Equal $script:RequiredPermissionsEstablished $true
+    Assert-Equal (Read-Json 'permission-verification.json').CandidateHealth 'HEALTHY'
+    function Invoke-LabAdb {
+        param($Arguments)
+        $command=$Arguments -join ' '
+        if($command -like '*appops*'){return 'GET_USAGE_STATS: ignore'}
+        if($command -like '*enabled_accessibility_services*'){return 'null'}
+        if($command -like '*accessibility_enabled*'){return '0'}
+        throw 'UNEXPECTED_DEVICE_COMMAND_IN_UNIT_TEST'
+    }
+    $permissionFailure=$null
+    try{Assert-QualificationPermissionState $permissionSnapshot}catch{$permissionFailure=$_.Exception.Message}
+    Assert-Equal $permissionFailure 'FAIL:PERMISSION_OR_SERVICE_LOST'
+
     # Finalization invokes diagnostic bailout before reporting and retains a physical-failure diagnostic journal.
     Reset-Run 'diagnostic-finalization'
     $script:RecoveryDiagnostic=$true; $script:LabControlReady=$true
@@ -268,10 +298,15 @@ try {
     Assert-Equal $bailoutErrors.Count 0
     $bailoutSource=Get-Content -LiteralPath $bailoutPath -Raw
     Assert-Equal ([bool]($bailoutSource -match "Get-BailoutState 'CLEAR'")) $true
+    Assert-Equal ([bool]($bailoutSource -match 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION')) $true
     Assert-Equal ([bool]($bailoutSource -match "Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable")) $false
     $runnerSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Start-KR003.ps1') -Raw
     Assert-Equal ([bool]($runnerSource -match '\[string\]::IsNullOrEmpty\(\$PhysicalResult\)')) $true
-    Assert-Equal ([bool]($runnerSource -match 'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION')) $true
+    $qualificationModuleSource=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Qualification.psm1') -Raw
+    Assert-Equal ([bool]($qualificationModuleSource -match 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION')) $true
+    Assert-Equal ([bool]($runnerSource -match 'Assert-KRBoundDeviceConfiguration')) $true
+    Assert-Equal ([bool]($runnerSource -match 'Assert-QualificationPermissionState')) $true
+    Assert-Equal ([bool]($runnerSource -match 'BuildFingerprint|MiuiOwnerSupplied')) $false
     Assert-Equal ([bool]($runnerSource -match 'for \(\$attempt=1; \$attempt -le 100; \$attempt\+\+\)')) $true
     Assert-Equal ([bool]($runnerSource -match 'Invoke-NegativeControlCheckpoint')) $true
     Assert-Equal ([bool]($runnerSource -match "Invoke-QualificationSafetyCheckpoint -Phase 'final'")) $true

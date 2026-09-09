@@ -25,6 +25,29 @@ function New-Snapshot {
     }
 }
 
+$approvedConfiguration=[PSCustomObject]@{schema=1;manufacturer='samsung';model='SM-X400';androidVersion='16';apiLevel='36';securityPatch='2026-07-05';buildId='BP4A.251205.006'}
+$calibratedBy=[PSCustomObject]@{
+    protocol='KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION';sourceCommit=('a'*40);runDirectory='calibration-20260908-231756-97a0855b'
+    status='PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY';reason='COMPLETED';summarySha256=('b'*64);deviceSha256=('c'*64)
+    transportDeviceEvidenceSha256=('d'*64);calibrationSamples=1;qualificationSamples=0;physicalAgreement='PASS'
+    candidateSha256=('e'*64);fixtureSha256=('f'*64)
+}
+$configurationBundle=[PSCustomObject]@{
+    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=8;diagnosticOnly=$false;requiresOffline=$true
+    oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
+    approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
+}
+Assert-KRConfigurationQualificationBundle $configurationBundle
+$observedConfiguration=[PSCustomObject]@{Manufacturer='samsung';Model='SM-X400';Android='16';Api='36';Patch='2026-07-05';BuildId='BP4A.251205.006'}
+Assert-KRBoundDeviceConfiguration $observedConfiguration $approvedConfiguration
+$wrongDevice=$observedConfiguration.PSObject.Copy();$wrongDevice.BuildId='DIFFERENT'
+Assert-Reject { Assert-KRBoundDeviceConfiguration $wrongDevice $approvedConfiguration } 'INVALID:DEVICE_CONFIGURATION_CHANGED'
+$wrongCalibration=$calibratedBy.PSObject.Copy();$wrongCalibration.physicalAgreement='INVALID'
+$wrongBundle=$configurationBundle.PSObject.Copy();$wrongBundle.calibratedBy=$wrongCalibration
+Assert-Reject { Assert-KRConfigurationQualificationBundle $wrongBundle } 'INVALID:BUNDLE_CALIBRATION_SCHEMA'
+$arrayReplyBundle=$configurationBundle.PSObject.Copy();$arrayReplyBundle.approvedConfiguration=@($approvedConfiguration,$approvedConfiguration)
+Assert-Reject { Assert-KRConfigurationQualificationBundle $arrayReplyBundle } 'INVALID:BUNDLE_CONFIGURATION_SCHEMA'
+
 Assert-Equal (Get-KRStatistics @()).Count 0
 Assert-Equal (Get-KRStatistics @(1..100)).P95 95
 Assert-Equal (Get-KRStatistics @(263,1,123)).P50 123
@@ -308,6 +331,7 @@ Invoke-Expression $functionAst.Extent.Text
 function Save-Progress {}
 function Clear-ToOrdinary {}
 function Assert-FixedSettings {}
+function Assert-QualificationPermissionState { param($Snapshot) }
 function Check-EarlyStop {}
 function Start-Sleep {}
 function New-FixtureFrame { [PSCustomObject]@{schema=2;instance=1;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=0;focusGains=1;focusLosses=1} }

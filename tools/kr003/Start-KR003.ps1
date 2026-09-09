@@ -1,6 +1,6 @@
 <#
-Goal: KR-003 offline Mi 8 qualification with 100 active-oracle cycles and no more than three human checkpoint sessions.
-Context: Q7 replaces Q6 before execution after the owner capped repetitive human observations at three.
+Goal: KR-003 offline qualification with 100 active-oracle cycles on one calibration-approved configuration and no more than three human checkpoint sessions.
+Context: The manifest binds this reusable Q7 evidence model to one exact captured device configuration and calibration PASS.
 Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; reversible radio opt-in only.
 Done when: The independent input/focus oracle passes 100 cycles, all three human checkpoints pass, and cleanup restores state.
 #>
@@ -14,12 +14,14 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'DevicePreflight.psm1') -Force
 
 $candidatePackage = 'dev.kidremote.spike.enforcement'
 $fixturePackage = 'dev.kidremote.spike.ordinary'
 $candidateReceiver = "$candidatePackage/.LabControlReceiver"
 $fixtureReceiver = "$fixturePackage/.FixtureReceiver"
 $fixtureActivity = "$fixturePackage/.FixtureActivity"
+$candidateService = "$candidatePackage/.EnforcementAccessibilityService"
 $runId = 'run-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
 $runDirectory = Join-Path $OutputRoot $runId
 $script:Request = 0L
@@ -55,6 +57,7 @@ $script:LabControlReady = $false
 $script:StartedAt = [DateTime]::UtcNow.ToString('o')
 $script:Terminal = 'INCOMPLETE'
 $script:Reason = 'NOT_STARTED'
+$script:RequiredPermissionsEstablished = $false
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -169,6 +172,19 @@ function Assert-FixedSettings {
         if ($value -notmatch '^[0-9]+$') { $value = 'UNSPECIFIED' }
         if ($value -cne $script:Device.$key) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     }
+}
+
+function Assert-QualificationPermissionState {
+    param($Snapshot)
+    $usageOutput=Invoke-LabAdb @('shell','cmd','appops','get',$candidatePackage,'GET_USAGE_STATS')
+    $servicesOutput=Invoke-LabAdb @('shell','settings','--user','current','get','secure','enabled_accessibility_services')
+    $accessibilityOutput=Invoke-LabAdb @('shell','settings','--user','current','get','secure','accessibility_enabled')
+    $runnerVerification=Get-KRRequiredPermissionVerification $true $usageOutput $servicesOutput $accessibilityOutput $candidateService
+    $diagnostic=New-KRCalibrationPermissionDiagnostic $runnerVerification $Snapshot
+    Write-JsonFile 'permission-verification.json' $diagnostic
+    $failure=Get-KRRequiredPermissionFailure $diagnostic $script:RequiredPermissionsEstablished
+    if ($null -ne $failure) { throw $failure }
+    $script:RequiredPermissionsEstablished=$true
 }
 
 function Wait-RadioFlag {
@@ -404,6 +420,7 @@ function Invoke-Expiry {
     Clear-ToOrdinary
     $before = Get-LabState
     Assert-KRHealth $before
+    Assert-QualificationPermissionState $before
     $fixtureBeforeControl = Get-FixtureState
     $fixture = Assert-FixturePositiveControl -Before $fixtureBeforeControl
     $script:CurrentRow.PositiveControlTap='REACHED_FIXTURE'
@@ -484,6 +501,7 @@ function Invoke-Expiry {
     $fixtureFinal=Get-FixtureState
     Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureFinal
     Assert-KRIndependentFixtureBlock -Baseline $blockedFixture -Current $fixtureFinal
+    Assert-QualificationPermissionState $snapshot
     $script:CurrentRow.EndedUtc = [DateTime]::UtcNow.ToString('o')
     if ($Calibration) {
         $script:Calibration = $script:CurrentRow
@@ -836,9 +854,9 @@ function Verify-InstalledApk {
 
 function Read-DeviceConfiguration {
     $properties = [ordered]@{
-        Manufacturer = 'ro.product.manufacturer'; Model = 'ro.product.model'; Codename = 'ro.product.device'
+        Manufacturer = 'ro.product.manufacturer'; Model = 'ro.product.model'
         Android = 'ro.build.version.release'; Api = 'ro.build.version.sdk'; Patch = 'ro.build.version.security_patch'
-        BuildFingerprint = 'ro.build.fingerprint'
+        BuildId = 'ro.build.id'
     }
     $record = [ordered]@{}
     foreach ($key in $properties.Keys) {
@@ -850,12 +868,6 @@ function Read-DeviceConfiguration {
         $value = (Invoke-LabAdb @('shell','settings','get','global',$key)).Trim()
         $record[$key] = if ($value -match '^[0-9]+$') { $value } else { 'UNSPECIFIED' }
     }
-    $record['MiuiOwnerSupplied'] = 'MIUI Global 12.0.3'
-    $record['OemBatterySettings'] = 'UNSPECIFIED'
-    $record['Launcher'] = 'UNSPECIFIED'
-    $record['GooglePlaySystem'] = 'UNSPECIFIED'
-    $record['User'] = (Invoke-LabAdb @('shell','am','get-current-user')).Trim()
-    if ($record['User'] -notmatch '^\d+$') { throw 'INVALID:ANDROID_USER_UNKNOWN' }
     return [PSCustomObject]$record
 }
 
@@ -991,7 +1003,7 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if ($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION' -or $script:Bundle.runnerVersion -ne 7 -or $script:Bundle.diagnosticOnly -or -not $script:Bundle.requiresOffline) { throw 'INVALID:BUNDLE_SCHEMA' }
+    Assert-KRConfigurationQualificationBundle $script:Bundle
     if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
@@ -1004,7 +1016,7 @@ try {
     $script:Manifest.Device = $script:Device
     $script:Manifest.InitialDevice = $script:Device
     Write-JsonFile 'manifest.json' $script:Manifest
-    if ($script:Device.Codename -ne 'dipper' -or $script:Device.Api -ne '29') { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
+    Assert-KRBoundDeviceConfiguration $script:Device $script:Bundle.approvedConfiguration
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256
     $null = Invoke-LabAdb @('shell','am','start','-n',"$candidatePackage/.MainActivity")
@@ -1014,6 +1026,7 @@ try {
     $null = Get-LabState 'CLEAR'
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
+    Assert-QualificationPermissionState $ready
     Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
     Enter-OfflineNetwork
     $script:Manifest.Device=$script:Device
@@ -1045,6 +1058,7 @@ try {
     }
     $script:SafetyPassed=$true
     $final=Get-LabState
+    Assert-QualificationPermissionState $final
     Write-JsonFile 'final-metrics.json' $final
     $stats=Get-KRStatistics -Values @($script:Rows | ForEach-Object { $_.LatencyMs })
     if ($final.sampleCount -ne 100 -or $final.samples.Count -ne 100 -or

@@ -1,6 +1,67 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Assert-KRConfigurationQualificationBundle {
+    param($Bundle)
+    if ($null -eq $Bundle -or $Bundle.schema -ne 1 -or
+        $Bundle.protocol -ne 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -or
+        $Bundle.runnerVersion -ne 8 -or $Bundle.diagnosticOnly -or -not $Bundle.requiresOffline -or
+        $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
+        $Bundle.humanCheckpointMaximum -ne 3 -or $Bundle.physicalExecution -ne 'NOT_RUN') {
+        throw 'INVALID:BUNDLE_SCHEMA'
+    }
+    $configuration=$Bundle.approvedConfiguration
+    $configurationNames=@('schema','manufacturer','model','androidVersion','apiLevel','securityPatch','buildId')
+    if ($null -eq $configuration -or $configuration.schema -ne 1 -or
+        @($configuration.PSObject.Properties.Name).Count -ne $configurationNames.Count -or
+        @($configuration.PSObject.Properties.Name | Where-Object { $_ -notin $configurationNames }).Count) {
+        throw 'INVALID:BUNDLE_CONFIGURATION_SCHEMA'
+    }
+    foreach($name in @('manufacturer','model','androidVersion','apiLevel','securityPatch','buildId')) {
+        $value=[string]$configuration.$name
+        if ([string]::IsNullOrWhiteSpace($value) -or $value -eq 'UNSPECIFIED' -or
+            $value.Length -gt 120 -or $value -notmatch '^[A-Za-z0-9][A-Za-z0-9 ._+()/:,-]*$') {
+            throw 'INVALID:BUNDLE_CONFIGURATION_SCHEMA'
+        }
+    }
+    $calibration=$Bundle.calibratedBy
+    $calibrationNames=@('protocol','sourceCommit','runDirectory','status','reason','summarySha256','deviceSha256','transportDeviceEvidenceSha256','calibrationSamples','qualificationSamples','physicalAgreement','candidateSha256','fixtureSha256')
+    if ($null -eq $calibration -or
+        @($calibration.PSObject.Properties.Name).Count -ne $calibrationNames.Count -or
+        @($calibration.PSObject.Properties.Name | Where-Object { $_ -notin $calibrationNames }).Count -or
+        $calibration.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or
+        $calibration.status -ne 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY' -or
+        $calibration.reason -ne 'COMPLETED' -or $calibration.calibrationSamples -ne 1 -or
+        $calibration.qualificationSamples -ne 0 -or $calibration.physicalAgreement -ne 'PASS' -or
+        $calibration.sourceCommit -notmatch '^[a-f0-9]{40}$' -or
+        $calibration.runDirectory -notmatch '^calibration-[0-9]{8}-[0-9]{6}-[a-f0-9]{8}$') {
+        throw 'INVALID:BUNDLE_CALIBRATION_SCHEMA'
+    }
+    foreach($name in @('summarySha256','deviceSha256','transportDeviceEvidenceSha256','candidateSha256','fixtureSha256')) {
+        if ($calibration.$name -notmatch '^[a-f0-9]{64}$') { throw 'INVALID:BUNDLE_CALIBRATION_SCHEMA' }
+    }
+    if ($Bundle.candidateSha256 -cne $calibration.candidateSha256 -or
+        $Bundle.fixtureSha256 -cne $calibration.fixtureSha256) {
+        throw 'INVALID:BUNDLE_CALIBRATION_APK_MISMATCH'
+    }
+}
+
+function Assert-KRBoundDeviceConfiguration {
+    param($ObservedDevice,$ExpectedConfiguration)
+    if ($null -eq $ObservedDevice -or $null -eq $ExpectedConfiguration) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
+    $mapping=[ordered]@{
+        Manufacturer='manufacturer'; Model='model'; Android='androidVersion'; Api='apiLevel'; Patch='securityPatch'; BuildId='buildId'
+    }
+    foreach($observedName in $mapping.Keys) {
+        $expectedName=$mapping[$observedName]
+        if ($ObservedDevice.PSObject.Properties.Name -notcontains $observedName -or
+            $ExpectedConfiguration.PSObject.Properties.Name -notcontains $expectedName -or
+            ([string]$ObservedDevice.$observedName) -cne ([string]$ExpectedConfiguration.$expectedName)) {
+            throw 'INVALID:DEVICE_CONFIGURATION_CHANGED'
+        }
+    }
+}
+
 function Get-KRStatistics {
     param([long[]]$Values = @())
     if ($Values.Count -eq 0) { return [PSCustomObject]@{ Count = 0; P50 = $null; P95 = $null; Max = $null } }
@@ -433,4 +494,4 @@ function Get-KRSafetyCheckpointReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason
+Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

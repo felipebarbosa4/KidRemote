@@ -26,8 +26,11 @@ failed on its `$script:Host` automatic-variable collision before output creation
 [runner-v4 replacement](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) renamed that state and was subsequently invoked
 four times. Every [typed v4 record](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) passed permission/positive controls,
 issued ARM and then stopped before attachment/hold because `$script:Armed` overwrote the same-scope `$armed` reply. Verified cleanup succeeded.
-Runner v5 removes that unused alias and validates the scalar ARM reply without changing candidate or gate semantics. The transport and permission passes neither prove
-enforcement nor lower the gate, and evidence from one configuration cannot be transferred.
+Runner v5 removes that unused alias and validates the scalar ARM reply without changing candidate or gate semantics. The fresh
+[runner-v5 calibration](../test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) then passed one excluded active-oracle expiry:
+revision 23 attached in 127 ms, the independent fixture received none of 20 blocked taps and did not regain focus across 22,371 ms, the owner
+explicitly agreed with the continuous visible restriction, and CLEAR was verified. This establishes only the calibration prerequisite on that
+exact configuration. It is not the required 100-cycle offline p95 result, safety/lifecycle support or a transferable device guarantee.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

@@ -46,19 +46,27 @@ node tools/kr003/package-oracle-calibration.mjs /mnt/c/platform-tools/kr003-orac
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-oracle-calibration-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Test-KR003-OracleCalibration.ps1" -TransportEvidence "C:\platform-tools\kr003-device-preflight\ACTUAL_DEVICE_DIRECTORY"
 ```
 
-Ingest with `node tools/kr003/ingest.mjs calibration ACTUAL_CALIBRATION_DIRECTORY`. A calibration PASS permits review/preparation of a new
-configuration-specific qualification bundle. It does not run or authorize 100 samples.
+Ingest with `node tools/kr003/ingest.mjs calibration ACTUAL_CALIBRATION_DIRECTORY`. The runner-v5 Samsung evidence now passes that gate for one
+exact configuration. A calibration PASS permits review/preparation of a new configuration-specific qualification bundle; it is excluded from
+the 100 rows and does not run or authorize them.
 
-## Historical Mi 8 Q7 build and package
+## Configuration-bound qualification build and package
 
 Use the existing JDK 17 and Android SDK. Run repository, Node, PowerShell and Android checks, commit a clean source revision, then create a new directory:
 
 ```sh
-node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-qualification-bundles/NEW_UNIQUE_COMMIT_DIRECTORY
+node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-qualification-bundles/NEW_UNIQUE_COMMIT_DIRECTORY /mnt/c/platform-tools/kr003-oracle-calibration/APPROVED_CALIBRATION_DIRECTORY
 ```
 
-Packaging refuses a dirty tree or existing destination, rebuilds/tests/lints debug and release, audits merged permissions/release DEX, and hashes every payload. It refuses candidate drift from the Q5-calibrated APK and fixture drift from the reviewed Q7 oracle build. `candidateCalibratedBy` identifies Q5; the new fixture must pass Q7 preflight on-device. No physical run occurs during packaging.
+Packaging refuses a dirty tree or existing destination, strictly ingests the exact approved calibration, rebuilds/tests/lints debug and release,
+audits merged permissions/release DEX, and hashes every payload. It binds the captured manufacturer/model/Android/API/build/patch plus the
+calibration and transport hashes, and refuses candidate/fixture drift. Owner labels remain separate from captured metadata. No physical run occurs during packaging.
 
+The resulting runner repeats an excluded calibration at the beginning, then performs 100 fresh offline active-oracle cycles and the three approved
+human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
+state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
+
+Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v8 protocol.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
@@ -70,9 +78,9 @@ Use the exact populated command in the latest bundle handoff:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -OfflineNetwork
 ```
 
-`-ExecutionPolicy Bypass` applies only to that process. Q7 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It journals original radio flags, disables enabled Wi-Fi/mobile data, obtains an explicit operator confirmation, and restores/read-backs each changed flag during independently guarded finalization. Keep only the authorized Mi 8 connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots or repairs host/WSL state.
+`-ExecutionPolicy Bypass` applies only to that process. Runner v8 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It journals original radio flags, disables enabled Wi-Fi/mobile data, obtains an explicit operator confirmation, and restores/read-backs each changed flag during independently guarded finalization. Keep only the manifest-bound authorized device connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots or repairs host/WSL state.
 
-The full [Q7 contract](../../docs/test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 35–45 minutes; the screen must remain unlocked/interactive. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
+The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 35–45 minutes; budget approximately 45–60 minutes including preflight and final owner work. The screen must remain unlocked/interactive. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
 
 Q7 first asks for one normal visible expiry checkpoint, then one controlled unblocked negative checkpoint. The 100-cycle section has no P prompts:
 each cycle proves input reaches the fixture before arm, then injects 20 equivalent taps during restriction and requires zero delivery/focus regain.
@@ -96,7 +104,7 @@ After a run, ingest without modifying originals:
 node tools/kr003/ingest.mjs qualification /mnt/c/platform-tools/kr003-qualification/ACTUAL_RUN_DIRECTORY
 ```
 
-Exit zero means only `PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY` for this exact offline Mi 8/build with verified bailout/restoration and clean finalization. It is not 100 human-visible passes and does not close KR-003, establish other devices, complete remaining matrix rows or prove Play acceptance.
+Exit zero means only `PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY` for the exact manifest-bound offline configuration with verified bailout/restoration and clean finalization. It is not 100 human-visible passes and does not close KR-003, establish other devices, complete remaining matrix rows or prove Play acceptance.
 
 ## Local checks
 
@@ -111,6 +119,7 @@ pwsh -NoProfile -File tools/kr003/DevicePreflight.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleCalibration.Tests.ps1
 pwsh -NoProfile -File tools/kr003/PowerShellSafety.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleCalibrationEntrypoint.Tests.ps1
+pwsh -NoProfile -File tools/kr003/QualificationEntrypoint.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

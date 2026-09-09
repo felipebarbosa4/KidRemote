@@ -12,7 +12,9 @@ on Android 16/API 36. Never transfer it to Mi 8, Pixel/another OEM, another Sams
 [runner-v4 replacement](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) was then invoked four times. All four independent
 [typed host records](KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) remain INVALID at the same post-ARM/pre-revision-assignment
 boundary, with verified cleanup and zero samples. The immutable [runner-v5 replacement](KR-003-SAMSUNG-CALIBRATION-V5-BUNDLE-2026-09-08.md)
-corrects only that host alias and ARM reply validation; physical execution is Not run.
+corrected only that host alias and ARM reply validation. Its subsequent [Samsung calibration PASS](KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md)
+is one excluded configuration-specific active-oracle sample with explicit owner agreement and verified cleanup; it permits qualification-bundle
+preparation but supplies zero qualification rows.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

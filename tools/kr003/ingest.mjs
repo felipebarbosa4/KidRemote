@@ -6,7 +6,8 @@ const decode = path => readFileSync(path,"utf8").replace(/^\uFEFF/,"");
 const hash = path => createHash("sha256").update(readFileSync(path)).digest("hex");
 
 function ingestQ7(directory, manifest, rows, summary, read) {
-  assert.equal(manifest.Bundle.runnerVersion,7);
+  const configurationBound=manifest.Bundle.protocol==='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';
+  assert.equal(manifest.Bundle.runnerVersion,configurationBound?8:7);
   assert.equal(manifest.Bundle.diagnosticOnly,false);
   assert.equal(manifest.Bundle.requiresOffline,true);
   assert.equal(manifest.Bundle.oracleModel,'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS');
@@ -15,6 +16,30 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.match(manifest.Bundle.fixtureSha256,/^[a-f0-9]{64}$/);
   assert.equal(manifest.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
   assert.equal(summary.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
+  if(configurationBound) {
+    const expected=manifest.Bundle.approvedConfiguration;
+    assert.deepEqual(Object.keys(expected),['schema','manufacturer','model','androidVersion','apiLevel','securityPatch','buildId']);
+    assert.equal(expected.schema,1);
+    for(const key of ['manufacturer','model','androidVersion','apiLevel','securityPatch','buildId']) {
+      assert.match(expected[key],/^[A-Za-z0-9][A-Za-z0-9 ._+()/:,-]{0,119}$/);
+      assert.notEqual(expected[key],'UNSPECIFIED');
+    }
+    assert.deepEqual(Object.keys(manifest.Bundle.ownerProvidedLabels),['device','software']);
+    for(const key of ['device','software']) assert.match(manifest.Bundle.ownerProvidedLabels[key],/^[A-Za-z0-9][A-Za-z0-9 ._+()/:,-]{0,119}$/);
+    const calibrated=manifest.Bundle.calibratedBy;
+    assert.deepEqual(Object.keys(calibrated),['protocol','sourceCommit','runDirectory','status','reason','summarySha256','deviceSha256','transportDeviceEvidenceSha256','calibrationSamples','qualificationSamples','physicalAgreement','candidateSha256','fixtureSha256']);
+    assert.equal(calibrated.protocol,'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION');
+    assert.match(calibrated.sourceCommit,/^[a-f0-9]{40}$/);
+    assert.match(calibrated.runDirectory,/^calibration-[0-9]{8}-[0-9]{6}-[a-f0-9]{8}$/);
+    assert.equal(calibrated.status,'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY');
+    assert.equal(calibrated.reason,'COMPLETED');
+    assert.equal(calibrated.calibrationSamples,1);assert.equal(calibrated.qualificationSamples,0);assert.equal(calibrated.physicalAgreement,'PASS');
+    for(const key of ['summarySha256','deviceSha256','transportDeviceEvidenceSha256','candidateSha256','fixtureSha256']) assert.match(calibrated[key],/^[a-f0-9]{64}$/);
+    assert.equal(calibrated.candidateSha256,manifest.Bundle.candidateSha256);
+    assert.equal(calibrated.fixtureSha256,manifest.Bundle.fixtureSha256);
+    assert.equal(manifest.Bundle.physicalExecution,'NOT_RUN');
+    assert.equal(manifest.Bundle.qualificationCycles,100);assert.equal(manifest.Bundle.resumeAllowed,false);assert.equal(manifest.Bundle.poolingAllowed,false);
+  }
   assert.equal(new Set(rows.map(r=>`${r.Phase}:${r.Attempt}`)).size,rows.length,'Duplicate attempt');
   const qualificationRows=rows.filter(r=>r.Phase==='QUALIFICATION');
   const completed=qualificationRows.filter(r=>r.AutomatedOracle==='PASS'&&r.InputOracle==='PASS');
@@ -25,6 +50,23 @@ function ingestQ7(directory, manifest, rows, summary, read) {
     const checkpoints=existsSync(resolve(directory,'human-checkpoints.json'))?read('human-checkpoints.json'):[];
     return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
       automatedExpiryCycles:completed.length,humanCheckpointSessions:checkpoints.length,partial:true,kr003Complete:false};
+  }
+  if(configurationBound) {
+    const expected=manifest.Bundle.approvedConfiguration;
+    const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
+    for(const device of [manifest.InitialDevice,manifest.Device]) {
+      assert(device,'A final configuration-bound result requires captured device metadata');
+      for(const [expectedKey,observedKey] of Object.entries(observedKeys)) assert.equal(device[observedKey],expected[expectedKey]);
+      assert.equal(Object.hasOwn(device,'BuildFingerprint'),false);
+      assert.equal(Object.hasOwn(device,'User'),false);
+    }
+    const permission=read('permission-verification.json');
+    assert.match(permission.AccessibilityParseResult,/^GLOBAL_ENABLED_COMPONENT_MATCH_(SHORT|FULL)$/);
+    assert.deepEqual(permission,{
+      UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE',
+      UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',
+      UsageAccessParseResult:'MODE_ALLOWED',AccessibilityParseResult:permission.AccessibilityParseResult,
+    });
   }
   assert.equal(manifest.OfflineNetworkRequested,true);
   assert.equal(manifest.OfflineOwnerConfirmed,true);
@@ -102,10 +144,10 @@ export function ingestQualification(directory) {
   const read = name => JSON.parse(decode(resolve(directory,name)));
   const manifest = read("manifest.json"), rows = read("attempts.json");
   const summary = existsSync(resolve(directory,"summary.json")) ? read("summary.json") : null;
-  assert(["KR003-Q1","KR003-Q2","KR003-Q6-MI8-OFFLINE-QUALIFICATION","KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION"].includes(manifest.Bundle.protocol));
+  assert(["KR003-Q1","KR003-Q2","KR003-Q6-MI8-OFFLINE-QUALIFICATION","KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION","KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION"].includes(manifest.Bundle.protocol));
   assert.match(manifest.Bundle.sourceCommit,/^[a-f0-9]{40}$/);
   assert(Array.isArray(rows),"Attempt journal must be an array");
-  if(manifest.Bundle.protocol==='KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION') {
+  if(['KR003-Q7-MI8-ACTIVE-ORACLE-QUALIFICATION','KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'].includes(manifest.Bundle.protocol)) {
     assert(summary,'Q7 requires a finalized summary');
     return ingestQ7(directory,manifest,rows,summary,read);
   }

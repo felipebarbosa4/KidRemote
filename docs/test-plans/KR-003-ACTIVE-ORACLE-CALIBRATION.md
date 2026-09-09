@@ -1,5 +1,7 @@
 # KR-003 generic active-oracle calibration
 
+Status, 2026-09-08: **PASSED on one exact Samsung configuration.** The preserved [runner-v5 result](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) contains one excluded sample and zero qualification rows. Historical INVALID attempts remain unchanged. This permits only preparation of the [configuration-bound qualification](KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md); it does not authorize its physical execution.
+
 - **Goal:** Determine whether one exact transport-capable Android configuration can support the independent active oracle before any 100-cycle qualification starts.
 - **Context:** A fixture-only transport PASS is necessary but cannot show that the candidate blocks input or stays connected. Q7's Mi 8 specialization remains blocked and unchanged; a new device requires fresh calibration.
 - **Constraints:** Run only after a preserved generic transport PASS; exact disposable candidate/fixture hashes; no network/configuration mutation, screenshots, UI nodes/text/content, raw identity/history, destructive action, result pooling or qualification loop.
