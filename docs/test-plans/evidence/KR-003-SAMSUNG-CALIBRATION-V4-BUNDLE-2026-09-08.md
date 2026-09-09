@@ -58,3 +58,10 @@ configuration-specific qualification bundle; it would not close KR-003 or establ
   passed all three jobs; the bundled-entrypoint regression ran under PowerShell `7.6.5` and native Windows PowerShell `5.1.26100.33296`.
 
 These are repository/bundle results, not a physical runner-v4 calibration, enforcement result, Samsung support boundary or Play approval.
+
+## Subsequent physical status
+
+The owner later invoked this exact bundle four times. The four directories remain separate and are preserved in
+[runner-v4 ARM host-exception evidence](KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md). Every run is independently
+`INVALID:HOST_EXCEPTION`, with `HostStage=ARM`, `ExceptionClass=PROPERTY_NOT_FOUND_EXCEPTION`, verified cleanup and zero samples. This updates
+only the subsequent execution status; the immutable handoff bytes and original at-publication `Not run` statement above remain historical facts.

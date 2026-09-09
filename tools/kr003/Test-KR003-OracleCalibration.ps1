@@ -22,7 +22,7 @@ $candidateActivity="$candidatePackage/.MainActivity";$fixtureActivity="$fixtureP
 $candidateService="$candidatePackage/.EnforcementAccessibilityService"
 $runDirectory=Join-Path $OutputRoot ('calibration-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8))
 $script:Operations=@();$script:Request=0L;$script:Cursor=0L;$script:LastElapsed=-1L;$script:ServiceConnections=0L
-$script:AttachmentRevisions=@{};$script:FixtureInstance=-1L;$script:Bundle=$null;$script:LabReady=$false;$script:Armed=$false
+$script:AttachmentRevisions=@{};$script:FixtureInstance=-1L;$script:Bundle=$null;$script:LabReady=$false
 $script:PositiveControl=$false;$script:BlockedControl=$false;$script:ServiceContinuous=$false;$script:PhysicalAgreement='UNRECORDED'
 $script:CleanupVerified=$false;$script:LatencyMs=$null;$script:Revision=$null;$script:HoldMillis=0L;$script:BlockedTaps=0
 $script:Status='INVALID';$script:Reason='NOT_STARTED';$script:TransportSummary=$null;$script:TransportDevice=$null
@@ -175,7 +175,7 @@ try{
     if(-not (Test-Path -LiteralPath $Adb)){throw 'INVALID:ADB_MISSING'}
     Set-KRCalibrationHostStage $script:HostState 'BUNDLE_HASH_VERIFICATION'
     $script:Bundle=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw|ConvertFrom-Json
-    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 4 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
+    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 5 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
     foreach($entry in $script:Bundle.files){if($entry.name -notmatch '^[A-Za-z0-9_.-]+$'){throw 'INVALID:BUNDLE_PATH'};if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -cne $entry.sha256){throw 'INVALID:BUNDLE_INTEGRITY'}}
     Set-KRCalibrationHostStage $script:HostState 'TRANSPORT_EVIDENCE_INGESTION'
     $script:TransportSummary=Get-Content -LiteralPath (Join-Path $TransportEvidence 'summary.json') -Raw|ConvertFrom-Json
@@ -205,8 +205,8 @@ try{
     $preArmDevice=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $preArmDevice
     Assert-CalibrationPermissionVerification $preArmDevice $before $true
     Set-KRCalibrationHostStage $script:HostState 'ARM'
-    $armed=Get-CandidateState 'ARM';$script:Armed=$true;$script:Revision=[long]$armed.revision
-    if(-not $armed.armed -or $armed.remaining -ne 10000){throw 'FAIL:FRESH_ARM_FAILED'}
+    $armReply=Get-CandidateState 'ARM';$script:Revision=Get-KRCalibrationArmRevision $armReply
+    if(-not $armReply.armed -or $armReply.remaining -ne 10000){throw 'FAIL:FRESH_ARM_FAILED'}
     Set-KRCalibrationHostStage $script:HostState 'WAIT_FOR_ATTACHMENT'
     $attached=Wait-Candidate {param($s)Assert-KRHealth $s;if($script:ServiceConnections -ne $script:ConnectionBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'};return $s.attached -and $s.restriction -and $s.sampledRevision -eq $script:Revision} 22 'FAIL:NO_ATTACHMENT'
     $script:LatencyMs=Get-KRPairedLatency $attached $script:Revision $beforeSamples

@@ -26,7 +26,7 @@ one counter-correlated shell tap and stops. It contains no candidate APK or time
 node tools/kr003/ingest.mjs device /mnt/c/platform-tools/kr003-device-preflight/ACTUAL_DEVICE_DIRECTORY
 ```
 
-Only after a preserved transport PASS, package/run the bounded calibration bundle. Runner v4 preserves typed host-stage, exception-class,
+Only after a preserved transport PASS, package/run the bounded calibration bundle. Runner v5 preserves typed host-stage, exception-class,
 primary-result, cleanup and finalization status without raw exception output. The owner passes the prior evidence directory; the runner
 installs the exact disposable candidate, waits for manual permission setup, performs one positive control, one blocked control, service-continuity
 checks and one physical agreement prompt, cleans up and stops with zero qualification rows:
@@ -34,6 +34,9 @@ checks and one physical agreement prompt, cleans up and stops with zero qualific
 Runner v2 scopes secure settings to the current Android user, compares normalized short/full component identities, and writes only typed
 permission-source/parse/health diagnostics. It never stores raw AppOps, settings or dumpsys output. `UNKNOWN` still rejects, and the runner rechecks
 permission/service health before ARM and after the blocked hold.
+
+Runner v5 also requires the ARM response to remain exactly one structured reply with a numeric revision. Missing, null or array-shaped values
+fail closed. This corrects runner-v4's host-only `$armed` / `$script:Armed` same-scope alias; it does not change the candidate or oracle.
 
 ```sh
 node tools/kr003/package-oracle-calibration.mjs /mnt/c/platform-tools/kr003-oracle-calibration-bundles/NEW_UNIQUE_COMMIT_DIRECTORY

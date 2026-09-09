@@ -360,7 +360,7 @@ under PowerShell `7.6.5` and native Windows PowerShell `5.1.26100.33296` in
 The [immutable runner-v4 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) is published at
 `C:\platform-tools\kr003-oracle-calibration-bundles\af723c5`, with `bundle.json` SHA-256
 `4d98e4e40c7b2eec77e59b8fb672cc89a5356356742ae2ae3f50f6be6f7b8320`. All eight payload hashes were re-read, source payloads matched `af723c5`,
-and the actual mounted entrypoint passed native Windows PowerShell 5.1 initialization with no device command. Physical execution is **Not run**.
+and the actual mounted entrypoint passed native Windows PowerShell 5.1 initialization with no device command. At publication, physical execution was **Not run**.
 Issue #3 and PR #16 were updated and read back; the
 [issue checkpoint](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5594716442) and
 [PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5594716474) preserve the same boundary. Publication head

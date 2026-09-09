@@ -33,4 +33,6 @@ Source `af723c5a7af530a2c694e2749c533de1e18f4cab` renames `$script:Host` to `$sc
 `null`; automatic-variable reads and `$null = expression` output discard remain allowed. The actual entrypoint regression passed under PowerShell
 `7.6.5` and native Windows PowerShell `5.1.26100.33296` in exact-source CI run `34301619476`, with no device command.
 
-The immutable [runner-v4 replacement](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) remains Not run.
+At that handoff, the immutable [runner-v4 replacement](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) was Not run. It was subsequently
+invoked four times; the independent [typed ARM host-exception records](KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) do not alter this
+runner-v3 zero-device-execution classification.

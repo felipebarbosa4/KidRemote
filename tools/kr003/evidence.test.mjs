@@ -404,7 +404,7 @@ test("bounded generic oracle calibration cannot create qualification rows or pro
   assert.equal(ingestOracleCalibration(dir).status,'INVALID');
 }));
 
-test("runner-v2 host exception preserves completed stages and derives the ARM boundary without inventing its class",()=>temporary(dir=>{
+test("runner-v2 derivation and runner-v4 typed ARM host evidence preserve zero-sample boundaries",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
   const permission={UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE',
     UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',
@@ -424,10 +424,12 @@ test("runner-v2 host exception preserves completed stages and derives the ARM bo
   assert.equal(result.hostStageSource,'DERIVED_FROM_V2_ARTIFACT_SEQUENCE');
   assert.equal(result.exceptionClass,'UNSPECIFIED_V2_NOT_RETAINED');
   assert.equal(result.cleanupStatus,'VERIFIED');
-  const host={Schema:1,HostStage:'ARM',ExceptionClass:'POWERSHELL_RUNTIME_EXCEPTION',PrimaryReason:'INVALID:HOST_EXCEPTION',
+  const host={Schema:1,HostStage:'ARM',ExceptionClass:'PROPERTY_NOT_FOUND_EXCEPTION',PrimaryReason:'INVALID:HOST_EXCEPTION',
     FinalizationStatus:'COMPLETED',CleanupStatus:'VERIFIED'};
   save('summary.json',{...summary,HostDiagnostic:host});result=ingestOracleCalibration(dir);
-  assert.equal(result.hostStageSource,'CAPTURED_RUNNER_V3');assert.equal(result.exceptionClass,'POWERSHELL_RUNTIME_EXCEPTION');
+  assert.equal(result.status,'INVALID');assert.equal(result.reason,'HOST_EXCEPTION');assert.equal(result.calibrationSamples,0);
+  assert.equal(result.qualificationSamples,0);assert.equal(result.hostStageSource,'CAPTURED_RUNNER_V3');
+  assert.equal(result.exceptionClass,'PROPERTY_NOT_FOUND_EXCEPTION');assert.equal(result.finalizationStatus,'COMPLETED');assert.equal(result.cleanupStatus,'VERIFIED');
   save('summary.json',{...summary,HostDiagnostic:{...host,ExceptionMessage:'forbidden raw detail'}});
   assert.throws(()=>ingestOracleCalibration(dir));
 }));
@@ -440,7 +442,7 @@ test("new-device runners stay transport-first, generic and privacy bounded",()=>
   assert.match(transport,/CandidateInstalledByRunner=\$false/);assert.doesNotMatch(preflightPackager,/'candidate\.apk'/);
   assert.match(transport,/Invoke-DeviceAdb 'INPUT_TAP'/);assert.match(calibration,/QualificationSamples=0/);
   assert.match(calibration,/permission-verification\.json/);assert.match(calibration,/settings','--user','current','get','secure','enabled_accessibility_services/);
-  assert.match(calibrationPackager,/runnerVersion:4/);
+  assert.match(calibrationPackager,/runnerVersion:5/);
   assert.match(calibration,/HostDiagnostic=Get-KRCalibrationHostDiagnostic/);
   for(const source of [transport,calibration]) assert.doesNotMatch(source,/ro\.serialno|ro\.build\.fingerprint|ANDROID_ID|screencap|uiautomator|dumpsys\s+window/i);
   assert.doesNotMatch(calibration,/for\([^\n]+-le 100|OfflineNetwork|svc[^\n]+disable/i);

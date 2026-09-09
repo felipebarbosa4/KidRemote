@@ -12,7 +12,7 @@ Assert-Equal ([bool]($source -match 'QualificationSamples=0')) $true
 Assert-Equal ([bool]($source -match 'Read-PhysicalAgreement')) $true
 Assert-Equal ([bool]($source -match 'ENFORCEMENT_SERVICE_RESTARTED')) $true
 Assert-Equal ([bool]($source -match 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY')) $true
-Assert-Equal ([bool]($source -match 'runnerVersion -ne 4')) $true
+Assert-Equal ([bool]($source -match 'runnerVersion -ne 5')) $true
 Assert-Equal ([bool]($source -match "settings','--user','current','get','secure','enabled_accessibility_services")) $true
 Assert-Equal ([bool]($source -match "Write-CalibrationJson 'permission-verification.json'")) $true
 Assert-Equal ([bool]($source -match 'Get-KRRequiredPermissionFailure')) $true
@@ -20,6 +20,8 @@ Assert-Equal $source.Contains("Set-KRCalibrationHostStage `$script:HostState 'WA
 Assert-Equal $source.Contains("Set-KRCalibrationCleanupStatus `$script:HostState 'IN_PROGRESS'") $true
 Assert-Equal $source.Contains('Set-KRCalibrationFinalizationFailure $script:HostState $_ (-not $wasComplete)') $true
 Assert-Equal ([bool]($source -match '\$script:Host(?:\W|$)')) $false
+Assert-Equal ([bool]($source -match '\$script:Armed(?:\W|$)')) $false
+Assert-Equal $source.Contains("`$armReply=Get-CandidateState 'ARM';`$script:Revision=Get-KRCalibrationArmRevision `$armReply") $true
 Assert-Equal ([bool]($source -match 'for\([^\r\n]+-le 100|attempt.+100|RESET_METRICS|OfflineNetwork|svc[^\r\n]+(?:disable|enable)|\buninstall\b|\breboot\b|pm[^\r\n]+clear|appops[^\r\n]+set|screencap|uiautomator|dumpsys\s+window|ro\.build\.fingerprint|ro\.serialno|ANDROID_ID')) $false
 Assert-Equal ([bool]($source -match 'getRootInActiveWindow|getWindows\(|getText\(|getContentDescription|takeScreenshot')) $false
 
@@ -67,4 +69,51 @@ Assert-Equal $finalDiagnostic.HostStage 'FINALIZATION'
 Assert-Equal $finalDiagnostic.ExceptionClass 'IO_EXCEPTION'
 Assert-Equal $finalDiagnostic.FinalizationStatus 'FAILED'
 Assert-Equal (($finalDiagnostic.PSObject.Properties.Name)-join ',') 'Schema,HostStage,ExceptionClass,PrimaryReason,FinalizationStatus,CleanupStatus'
+
+# Reproduce the v4 physical boundary: same-scope names are case-insensitive, so script:Armed overwrote armed before strict property access.
+$collisionPath=Join-Path ([IO.Path]::GetTempPath()) ('kr003-arm-collision-'+[Guid]::NewGuid().ToString('N')+'.ps1')
+try{
+    [IO.File]::WriteAllText($collisionPath,@'
+Set-StrictMode -Version Latest
+$armed=[PSCustomObject]@{revision=11;armed=$true;remaining=10000}
+$script:Armed=$true
+try{$null=[long]$armed.revision;'NO_EXCEPTION'}catch{$_.FullyQualifiedErrorId}
+'@,(New-Object Text.UTF8Encoding($false)))
+Assert-Equal (& $collisionPath) 'PropertyNotFoundStrict'
+}finally{Remove-Item -LiteralPath $collisionPath -Force -ErrorAction SilentlyContinue}
+
+# The retained v4 class is reproduced at ARM; successful cleanup/finalization cannot overwrite that primary result.
+$physicalFailure=New-KRCalibrationHostState
+Set-KRCalibrationHostStage $physicalFailure 'ARM'
+try{$booleanReply=$true;$null=$booleanReply.revision}catch{Set-KRCalibrationHostFailure $physicalFailure $_}
+Set-KRCalibrationCleanupStatus $physicalFailure 'IN_PROGRESS'
+Set-KRCalibrationCleanupStatus $physicalFailure 'VERIFIED'
+Set-KRCalibrationFinalizationStatus $physicalFailure 'COMPLETED'
+$physicalDiagnostic=Get-KRCalibrationHostDiagnostic $physicalFailure
+Assert-Equal $physicalDiagnostic.HostStage 'ARM'
+Assert-Equal $physicalDiagnostic.ExceptionClass 'PROPERTY_NOT_FOUND_EXCEPTION'
+Assert-Equal $physicalDiagnostic.PrimaryReason 'INVALID:HOST_EXCEPTION'
+Assert-Equal $physicalDiagnostic.CleanupStatus 'VERIFIED'
+Assert-Equal $physicalDiagnostic.FinalizationStatus 'COMPLETED'
+
+# The corrected path extracts the physical scalar PSCustomObject revision without a same-scope alias.
+$physicalShape=[PSCustomObject]@{revision=11;armed=$true;remaining=10000}
+Assert-Equal (Get-KRCalibrationArmRevision $physicalShape) 11L
+
+# Missing, null and pipeline-array reply shapes remain fail-closed with typed runner results.
+foreach($invalidReply in @(
+    [PSCustomObject]@{armed=$true;remaining=10000},
+    [PSCustomObject]@{revision=$null;armed=$true;remaining=10000},
+    [PSCustomObject]@{revision='11';armed=$true;remaining=10000},
+    [object[]]@($physicalShape,$physicalShape)
+)){
+    $typed=$null
+    try{$null=Get-KRCalibrationArmRevision -Reply $invalidReply}catch{$typed=$_.Exception.Message}
+    Assert-Equal ([bool]($typed -match '^INVALID:ARM_REPLY_(SCHEMA|REVISION)$')) $true
+}
+
+# A one-element array is also rejected rather than silently changing scalar/array pipeline semantics.
+$typed=$null
+try{$null=Get-KRCalibrationArmRevision -Reply (, $physicalShape)}catch{$typed=$_.Exception.Message}
+Assert-Equal $typed 'INVALID:ARM_REPLY_SCHEMA'
 Write-Host "$script:Checks oracle-calibration assertions passed; no device command was executed."

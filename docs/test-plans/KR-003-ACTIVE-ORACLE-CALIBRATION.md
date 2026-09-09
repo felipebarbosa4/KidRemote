@@ -14,8 +14,10 @@ and [ComponentName](https://android.googlesource.com/platform/frameworks/base/+/
 
 Runner v3 added a closed enum for the active host stage and whitelisted exception class plus primary-result, cleanup and finalization status, but
 its first host invocation stopped before device execution because `$script:Host` collided with PowerShell's automatic read-only `$Host` variable.
-Runner v4 renames that internal state to `$script:HostState`, preserves the external `HostDiagnostic` schema and permission/oracle logic, and adds
-static collision plus real-entrypoint tests. It never stores the raw exception message, stack, path or command output. Cleanup remains attempted
+Runner v4 renamed that internal state to `$script:HostState`, preserved the external `HostDiagnostic` schema and permission/oracle logic, and added
+static collision plus real-entrypoint tests. Four v4 attempts then exposed a separate case-insensitive same-script-scope alias: `$armed` held the
+ARM reply, `$script:Armed=$true` replaced it with a Boolean, and strict `.revision` access failed. Runner v5 removes the unused flag, uses
+`$armReply`, and validates exactly one typed reply before revision assignment. It never stores the raw exception message, stack, path or command output. Cleanup remains attempted
 from `finally`; a cleanup/finalization error cannot overwrite an earlier physical or typed primary result, while failed finalization invalidates an otherwise successful run.
 
 ## Bounded workflow
@@ -42,6 +44,8 @@ Candidate telemetry is corroborating evidence only. The fixture has an independe
 The three source-`5a46f75` Samsung attempts remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED`; v2 diagnostics do not retroactively relabel them.
 The fresh runner-v2 Samsung attempt remains `INVALID:HOST_EXCEPTION`: its permission and fixture positive controls passed, but ARM-stage host handling
 stopped before attachment and the blocked hold. Runner v3 does not retroactively recover the unretained v2 exception class, and its separate
-startup failure is not device evidence. Runner v4 does not retroactively relabel either run.
+startup failure is not device evidence. The four runner-v4 attempts remain independently `INVALID:HOST_EXCEPTION`; each passed permission and
+positive controls and issued ARM, then stopped before attachment/blocked hold and completed verified cleanup. Runner v5 does not retroactively
+relabel any historical run.
 
 A PASS permits preparation of a new configuration-specific 100-cycle qualification bundle; it does not authorize that run by itself and is never counted among its 100 rows. The exact required OS/API/OEM matrix mapping must be recorded first. Human-only rendering/safe-surface residual risks remain separate even if calibration passes.

@@ -17,6 +17,19 @@ function New-KRCalibrationHostState {
     }
 }
 
+function Get-KRCalibrationArmRevision {
+    param($Reply)
+    if($null -eq $Reply -or $Reply -is [Array]){throw 'INVALID:ARM_REPLY_SCHEMA'}
+    $properties=@($Reply.PSObject.Properties.Name)
+    foreach($name in @('revision','armed','remaining')){
+        if($name -notin $properties){throw 'INVALID:ARM_REPLY_SCHEMA'}
+    }
+    if($null -eq $Reply.revision -or
+       ($Reply.revision -isnot [long] -and $Reply.revision -isnot [int] -and $Reply.revision -isnot [bigint]) -or
+       $Reply.revision -lt 0 -or $Reply.revision -gt 9007199254740991){throw 'INVALID:ARM_REPLY_REVISION'}
+    return [long]$Reply.revision
+}
+
 function Set-KRCalibrationHostStage {
     param($State,[string]$Stage)
     if($Stage -notin $script:CalibrationHostStages){throw 'INVALID:HOST_STAGE_ENUM'}
@@ -93,4 +106,4 @@ function Get-KRCalibrationHostDiagnostic {
     }
 }
 
-Export-ModuleMember -Function New-KRCalibrationHostState, Set-KRCalibrationHostStage, Get-KRCalibrationExceptionClass, Set-KRCalibrationHostFailure, Set-KRCalibrationCleanupStatus, Set-KRCalibrationFinalizationStatus, Set-KRCalibrationCleanupFailure, Set-KRCalibrationFinalizationFailure, Get-KRCalibrationHostDiagnostic
+Export-ModuleMember -Function New-KRCalibrationHostState, Get-KRCalibrationArmRevision, Set-KRCalibrationHostStage, Get-KRCalibrationExceptionClass, Set-KRCalibrationHostFailure, Set-KRCalibrationCleanupStatus, Set-KRCalibrationFinalizationStatus, Set-KRCalibrationCleanupFailure, Set-KRCalibrationFinalizationFailure, Get-KRCalibrationHostDiagnostic

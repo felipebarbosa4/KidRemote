@@ -30,7 +30,7 @@ Given one validated `device.json` and its SHA-256:
 | Android 16 + API 36 | Android 16/API 36 configuration | API 28, API 35 and every untested OEM variant |
 | Android 17 + API 37 | Supplemental current-platform configuration pending owner support-boundary decision | Existing API 28/35/36 and every untested OEM variant |
 | Manufacturer `samsung` | One exact Samsung OEM variant | Google reference, other Samsung model/build/configuration and other OEMs |
-| SM-X400 / Android 16 / API 36 / `BP4A.251205.006` | Metadata and transport for the Android 16/API 36 plus exact Samsung-variant keys; enforcement remains Not run | Every enforcement/latency/safety/lifecycle result, API 28/35, Google reference and other OEM/model/build rows |
+| SM-X400 / Android 16 / API 36 / `BP4A.251205.006` | Metadata, transport and current permission-verifier compatibility for the Android 16/API 36 plus exact Samsung-variant keys; four runner-v4 host exceptions advance no enforcement row | Every enforcement/latency/safety/lifecycle result, API 28/35, Google reference and other OEM/model/build rows |
 | Mi 8 / Xiaomi / API 29 | Preserved Mi 8 supplemental/OEM evidence only | All required 28/35/36 and Samsung/Google/other-OEM rows |
 | Any mismatch/unknown | INVALID mapping | All rows remain open until corrected metadata is read |
 

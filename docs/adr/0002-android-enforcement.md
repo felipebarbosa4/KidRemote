@@ -23,8 +23,10 @@ Accessibility check disagreed with healthy candidate/service telemetry. The fres
 then passed semantic permission verification and the independent positive fixture control, but stopped `INVALID:HOST_EXCEPTION` in the ARM
 host stage before any blocked hold. Its discarded exception class/cause remains **UNSPECIFIED**. The runner-v3 host was then invoked once but
 failed on its `$script:Host` automatic-variable collision before output creation or any device command. The immutable
-[runner-v4 replacement](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) renames only internal host state, retains the typed
-JSON schema, and adds static plus real-entrypoint PowerShell regressions. The transport and permission passes neither prove
+[runner-v4 replacement](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) renamed that state and was subsequently invoked
+four times. Every [typed v4 record](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) passed permission/positive controls,
+issued ARM and then stopped before attachment/hold because `$script:Armed` overwrote the same-scope `$armed` reply. Verified cleanup succeeded.
+Runner v5 removes that unused alias and validates the scalar ARM reply without changing candidate or gate semantics. The transport and permission passes neither prove
 enforcement nor lower the gate, and evidence from one configuration cannot be transferred.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.

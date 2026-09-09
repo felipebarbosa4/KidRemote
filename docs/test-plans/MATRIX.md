@@ -124,7 +124,9 @@ authorized Samsung SM-X400 / Android 16 API 36 / build `BP4A.251205.006` with [t
 The subsequent [runner-v2 calibration](evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) separately passed permission verification and the
 fixture positive control, then stopped INVALID in ARM before the blocked hold. The Samsung configuration establishes metadata, shell transport
 and current permission-verifier compatibility only. The [runner-v3 invocation](evidence/KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md) failed
-inside PowerShell initialization before any device command and advances no device row. Enforcement, latency, safety, lifecycle and qualification remain Not run.
+inside PowerShell initialization before any device command. Four [runner-v4 attempts](evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md)
+then independently passed permission/positive controls and issued ARM, but the same host variable alias stopped each before attachment or blocked
+hold; cleanup succeeded. These attempts advance no device row. Enforcement, latency, safety, lifecycle and qualification remain Not run.
 Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
 Android 17/API 37 is the current documented platform; whether to add it to the approved physical support gate remains **UNSPECIFIED** and it does
