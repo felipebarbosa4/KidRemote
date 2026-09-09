@@ -425,4 +425,5 @@ and keeps unknown/present-path disable/readback/restoration failures closed. It 
 substitution or enforcement-semantic change. The new [immutable runner-v9 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md)
 is published from source `532bc22df0084b62e202a0cda0158dc61331f180` at `C:\platform-tools\kr003-qualification-bundles\532bc22`;
 `bundle.json` SHA-256 is `1689917375f274e28e82b0ae23e12dba6c1454acb81773217e78adb67507eab7`. It has not been physically executed.
-KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+[CI run 34313431060](https://github.com/felipebarbosa4/KidRemote/actions/runs/34313431060) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.

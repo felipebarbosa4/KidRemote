@@ -45,7 +45,7 @@ Raw stdout/stderr, package history, serial, account/content data and unrelated s
 
 - Node evidence/security: 21/21 passed, including rejection of added raw network fields and zero-cycle preflight INVALID preservation.
 - Native Windows PowerShell 5.1.26100.9168: qualification network tests, all runner suites, reserved-variable scan and actual mounted-bundle redirected-input startup passed without a device.
-- PowerShell 7: source tests are required in CI; local `pwsh` is unavailable.
+- Exact pushed-head [CI run 34313431060](https://github.com/felipebarbosa4/KidRemote/actions/runs/34313431060) passed all three jobs, including the full PowerShell suite under PowerShell 7 and native Windows PowerShell 5.1.
 - Android isolated suite: 24/24 JVM executions, debug/release lint and builds passed; merged permissions, protected receiver and release DEX isolation passed for all modules.
 - Strict reingestion of the v8 physical run, calibration provenance, repository validation, mounted payload rehash and `git diff --check` passed.
 
