@@ -16,7 +16,8 @@
 | Candidate SHA-256 | `5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b` |
 | Fixture SHA-256 | `223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc` |
 | Calibration / qualification maximum | one excluded calibration / `0` qualification samples |
-| Physical execution | **Not run** |
+| Host invocation / physical execution | **Failed at PowerShell initialization once / Not run** |
+| Current status | **Superseded; do not rerun** |
 
 | Payload | SHA-256 |
 | --- | --- |
@@ -32,17 +33,16 @@
 All eight manifest payload hashes were independently re-read, and every runner/module/protocol payload matched the source tree byte-for-byte.
 The candidate and fixture APK hashes remain identical to the earlier physical runs.
 
-## Exact single rerun command
+## Historical failed command — do not rerun
 
-With only the exact authorized Samsung SM-X400 connected, unlocked and interactive, run once in Windows PowerShell:
+The owner invoked this command once. It failed on the entrypoint's `$script:Host` assignment before output creation or any device command:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-oracle-calibration-bundles\cf7b2e9\Test-KR003-OracleCalibration.ps1" -TransportEvidence "C:\platform-tools\kr003-device-preflight\device-20260908-092640-d3b5053b"
 ```
 
-Do not change or auto-grant permissions. Keep Usage Access and the disposable Accessibility service enabled through the run. During the single
-physical agreement prompt, watch the full blocked hold and press `P` only if restriction remains visibly continuous with no ordinary use/flicker;
-press `F` on a visible failure or `I` if missed/uncertain. Preserve the printed evidence directory and stop on PASS, FAIL or INVALID.
+Do not invoke this superseded bundle again. The exact owner-provided error and zero-device-execution boundary are preserved in
+[KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08](KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md).
 
 No 100-cycle qualification is authorized. A calibration PASS would permit only repository review and preparation of a separately authorized,
 configuration-specific qualification bundle; it would not close KR-003 or establish safety/lifecycle/Play support.
@@ -54,4 +54,5 @@ configuration-specific qualification bundle; it would not close KR-003 or establ
 - Packaging rebuilt/tested debug and release variants because APKs are bundle payloads: Gradle completed 274 tasks (6 executed), and the build audit verified JVM `24/24` plus all six merged-manifest/DEX release-isolation checks.
 - `node tools/validate.mjs` and `git diff --check` passed.
 
-These are repository/bundle results, not a physical runner-v3 calibration, enforcement result, Samsung support boundary or Play approval.
+These were repository/bundle results, not a physical runner-v3 calibration, enforcement result, Samsung support boundary or Play approval. The
+old test suite did not execute the top-level entrypoint and therefore missed the automatic-variable collision; runner v4 adds that regression.

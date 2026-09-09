@@ -27,7 +27,7 @@ $script:PositiveControl=$false;$script:BlockedControl=$false;$script:ServiceCont
 $script:CleanupVerified=$false;$script:LatencyMs=$null;$script:Revision=$null;$script:HoldMillis=0L;$script:BlockedTaps=0
 $script:Status='INVALID';$script:Reason='NOT_STARTED';$script:TransportSummary=$null;$script:TransportDevice=$null
 $script:PermissionVerification=New-KRCalibrationPermissionDiagnostic $null $null
-$script:Host=New-KRCalibrationHostState
+$script:HostState=New-KRCalibrationHostState
 $startedUtc=[DateTime]::UtcNow.ToString('o')
 
 function Write-CalibrationJson([string]$Name,$Value){[IO.File]::WriteAllText((Join-Path $runDirectory $Name),(ConvertTo-Json -InputObject $Value -Depth 14),(New-Object Text.UTF8Encoding($false)))}
@@ -173,47 +173,47 @@ try{
     if([Console]::IsInputRedirected){throw 'INVALID:INTERACTIVE_OPERATOR_REQUIRED'}
     New-Item -ItemType Directory -Path $runDirectory|Out-Null
     if(-not (Test-Path -LiteralPath $Adb)){throw 'INVALID:ADB_MISSING'}
-    Set-KRCalibrationHostStage $script:Host 'BUNDLE_HASH_VERIFICATION'
+    Set-KRCalibrationHostStage $script:HostState 'BUNDLE_HASH_VERIFICATION'
     $script:Bundle=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw|ConvertFrom-Json
-    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 3 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
+    if($script:Bundle.schema -ne 1 -or $script:Bundle.protocol -ne 'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION' -or $script:Bundle.runnerVersion -ne 4 -or -not $script:Bundle.calibrationOnly){throw 'INVALID:BUNDLE_SCHEMA'}
     foreach($entry in $script:Bundle.files){if($entry.name -notmatch '^[A-Za-z0-9_.-]+$'){throw 'INVALID:BUNDLE_PATH'};if((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -cne $entry.sha256){throw 'INVALID:BUNDLE_INTEGRITY'}}
-    Set-KRCalibrationHostStage $script:Host 'TRANSPORT_EVIDENCE_INGESTION'
+    Set-KRCalibrationHostStage $script:HostState 'TRANSPORT_EVIDENCE_INGESTION'
     $script:TransportSummary=Get-Content -LiteralPath (Join-Path $TransportEvidence 'summary.json') -Raw|ConvertFrom-Json
     $script:TransportDevice=Get-Content -LiteralPath (Join-Path $TransportEvidence 'device.json') -Raw|ConvertFrom-Json
     if($script:TransportSummary.Protocol -ne 'KR003-GENERIC-DEVICE-TRANSPORT-PREFLIGHT' -or $script:TransportSummary.Status -ne 'PASSED_TRANSPORT_PREFLIGHT' -or -not $script:TransportSummary.CounterIncremented -or -not $script:TransportSummary.InstalledFixtureHashVerified -or $script:TransportSummary.FixtureSha256 -cne $script:Bundle.fixtureSha256){throw 'INVALID:TRANSPORT_PREREQUISITE'}
-    Set-KRCalibrationHostStage $script:Host 'ADB_PREFLIGHT'
+    Set-KRCalibrationHostStage $script:HostState 'ADB_PREFLIGHT'
     if((Invoke-CalibrationAdb 'ADB_STATE' @('get-state')).Trim() -cne 'device'){throw 'INVALID:ADB_NOT_AUTHORIZED_OR_UNAVAILABLE'}
-    Set-KRCalibrationHostStage $script:Host 'DEVICE_METADATA'
+    Set-KRCalibrationHostStage $script:HostState 'DEVICE_METADATA'
     $initial=Read-CalibrationDevice;if(-not (Test-KRDeviceMetadataComplete $initial)){throw 'INVALID:DEVICE_METADATA_INCOMPLETE'};Assert-SameConfiguration $script:TransportDevice $initial
-    Set-KRCalibrationHostStage $script:Host 'APK_VERIFICATION'
+    Set-KRCalibrationHostStage $script:HostState 'APK_VERIFICATION'
     Verify-Apk $candidatePackage 'candidate.apk' $script:Bundle.candidateSha256;Verify-Apk $fixturePackage 'ordinary-fixture.apk' $script:Bundle.fixtureSha256
-    Set-KRCalibrationHostStage $script:Host 'CANDIDATE_INITIALIZATION'
+    Set-KRCalibrationHostStage $script:HostState 'CANDIDATE_INITIALIZATION'
     $null=Invoke-CalibrationAdb 'CANDIDATE_OPEN' @('shell','am','start','-n',$candidateActivity)
     $first=Get-CandidateState;$script:LabReady=$true;$null=Get-CandidateState 'CLEAR'
     Write-Host 'Enable Usage Access and the disposable Accessibility service on the device if requested. The runner changes neither permission.' -ForegroundColor Cyan
-    Set-KRCalibrationHostStage $script:Host 'PERMISSION_VERIFICATION'
+    Set-KRCalibrationHostStage $script:HostState 'PERMISSION_VERIFICATION'
     $ready=Wait-Candidate {param($s)$s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain} 300 'INVALID:REQUIRED_PERMISSION_OR_UNLOCK_SETUP'
     Assert-KRHealth $ready
     $configured=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $configured;Write-CalibrationJson 'device.json' $configured
     Assert-CalibrationPermissionVerification $configured $ready $false
-    Set-KRCalibrationHostStage $script:Host 'FIXTURE_POSITIVE_CONTROL'
+    Set-KRCalibrationHostStage $script:HostState 'FIXTURE_POSITIVE_CONTROL'
     $null=Invoke-CalibrationAdb 'FIXTURE_OPEN' @('shell','am','start','-n',$fixtureActivity);$fixture=Wait-Fixture $true
     $fixture=Assert-PositiveControl $fixture;$script:PositiveControl=$true;$script:PositiveFixtureTaps=[long]$fixture.taps
-    Set-KRCalibrationHostStage $script:Host 'CANDIDATE_STATE_QUERY'
+    Set-KRCalibrationHostStage $script:HostState 'CANDIDATE_STATE_QUERY'
     $before=Get-CandidateState;Assert-KRHealth $before;$beforeSamples=@($before.samples);$script:ConnectionBaseline=$script:ServiceConnections
-    Set-KRCalibrationHostStage $script:Host 'PRE_ARM_PERMISSION_VERIFICATION'
+    Set-KRCalibrationHostStage $script:HostState 'PRE_ARM_PERMISSION_VERIFICATION'
     $preArmDevice=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $preArmDevice
     Assert-CalibrationPermissionVerification $preArmDevice $before $true
-    Set-KRCalibrationHostStage $script:Host 'ARM'
+    Set-KRCalibrationHostStage $script:HostState 'ARM'
     $armed=Get-CandidateState 'ARM';$script:Armed=$true;$script:Revision=[long]$armed.revision
     if(-not $armed.armed -or $armed.remaining -ne 10000){throw 'FAIL:FRESH_ARM_FAILED'}
-    Set-KRCalibrationHostStage $script:Host 'WAIT_FOR_ATTACHMENT'
+    Set-KRCalibrationHostStage $script:HostState 'WAIT_FOR_ATTACHMENT'
     $attached=Wait-Candidate {param($s)Assert-KRHealth $s;if($script:ServiceConnections -ne $script:ConnectionBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'};return $s.attached -and $s.restriction -and $s.sampledRevision -eq $script:Revision} 22 'FAIL:NO_ATTACHMENT'
     $script:LatencyMs=Get-KRPairedLatency $attached $script:Revision $beforeSamples
     if(-not $script:AttachmentRevisions.ContainsKey([string]$script:Revision)){throw 'INVALID:MISSING_ATTACHMENT_TRACE'}
-    Set-KRCalibrationHostStage $script:Host 'FIXTURE_ORACLE_QUERY'
+    Set-KRCalibrationHostStage $script:HostState 'FIXTURE_ORACLE_QUERY'
     $script:BlockedBaseline=Wait-Fixture $false;if(-not $script:BlockedBaseline.resumed){throw 'INVALID:FIXTURE_NOT_UNDER_TEST'}
-    Set-KRCalibrationHostStage $script:Host 'BLOCKED_HOLD'
+    Set-KRCalibrationHostStage $script:HostState 'BLOCKED_HOLD'
     $holdStart=(Get-CandidateState).elapsed
     for($probe=1;$probe -le 20;$probe++){
         if($script:ServiceConnections -ne $script:ConnectionBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'}
@@ -223,36 +223,36 @@ try{
         $script:HoldMillis=[long]$candidate.elapsed-$holdStart
     }
     if($script:HoldMillis -lt 10000){$candidate=Wait-Candidate {param($s)$fixtureNow=Get-FixtureState;Assert-KRHold $s $script:Revision $script:PositiveFixtureTaps $fixtureNow;Assert-KRIndependentFixtureBlock $script:BlockedBaseline $fixtureNow;$script:HoldMillis=[long]$s.elapsed-$holdStart;return $script:HoldMillis -ge 10000} 3 'INVALID:AUTOMATED_HOLD_TOO_SHORT'}
-    Set-KRCalibrationHostStage $script:Host 'POST_HOLD_PERMISSION_VERIFICATION'
+    Set-KRCalibrationHostStage $script:HostState 'POST_HOLD_PERMISSION_VERIFICATION'
     $postHold=Get-CandidateState;Assert-KRHealth $postHold
     $postHoldDevice=Read-CalibrationDevice;Assert-SameConfiguration $script:TransportDevice $postHoldDevice
     Assert-CalibrationPermissionVerification $postHoldDevice $postHold $true
     $script:BlockedControl=$true;$script:ServiceContinuous=($script:ServiceConnections -eq $script:ConnectionBaseline)
-    Set-KRCalibrationHostStage $script:Host 'OWNER_PROMPT'
+    Set-KRCalibrationHostStage $script:HostState 'OWNER_PROMPT'
     $script:PhysicalAgreement=Read-PhysicalAgreement
     if($script:PhysicalAgreement -eq 'FAIL'){throw 'FAIL:PHYSICAL_ORACLE_DISAGREEMENT'};if($script:PhysicalAgreement -ne 'PASS'){throw 'INVALID:PHYSICAL_OBSERVATION_UNCERTAIN'}
     $script:Status='PENDING_SUCCESS';$script:Reason='CONTROLS_PASSED_PENDING_CLEANUP'
 }catch{
-    Set-KRCalibrationHostFailure $script:Host $_
-    $message=$script:Host.PrimaryReason
+    Set-KRCalibrationHostFailure $script:HostState $_
+    $message=$script:HostState.PrimaryReason
     $parts=$message.Split(':');$script:Status=$parts[0];$script:Reason=$parts[1]
 }finally{
     if(Test-Path -LiteralPath $runDirectory){
         if($script:LabReady){
-            Set-KRCalibrationCleanupStatus $script:Host 'IN_PROGRESS'
-            try{Invoke-Cleanup;Set-KRCalibrationCleanupStatus $script:Host $(if($script:CleanupVerified){'VERIFIED'}else{'FAILED'})}
+            Set-KRCalibrationCleanupStatus $script:HostState 'IN_PROGRESS'
+            try{Invoke-Cleanup;Set-KRCalibrationCleanupStatus $script:HostState $(if($script:CleanupVerified){'VERIFIED'}else{'FAILED'})}
             catch{
-                Set-KRCalibrationCleanupFailure $script:Host $_ ($script:Status -ne 'PENDING_SUCCESS')
+                Set-KRCalibrationCleanupFailure $script:HostState $_ ($script:Status -ne 'PENDING_SUCCESS')
                 if($script:Status -eq 'PENDING_SUCCESS'){
                     $script:Status='FAIL';$script:Reason='CLEANUP_NOT_VERIFIED'
                 }
             }
-        }else{Set-KRCalibrationCleanupStatus $script:Host 'NOT_REQUIRED'}
+        }else{Set-KRCalibrationCleanupStatus $script:HostState 'NOT_REQUIRED'}
         if($script:Status -eq 'PENDING_SUCCESS'){
             $script:Status=Get-KROracleCalibrationVerdict $script:PositiveControl $script:BlockedControl $script:ServiceContinuous $script:PhysicalAgreement $script:CleanupVerified 0
             $script:Reason=$(if($script:Status -eq 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'){'COMPLETED'}else{'VERDICT_REJECTED'})
-            $script:Host.HostStage=$(if($script:Status -eq 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'){'COMPLETED'}else{$script:Host.CurrentStage})
-            $script:Host.ExceptionClass='NONE';$script:Host.PrimaryReason=$script:Status+':'+$script:Reason
+            $script:HostState.HostStage=$(if($script:Status -eq 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'){'COMPLETED'}else{$script:HostState.CurrentStage})
+            $script:HostState.ExceptionClass='NONE';$script:HostState.PrimaryReason=$script:Status+':'+$script:Reason
         }
         function New-CalibrationSummary{
           [PSCustomObject]@{
@@ -265,18 +265,18 @@ try{
             CleanupVerified=$script:CleanupVerified;Revision=$script:Revision;LatencyMs=$script:LatencyMs;HoldMillis=$script:HoldMillis;InjectedBlockedTaps=$script:BlockedTaps
             CalibrationSamples=$(if($null -eq $script:LatencyMs){0}else{1});QualificationSamples=0;CandidateTelemetryCorroboratingOnly=$true
             FixtureIndependentPackageAndUid=$true;SharedState=$false;NodeTextContentAccess=$false;Screenshots=$false;NetworkChanged=$false;PermissionsChangedByRunner=$false;DestructiveAction=$false
-            HostDiagnostic=Get-KRCalibrationHostDiagnostic $script:Host
+            HostDiagnostic=Get-KRCalibrationHostDiagnostic $script:HostState
           }
         }
-        Set-KRCalibrationFinalizationStatus $script:Host 'IN_PROGRESS'
+        Set-KRCalibrationFinalizationStatus $script:HostState 'IN_PROGRESS'
         try{
             Save-CalibrationOperations;Write-CalibrationJson 'permission-verification.json' $script:PermissionVerification
-            Set-KRCalibrationFinalizationStatus $script:Host 'COMPLETED';Write-CalibrationJson 'summary.json' (New-CalibrationSummary)
+            Set-KRCalibrationFinalizationStatus $script:HostState 'COMPLETED';Write-CalibrationJson 'summary.json' (New-CalibrationSummary)
         }catch{
             $wasComplete=$script:Status -eq 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY'
-            Set-KRCalibrationFinalizationFailure $script:Host $_ (-not $wasComplete)
+            Set-KRCalibrationFinalizationFailure $script:HostState $_ (-not $wasComplete)
             if($wasComplete){
-                $parts=$script:Host.PrimaryReason.Split(':');$script:Status=$parts[0];$script:Reason=$parts[1]
+                $parts=$script:HostState.PrimaryReason.Split(':');$script:Status=$parts[0];$script:Reason=$parts[1]
             }
             try{Write-CalibrationJson 'summary.json' (New-CalibrationSummary)}catch{}
         }

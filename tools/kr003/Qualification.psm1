@@ -420,11 +420,11 @@ function Get-KRFocusedDiagnosticReason {
 }
 
 function Get-KRSafetyCheckpointReason {
-    param([string]$Home, [string]$Recovery, [string]$Reentry, [string]$ClearTouch)
-    if ($Home -eq 'INVALID' -or $Reentry -eq 'INVALID' -or $Recovery -eq 'PHYSICAL_INVALID_RECORDED') {
+    param([string]$HomeResult, [string]$Recovery, [string]$Reentry, [string]$ClearTouch)
+    if ($HomeResult -eq 'INVALID' -or $Reentry -eq 'INVALID' -or $Recovery -eq 'PHYSICAL_INVALID_RECORDED') {
         return 'PHYSICAL_INVALID_RECORDED'
     }
-    if ($Home -ne 'PASS' -or $Reentry -ne 'PASS' -or $Recovery -eq 'PHYSICAL_FAILURE_RECORDED') {
+    if ($HomeResult -ne 'PASS' -or $Reentry -ne 'PASS' -or $Recovery -eq 'PHYSICAL_FAILURE_RECORDED') {
         return 'PHYSICAL_FAILURE_RECORDED'
     }
     if ($Recovery -ne 'PHYSICAL_PASS_RECORDED' -or $ClearTouch -ne 'FIXTURE_COUNTER_INCREMENT') {

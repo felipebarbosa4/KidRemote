@@ -26,7 +26,7 @@ one counter-correlated shell tap and stops. It contains no candidate APK or time
 node tools/kr003/ingest.mjs device /mnt/c/platform-tools/kr003-device-preflight/ACTUAL_DEVICE_DIRECTORY
 ```
 
-Only after a preserved transport PASS, package/run the bounded calibration bundle. Runner v3 preserves typed host-stage, exception-class,
+Only after a preserved transport PASS, package/run the bounded calibration bundle. Runner v4 preserves typed host-stage, exception-class,
 primary-result, cleanup and finalization status without raw exception output. The owner passes the prior evidence directory; the runner
 installs the exact disposable candidate, waits for manual permission setup, performs one positive control, one blocked control, service-continuity
 checks and one physical agreement prompt, cleans up and stops with zero qualification rows:
@@ -106,6 +106,8 @@ pwsh -NoProfile -File tools/kr003/UiAutomationTransport.Tests.ps1
 pwsh -NoProfile -File tools/kr003/MonkeyTransport.Tests.ps1
 pwsh -NoProfile -File tools/kr003/DevicePreflight.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleCalibration.Tests.ps1
+pwsh -NoProfile -File tools/kr003/PowerShellSafety.Tests.ps1
+pwsh -NoProfile -File tools/kr003/OracleCalibrationEntrypoint.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

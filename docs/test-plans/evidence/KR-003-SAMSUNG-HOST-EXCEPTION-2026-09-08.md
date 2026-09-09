@@ -48,4 +48,5 @@ zero qualification samples, physical agreement `UNRECORDED`, permission verifica
 
 The run remains correctly `INVALID:HOST_EXCEPTION`. It separately establishes that runner-v2's permission correction passed on this exact
 Samsung configuration and that the positive transport/fixture control remained usable. It advances no enforcement, latency, AC-3 or TIME-04 row.
-Runner v3 adds only whitelisted host-stage/exception/cleanup/finalization diagnostics and primary-result preservation before one fresh calibration rerun.
+Runner v3 added only whitelisted host-stage/exception/cleanup/finalization diagnostics and primary-result preservation, but its separate first
+invocation failed during PowerShell initialization before any device command. Runner v4 retains those semantics and fixes only the internal reserved-variable collision.

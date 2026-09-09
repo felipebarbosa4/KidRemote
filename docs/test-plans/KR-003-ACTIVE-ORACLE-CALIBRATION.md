@@ -12,9 +12,11 @@ enums are recorded separately. Any `UNKNOWN` fails closed; permission/service lo
 [Android 16 AccessibilityManagerService](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/accessibility/java/com/android/server/accessibility/AccessibilityManagerService.java)
 and [ComponentName](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/core/java/android/content/ComponentName.java), reviewed 2026-09-08.
 
-Runner v3 preserves that permission logic and adds a closed enum for the active host stage and whitelisted exception class plus primary-result,
-cleanup and finalization status. It never stores the raw exception message, stack, path or command output. Cleanup remains attempted from `finally`;
-a cleanup/finalization error cannot overwrite an earlier physical or typed primary result, while failed finalization invalidates an otherwise successful run.
+Runner v3 added a closed enum for the active host stage and whitelisted exception class plus primary-result, cleanup and finalization status, but
+its first host invocation stopped before device execution because `$script:Host` collided with PowerShell's automatic read-only `$Host` variable.
+Runner v4 renames that internal state to `$script:HostState`, preserves the external `HostDiagnostic` schema and permission/oracle logic, and adds
+static collision plus real-entrypoint tests. It never stores the raw exception message, stack, path or command output. Cleanup remains attempted
+from `finally`; a cleanup/finalization error cannot overwrite an earlier physical or typed primary result, while failed finalization invalidates an otherwise successful run.
 
 ## Bounded workflow
 
@@ -39,6 +41,7 @@ Candidate telemetry is corroborating evidence only. The fixture has an independe
 
 The three source-`5a46f75` Samsung attempts remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED`; v2 diagnostics do not retroactively relabel them.
 The fresh runner-v2 Samsung attempt remains `INVALID:HOST_EXCEPTION`: its permission and fixture positive controls passed, but ARM-stage host handling
-stopped before attachment and the blocked hold. Runner v3 does not retroactively recover the unretained v2 exception class.
+stopped before attachment and the blocked hold. Runner v3 does not retroactively recover the unretained v2 exception class, and its separate
+startup failure is not device evidence. Runner v4 does not retroactively relabel either run.
 
 A PASS permits preparation of a new configuration-specific 100-cycle qualification bundle; it does not authorize that run by itself and is never counted among its 100 rows. The exact required OS/API/OEM matrix mapping must be recorded first. Human-only rendering/safe-surface residual risks remain separate even if calibration passes.

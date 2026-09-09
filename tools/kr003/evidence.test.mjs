@@ -440,7 +440,7 @@ test("new-device runners stay transport-first, generic and privacy bounded",()=>
   assert.match(transport,/CandidateInstalledByRunner=\$false/);assert.doesNotMatch(preflightPackager,/'candidate\.apk'/);
   assert.match(transport,/Invoke-DeviceAdb 'INPUT_TAP'/);assert.match(calibration,/QualificationSamples=0/);
   assert.match(calibration,/permission-verification\.json/);assert.match(calibration,/settings','--user','current','get','secure','enabled_accessibility_services/);
-  assert.match(calibrationPackager,/runnerVersion:3/);
+  assert.match(calibrationPackager,/runnerVersion:4/);
   assert.match(calibration,/HostDiagnostic=Get-KRCalibrationHostDiagnostic/);
   for(const source of [transport,calibration]) assert.doesNotMatch(source,/ro\.serialno|ro\.build\.fingerprint|ANDROID_ID|screencap|uiautomator|dumpsys\s+window/i);
   assert.doesNotMatch(calibration,/for\([^\n]+-le 100|OfflineNetwork|svc[^\n]+disable/i);

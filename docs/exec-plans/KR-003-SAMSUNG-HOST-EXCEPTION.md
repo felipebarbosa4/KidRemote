@@ -25,3 +25,5 @@ Its clean immutable runner-v3 bundle and stopped handoff are recorded in
 Physical execution remains Not run. Issue #3 and draft PR #16 were synchronized and read back after the stopped handoff; KR-003 remains Open/In Progress and KR-004 remains
 Open/Backlog. Publication commit `fba7dd3e5b9ddc1ec55070cb57a4b199b6699654` passed all three jobs in CI run `34282753641`.
 No calibration rerun, qualification sample, merge, closure, production move or KR-004 work occurred.
+The subsequent runner-v3 host invocation failed on its `$script:Host` initialization before any device command; that distinct startup defect is
+tracked in [KR-003-SAMSUNG-RUNNER-V3-STARTUP](KR-003-SAMSUNG-RUNNER-V3-STARTUP.md) and does not alter the runner-v2 evidence.

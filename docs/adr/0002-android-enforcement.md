@@ -21,8 +21,10 @@ Q7 is blocked on the unchanged Mi 8 configuration. Under OD-31, shell transport 
 `BP4A.251205.006` configuration. Three v1 calibration attempts remain INVALID: runner AppOps verification passed, but its secure-settings
 Accessibility check disagreed with healthy candidate/service telemetry. The fresh [runner-v2 calibration](../test-plans/evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md)
 then passed semantic permission verification and the independent positive fixture control, but stopped `INVALID:HOST_EXCEPTION` in the ARM
-host stage before any blocked hold. Its discarded exception class/cause remains **UNSPECIFIED**. Runner v3 adds only typed host/finalization
-diagnostics. The transport and permission passes neither prove enforcement nor lower the gate, and evidence from one configuration cannot be transferred.
+host stage before any blocked hold. Its discarded exception class/cause remains **UNSPECIFIED**. The runner-v3 host was then invoked once but
+failed on its `$script:Host` automatic-variable collision before output creation or any device command. Runner v4 renames only internal host state,
+retains the typed JSON schema, and adds static plus real-entrypoint PowerShell regressions. The transport and permission passes neither prove
+enforcement nor lower the gate, and evidence from one configuration cannot be transferred.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

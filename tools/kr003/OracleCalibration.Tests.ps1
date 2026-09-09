@@ -12,13 +12,14 @@ Assert-Equal ([bool]($source -match 'QualificationSamples=0')) $true
 Assert-Equal ([bool]($source -match 'Read-PhysicalAgreement')) $true
 Assert-Equal ([bool]($source -match 'ENFORCEMENT_SERVICE_RESTARTED')) $true
 Assert-Equal ([bool]($source -match 'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY')) $true
-Assert-Equal ([bool]($source -match 'runnerVersion -ne 3')) $true
+Assert-Equal ([bool]($source -match 'runnerVersion -ne 4')) $true
 Assert-Equal ([bool]($source -match "settings','--user','current','get','secure','enabled_accessibility_services")) $true
 Assert-Equal ([bool]($source -match "Write-CalibrationJson 'permission-verification.json'")) $true
 Assert-Equal ([bool]($source -match 'Get-KRRequiredPermissionFailure')) $true
-Assert-Equal $source.Contains("Set-KRCalibrationHostStage `$script:Host 'WAIT_FOR_ATTACHMENT'") $true
-Assert-Equal $source.Contains("Set-KRCalibrationCleanupStatus `$script:Host 'IN_PROGRESS'") $true
-Assert-Equal $source.Contains('Set-KRCalibrationFinalizationFailure $script:Host $_ (-not $wasComplete)') $true
+Assert-Equal $source.Contains("Set-KRCalibrationHostStage `$script:HostState 'WAIT_FOR_ATTACHMENT'") $true
+Assert-Equal $source.Contains("Set-KRCalibrationCleanupStatus `$script:HostState 'IN_PROGRESS'") $true
+Assert-Equal $source.Contains('Set-KRCalibrationFinalizationFailure $script:HostState $_ (-not $wasComplete)') $true
+Assert-Equal ([bool]($source -match '\$script:Host(?:\W|$)')) $false
 Assert-Equal ([bool]($source -match 'for\([^\r\n]+-le 100|attempt.+100|RESET_METRICS|OfflineNetwork|svc[^\r\n]+(?:disable|enable)|\buninstall\b|\breboot\b|pm[^\r\n]+clear|appops[^\r\n]+set|screencap|uiautomator|dumpsys\s+window|ro\.build\.fingerprint|ro\.serialno|ANDROID_ID')) $false
 Assert-Equal ([bool]($source -match 'getRootInActiveWindow|getWindows\(|getText\(|getContentDescription|takeScreenshot')) $false
 

@@ -808,7 +808,7 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety.ClearTouch='FIXTURE_COUNTER_INCREMENT'
     $script:Safety.ClearRevision=[long]$released.revision
     $script:Safety.ClearSampleCount=[long]$released.sampleCount
-    $script:Safety.Result=Get-KRSafetyCheckpointReason -Home $script:Safety.HomePhysical -Recovery $script:Safety.RecoveryReason -Reentry $script:Safety.ReentryPhysical -ClearTouch $script:Safety.ClearTouch
+    $script:Safety.Result=Get-KRSafetyCheckpointReason -HomeResult $script:Safety.HomePhysical -Recovery $script:Safety.RecoveryReason -Reentry $script:Safety.ReentryPhysical -ClearTouch $script:Safety.ClearTouch
     $script:Safety.Reason=$script:Safety.Result
     $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
