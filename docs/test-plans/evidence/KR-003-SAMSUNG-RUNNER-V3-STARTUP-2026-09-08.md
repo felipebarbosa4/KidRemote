@@ -24,3 +24,13 @@
 ## Disposition
 
 This is a host-script startup failure with zero physical execution, zero calibration samples and zero qualification samples. It does not modify or supersede the Samsung transport PASS, three v1 calibration INVALIDs, or runner-v2 `INVALID:HOST_EXCEPTION` evidence.
+
+## Resolution
+
+Source `af723c5a7af530a2c694e2749c533de1e18f4cab` renames `$script:Host` to `$script:HostState` and the separate `$Home` helper parameter to
+`$HomeResult`; external `HostDiagnostic` / `HostStage` properties remain unchanged. Static source and generated-bundle collision checks cover
+`Host`, `Error`, `Args`, `Input`, `Matches`, `PID`, `PSVersionTable`, `Home`, `PSScriptRoot`, `MyInvocation`, `LASTEXITCODE`, `true`, `false` and
+`null`; automatic-variable reads and `$null = expression` output discard remain allowed. The actual entrypoint regression passed under PowerShell
+`7.6.5` and native Windows PowerShell `5.1.26100.33296` in exact-source CI run `34301619476`, with no device command.
+
+The immutable [runner-v4 replacement](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) remains Not run.

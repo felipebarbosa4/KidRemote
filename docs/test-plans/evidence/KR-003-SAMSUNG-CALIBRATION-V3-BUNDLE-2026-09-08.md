@@ -43,6 +43,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003
 
 Do not invoke this superseded bundle again. The exact owner-provided error and zero-device-execution boundary are preserved in
 [KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08](KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md).
+The current stopped handoff is the [runner-v4 bundle](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md).
 
 No 100-cycle qualification is authorized. A calibration PASS would permit only repository review and preparation of a separately authorized,
 configuration-specific qualification bundle; it would not close KR-003 or establish safety/lifecycle/Play support.

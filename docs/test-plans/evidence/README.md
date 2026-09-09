@@ -8,7 +8,8 @@ on Android 16/API 36. Never transfer it to Mi 8, Pixel/another OEM, another Sams
 [The generic next-device bundles](KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md) distinguish the executed source-`5a46f75` bundle from the corrected calibration-only handoff.
 [The verifier v2 bundle](KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) was executed once; its [HOST_EXCEPTION evidence](KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) remains INVALID after permission verification and positive control passed but before any blocked hold.
 [The runner-v3 bundle](KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08.md) was invoked once but its
-[host startup failed](KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md) before any device command. It is superseded; the runner-v4 replacement is not yet physically run.
+[host startup failed](KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md) before any device command. It is superseded by the immutable
+[runner-v4 replacement](KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md), which is not yet physically run.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

@@ -343,3 +343,22 @@ Publication commit `fba7dd3e5b9ddc1ec55070cb57a4b199b6699654` passed all three j
 [PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5592353261) preserve the same stopped handoff. All seven issue
 acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open and mergeable, and KR-004 is Open/Backlog. No rerun, 100-sample
 qualification, merge, closure, production move or KR-004 work occurred.
+
+## Samsung runner-v3 startup failure and runner-v4 handoff — 2026-09-08
+
+The owner invoked the `cf7b2e9` runner-v3 bundle once. PowerShell returned `VariableNotWritable` / `WriteError` because line 30 assigned
+`$script:Host`, which collides case-insensitively with automatic read-only `$Host`. The error occurred before the protected runner block,
+output-directory creation or any ADB operation. The [startup record](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md)
+therefore preserves zero physical execution, zero calibration samples and zero qualification samples; it is not a Samsung enforcement result.
+
+Source `af723c5a7af530a2c694e2749c533de1e18f4cab` renames the internal state to `$script:HostState` and the separately discovered `$Home` helper
+parameter to `$HomeResult`, while retaining external `HostDiagnostic` / `HostStage` names and every permission, enforcement and oracle gate.
+Static collision inspection covers source, modules, tests and the generated bundle. Real bundle-shaped entrypoint tests passed before output/ADB
+under PowerShell `7.6.5` and native Windows PowerShell `5.1.26100.33296` in
+[CI run 34301619476](https://github.com/felipebarbosa4/KidRemote/actions/runs/34301619476).
+
+The [immutable runner-v4 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) is published at
+`C:\platform-tools\kr003-oracle-calibration-bundles\af723c5`, with `bundle.json` SHA-256
+`4d98e4e40c7b2eec77e59b8fb672cc89a5356356742ae2ae3f50f6be6f7b8320`. All eight payload hashes were re-read, source payloads matched `af723c5`,
+and the actual mounted entrypoint passed native Windows PowerShell 5.1 initialization with no device command. Physical execution is **Not run**.
+All earlier Samsung evidence remains unchanged; no rerun, qualification, gate change, merge, closure, production move or KR-004 work occurred.

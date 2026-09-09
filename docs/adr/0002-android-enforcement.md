@@ -22,8 +22,9 @@ Q7 is blocked on the unchanged Mi 8 configuration. Under OD-31, shell transport 
 Accessibility check disagreed with healthy candidate/service telemetry. The fresh [runner-v2 calibration](../test-plans/evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md)
 then passed semantic permission verification and the independent positive fixture control, but stopped `INVALID:HOST_EXCEPTION` in the ARM
 host stage before any blocked hold. Its discarded exception class/cause remains **UNSPECIFIED**. The runner-v3 host was then invoked once but
-failed on its `$script:Host` automatic-variable collision before output creation or any device command. Runner v4 renames only internal host state,
-retains the typed JSON schema, and adds static plus real-entrypoint PowerShell regressions. The transport and permission passes neither prove
+failed on its `$script:Host` automatic-variable collision before output creation or any device command. The immutable
+[runner-v4 replacement](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) renames only internal host state, retains the typed
+JSON schema, and adds static plus real-entrypoint PowerShell regressions. The transport and permission passes neither prove
 enforcement nor lower the gate, and evidence from one configuration cannot be transferred.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
