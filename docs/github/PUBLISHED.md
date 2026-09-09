@@ -450,3 +450,24 @@ The [immutable runner-v10 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFIC
 `f4bf6e52b6cc7e61fa335ac1f93a6828085779f3a988bd217bb31443b1f294b2`. Physical execution is **Not run**. Exact-source
 [CI run 34357242810](https://github.com/felipebarbosa4/KidRemote/actions/runs/34357242810) passed repository/Node/PowerShell 7, native Windows
 PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+
+## Samsung 100-cycle Home-phase FAIL and runner-v11 handoff — 2026-09-09
+
+Strict ingestion of `run-20260909-101646-69c0fb84` preserves `FAIL:RESTRICTION_LOST`, exactly 100 automated active-oracle PASS rows, p50 227 ms,
+p95 318 ms, max 341 ms, checkpoints 1/2 PASS and final visibility PASS. `HomePhysical=UNRECORDED`: no Home response or actual Home action is
+established. The [retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md) shows the automated hold poll
+fired after `recovery_open_requested trigger=settings_button` led to the intended allowed-safe-system detach. The restriction flag remained true,
+the disposition was `SAFE_SYSTEM`, and the fixture gained no focus/input. The emitted top-level FAIL remains unchanged and non-poolable; neither
+ordinary-app restriction loss nor Home escape/resistance is established. Diagnostic CLEAR, Wi-Fi and exact stay-awake restoration were verified.
+
+Source `6cf04ab8a9455689783ef97d8babb8cc07d81485` adds only read-only coarse navigation-mode capture, current-mode Home instructions and typed
+Home action/result/source evidence. Unknown or changed mode and no/out-of-sequence Home action stop INVALID; a genuine automated ordinary-surface
+hold loss or owner-observed exercised Home escape remains FAIL. Candidate, permission, enforcement, safe-surface, active-oracle and cleanup
+semantics are unchanged. The [immutable runner-v11 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-BUNDLE-2026-09-09.md) is
+published at `C:\platform-tools\kr003-qualification-bundles\6cf04ab`; `bundle.json` SHA-256 is
+`fb653fb42b7ea6334a5118e59dce609ad80520f14f76985545d3dc95f445f1c8`. Physical execution is **Not run**.
+
+Exact-source [CI run 34374977856](https://github.com/felipebarbosa4/KidRemote/actions/runs/34374977856) passed repository/Node/PowerShell 7,
+native Windows PowerShell 5.1 and Android build/lint/release-isolation jobs. The actual mounted bundle also passed native Windows PowerShell 5.1
+entrypoint/reserved-variable checks without a device command. No formal matrix row advanced. KR-003 remains Open/In Progress, PR #16 remains
+Draft/Open, and KR-004 remains untouched.

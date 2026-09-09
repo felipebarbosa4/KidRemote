@@ -23,7 +23,7 @@ enforcement failure. Runner-v9's immutable [bundle and hashes](KR-003-SAMSUNG-QU
 [Home-phase FAIL](KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md) retained another 100 automated PASS rows at p95 318 ms and final-visible
 PASS, but no Home action/result: an out-of-sequence Settings-button action led the automated hold poll to emit `FAIL:RESTRICTION_LOST` while
 restriction remained true on an allowed safe surface. The emitted FAIL remains unchanged and the run is not resumable or a Home escape result.
-Runner-v11 is the current unexecuted navigation-aware handoff after publication.
+The immutable [runner-v11 bundle](KR-003-SAMSUNG-QUALIFICATION-V11-BUNDLE-2026-09-09.md) is the current unexecuted navigation-aware handoff.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
