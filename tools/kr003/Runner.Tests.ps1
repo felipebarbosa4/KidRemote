@@ -29,6 +29,7 @@ function Reset-Run([string]$Name) {
     $script:StayAwakeOriginal=$null;$script:StayAwakeApplied=$null;$script:StayAwakeTouched=$false;$script:StayAwakeEvidence=$null
     $script:StayAwakeRestoreStatus='NOT_CHANGED';$script:StayAwakeRestoration=$null
     $script:NavigationMode='GESTURE';$script:NavigationModeEvidence=[PSCustomObject]@{Mode='GESTURE'}
+    $script:HomeKeyOperations=@();$script:HomeKeyTransport=$null;$script:RestrictedHomeStimulus=$null
     $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
@@ -171,9 +172,50 @@ try {
     Reset-Run 'navigation-mode-unknown'
     $script:SyntheticNavigationMode='unexpected'
     $navigationFailure=$null;try{Capture-NavigationMode}catch{$navigationFailure=$_.Exception.Message}
-    Assert-Equal $navigationFailure 'INVALID:NAVIGATION_MODE_UNKNOWN'
+    Assert-Equal $navigationFailure $null
     Assert-Equal (Read-Json 'navigation-mode.json').Mode 'UNKNOWN'
     Assert-Equal (Read-Json 'navigation-mode.json').ParseResult 'UNPARSEABLE'
+    Assert-NavigationMode
+    Assert-Equal (Read-Json 'navigation-mode.json').VerificationCount 2
+
+    # The actual host KEYCODE_HOME calibration injects once, requires independent displacement, and returns the fixture.
+    $homeBefore=[PSCustomObject]@{schema=2;instance=9;probeReady=$true;probeX=540;probeY=1900;focused=$true;resumed=$true;taps=2;focusGains=3;focusLosses=2}
+    $homeAfter=[PSCustomObject]@{schema=2;instance=9;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$false;taps=2;focusGains=3;focusLosses=3}
+    $homeReturned=[PSCustomObject]@{schema=2;instance=9;probeReady=$true;probeX=540;probeY=1900;focused=$true;resumed=$true;taps=2;focusGains=4;focusLosses=3}
+    Reset-Run 'home-key-positive-control-success'
+    $script:HomeFixture=$homeBefore;$script:HomeOpenCount=0;$script:HomeCommandCount=0
+    function Open-Fixture { $script:HomeOpenCount++;if($script:HomeOpenCount -gt 1){$script:HomeFixture=$homeReturned} }
+    function Wait-FixtureFocus { param($Focused) return $script:HomeFixture }
+    function Wait-FixtureDisplacedByHome { return $script:HomeFixture }
+    function Get-FixtureState { return $script:HomeFixture }
+    function Invoke-LabAdbResult { param($Arguments);$script:HomeCommandCount++;$script:HomeFixture=$homeAfter;return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'} }
+    $transport=Invoke-HomeKeyPositiveControl
+    Assert-Equal $transport.Status 'CALIBRATED'
+    Assert-Equal $transport.Effect 'FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS'
+    Assert-Equal $transport.InvocationCount 1
+    Assert-Equal $transport.ReturnToFixture 'VERIFIED'
+    Assert-Equal $script:HomeCommandCount 1
+    Assert-Equal @($script:HomeKeyOperations).Count 1
+
+    Reset-Run 'home-key-positive-control-rejected'
+    $script:HomeFixture=$homeBefore;$script:HomeOpenCount=0;$script:HomeCommandCount=0
+    function Open-Fixture { $script:HomeOpenCount++;if($script:HomeOpenCount -gt 1){$script:HomeFixture=$homeReturned} }
+    function Invoke-LabAdbResult { param($Arguments);$script:HomeCommandCount++;return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='SECURITY_EXCEPTION'} }
+    $transport=Invoke-HomeKeyPositiveControl
+    Assert-Equal $transport.Status 'REJECTED'
+    Assert-Equal $transport.InvocationCount 1
+    Assert-Equal $transport.ReturnToFixture 'VERIFIED'
+    Assert-Equal (Read-Json 'home-key-operations.json').Result 'REJECTED'
+
+    Reset-Run 'home-key-positive-control-no-effect'
+    $script:HomeFixture=$homeBefore;$script:HomeOpenCount=0;$script:HomeCommandCount=0
+    function Open-Fixture { $script:HomeOpenCount++;if($script:HomeOpenCount -gt 1){$script:HomeFixture=$homeReturned} }
+    function Wait-FixtureDisplacedByHome { throw 'INVALID:HOME_KEY_POSITIVE_CONTROL_NO_EFFECT' }
+    function Invoke-LabAdbResult { param($Arguments);$script:HomeCommandCount++;return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'} }
+    $transport=Invoke-HomeKeyPositiveControl
+    Assert-Equal $transport.Status 'NO_EFFECT'
+    Assert-Equal $transport.Effect 'FIXTURE_NOT_DISPLACED'
+    Assert-Equal $transport.ReturnToFixture 'VERIFIED'
 
     # Stay-awake setup uses only sanitized setting/power state, verifies each cycle boundary, and restores the exact original value.
     Reset-Run 'stay-awake-restored'
@@ -308,6 +350,38 @@ try {
     try { Update-KRRecoveryEvidence $stale $safe } catch { $reason=$_.Exception.Message }
     Assert-Equal $reason 'FAIL:RECOVERY_REVISION_CHANGED'
 
+    # Control-unavailable cannot proceed without the separate successful host Home calibration.
+    Reset-Run 'home-control-unavailable-without-calibration'
+    $script:SafetyFileName='safety-final.json'
+    $script:Safety=[PSCustomObject]@{Phase='final';HomeGateResult='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE'}
+    $script:HomeKeyTransport=[PSCustomObject]@{Status='NO_EFFECT';InvocationCount=1;ReturnToFixture='VERIFIED'}
+    $homeCalibrationFailure=$null;try{Invoke-RestrictedHomeKeyStimulus}catch{$homeCalibrationFailure=$_.Exception.Message}
+    Assert-Equal $homeCalibrationFailure 'INVALID:HOME_KEY_TRANSPORT_NOT_CALIBRATED'
+    Assert-Equal $script:Safety.HomeGateResult 'INVALID'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS'
+
+    # Restricted-stimulus failures are preserved as automated Path B failures, not owner responses.
+    $restrictedFrame=[PSCustomObject]@{elapsed=20000;sampledAt=19990;revision=42;sampledRevision=42;restriction=$true;attached=$true;adapter='APPLIED';disposition='ORDINARY_APP';removals=0;heartbeat=$true;usage=$true;accessibility=$true;uncertain=$false;eligible=$true;eligibilityLost=$false}
+    $restrictedBaseline=[PSCustomObject]@{schema=2;instance=1;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=0;focusGains=1;focusLosses=1}
+    Reset-Run 'home-restricted-focus-regain'
+    $script:SafetyFileName='safety-final.json';$script:Safety=[PSCustomObject]@{Revision=42;LastElapsed=0;HoldOracle='PENDING';HomeGateResult='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='OWNER_CONTROL_UNAVAILABLE'}
+    $script:RestrictedHomeStimulus=[PSCustomObject]@{FixtureTapsBefore=0;FixtureBaseline=$restrictedBaseline;ObservationCount=0;Status='AUTOMATED_HOLD_VERIFIED'}
+    function Get-LabState { return $restrictedFrame }
+    function Get-FixtureState { $current=$restrictedBaseline.PSObject.Copy();$current.focused=$true;$current.focusGains=2;return $current }
+    $restrictedFailure=$null;try{Poll-RestrictedHomeStimulusHold}catch{$restrictedFailure=$_.Exception.Message}
+    Assert-Equal $restrictedFailure 'FAIL:HOME_STIMULUS_FIXTURE_FOCUS_REGAIN'
+    Assert-Equal $script:Safety.HomeGateResult 'FAIL'
+    Assert-Equal $script:Safety.HomeResultSource 'AUTOMATED_HOLD_ORACLE_AFTER_HOST_STIMULUS'
+
+    Reset-Run 'home-restricted-restriction-loss'
+    $script:SafetyFileName='safety-final.json';$script:Safety=[PSCustomObject]@{Revision=42;LastElapsed=0;HoldOracle='PENDING';HomeGateResult='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='OWNER_CONTROL_UNAVAILABLE'}
+    $script:RestrictedHomeStimulus=[PSCustomObject]@{FixtureTapsBefore=0;FixtureBaseline=$restrictedBaseline;ObservationCount=0;Status='AUTOMATED_HOLD_VERIFIED'}
+    $restrictedFrame.attached=$false
+    function Get-FixtureState { return $restrictedBaseline }
+    $restrictedFailure=$null;try{Poll-RestrictedHomeStimulusHold}catch{$restrictedFailure=$_.Exception.Message}
+    Assert-Equal $restrictedFailure 'FAIL:RESTRICTION_LOST'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'
+
     # Q7 final safety orchestration remains one human checkpoint session and adds zero expiry samples.
     Reset-Run 'q7-safety-checkpoint'
     $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
@@ -349,6 +423,8 @@ try {
     Assert-Equal $safety.HomeActionState 'HOME_ACTION_EXERCISED'
     Assert-Equal $safety.HomeActionOutcome 'HOME_ACTION_RESISTED'
     Assert-Equal $safety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_RESISTED'
+    Assert-Equal $safety.HomeEvidencePath 'PATH_A_PHYSICAL_HOME_ACTION'
+    Assert-Equal $safety.HomeGateResult 'PASS'
     Assert-Equal $safety.HomeResultSource 'OWNER_RESPONSE'
     Assert-Equal $safety.RecoveryReason 'PHYSICAL_PASS_RECORDED'
     Assert-Equal $safety.ReentryPhysical 'PASS'
@@ -357,32 +433,62 @@ try {
     Assert-Equal $safety.Result 'PHYSICAL_PASS_RECORDED'
     Assert-Equal ($script:DelayedPromptPolls -ge 3) $true
     Assert-Equal $script:HomeControlPrompts.Count 1
-    Assert-Equal ([bool]($script:HomeControlPrompts[0] -match 'navigation mode does not establish')) $true
-    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME ACTION CHECK.*swipe up once' }).Count 1
+    Assert-Equal ([bool]($script:HomeControlPrompts[0] -match 'navigation mode is context only')) $true
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'PHYSICAL HOME ACTION.*swipe up once' }).Count 1
     Assert-Equal $script:HumanCheckpoints.Count 1
     Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
 
-    # THREE_BUTTON is a mode signal only: an unavailable control records INVALID and no action instruction is issued.
-    Reset-Run 'q7-three-button-control-unavailable'
+    # The same Path A orchestration gives a button instruction only after THREE_BUTTON is physically available.
+    Reset-Run 'q7-three-button-control-available'
     $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
     $script:NavigationMode='THREE_BUTTON';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
     $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'AVAILABLE'};return 'AVAILABLE' }
+    Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'PHYSICAL HOME ACTION.*tap the on-screen Home button once' }).Count 1
+    Assert-Equal (Read-Json 'safety-final.json').HomeActionResult 'HOME_ACTION_EXERCISED_AND_RESISTED'
+
+    # Unknown exercisability fails closed before either Home path starts.
+    Reset-Run 'q7-home-control-unknown'
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
+    $script:NavigationMode='THREE_BUTTON';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'UNKNOWN'};return 'UNKNOWN' }
+    $controlFailure=$null;try{Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null}catch{$controlFailure=$_.Exception.Message}
+    Assert-Equal $controlFailure 'INVALID:SAFETY_FINAL_HOME_CONTROL_UNKNOWN'
+    Assert-Equal (Read-Json 'safety-final.json').HomeGateResult 'INVALID'
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'PHYSICAL HOME ACTION|HOME CONTROL UNAVAILABLE CHECK' }).Count 0
+
+    # THREE_BUTTON is a mode signal only: unavailable control takes the distinct calibrated host-stimulus path.
+    Reset-Run 'q7-three-button-control-unavailable'
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
+    $script:NavigationMode='THREE_BUTTON';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
+    $script:HomeKeyTransport=[PSCustomObject]@{Status='CALIBRATED';InvocationCount=1;ReturnToFixture='VERIFIED'}
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
     function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'UNAVAILABLE'};return 'UNAVAILABLE' }
     function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady);$script:HomeActionPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'PASS'};return 'PASS' }
-    $controlFailure=$null;try{Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null}catch{$controlFailure=$_.Exception.Message}
-    Assert-Equal $controlFailure 'INVALID:SAFETY_FINAL_HOME_CONTROL'
+    function Invoke-RestrictedHomeKeyStimulus {
+        $script:RestrictedHomeStimulus=[PSCustomObject]@{Status='AUTOMATED_HOLD_VERIFIED';OwnerObservation='UNRECORDED';OwnerObservedUtc=$null}
+    }
+    function Poll-RestrictedHomeStimulusHold { return New-SafetyFrame $true }
+    Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null
     $safety=Read-Json 'safety-final.json'
     Assert-Equal $safety.NavigationModeClassification 'NAV_MODE_THREE_BUTTON'
     Assert-Equal $safety.HomeControlExercisability 'UNAVAILABLE'
     Assert-Equal $safety.HomeActionState 'HOME_ACTION_NOT_EXERCISABLE'
     Assert-Equal $safety.HomeActionOutcome 'UNRECORDED'
-    Assert-Equal $safety.HomePhysical 'INVALID'
-    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME ACTION CHECK' }).Count 0
+    Assert-Equal $safety.HomePhysical 'CONTROL_UNAVAILABLE'
+    Assert-Equal $safety.HomeStimulusPhysical 'PASS'
+    Assert-Equal $safety.HomeGateResult 'PASS'
+    Assert-Equal $safety.HomeActionResult 'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE'
+    Assert-Equal $safety.HomeResultSource 'OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'PHYSICAL HOME ACTION' }).Count 0
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME CONTROL UNAVAILABLE CHECK' }).Count 1
 
     # Owner outcomes remain distinct from an automated hold-oracle failure and from no exercisable Home action.
     Reset-Run 'home-owner-outcomes'
     $script:SafetyFileName='safety-final.json'
-    $script:Safety=[PSCustomObject]@{NavigationModeClassification='NAV_MODE_THREE_BUTTON';HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    $script:Safety=[PSCustomObject]@{NavigationModeClassification='NAV_MODE_THREE_BUTTON';HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomeEvidencePath='UNRESOLVED';HomeGateResult='UNRECORDED';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
     Set-HomeControlObservation 'AVAILABLE'
     Assert-Equal $script:Safety.HomeControlExercisability 'AVAILABLE'
     Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_NOT_EXERCISED'
@@ -398,18 +504,19 @@ try {
     Assert-Equal $script:Safety.HomeResultSource 'OWNER_RESPONSE'
     $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeResultSource='NONE'
     Set-HomeActionObservation 'INVALID'
-    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_RESULT_UNCERTAIN'
     Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_UNKNOWN'
 
     # A known navigation mode never establishes control availability. Unavailable and unknown stop before an action.
     Reset-Run 'home-control-exercisability'
     $script:SafetyFileName='safety-final.json'
-    $script:Safety=[PSCustomObject]@{HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    $script:Safety=[PSCustomObject]@{HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomeEvidencePath='UNRESOLVED';HomeGateResult='UNRECORDED';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
     Set-HomeControlObservation 'UNAVAILABLE'
     Assert-Equal $script:Safety.HomeControlExercisability 'UNAVAILABLE'
     Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_NOT_EXERCISABLE'
     Assert-Equal $script:Safety.HomeActionOutcome 'UNRECORDED'
-    Assert-Equal $script:Safety.HomePhysical 'INVALID'
+    Assert-Equal $script:Safety.HomePhysical 'CONTROL_UNAVAILABLE'
+    Assert-Equal $script:Safety.HomeEvidencePath 'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS'
     $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISED';$script:Safety.HomeResultSource='NONE'
     Set-HomeControlObservation 'UNKNOWN'
     Assert-Equal $script:Safety.HomeControlExercisability 'UNKNOWN'
@@ -440,7 +547,7 @@ try {
     $homeFailure=$null;try{Poll-SafetyHold}catch{$homeFailure=$_.Exception.Message}
     Assert-Equal $homeFailure 'INVALID:HOME_ACTION_NOT_EXERCISED'
     Assert-Equal $script:Safety.HomePhysical 'UNRECORDED'
-    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_RESULT_UNCERTAIN'
     Assert-Equal $script:Safety.HomeResultSource 'OUT_OF_SEQUENCE_SETTINGS_ACTION'
 
     # Diagnostic CLEAR changes only timer state and preserves the complete latency sample array.

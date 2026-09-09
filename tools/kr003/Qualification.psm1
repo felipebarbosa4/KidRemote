@@ -9,6 +9,8 @@ function Assert-KRConfigurationQualificationBundle {
         $Bundle.networkCapabilityModel -ne 'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA' -or
         $Bundle.awakeStateModel -ne 'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE' -or
         $Bundle.navigationModeModel -ne 'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM' -or
+        $Bundle.homeSafetyModel -ne 'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME' -or
+        $Bundle.homeKeyTransportModel -ne 'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS' -or
         $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
         $Bundle.humanCheckpointMaximum -ne 3 -or $Bundle.physicalExecution -ne 'NOT_RUN') {
         throw 'INVALID:BUNDLE_SCHEMA'
@@ -84,7 +86,7 @@ function Get-KRHomeActionInstruction {
         'THREE_BUTTON' { return 'tap the on-screen Home button once' }
         'TWO_BUTTON' { return 'tap the on-screen Home button once' }
         'GESTURE' { return 'swipe up once from the bottom edge to go Home; do not swipe and hold' }
-        default { throw 'INVALID:NAVIGATION_MODE_UNKNOWN' }
+        default { return 'perform exactly one current Android system Home action using the available control or gesture you just confirmed' }
     }
 }
 
@@ -93,9 +95,57 @@ function Get-KRHomeActionResult {
     switch ($ObserverResult) {
         'PASS' { return 'HOME_ACTION_EXERCISED_AND_RESISTED' }
         'FAIL' { return 'HOME_ACTION_EXERCISED_AND_ESCAPED' }
-        'INVALID' { return 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN' }
+        'INVALID' { return 'HOME_ACTION_RESULT_UNCERTAIN' }
         default { throw 'INVALID:HOME_ACTION_RESULT_UNKNOWN' }
     }
+}
+
+function Assert-KRHomeKeyPositiveControlEffect {
+    param($Before, $After)
+    if ($null -eq $Before -or $null -eq $After -or
+        $Before.schema -ne 2 -or $After.schema -ne 2 -or
+        -not $Before.probeReady -or -not $After.probeReady -or
+        -not $Before.focused -or -not $Before.resumed) {
+        throw 'INVALID:HOME_KEY_POSITIVE_CONTROL_STATE'
+    }
+    if ($Before.instance -ne $After.instance) { throw 'INVALID:FIXTURE_RESTARTED' }
+    if ($Before.probeX -ne $After.probeX -or $Before.probeY -ne $After.probeY) { throw 'INVALID:FIXTURE_PROBE_MOVED' }
+    if ($After.focused -or $After.resumed -or $After.focusLosses -le $Before.focusLosses -or
+        $After.focusGains -ne $Before.focusGains -or $After.taps -ne $Before.taps) {
+        throw 'INVALID:HOME_KEY_POSITIVE_CONTROL_NO_EFFECT'
+    }
+}
+
+function Assert-KRHomeKeyPositiveControlReturn {
+    param($Before, $Returned)
+    if ($null -eq $Before -or $null -eq $Returned -or
+        $Before.schema -ne 2 -or $Returned.schema -ne 2 -or
+        -not $Returned.probeReady -or -not $Returned.focused -or -not $Returned.resumed) {
+        throw 'INVALID:HOME_KEY_FIXTURE_RETURN_FAILED'
+    }
+    if ($Before.instance -ne $Returned.instance -or
+        $Before.probeX -ne $Returned.probeX -or $Before.probeY -ne $Returned.probeY -or
+        $Before.taps -ne $Returned.taps) {
+        throw 'INVALID:HOME_KEY_FIXTURE_RETURN_FAILED'
+    }
+}
+
+function Assert-KRRestrictedHomeStimulusHold {
+    param($Snapshot, [long]$Revision, [long]$FixtureTaps, $FixtureBaseline, $FixtureCurrent)
+    if ($null -eq $FixtureBaseline -or $null -eq $FixtureCurrent -or
+        $FixtureBaseline.schema -ne 2 -or $FixtureCurrent.schema -ne 2 -or
+        -not $FixtureBaseline.probeReady -or -not $FixtureCurrent.probeReady) {
+        throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE'
+    }
+    if ($FixtureBaseline.instance -ne $FixtureCurrent.instance) { throw 'INVALID:FIXTURE_RESTARTED' }
+    if ($FixtureBaseline.probeX -ne $FixtureCurrent.probeX -or $FixtureBaseline.probeY -ne $FixtureCurrent.probeY) {
+        throw 'INVALID:FIXTURE_PROBE_MOVED'
+    }
+    if ($FixtureCurrent.focused -or $FixtureCurrent.focusGains -ne $FixtureBaseline.focusGains) {
+        throw 'FAIL:HOME_STIMULUS_FIXTURE_FOCUS_REGAIN'
+    }
+    if ($FixtureCurrent.taps -ne $FixtureBaseline.taps) { throw 'FAIL:HOME_STIMULUS_INPUT_LEAK' }
+    Assert-KRHold -Snapshot $Snapshot -Revision $Revision -FixtureTaps $FixtureTaps -FixtureState $FixtureCurrent
 }
 
 function Test-KRRecoveryButtonAction {
@@ -628,4 +678,4 @@ function Get-KRSafetyCheckpointReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Convert-KRStayAwakeSetting, Convert-KRNavigationMode, Get-KRNavigationModeClassification, Get-KRHomeActionInstruction, Get-KRHomeActionResult, Test-KRRecoveryButtonAction, Convert-KRPowerSourceProbe, Assert-KRStayAwakeState, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason
+Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Convert-KRStayAwakeSetting, Convert-KRNavigationMode, Get-KRNavigationModeClassification, Get-KRHomeActionInstruction, Get-KRHomeActionResult, Assert-KRHomeKeyPositiveControlEffect, Assert-KRHomeKeyPositiveControlReturn, Assert-KRRestrictedHomeStimulusHold, Test-KRRecoveryButtonAction, Convert-KRPowerSourceProbe, Assert-KRStayAwakeState, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

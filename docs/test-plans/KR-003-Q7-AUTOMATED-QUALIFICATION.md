@@ -10,8 +10,8 @@ awake while plugged in orchestration. Its later Samsung execution retained anoth
 `FAIL:RESTRICTION_LOST` during the Home prompt after an out-of-sequence overlay Settings action; Home remained unrecorded and restriction stayed
 true on an allowed safe surface. Runner-v11 made the current button/gesture Home action explicit and fail-closed. Two later runner-v11 attempts
 show that a coarse `THREE_BUTTON` mode does not establish control availability under the overlay: one stopped on an unrelated ADB rejection before
-the Home prompt, and one retained no exercisable Home control/action. Prepared runner-v12 separates mode, control availability, action exercise and
-outcome; unavailable/unknown remains INVALID under the existing physical-attempt contract. All stopped attempts remain
+the Home prompt, and one retained no exercisable Home control/action. OD-39 prospectively approves runner-v12's dual-path Home gate; it does not
+reclassify either run. All stopped attempts remain
 non-resumable. Q7 and its Mi 8 evidence stay
 historical/configuration-specific, and the evidence contract below is not weakened.
 
@@ -72,7 +72,7 @@ The fixture counter and focus callbacks are independent of the candidate's Acces
 
 1. **Preflight normal PASS:** the active oracle runs on an excluded fresh expiry. The owner watches the complete ten-second restricted hold and confirms continuous visible blocking with no flicker or ordinary use.
 2. **Preflight controlled negative:** the runner deliberately clears only that disposable restriction and injects the same real tap. Automation requires the fixture counter to increment; the owner confirms the overlay is absent and ordinary fixture feedback is visible. This is an excluded negative control, not a consumer recovery claim or qualification sample.
-3. **Post-run safety/agreement:** after unattended sample 100 remains restricted, the owner validates visible persistence. The runner records navigation mode only as a coarse signal, then asks whether the corresponding current Home control/gesture is physically available without exercising it. Unavailable/unknown stops INVALID. Only after availability is confirmed does the owner exercise that system Home action once, then follow separately prompted root Settings, expected Digital Wellbeing block, one-button persistent Settings recovery and ordinary re-entry. The overlay Settings button must not be used during either Home phase. CLEAR/input verification is automated. This is one checkpoint session with separately journalled substeps.
+3. **Post-run safety/agreement:** after unattended sample 100 remains restricted, the owner validates visible persistence. Navigation mode is only coarse context. The runner asks whether Home is physically exercisable without performing it. If available, the owner exercises that real action once and physical plus independent hold evidence must show no ordinary-use escape. If unavailable, the owner's absence observation is combined with one host `KEYCODE_HOME` whose transport was separately proven against the unblocked fixture, plus continuous candidate state, no fixture focus/input regain, and a second owner visible-result observation. The unavailable-control success is distinctly named and never reported as physical Home resistance. Unknown stops INVALID. The separately prompted root Settings, expected Digital Wellbeing block, one-button persistent Settings recovery, ordinary re-entry and automated CLEAR follow only after either Home path passes. The overlay Settings button must not be used during Home phases. This remains one checkpoint session with separately journalled substeps.
 
 Any non-PASS checkpoint stops the run. The two preflight checkpoints occur before metrics are reset for the 100 rows. The final safety checkpoint adds no latency sample.
 

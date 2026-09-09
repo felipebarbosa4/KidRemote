@@ -70,8 +70,64 @@ function validateQ11NavigationModeEvidence(directory,read,required) {
   assert(['VALUE_0','VALUE_1','VALUE_2','UNPARSEABLE','ADB_REJECTED'].includes(evidence.ParseResult));
   assert(Number.isInteger(evidence.VerificationCount)&&evidence.VerificationCount>=1);
   assert.match(evidence.LastVerifiedUtc,/^\d{4}-\d{2}-\d{2}T/);
-  if(required) assert.notEqual(evidence.Mode,'UNKNOWN');
   return evidence;
+}
+
+function validateQ12HomeKeyEvidence(directory,read,required) {
+  const transportPath=resolve(directory,'home-key-transport.json'),operationsPath=resolve(directory,'home-key-operations.json');
+  if(!existsSync(transportPath)||!existsSync(operationsPath)) {
+    assert(!required,'Runner-v12 evidence after the preflight controls requires Home-key transport evidence');
+    return null;
+  }
+  const transport=read('home-key-transport.json'),operations=read('home-key-operations.json');
+  assert.deepEqual(Object.keys(transport),['Schema','Stimulus','StimulusSource','CandidateGenerated','FixtureRole','Status','Effect','InvocationCount','CommandResult','ExitCode','StderrClass','BeforeFocused','BeforeResumed','AfterFocused','AfterResumed','FocusLossDelta','TapDelta','ReturnToFixture','StartedUtc','EndedUtc']);
+  assert.equal(transport.Schema,1);assert.equal(transport.Stimulus,'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME');
+  assert.equal(transport.StimulusSource,'HOST_ADB');assert.equal(transport.CandidateGenerated,false);
+  assert.equal(transport.FixtureRole,'INDEPENDENT_ORDINARY_FIXTURE');
+  assert(['STARTED','CALIBRATED','REJECTED','NO_EFFECT','RETURN_FAILED'].includes(transport.Status));
+  assert(['UNRECORDED','FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS','NOT_ESTABLISHED','FIXTURE_NOT_DISPLACED'].includes(transport.Effect));
+  assert([0,1].includes(transport.InvocationCount));assert(['UNRECORDED','ACCEPTED','REJECTED','TIMEOUT'].includes(transport.CommandResult));
+  assert(transport.ExitCode===null||Number.isInteger(transport.ExitCode));
+  assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(transport.StderrClass));
+  assert.equal(typeof transport.BeforeFocused,'boolean');assert.equal(typeof transport.BeforeResumed,'boolean');
+  for(const key of ['AfterFocused','AfterResumed']) assert(transport[key]===null||typeof transport[key]==='boolean');
+  for(const key of ['FocusLossDelta','TapDelta']) assert(transport[key]===null||Number.isInteger(transport[key]));
+  assert(['STARTED','VERIFIED','FAILED'].includes(transport.ReturnToFixture));
+  assert.match(transport.StartedUtc,/^\d{4}-\d{2}-\d{2}T/);assert(transport.EndedUtc===null||/^\d{4}-\d{2}-\d{2}T/.test(transport.EndedUtc));
+  assert(Array.isArray(operations));
+  operations.forEach((operation,index)=>{
+    assert.deepEqual(Object.keys(operation),['Sequence','Operation','Phase','Result','ExitCode','StderrClass','AtUtc']);
+    assert.equal(operation.Sequence,index+1);assert(['POSITIVE_CONTROL_KEYCODE_HOME','RESTRICTED_KEYCODE_HOME'].includes(operation.Operation));
+    assert(['PREFLIGHT','RESTRICTED_CHECK'].includes(operation.Phase));assert(['ACCEPTED','REJECTED','TIMEOUT'].includes(operation.Result));
+    assert(Number.isInteger(operation.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(operation.StderrClass));
+  });
+  assert.equal(operations.filter(o=>o.Operation==='POSITIVE_CONTROL_KEYCODE_HOME').length,transport.InvocationCount);
+  assert(operations.filter(o=>o.Operation==='RESTRICTED_KEYCODE_HOME').length<=1);
+  if(transport.Status==='CALIBRATED') {
+    assert.equal(transport.InvocationCount,1);assert.equal(transport.CommandResult,'ACCEPTED');assert.equal(transport.ExitCode,0);
+    assert.equal(transport.StderrClass,'NONE');assert.equal(transport.BeforeFocused,true);assert.equal(transport.BeforeResumed,true);
+    assert.equal(transport.AfterFocused,false);assert.equal(transport.AfterResumed,false);assert(transport.FocusLossDelta>=1);
+    assert.equal(transport.TapDelta,0);assert.equal(transport.Effect,'FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS');
+    assert.equal(transport.ReturnToFixture,'VERIFIED');
+  }
+  let restricted=null;
+  const restrictedPath=resolve(directory,'home-key-restricted.json');
+  if(existsSync(restrictedPath)) {
+    restricted=read('home-key-restricted.json');
+    assert.deepEqual(Object.keys(restricted),['Schema','Phase','Stimulus','StimulusSource','CandidateGenerated','TransportCalibration','InvocationCount','CommandResult','ExitCode','StderrClass','FixtureTapsBefore','FixtureFocusGainsBefore','FixtureBaseline','ObservationCount','CandidateContinuity','FixtureFocusRegain','FixtureInputLeak','OwnerObservation','OwnerObservedUtc','Status','LastVerifiedUtc']);
+    assert.equal(restricted.Schema,1);assert.equal(restricted.Phase,'final');assert.equal(restricted.Stimulus,'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME');
+    assert.equal(restricted.StimulusSource,'HOST_ADB');assert.equal(restricted.CandidateGenerated,false);assert.equal(restricted.TransportCalibration,'CALIBRATED');
+    assert([0,1].includes(restricted.InvocationCount));assert(['UNRECORDED','ACCEPTED','REJECTED','TIMEOUT'].includes(restricted.CommandResult));
+    assert(restricted.ExitCode===null||Number.isInteger(restricted.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(restricted.StderrClass));
+    assert(Number.isInteger(restricted.FixtureTapsBefore));assert(Number.isInteger(restricted.FixtureFocusGainsBefore));
+    assert.deepEqual(Object.keys(restricted.FixtureBaseline),['schema','request','elapsed','instance','taps','focusGains','focusLosses','lastFocusChange','probeX','probeY','focused','resumed','probeReady']);
+    assert.equal(restricted.FixtureBaseline.schema,2);assert.equal(restricted.FixtureBaseline.probeReady,true);
+    assert(Number.isInteger(restricted.ObservationCount)&&restricted.ObservationCount>=0);
+    assert(['UNRECORDED','VERIFIED'].includes(restricted.CandidateContinuity));assert(['UNKNOWN','NONE'].includes(restricted.FixtureFocusRegain));
+    assert(['UNKNOWN','NONE'].includes(restricted.FixtureInputLeak));assert(['UNRECORDED','PASS','FAIL','INVALID'].includes(restricted.OwnerObservation));
+    assert(['STARTED','TRANSPORT_REJECTED','AUTOMATED_HOLD_VERIFIED','HELD_WITH_OWNER_AGREEMENT','ESCAPE_OBSERVED','OWNER_RESULT_UNCERTAIN','ESCAPE_DETECTED','ORACLE_INVALID'].includes(restricted.Status));
+  }
+  return {transport,operations,restricted};
 }
 
 function ingestQ7(directory, manifest, rows, summary, read) {
@@ -93,6 +149,10 @@ function ingestQ7(directory, manifest, rows, summary, read) {
       assert.equal(manifest.StayAwakeRequested,true);
     }
     if(manifest.Bundle.runnerVersion>=11) assert.equal(manifest.Bundle.navigationModeModel,'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM');
+    if(manifest.Bundle.runnerVersion>=12) {
+      assert.equal(manifest.Bundle.homeSafetyModel,'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME');
+      assert.equal(manifest.Bundle.homeKeyTransportModel,'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS');
+    }
     const expected=manifest.Bundle.approvedConfiguration;
     assert.deepEqual(Object.keys(expected),['schema','manufacturer','model','androidVersion','apiLevel','securityPatch','buildId']);
     assert.equal(expected.schema,1);
@@ -132,6 +192,7 @@ function ingestQ7(directory, manifest, rows, summary, read) {
     if(stats&&summary.StatisticsAvailable) assert.deepEqual(summary.InternalPairedStatistics,stats,'Host summary percentile mismatch');
     const stayAwake=configurationBound&&manifest.Bundle.runnerVersion>=10?validateQ10StayAwakeEvidence(directory,read,completed.length>0,false):null;
     const navigationMode=configurationBound&&manifest.Bundle.runnerVersion>=11?validateQ11NavigationModeEvidence(directory,read,completed.length>0):null;
+    const homeKey=configurationBound&&manifest.Bundle.runnerVersion>=12?validateQ12HomeKeyEvidence(directory,read,completed.length===100):null;
     let safetyCheckpoint='UNSPECIFIED';
     if(existsSync(resolve(directory,'safety-final.json'))) {
       const safety=read('safety-final.json');
@@ -140,8 +201,8 @@ function ingestQ7(directory, manifest, rows, summary, read) {
         homePhysical:safety.HomePhysical,holdOracle:safety.HoldOracle,recoveryReason:safety.RecoveryReason,
         reentryPhysical:safety.ReentryPhysical,clearTouch:safety.ClearTouch};
       if(manifest.Bundle.runnerVersion>=11) {
-        assert(['UNRECORDED','HOME_ACTION_EXERCISED_AND_RESISTED','HOME_ACTION_EXERCISED_AND_ESCAPED','HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'].includes(safety.HomeActionResult));
-        assert(['NONE','OWNER_RESPONSE','AUTOMATED_HOLD_ORACLE','OUT_OF_SEQUENCE_SETTINGS_ACTION'].includes(safety.HomeResultSource));
+        assert(['UNRECORDED','HOME_ACTION_EXERCISED_AND_RESISTED','HOME_ACTION_EXERCISED_AND_ESCAPED','HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN','HOME_ACTION_RESULT_UNCERTAIN','HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS','HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE','HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'].includes(safety.HomeActionResult));
+        assert(['NONE','OWNER_RESPONSE','AUTOMATED_HOLD_ORACLE','OUT_OF_SEQUENCE_SETTINGS_ACTION','OWNER_CONTROL_UNAVAILABLE','HOST_TRANSPORT_CALIBRATION','HOST_RESTRICTED_STIMULUS','AUTOMATED_HOLD_ORACLE_AFTER_HOST_STIMULUS','OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'].includes(safety.HomeResultSource));
         safetyCheckpoint.navigationMode=safety.NavigationMode;safetyCheckpoint.homeActionResult=safety.HomeActionResult;
         safetyCheckpoint.homeResultSource=safety.HomeResultSource;
       }
@@ -151,10 +212,16 @@ function ingestQ7(directory, manifest, rows, summary, read) {
         assert(['NONE','OWNER_RESPONSE'].includes(safety.HomeControlSource));
         assert(['HOME_ACTION_EXERCISED','HOME_ACTION_NOT_EXERCISABLE','HOME_ACTION_NOT_EXERCISED','HOME_ACTION_UNKNOWN'].includes(safety.HomeActionState));
         assert(['HOME_ACTION_RESISTED','HOME_ACTION_ESCAPED','UNRECORDED','UNKNOWN'].includes(safety.HomeActionOutcome));
+        assert(['UNRESOLVED','PATH_A_PHYSICAL_HOME_ACTION','PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS'].includes(safety.HomeEvidencePath));
+        assert(['UNRECORDED','PASS','FAIL','INVALID'].includes(safety.HomeGateResult));
+        assert(['UNRECORDED','PASS','FAIL','INVALID','CONTROL_UNAVAILABLE'].includes(safety.HomePhysical));
+        assert(['NOT_APPLICABLE','PASS','FAIL','INVALID'].includes(safety.HomeStimulusPhysical));
         safetyCheckpoint.navigationModeClassification=safety.NavigationModeClassification;
         safetyCheckpoint.homeControlExercisability=safety.HomeControlExercisability;
         safetyCheckpoint.homeActionState=safety.HomeActionState;
         safetyCheckpoint.homeActionOutcome=safety.HomeActionOutcome;
+        safetyCheckpoint.homeEvidencePath=safety.HomeEvidencePath;
+        safetyCheckpoint.homeGateResult=safety.HomeGateResult;
       }
     }
     return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
@@ -163,12 +230,13 @@ function ingestQ7(directory, manifest, rows, summary, read) {
       checkpointResults:checkpoints.map(c=>({name:c.Name,result:c.Result,evidence:c.Evidence??'UNSPECIFIED'})),partial:true,
       networkCapabilities:q9Network?.capabilities??'UNSPECIFIED',navigationMode:navigationMode?.Mode??'UNSPECIFIED',
       stayAwakeRestoration:stayAwake?.restoration?.Status??'UNSPECIFIED',
-      safetyCheckpoint,kr003Complete:false};
+      homeKeyTransport:homeKey?.transport?.Status??'UNSPECIFIED',safetyCheckpoint,kr003Complete:false};
   }
   if(configurationBound) {
     if(manifest.Bundle.runnerVersion>=9) validateQ9NetworkEvidence(directory,read,true);
     if(manifest.Bundle.runnerVersion>=10) validateQ10StayAwakeEvidence(directory,read,true,true);
     if(manifest.Bundle.runnerVersion>=11) validateQ11NavigationModeEvidence(directory,read,true);
+    if(manifest.Bundle.runnerVersion>=12) validateQ12HomeKeyEvidence(directory,read,true);
     const expected=manifest.Bundle.approvedConfiguration;
     const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
     for(const device of [manifest.InitialDevice,manifest.Device]) {
@@ -209,18 +277,38 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(safety.Phase,'final');
   assert.equal(safety.Result,'PHYSICAL_PASS_RECORDED');
   assert.equal(safety.FinalVisibilityPhysical,'PASS');
-  assert.equal(safety.HomePhysical,'PASS');
+  assert(['PASS','CONTROL_UNAVAILABLE'].includes(safety.HomePhysical));
   if(manifest.Bundle.runnerVersion>=11) {
-    assert(['THREE_BUTTON','TWO_BUTTON','GESTURE'].includes(safety.NavigationMode));
+    assert(['THREE_BUTTON','TWO_BUTTON','GESTURE','UNKNOWN'].includes(safety.NavigationMode));
+    assert.equal(safety.NavigationMode,validateQ11NavigationModeEvidence(directory,read,true).Mode);
+  }
+  if(manifest.Bundle.runnerVersion===11) {
+    assert.notEqual(safety.NavigationMode,'UNKNOWN');
     assert.equal(safety.HomeActionResult,'HOME_ACTION_EXERCISED_AND_RESISTED');
     assert.equal(safety.HomeResultSource,'OWNER_RESPONSE');
   }
   if(manifest.Bundle.runnerVersion>=12) {
     assert.equal(safety.NavigationModeClassification,`NAV_MODE_${safety.NavigationMode}`);
-    assert.equal(safety.HomeControlExercisability,'AVAILABLE');
     assert.equal(safety.HomeControlSource,'OWNER_RESPONSE');
-    assert.equal(safety.HomeActionState,'HOME_ACTION_EXERCISED');
-    assert.equal(safety.HomeActionOutcome,'HOME_ACTION_RESISTED');
+    assert.equal(safety.HomeGateResult,'PASS');
+    if(safety.HomeEvidencePath==='PATH_A_PHYSICAL_HOME_ACTION') {
+      assert.equal(safety.HomeControlExercisability,'AVAILABLE');assert.equal(safety.HomePhysical,'PASS');
+      assert.equal(safety.HomeStimulusPhysical,'NOT_APPLICABLE');assert.equal(safety.HomeActionState,'HOME_ACTION_EXERCISED');
+      assert.equal(safety.HomeActionOutcome,'HOME_ACTION_RESISTED');assert.equal(safety.HomeActionResult,'HOME_ACTION_EXERCISED_AND_RESISTED');
+      assert.equal(safety.HomeResultSource,'OWNER_RESPONSE');
+    } else {
+      assert.equal(safety.HomeEvidencePath,'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS');
+      assert.equal(safety.HomeControlExercisability,'UNAVAILABLE');assert.equal(safety.HomePhysical,'CONTROL_UNAVAILABLE');
+      assert.equal(safety.HomeStimulusPhysical,'PASS');assert.equal(safety.HomeActionState,'HOME_ACTION_NOT_EXERCISABLE');
+      assert.equal(safety.HomeActionOutcome,'UNRECORDED');assert.equal(safety.HomeActionResult,'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE');
+      assert.equal(safety.HomeResultSource,'OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS');
+      const homeKey=validateQ12HomeKeyEvidence(directory,read,true);
+      assert.equal(homeKey.transport.Status,'CALIBRATED');assert(homeKey.restricted);
+      assert.equal(homeKey.restricted.InvocationCount,1);assert.equal(homeKey.restricted.CommandResult,'ACCEPTED');
+      assert.equal(homeKey.restricted.CandidateContinuity,'VERIFIED');assert.equal(homeKey.restricted.FixtureFocusRegain,'NONE');
+      assert.equal(homeKey.restricted.FixtureInputLeak,'NONE');assert.equal(homeKey.restricted.OwnerObservation,'PASS');
+      assert.equal(homeKey.restricted.Status,'HELD_WITH_OWNER_AGREEMENT');
+    }
   }
   assert.equal(safety.RecoveryReason,'PHYSICAL_PASS_RECORDED');
   assert.equal(safety.ReentryPhysical,'PASS');

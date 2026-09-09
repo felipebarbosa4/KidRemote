@@ -44,7 +44,7 @@ Each cycle must start from a cleared restriction and a fresh arm/revision. Recor
 1. clearing the lab restriction makes the disposable ordinary app usable;
 2. re-arming starts a new 10-second allowance and the ordinary app remains eligible through expiry;
 3. expiry produces a continuously visible restriction for at least 10 seconds, with no flicker or disappearance;
-4. one physical Home attempt while restricted does not restore ordinary use;
+4. the prospective OD-39 dual-path Home gate passes: exercise one available physical Home action without ordinary-use escape, or, when the owner confirms Home unavailable, pass the separately calibrated host-Home no-escape path;
 5. the designated **Open device settings** action makes Settings visible and usable;
 6. leaving Settings for a disposable ordinary app restores persistent enforcement;
 7. returning through the designated safe surface and clearing the restriction restores ordinary use before the next cycle.
@@ -52,8 +52,19 @@ Each cycle must start from a cleared restriction and a fresh arm/revision. Recor
 Record exactly 10 attempts and then stop, including failed and invalid attempts. Any failed or invalid observation keeps the checkpoint incomplete
 and stops progression to the 100-sample run pending review; do not append replacement attempts to this checkpoint or silently discard them.
 The operator—not the runner—must classify visible persistence, flicker, escape, safe-surface usability, re-entry enforcement and clear behaviour.
-A scripted Home injection rejected by the OS is invalid and must be replaced by a physical Home attempt.
-The required observation is an exercised physical Android system Home action that does not restore ordinary use. A coarse button/gesture navigation-mode signal does not prove the control is visible under the restriction, and an unavailable control is INVALID under the current contract rather than a Home-resistance PASS. Treating control absence itself as sufficient no-escape evidence would require an explicit owner/product evidence-model decision.
+OD-39 prospectively approves two non-interchangeable Home evidence paths. Path A applies when a Home control/gesture is physically exercisable:
+the owner exercises exactly one real Android system Home action and both physical observation and the independent hold oracle must show no
+ordinary-use escape. `HOME_ACTION_EXERCISED_AND_RESISTED` is reserved for this path; a real escape is FAIL and uncertainty is INVALID.
+
+Path B applies only when the owner physically confirms that Home is unavailable as presented while restriction remains visible. Absence alone
+does not pass. Before relying on Path B, the unblocked ordinary fixture must be focused, the host injects exactly one fixed
+`adb shell input keyevent KEYCODE_HOME`, and independent fixture state must show displacement from foreground/focus; the runner then returns and
+verifies the fixture's known state. Rejection or no effect leaves Path B INVALID. Under restriction the host injects exactly one calibrated key,
+while candidate restriction/attachment/health must remain continuous and the independent fixture must show no focus regain or input leak; the
+owner must also observe that restriction stays effective and ordinary use is not restored. Only that combined result is
+`HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`. It is never physical Home resistance. Any established escape is FAIL; any uncertain signal is
+INVALID. The candidate Accessibility service does not generate Home. Navigation mode is coarse contextual metadata only and neither establishes
+control availability nor needs to be changed. This decision is prospective and does not alter earlier evidence.
 
 The optional [owner-operated Mi 8 checkpoint runner](../../tools/kr003-mi8-checkpoint.ps1) can start the harness/disposable Calculator, wait,
 capture only the debug trace tag and collect constrained observer entries. It deliberately does not inject Home and never converts

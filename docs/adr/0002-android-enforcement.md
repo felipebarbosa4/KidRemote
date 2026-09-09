@@ -47,9 +47,13 @@ established. Runner-v11 adds only read-only coarse current navigation-mode captu
 evidence; unknown or an out-of-sequence action stops INVALID. It does not change navigation mode, candidate enforcement or safe-surface semantics.
 Two later [runner-v11 attempts](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) each retained 100 automated PASS
 rows but stopped INVALID in checkpoint 3: one on a candidate snapshot rejection before the Home prompt, and one after final-visible PASS because
-no Home control/action was exercisable despite coarse `THREE_BUTTON` mode. The current physical contract still requires an actually exercised
-physical system Home action. Prepared runner-v12 separates mode, control availability, action exercise and outcome while keeping unavailable or
-unknown fail-closed; it is not published or physically executed.
+no Home control/action was exercisable despite coarse `THREE_BUTTON` mode. OD-39 prospectively approves runner-v12's dual-path gate. If Home is
+exercisable, the owner performs one real system action and independent state must show no ordinary-use escape. If Home is genuinely unavailable,
+the owner confirms that physical observation and the host may inject exactly one `KEYCODE_HOME` only after a separate ordinary-fixture positive
+control proved that one host event displaced fixture foreground/focus and the fixture returned to known state. Under restriction, restriction,
+attachment and health must remain continuous, the fixture must not regain focus or receive input, and the owner must observe no ordinary-use
+return. This second result is `HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`, never physical Home resistance. Unknowns remain INVALID,
+escapes remain FAIL, navigation mode remains contextual, and historical runs remain unchanged and non-poolable.
 No formal matrix row, enforcement support boundary or production result advances.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.

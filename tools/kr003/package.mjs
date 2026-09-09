@@ -69,6 +69,8 @@ const manifest={
   networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA",
   awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE",
   navigationModeModel:"SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM",
+  homeSafetyModel:"DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME",
+  homeKeyTransportModel:"ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS",
   humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false,
 };
 assert.equal(git("status","--porcelain"),"","Build unexpectedly changed tracked source");

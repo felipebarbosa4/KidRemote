@@ -68,6 +68,9 @@ $script:StayAwakeRestoreStatus = 'NOT_CHANGED'
 $script:StayAwakeRestoration = $null
 $script:NavigationMode = 'UNKNOWN'
 $script:NavigationModeEvidence = $null
+$script:HomeKeyOperations = @()
+$script:HomeKeyTransport = $null
+$script:RestrictedHomeStimulus = $null
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -135,6 +138,35 @@ function Invoke-NetworkAdb {
     Add-NetworkOperation $Operation $Phase $(if($accepted){'ACCEPTED'}else{'REJECTED'}) $result.ExitCode $result.StderrClass
     if(-not $accepted) { throw 'INVALID:ADB_REJECTED' }
     return $result
+}
+
+function Add-HomeKeyOperation {
+    param([string]$Operation,[string]$Phase,[string]$Result,[int]$ExitCode,[string]$StderrClass)
+    if($Operation -notin @('POSITIVE_CONTROL_KEYCODE_HOME','RESTRICTED_KEYCODE_HOME') -or
+        $Phase -notin @('PREFLIGHT','RESTRICTED_CHECK') -or
+        $Result -notin @('ACCEPTED','REJECTED','TIMEOUT') -or
+        $StderrClass -notin @('NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE')) {
+        throw 'INVALID:HOME_KEY_OPERATION_SCHEMA'
+    }
+    $script:HomeKeyOperations += [PSCustomObject]@{
+        Sequence=$script:HomeKeyOperations.Count + 1; Operation=$Operation; Phase=$Phase; Result=$Result
+        ExitCode=$ExitCode; StderrClass=$StderrClass; AtUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Write-JsonFile 'home-key-operations.json' @($script:HomeKeyOperations)
+}
+
+function Invoke-HomeKeyAdb {
+    param([string]$Operation,[string]$Phase)
+    try { $result=Invoke-LabAdbResult -Arguments @('shell','input','keyevent','KEYCODE_HOME') } catch {
+        if($_.Exception.Message -eq 'INVALID:ADB_TIMEOUT') {
+            Add-HomeKeyOperation $Operation $Phase 'TIMEOUT' -1 'UNAVAILABLE'
+            return [PSCustomObject]@{Accepted=$false;ExitCode=-1;StderrClass='UNAVAILABLE'}
+        }
+        throw
+    }
+    $accepted=$result.ExitCode -eq 0 -and $result.StderrClass -eq 'NONE'
+    Add-HomeKeyOperation $Operation $Phase $(if($accepted){'ACCEPTED'}else{'REJECTED'}) $result.ExitCode $result.StderrClass
+    return [PSCustomObject]@{Accepted=$accepted;ExitCode=[int]$result.ExitCode;StderrClass=[string]$result.StderrClass}
 }
 
 function Get-NetworkCapabilities {
@@ -249,13 +281,11 @@ function Capture-NavigationMode {
         ParseResult=$state.ParseResult;VerificationCount=1;LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
     }
     Write-JsonFile 'navigation-mode.json' $script:NavigationModeEvidence
-    if($state.Mode -eq 'UNKNOWN'){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
 }
 
 function Assert-NavigationMode {
-    if($script:NavigationMode -eq 'UNKNOWN' -or $null -eq $script:NavigationModeEvidence){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
+    if($null -eq $script:NavigationModeEvidence){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
     $state=Get-NavigationModeState
-    if($state.Mode -eq 'UNKNOWN'){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
     if($state.Mode -ne $script:NavigationMode){throw 'INVALID:NAVIGATION_MODE_CHANGED'}
     $script:NavigationModeEvidence.VerificationCount=[int]$script:NavigationModeEvidence.VerificationCount+1
     $script:NavigationModeEvidence.LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
@@ -437,6 +467,83 @@ function Wait-FixtureFocus {
     throw 'INVALID:FIXTURE_FOCUS_ORACLE_UNAVAILABLE'
 }
 
+function Wait-FixtureDisplacedByHome {
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    do {
+        Check-EarlyStop
+        $fixture = Get-FixtureState
+        if (-not $fixture.focused -and -not $fixture.resumed) { return $fixture }
+        Start-Sleep -Milliseconds 100
+    } while ($watch.Elapsed.TotalSeconds -lt 3)
+    throw 'INVALID:HOME_KEY_POSITIVE_CONTROL_NO_EFFECT'
+}
+
+function Save-HomeKeyTransport {
+    if($null -ne $script:HomeKeyTransport){Write-JsonFile 'home-key-transport.json' $script:HomeKeyTransport}
+}
+
+function Invoke-HomeKeyPositiveControl {
+    Open-Fixture
+    $before=Wait-FixtureFocus -Focused $true
+    $before=Get-FixtureState
+    $script:HomeKeyTransport=[PSCustomObject]@{
+        Schema=1;Stimulus='ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME';StimulusSource='HOST_ADB';CandidateGenerated=$false
+        FixtureRole='INDEPENDENT_ORDINARY_FIXTURE';Status='STARTED';Effect='UNRECORDED';InvocationCount=0
+        CommandResult='UNRECORDED';ExitCode=$null;StderrClass='UNAVAILABLE'
+        BeforeFocused=[bool]$before.focused;BeforeResumed=[bool]$before.resumed;AfterFocused=$null;AfterResumed=$null
+        FocusLossDelta=$null;TapDelta=$null;ReturnToFixture='STARTED';StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null
+    }
+    Save-HomeKeyTransport
+    try {
+        $command=Invoke-HomeKeyAdb 'POSITIVE_CONTROL_KEYCODE_HOME' 'PREFLIGHT'
+        $script:HomeKeyTransport.InvocationCount=1
+        $script:HomeKeyTransport.CommandResult=if($command.Accepted){'ACCEPTED'}elseif($command.ExitCode -eq -1){'TIMEOUT'}else{'REJECTED'}
+        $script:HomeKeyTransport.ExitCode=$command.ExitCode
+        $script:HomeKeyTransport.StderrClass=$command.StderrClass
+        Save-HomeKeyTransport
+        if(-not $command.Accepted){
+            $script:HomeKeyTransport.Status='REJECTED'
+            $script:HomeKeyTransport.Effect='NOT_ESTABLISHED'
+        }else{
+            try {
+                $after=Wait-FixtureDisplacedByHome
+                Assert-KRHomeKeyPositiveControlEffect -Before $before -After $after
+                $script:HomeKeyTransport.AfterFocused=[bool]$after.focused
+                $script:HomeKeyTransport.AfterResumed=[bool]$after.resumed
+                $script:HomeKeyTransport.FocusLossDelta=[long]$after.focusLosses-[long]$before.focusLosses
+                $script:HomeKeyTransport.TapDelta=[long]$after.taps-[long]$before.taps
+                $script:HomeKeyTransport.Status='CALIBRATED'
+                $script:HomeKeyTransport.Effect='FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS'
+            }catch{
+                if($_.Exception.Message -ne 'INVALID:HOME_KEY_POSITIVE_CONTROL_NO_EFFECT'){throw}
+                $after=Get-FixtureState
+                $script:HomeKeyTransport.AfterFocused=[bool]$after.focused
+                $script:HomeKeyTransport.AfterResumed=[bool]$after.resumed
+                $script:HomeKeyTransport.FocusLossDelta=[long]$after.focusLosses-[long]$before.focusLosses
+                $script:HomeKeyTransport.TapDelta=[long]$after.taps-[long]$before.taps
+                $script:HomeKeyTransport.Status='NO_EFFECT'
+                $script:HomeKeyTransport.Effect='FIXTURE_NOT_DISPLACED'
+            }
+        }
+    } finally {
+        try {
+            Open-Fixture
+            $returned=Wait-FixtureFocus -Focused $true
+            $returned=Get-FixtureState
+            Assert-KRHomeKeyPositiveControlReturn -Before $before -Returned $returned
+            $script:HomeKeyTransport.ReturnToFixture='VERIFIED'
+        } catch {
+            $script:HomeKeyTransport.ReturnToFixture='FAILED'
+            $script:HomeKeyTransport.Status='RETURN_FAILED'
+            throw 'INVALID:HOME_KEY_FIXTURE_RETURN_FAILED'
+        } finally {
+            $script:HomeKeyTransport.EndedUtc=[DateTime]::UtcNow.ToString('o')
+            Save-HomeKeyTransport
+        }
+    }
+    return $script:HomeKeyTransport
+}
+
 function Read-Result {
     param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved)
     Check-EarlyStop
@@ -505,7 +612,7 @@ function Read-HomeControlExercisability {
     param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved)
     Check-EarlyStop
     Write-Host $Prompt -ForegroundColor Cyan
-    Write-Host '[A] available now  [N] not visible/unavailable  [I] uncertain  [Q] stop and run cleanup'
+    Write-Host '[A] available now  [U] unavailable as presented  [I] uncertain  [Q] stop and run cleanup'
     while ($true) {
         if (-not [Console]::KeyAvailable) {
             if ($null -ne $Poll) { & $Poll | Out-Null }
@@ -513,8 +620,8 @@ function Read-HomeControlExercisability {
             continue
         }
         $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
-        if ($key -in @('A','N','I')) {
-            $result = switch ($key) { 'A' { 'AVAILABLE' }; 'N' { 'UNAVAILABLE' }; 'I' { 'UNKNOWN' } }
+        if ($key -in @('A','U','I')) {
+            $result = switch ($key) { 'A' { 'AVAILABLE' }; 'U' { 'UNAVAILABLE' }; 'I' { 'UNKNOWN' } }
             if ($null -ne $OnObserved) { & $OnObserved $result }
             return $result
         }
@@ -934,6 +1041,8 @@ function Set-HomeActionObservation {
     $script:Safety.HomeActionResult=Get-KRHomeActionResult $Result
     $script:Safety.HomeActionState=if($Result -in @('PASS','FAIL')){'HOME_ACTION_EXERCISED'}else{'HOME_ACTION_UNKNOWN'}
     $script:Safety.HomeActionOutcome=switch($Result){'PASS'{'HOME_ACTION_RESISTED'}'FAIL'{'HOME_ACTION_ESCAPED'}default{'UNKNOWN'}}
+    $script:Safety.HomeEvidencePath='PATH_A_PHYSICAL_HOME_ACTION'
+    $script:Safety.HomeGateResult=$Result
     $script:Safety.HomeResultSource='OWNER_RESPONSE'
     $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
@@ -944,21 +1053,145 @@ function Set-HomeControlObservation {
     $script:Safety.HomeControlExercisability=$Result
     $script:Safety.HomeControlSource='OWNER_RESPONSE'
     $script:Safety.HomeControlObservedUtc=[DateTime]::UtcNow.ToString('o')
-    if($Result -ne 'AVAILABLE') {
-        $script:Safety.HomePhysical='INVALID'
-        $script:Safety.HomeActionResult='HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
-        $script:Safety.HomeActionState=if($Result -eq 'UNAVAILABLE'){'HOME_ACTION_NOT_EXERCISABLE'}else{'HOME_ACTION_UNKNOWN'}
+    if($Result -eq 'AVAILABLE') {
+        $script:Safety.HomeEvidencePath='PATH_A_PHYSICAL_HOME_ACTION'
+    } elseif($Result -eq 'UNAVAILABLE') {
+        $script:Safety.HomeEvidencePath='PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS'
+        $script:Safety.HomePhysical='CONTROL_UNAVAILABLE'
+        $script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISABLE'
         $script:Safety.HomeActionOutcome='UNRECORDED'
+        $script:Safety.HomeResultSource='OWNER_CONTROL_UNAVAILABLE'
+        $script:Safety.HomeObservedUtc=$script:Safety.HomeControlObservedUtc
+    } else {
+        $script:Safety.HomeEvidencePath='UNRESOLVED'
+        $script:Safety.HomePhysical='INVALID'
+        $script:Safety.HomeActionResult='HOME_ACTION_RESULT_UNCERTAIN'
+        $script:Safety.HomeActionState='HOME_ACTION_UNKNOWN'
+        $script:Safety.HomeActionOutcome='UNKNOWN'
+        $script:Safety.HomeGateResult='INVALID'
         $script:Safety.HomeResultSource='OWNER_RESPONSE'
         $script:Safety.HomeObservedUtc=$script:Safety.HomeControlObservedUtc
     }
     Save-Safety
 }
 
+function Save-RestrictedHomeStimulus {
+    if($null -ne $script:RestrictedHomeStimulus){Write-JsonFile 'home-key-restricted.json' $script:RestrictedHomeStimulus}
+}
+
+function Set-RestrictedHomeOwnerObservation {
+    param([ValidateSet('PASS','FAIL','INVALID')][string]$Result)
+    $script:RestrictedHomeStimulus.OwnerObservation=$Result
+    $script:RestrictedHomeStimulus.OwnerObservedUtc=[DateTime]::UtcNow.ToString('o')
+    $script:Safety.HomeStimulusPhysical=$Result
+    $script:Safety.HomeObservedUtc=$script:RestrictedHomeStimulus.OwnerObservedUtc
+    if($Result -eq 'PASS'){
+        $script:Safety.HomeGateResult='PASS'
+        $script:Safety.HomeActionResult='HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE'
+        $script:Safety.HomeResultSource='OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'
+        $script:RestrictedHomeStimulus.Status='HELD_WITH_OWNER_AGREEMENT'
+    }elseif($Result -eq 'FAIL'){
+        $script:Safety.HomeGateResult='FAIL'
+        $script:Safety.HomeActionResult='HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'
+        $script:Safety.HomeResultSource='OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'
+        $script:RestrictedHomeStimulus.Status='ESCAPE_OBSERVED'
+    }else{
+        $script:Safety.HomeGateResult='INVALID'
+        $script:Safety.HomeActionResult='HOME_ACTION_RESULT_UNCERTAIN'
+        $script:Safety.HomeResultSource='OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'
+        $script:RestrictedHomeStimulus.Status='OWNER_RESULT_UNCERTAIN'
+    }
+    Save-RestrictedHomeStimulus
+    Save-Safety
+}
+
+function Poll-RestrictedHomeStimulusHold {
+    try {
+        $snapshot=Get-LabState
+        $fixture=Get-FixtureState
+        Assert-KRRestrictedHomeStimulusHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:RestrictedHomeStimulus.FixtureTapsBefore -FixtureBaseline $script:RestrictedHomeStimulus.FixtureBaseline -FixtureCurrent $fixture
+    } catch {
+        $message=$_.Exception.Message
+        $isFailure=$message -like 'FAIL:*'
+        $script:RestrictedHomeStimulus.Status=if($isFailure){'ESCAPE_DETECTED'}else{'ORACLE_INVALID'}
+        $script:Safety.HomeGateResult=if($isFailure){'FAIL'}else{'INVALID'}
+        $script:Safety.HomeActionResult=if($isFailure){'HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'}else{'HOME_ACTION_RESULT_UNCERTAIN'}
+        $script:Safety.HomeResultSource='AUTOMATED_HOLD_ORACLE_AFTER_HOST_STIMULUS'
+        Save-RestrictedHomeStimulus
+        Save-Safety
+        throw
+    }
+    $script:RestrictedHomeStimulus.ObservationCount=[int]$script:RestrictedHomeStimulus.ObservationCount+1
+    $script:RestrictedHomeStimulus.CandidateContinuity='VERIFIED'
+    $script:RestrictedHomeStimulus.FixtureFocusRegain='NONE'
+    $script:RestrictedHomeStimulus.FixtureInputLeak='NONE'
+    $script:RestrictedHomeStimulus.LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    $script:Safety.LastElapsed=[long]$snapshot.elapsed
+    $script:Safety.HoldOracle='RESTRICTION_HELD'
+    Save-RestrictedHomeStimulus
+    Save-Safety
+    return $snapshot
+}
+
+function Invoke-RestrictedHomeKeyStimulus {
+    if($null -eq $script:HomeKeyTransport -or $script:HomeKeyTransport.Status -ne 'CALIBRATED' -or
+        $script:HomeKeyTransport.InvocationCount -ne 1 -or $script:HomeKeyTransport.ReturnToFixture -ne 'VERIFIED') {
+        $script:Safety.HomeGateResult='INVALID'
+        $script:Safety.HomeActionResult='HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS'
+        $script:Safety.HomeResultSource='HOST_TRANSPORT_CALIBRATION'
+        Save-Safety
+        throw 'INVALID:HOME_KEY_TRANSPORT_NOT_CALIBRATED'
+    }
+    $snapshot=Poll-SafetyHold
+    $fixture=Get-FixtureState
+    $script:RestrictedHomeStimulus=[PSCustomObject]@{
+        Schema=1;Phase=$script:Safety.Phase;Stimulus='ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME';StimulusSource='HOST_ADB'
+        CandidateGenerated=$false;TransportCalibration='CALIBRATED';InvocationCount=0;CommandResult='UNRECORDED'
+        ExitCode=$null;StderrClass='UNAVAILABLE';FixtureTapsBefore=[long]$fixture.taps;FixtureFocusGainsBefore=[long]$fixture.focusGains
+        FixtureBaseline=$fixture;ObservationCount=0;CandidateContinuity='UNRECORDED';FixtureFocusRegain='UNKNOWN';FixtureInputLeak='UNKNOWN'
+        OwnerObservation='UNRECORDED';OwnerObservedUtc=$null;Status='STARTED';LastVerifiedUtc=$null
+    }
+    Save-RestrictedHomeStimulus
+    $command=Invoke-HomeKeyAdb 'RESTRICTED_KEYCODE_HOME' 'RESTRICTED_CHECK'
+    $script:RestrictedHomeStimulus.InvocationCount=1
+    $script:RestrictedHomeStimulus.CommandResult=if($command.Accepted){'ACCEPTED'}elseif($command.ExitCode -eq -1){'TIMEOUT'}else{'REJECTED'}
+    $script:RestrictedHomeStimulus.ExitCode=$command.ExitCode
+    $script:RestrictedHomeStimulus.StderrClass=$command.StderrClass
+    Save-RestrictedHomeStimulus
+    if(-not $command.Accepted){
+        $script:RestrictedHomeStimulus.Status='TRANSPORT_REJECTED'
+        $script:Safety.HomeGateResult='INVALID'
+        $script:Safety.HomeActionResult='HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS'
+        $script:Safety.HomeResultSource='HOST_RESTRICTED_STIMULUS'
+        Save-RestrictedHomeStimulus
+        Save-Safety
+        throw 'INVALID:HOME_KEY_RESTRICTED_STIMULUS_REJECTED'
+    }
+    try {
+        $watch=[Diagnostics.Stopwatch]::StartNew()
+        do {
+            $null=Poll-RestrictedHomeStimulusHold
+            Start-Sleep -Milliseconds 100
+        } while($watch.Elapsed.TotalSeconds -lt 2)
+        $script:RestrictedHomeStimulus.Status='AUTOMATED_HOLD_VERIFIED'
+        Save-RestrictedHomeStimulus
+    } catch {
+        $message=$_.Exception.Message
+        $isFailure=$message -like 'FAIL:*'
+        $script:RestrictedHomeStimulus.Status=if($isFailure){'ESCAPE_DETECTED'}else{'ORACLE_INVALID'}
+        $script:Safety.HomeGateResult=if($isFailure){'FAIL'}else{'INVALID'}
+        $script:Safety.HomeActionResult=if($isFailure){'HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'}else{'HOME_ACTION_RESULT_UNCERTAIN'}
+        $script:Safety.HomeResultSource='AUTOMATED_HOLD_ORACLE_AFTER_HOST_STIMULUS'
+        Save-RestrictedHomeStimulus
+        Save-Safety
+        throw
+    }
+}
+
 function Poll-SafetyHold {
     $snapshot=Get-LabState
-    if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION') -and (Test-KRRecoveryButtonAction $snapshot)){
-        $script:Safety.HomeActionResult='HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+    if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION','HOME_HOST_STIMULUS','HOME_HOST_OBSERVATION') -and (Test-KRRecoveryButtonAction $snapshot)){
+        $script:Safety.HomeActionResult='HOME_ACTION_RESULT_UNCERTAIN'
         $script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISED'
         $script:Safety.HomeActionOutcome='UNRECORDED'
         $script:Safety.HomeResultSource='OUT_OF_SEQUENCE_SETTINGS_ACTION'
@@ -969,7 +1202,7 @@ function Poll-SafetyHold {
     try{
         Assert-KRHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:Safety.FixtureTaps -FixtureState (Get-FixtureState)
     }catch{
-        if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION') -and $script:Safety.HomeActionResult -eq 'UNRECORDED'){
+        if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION','HOME_HOST_STIMULUS','HOME_HOST_OBSERVATION') -and $script:Safety.HomeActionResult -eq 'UNRECORDED'){
             $script:Safety.HomeResultSource='AUTOMATED_HOLD_ORACLE'
             Save-Safety
         }
@@ -1004,8 +1237,8 @@ function Invoke-QualificationSafetyCheckpoint {
         Revision=[long]$start.revision; StartedElapsed=[long]$start.elapsed; LastElapsed=[long]$start.elapsed
         FixtureTaps=[long]$fixture.taps; NavigationMode=$script:NavigationMode; NavigationModeClassification=(Get-KRNavigationModeClassification $script:NavigationMode); CurrentStep='START'
         HomeControlExercisability='UNKNOWN'; HomeControlSource='NONE'; HomeControlPromptedUtc=$null; HomeControlObservedUtc=$null
-        HomeActionState='HOME_ACTION_NOT_EXERCISED'; HomeActionOutcome='UNRECORDED'
-        HomePhysical='UNRECORDED'; HomeActionResult='UNRECORDED'; HomeResultSource='NONE'; HomePromptedUtc=$null; HomeObservedUtc=$null; HoldOracle='PENDING'
+        HomeEvidencePath='UNRESOLVED'; HomeGateResult='UNRECORDED'; HomeActionState='HOME_ACTION_NOT_EXERCISED'; HomeActionOutcome='UNRECORDED'
+        HomePhysical='UNRECORDED'; HomeStimulusPhysical='NOT_APPLICABLE'; HomeActionResult='UNRECORDED'; HomeResultSource='NONE'; HomePromptedUtc=$null; HomeObservedUtc=$null; HoldOracle='PENDING'
         FinalVisibilityPhysical='UNRECORDED'; FinalVisibilityObservedUtc=$null
         RecoveryFile=('recovery-' + $Phase + '.json'); RecoveryReason='UNRECORDED'
         ReentryPhysical='UNRECORDED'; ReentryObservedUtc=$null; ReentryOracle='PENDING'
@@ -1029,24 +1262,38 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety.CurrentStep='HOME_CONTROL'
     $script:Safety.HomeControlPromptedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
-    $navigationClassification=Get-KRNavigationModeClassification $script:NavigationMode
-    $homeControl=Read-HomeControlExercisability ('HOME CONTROL CHECK ('+$navigationClassification+'): navigation mode does not establish that its Home control is visible while restricted. Without performing a Home action yet: A=the current system Home control is visibly available and physically exercisable now; N=it is not visible or unavailable; I=uncertain. Do not tap Open device settings.') -Poll { Poll-SafetyHold } -OnObserved {
+    $navigationDescription=switch($script:NavigationMode){'THREE_BUTTON'{'three-button navigation'}'TWO_BUTTON'{'two-button navigation'}'GESTURE'{'gesture navigation'}default{'navigation mode unknown'}}
+    $homeControl=Read-HomeControlExercisability ('HOME SAFETY CHECK: configured context is '+$navigationDescription+', but navigation mode is context only and does not establish whether Home is usable under the restriction. Without performing a Home action yet: A=the current system Home control or gesture is physically exercisable now; U=it is genuinely unavailable as presented; I=uncertain. Do not tap Open device settings.') -Poll { Poll-SafetyHold } -OnObserved {
         param($result)
         Set-HomeControlObservation $result
     }
-    if($homeControl -ne 'AVAILABLE') { throw ('INVALID:SAFETY_' + $Phase.ToUpperInvariant() + '_HOME_CONTROL') }
+    if($homeControl -eq 'UNKNOWN') { throw ('INVALID:SAFETY_' + $Phase.ToUpperInvariant() + '_HOME_CONTROL_UNKNOWN') }
     $null=Poll-SafetyHold
-
-    $script:Safety.CurrentStep='HOME_ACTION'
-    $script:Safety.HomePromptedUtc=[DateTime]::UtcNow.ToString('o')
-    Save-Safety
-    $homeInstruction=Get-KRHomeActionInstruction $script:NavigationMode
-    $homeResult=Read-DiagnosticResult ('HOME ACTION CHECK ('+$navigationClassification+'): the owner has confirmed that the control is available. '+$homeInstruction+'. Do not tap Open device settings. After exercising that system Home action once: P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=the action or result is uncertain.') -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
-        param($result)
-        Set-HomeActionObservation $result
+    if($homeControl -eq 'AVAILABLE') {
+        $script:Safety.CurrentStep='HOME_ACTION'
+        $script:Safety.HomePromptedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+        $homeInstruction=Get-KRHomeActionInstruction $script:NavigationMode
+        $homeResult=Read-DiagnosticResult ('PHYSICAL HOME ACTION: '+$homeInstruction+'. Do not tap Open device settings. After exercising that real system Home action exactly once: P=restriction remained continuously visible and ordinary use was not restored; F=escape/flicker/disappearance; I=the action or result is uncertain.') -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+            param($result)
+            Set-HomeActionObservation $result
+        }
+        Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME_PHYSICAL')
+        $null=Poll-SafetyHold
+    } else {
+        $script:Safety.CurrentStep='HOME_HOST_STIMULUS'
+        $script:Safety.HomePromptedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+        Invoke-RestrictedHomeKeyStimulus
+        $script:Safety.CurrentStep='HOME_HOST_OBSERVATION'
+        Save-Safety
+        $homeResult=Read-DiagnosticResult 'HOME CONTROL UNAVAILABLE CHECK: the runner sent one independently calibrated Android Home stimulus. P=the restriction remained visibly effective and ordinary use was not restored; F=ordinary use/escape/flicker/disappearance; I=uncertain. Do not tap Open device settings.' -Poll { Poll-RestrictedHomeStimulusHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' -and $script:RestrictedHomeStimulus.Status -eq 'AUTOMATED_HOLD_VERIFIED' } -OnObserved {
+            param($result)
+            Set-RestrictedHomeOwnerObservation $result
+        }
+        Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME_CONTROL_UNAVAILABLE')
+        $null=Poll-RestrictedHomeStimulusHold
     }
-    Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME')
-    $null=Poll-SafetyHold
 
     $script:Safety.CurrentStep='RECOVERY_DIAGNOSTIC'
     Save-Safety
@@ -1098,13 +1345,14 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety.ClearTouch='FIXTURE_COUNTER_INCREMENT'
     $script:Safety.ClearRevision=[long]$released.revision
     $script:Safety.ClearSampleCount=[long]$released.sampleCount
-    $script:Safety.Result=Get-KRSafetyCheckpointReason -HomeResult $script:Safety.HomePhysical -Recovery $script:Safety.RecoveryReason -Reentry $script:Safety.ReentryPhysical -ClearTouch $script:Safety.ClearTouch
+    $script:Safety.Result=Get-KRSafetyCheckpointReason -HomeResult $script:Safety.HomeGateResult -Recovery $script:Safety.RecoveryReason -Reentry $script:Safety.ReentryPhysical -ClearTouch $script:Safety.ClearTouch
     $script:Safety.Reason=$script:Safety.Result
     $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
     if ($script:Safety.Result -ne 'PHYSICAL_PASS_RECORDED') { throw ('FAIL:SAFETY_' + $Phase.ToUpperInvariant() + '_VERDICT') }
     if ($Phase -eq 'final') {
-        Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result 'PASS' -Evidence 'GUIDED_HOME_SETTINGS_RECOVERY_REENTRY_PLUS_AUTOMATED_CLEAR_INPUT'
+        $homeEvidence=if($script:Safety.HomeEvidencePath -eq 'PATH_A_PHYSICAL_HOME_ACTION'){'PHYSICAL_HOME_ACTION_PLUS_INDEPENDENT_HOLD_ORACLE'}else{'CONTROL_UNAVAILABLE_PLUS_CALIBRATED_HOST_HOME_STIMULUS_PLUS_INDEPENDENT_HOLD_ORACLE'}
+        Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result 'PASS' -Evidence ($homeEvidence + '_PLUS_SETTINGS_RECOVERY_REENTRY_AND_CLEAR')
     }
 }
 
@@ -1331,6 +1579,8 @@ try {
     Write-Host 'HUMAN CHECKPOINT 1/3 — normal persistent restriction and active input denial.' -ForegroundColor Cyan
     Invoke-Expiry -Attempt 0 -Calibration -PhysicalObservation
     Invoke-NegativeControlCheckpoint
+    Write-Host 'Calibrating the independent Android Home stimulus against the ordinary fixture. This adds no qualification row.' -ForegroundColor Cyan
+    $null=Invoke-HomeKeyPositiveControl
     $null=Get-LabState 'RESET_METRICS'
     $zero=Get-LabState
     if ($zero.sampleCount -ne 0) { throw 'INVALID:QUALIFICATION_METRICS_RESET_FAILED' }

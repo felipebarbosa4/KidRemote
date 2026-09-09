@@ -37,6 +37,8 @@ $configurationBundle=[PSCustomObject]@{
     networkCapabilityModel='ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA'
     awakeStateModel='ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE'
     navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM'
+    homeSafetyModel='DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME'
+    homeKeyTransportModel='ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS'
     oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
     approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
@@ -103,10 +105,10 @@ Assert-Equal (Get-KRNavigationModeClassification 'GESTURE') 'NAV_MODE_GESTURE'
 Assert-Equal (Get-KRNavigationModeClassification 'UNKNOWN') 'NAV_MODE_UNKNOWN'
 Assert-Equal (Get-KRHomeActionInstruction 'THREE_BUTTON') 'tap the on-screen Home button once'
 Assert-Equal (Get-KRHomeActionInstruction 'GESTURE') 'swipe up once from the bottom edge to go Home; do not swipe and hold'
-Assert-Reject { Get-KRHomeActionInstruction 'UNKNOWN' } 'INVALID:NAVIGATION_MODE_UNKNOWN'
+Assert-Equal (Get-KRHomeActionInstruction 'UNKNOWN') 'perform exactly one current Android system Home action using the available control or gesture you just confirmed'
 Assert-Equal (Get-KRHomeActionResult 'PASS') 'HOME_ACTION_EXERCISED_AND_RESISTED'
 Assert-Equal (Get-KRHomeActionResult 'FAIL') 'HOME_ACTION_EXERCISED_AND_ESCAPED'
-Assert-Equal (Get-KRHomeActionResult 'INVALID') 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+Assert-Equal (Get-KRHomeActionResult 'INVALID') 'HOME_ACTION_RESULT_UNCERTAIN'
 $settingsAction=New-Snapshot
 $settingsAction.traceHead=1
 $settingsAction.events=@([PSCustomObject]@{sequence=1;line='t=21000 kind=recovery_open_requested trigger=settings_button eventType=-1 identity=NONE disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED adapter=APPLIED nextAdapter=APPLIED revision=2'})
@@ -176,6 +178,29 @@ $fixtureBlocked.focusGains=3; $fixtureBlocked.instance=8
 Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'INVALID:FIXTURE_RESTARTED'
 $fixtureBlocked.instance=7; $fixtureBlocked.probeX=541
 Assert-Reject { Assert-KRIndependentFixtureBlock $fixtureBaseline $fixtureBlocked } 'INVALID:FIXTURE_PROBE_MOVED'
+
+# Host Home calibration proves one fixed KEYCODE_HOME stimulus had an independent foreground/focus effect.
+$homeBefore=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$true;resumed=$true;taps=4;focusGains=4;focusLosses=3}
+$homeAfter=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$false;taps=4;focusGains=4;focusLosses=4}
+Assert-KRHomeKeyPositiveControlEffect $homeBefore $homeAfter
+$homeNoEffect=$homeBefore.PSObject.Copy()
+Assert-Reject { Assert-KRHomeKeyPositiveControlEffect $homeBefore $homeNoEffect } 'INVALID:HOME_KEY_POSITIVE_CONTROL_NO_EFFECT'
+$homeReturned=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$true;resumed=$true;taps=4;focusGains=5;focusLosses=4}
+Assert-KRHomeKeyPositiveControlReturn $homeBefore $homeReturned
+$homeReturned.taps=5
+Assert-Reject { Assert-KRHomeKeyPositiveControlReturn $homeBefore $homeReturned } 'INVALID:HOME_KEY_FIXTURE_RETURN_FAILED'
+
+# The restricted stimulus allows the underlying fixture to pause but never to regain focus or receive input.
+$s=New-Snapshot
+$restrictedBaseline=[PSCustomObject]@{schema=2;instance=7;probeReady=$true;probeX=540;probeY=1900;focused=$false;resumed=$true;taps=4;focusGains=4;focusLosses=4}
+$restrictedAfter=$restrictedBaseline.PSObject.Copy();$restrictedAfter.resumed=$false
+Assert-KRRestrictedHomeStimulusHold $s 2 4 $restrictedBaseline $restrictedAfter
+$restrictedAfter.focused=$true;$restrictedAfter.focusGains=5
+Assert-Reject { Assert-KRRestrictedHomeStimulusHold $s 2 4 $restrictedBaseline $restrictedAfter } 'FAIL:HOME_STIMULUS_FIXTURE_FOCUS_REGAIN'
+$restrictedAfter.focused=$false;$restrictedAfter.focusGains=4;$restrictedAfter.taps=5
+Assert-Reject { Assert-KRRestrictedHomeStimulusHold $s 2 4 $restrictedBaseline $restrictedAfter } 'FAIL:HOME_STIMULUS_INPUT_LEAK'
+$restrictedAfter.taps=4;$s.attached=$false
+Assert-Reject { Assert-KRRestrictedHomeStimulusHold $s 2 4 $restrictedBaseline $restrictedAfter } 'FAIL:RESTRICTION_LOST'
 
 # Focused recovery phases use their own trace floor; an earlier phase's safe event cannot satisfy a later phase.
 $rootStart=New-Snapshot

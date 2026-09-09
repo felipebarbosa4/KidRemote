@@ -121,6 +121,8 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(packager,/networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA"/);
   assert.match(packager,/awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE"/);
   assert.match(packager,/navigationModeModel:"SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM"/);
+  assert.match(packager,/homeSafetyModel:"DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME"/);
+  assert.match(packager,/homeKeyTransportModel:"ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS"/);
   assert.match(packager,/calibration-20260908-231756-97a0855b/);
   assert.match(packager,/BP4A\.251205\.006/);
   assert.match(packager,/humanCheckpointMaximum:3/);
@@ -139,13 +141,17 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(runner,/stay_on_while_plugged_in/);
   assert.match(runner,/Restore-StayAwake/);
   assert.match(runner,/settings','--user','current','get','secure','navigation_mode/);
-  assert.match(runner,/HOME CONTROL CHECK/);
-  assert.match(runner,/navigation mode does not establish that its Home control is visible/);
+  assert.match(runner,/HOME SAFETY CHECK/);
+  assert.match(runner,/navigation mode is context only/);
   assert.match(runner,/HomeControlExercisability='UNKNOWN'/);
   assert.match(runner,/HOME_ACTION_NOT_EXERCISABLE/);
   assert.match(runner,/HOME_ACTION_RESISTED/);
   assert.match(runner,/HOME_ACTION_ESCAPED/);
-  assert.match(runner,/if\(\$homeControl -ne 'AVAILABLE'\).*INVALID:SAFETY_/s);
+  assert.match(runner,/PATH_A_PHYSICAL_HOME_ACTION/);
+  assert.match(runner,/PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS/);
+  assert.match(runner,/HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE/);
+  assert.match(runner,/HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS/);
+  assert.doesNotMatch(runner,/HomeActionOutcome='HOME_ACTION_RESISTED'.*PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS/s);
   assert(runner.indexOf("$homeControl=Read-HomeControlExercisability")<runner.indexOf("$homeInstruction=Get-KRHomeActionInstruction"));
   assert.match(runner,/HOME_ACTION_EXERCISED_AND_RESISTED|Get-KRHomeActionResult/);
   assert.match(runner,/Do not tap Open device settings/);
@@ -153,8 +159,10 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.doesNotMatch(runner,/RawBattery|RawSetting|BatteryDump|StackTrace/);
   assert.match(bailout,/Get-BailoutState 'CLEAR'/);
   assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
-  assert.doesNotMatch(runner,/uiautomator|screencap|dumpsys\s+window|input','(?:text|keyevent)|pm','clear|uninstall','/i);
+  assert.doesNotMatch(runner,/uiautomator|screencap|dumpsys\s+window|input','text|pm','clear|uninstall','/i);
   assert.equal((runner.match(/'shell','input','tap'/g)??[]).length,1,'Only the reviewed fixture-owned input operation is allowed');
+  assert.equal((runner.match(/'shell','input','keyevent','KEYCODE_HOME'/g)??[]).length,1,'Only the reviewed fixed Home-key operation is allowed');
+  assert.doesNotMatch(runner,/KEYCODE_(?:BACK|APP_SWITCH|POWER)|input','keyevent',(?!'KEYCODE_HOME')/);
   assert.doesNotMatch(bailout,/Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable/);
 });
 
@@ -252,6 +260,29 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
   const sorted=rows.map(r=>r.LatencyMs).sort((a,b)=>a-b), stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
   save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',HumanCheckpointSessions:3,PhysicalExpiryObservations:2,InternalPairedStatistics:stats,ValidPairedObservations:100,Status:'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY',Offline:true,SafetyChecksPassed:true,FinalizationErrors:[]});
   assert.equal(ingestQualification(dir).automatedExpiryCycles,100);
+
+  // Runner-v12 Path B remains distinct from a physically exercised Home-action result.
+  bundle.runnerVersion=12;bundle.homeSafetyModel='DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME';bundle.homeKeyTransportModel='ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS';
+  save('manifest.json',{Bundle:bundle,InitialDevice:capturedDevice,Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
+  const fixtureBaseline={schema:2,request:900,elapsed:50000,instance:7,taps:101,focusGains:102,focusLosses:102,lastFocusChange:49900,probeX:540,probeY:1900,focused:false,resumed:true,probeReady:true};
+  save('home-key-transport.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Status:'CALIBRATED',Effect:'FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS',InvocationCount:1,CommandResult:'ACCEPTED',ExitCode:0,StderrClass:'NONE',BeforeFocused:true,BeforeResumed:true,AfterFocused:false,AfterResumed:false,FocusLossDelta:1,TapDelta:0,ReturnToFixture:'VERIFIED',StartedUtc:'2026-09-09T00:10:00Z',EndedUtc:'2026-09-09T00:10:02Z'});
+  save('home-key-operations.json',[
+    {Sequence:1,Operation:'POSITIVE_CONTROL_KEYCODE_HOME',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:10:01Z'},
+    {Sequence:2,Operation:'RESTRICTED_KEYCODE_HOME',Phase:'RESTRICTED_CHECK',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T02:00:01Z'},
+  ]);
+  save('home-key-restricted.json',{Schema:1,Phase:'final',Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,TransportCalibration:'CALIBRATED',InvocationCount:1,CommandResult:'ACCEPTED',ExitCode:0,StderrClass:'NONE',FixtureTapsBefore:101,FixtureFocusGainsBefore:102,FixtureBaseline:fixtureBaseline,ObservationCount:24,CandidateContinuity:'VERIFIED',FixtureFocusRegain:'NONE',FixtureInputLeak:'NONE',OwnerObservation:'PASS',OwnerObservedUtc:'2026-09-09T02:00:05Z',Status:'HELD_WITH_OWNER_AGREEMENT',LastVerifiedUtc:'2026-09-09T02:00:06Z'});
+  save('safety-final.json',{Phase:'final',Result:'PHYSICAL_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HomePhysical:'CONTROL_UNAVAILABLE',HomeStimulusPhysical:'PASS',NavigationMode:'THREE_BUTTON',NavigationModeClassification:'NAV_MODE_THREE_BUTTON',HomeControlExercisability:'UNAVAILABLE',HomeControlSource:'OWNER_RESPONSE',HomeEvidencePath:'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS',HomeGateResult:'PASS',HomeActionState:'HOME_ACTION_NOT_EXERCISABLE',HomeActionOutcome:'UNRECORDED',HomeActionResult:'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE',HomeResultSource:'OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS',RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'});
+  save('navigation-mode.json',{Schema:1,Mode:'THREE_BUTTON',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_0',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
+  const pathB=ingestQualification(dir);
+  assert.equal(pathB.automatedExpiryCycles,100);
+  assert.equal(pathB.kr003Complete,false);
+  assert.notEqual(JSON.parse(readFileSync(join(dir,'safety-final.json'))).HomeActionResult,'HOME_ACTION_EXERCISED_AND_RESISTED');
+
+  // Restore the historical runner-v11 fixture for its unchanged ingestion checks below.
+  bundle.runnerVersion=11;delete bundle.homeSafetyModel;delete bundle.homeKeyTransportModel;
+  save('manifest.json',{Bundle:bundle,InitialDevice:capturedDevice,Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
+  save('safety-final.json',{Phase:'final',Result:'PHYSICAL_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HomePhysical:'PASS',NavigationMode:'GESTURE',HomeActionResult:'HOME_ACTION_EXERCISED_AND_RESISTED',HomeResultSource:'OWNER_RESPONSE',RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'});
+  rmSync(join(dir,'home-key-transport.json'));rmSync(join(dir,'home-key-operations.json'));rmSync(join(dir,'home-key-restricted.json'));
   save('navigation-mode.json',{Schema:1,Mode:'UNKNOWN',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'UNPARSEABLE',VerificationCount:1,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
   assert.throws(()=>ingestQualification(dir));
   save('navigation-mode.json',{Schema:1,Mode:'GESTURE',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_2',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
@@ -341,12 +372,14 @@ test("100 valid Samsung rows followed by checkpoint-3 screen/keyguard INVALID re
   assert.equal(cleanupFailed.stayAwakeRestoration,'RESTORE_FAILED_OWNER_ACTION_REQUIRED');
   assert.equal(cleanupFailed.kr003Complete,false);
 
-  // Runner-v12 separates mode, control availability, action exercise and outcome; unavailable remains INVALID.
-  bundle.runnerVersion=12;bundle.navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM';
+  // Runner-v12 keeps control-unavailable INVALID when its distinct Home stimulus was not calibrated.
+  bundle.runnerVersion=12;bundle.navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM';bundle.homeSafetyModel='DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME';bundle.homeKeyTransportModel='ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS';
   save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
   save('navigation-mode.json',{Schema:1,Mode:'THREE_BUTTON',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_0',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
-  save('safety-final.json',{Phase:'final',Result:'INCOMPLETE',Reason:'SAFETY_FINAL_HOME_CONTROL',FinalVisibilityPhysical:'PASS',HomePhysical:'INVALID',HoldOracle:'RESTRICTION_HELD',RecoveryReason:'UNRECORDED',ReentryPhysical:'UNRECORDED',ClearTouch:'UNRECORDED',NavigationMode:'THREE_BUTTON',NavigationModeClassification:'NAV_MODE_THREE_BUTTON',HomeControlExercisability:'UNAVAILABLE',HomeControlSource:'OWNER_RESPONSE',HomeActionState:'HOME_ACTION_NOT_EXERCISABLE',HomeActionOutcome:'UNRECORDED',HomeActionResult:'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN',HomeResultSource:'OWNER_RESPONSE'});
-  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'INVALID',Reason:'SAFETY_FINAL_HOME_CONTROL',StatisticsAvailable:true,InternalPairedStatistics:stats,ValidPairedObservations:100});
+  save('home-key-transport.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Status:'REJECTED',Effect:'NOT_ESTABLISHED',InvocationCount:1,CommandResult:'REJECTED',ExitCode:1,StderrClass:'SECURITY_EXCEPTION',BeforeFocused:true,BeforeResumed:true,AfterFocused:null,AfterResumed:null,FocusLossDelta:null,TapDelta:null,ReturnToFixture:'VERIFIED',StartedUtc:'2026-09-09T00:10:00Z',EndedUtc:'2026-09-09T00:10:02Z'});
+  save('home-key-operations.json',[{Sequence:1,Operation:'POSITIVE_CONTROL_KEYCODE_HOME',Phase:'PREFLIGHT',Result:'REJECTED',ExitCode:1,StderrClass:'SECURITY_EXCEPTION',AtUtc:'2026-09-09T00:10:01Z'}]);
+  save('safety-final.json',{Phase:'final',Result:'INCOMPLETE',Reason:'HOME_KEY_TRANSPORT_NOT_CALIBRATED',FinalVisibilityPhysical:'PASS',HomePhysical:'CONTROL_UNAVAILABLE',HomeStimulusPhysical:'NOT_APPLICABLE',HoldOracle:'RESTRICTION_HELD',RecoveryReason:'UNRECORDED',ReentryPhysical:'UNRECORDED',ClearTouch:'UNRECORDED',NavigationMode:'THREE_BUTTON',NavigationModeClassification:'NAV_MODE_THREE_BUTTON',HomeControlExercisability:'UNAVAILABLE',HomeControlSource:'OWNER_RESPONSE',HomeEvidencePath:'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS',HomeGateResult:'INVALID',HomeActionState:'HOME_ACTION_NOT_EXERCISABLE',HomeActionOutcome:'UNRECORDED',HomeActionResult:'HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS',HomeResultSource:'HOST_TRANSPORT_CALIBRATION'});
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'INVALID',Reason:'HOME_KEY_TRANSPORT_NOT_CALIBRATED',StatisticsAvailable:true,InternalPairedStatistics:stats,ValidPairedObservations:100});
   const v12Invalid=ingestQualification(dir);
   assert.equal(v12Invalid.safetyCheckpoint.navigationModeClassification,'NAV_MODE_THREE_BUTTON');
   assert.equal(v12Invalid.safetyCheckpoint.homeControlExercisability,'UNAVAILABLE');

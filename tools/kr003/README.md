@@ -66,7 +66,7 @@ The resulting runner repeats an excluded calibration at the beginning, then perf
 human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
 state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
 
-Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` is prepared for configuration-bound runner-v12, which separates coarse navigation mode, control exercisability, physical action exercise and physical outcome. No runner-v12 bundle is published or executed.
+Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` prepares configuration-bound runner-v12 with OD-39's prospective dual-path Home gate. Navigation mode, control exercisability, physical action exercise, host stimulus and outcome remain separate. Packaging never performs physical execution.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
@@ -84,7 +84,7 @@ The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATI
 
 Q7 first asks for one normal visible expiry checkpoint, then one controlled unblocked negative checkpoint. The 100-cycle section has no P prompts:
 each cycle proves input reaches the fixture before arm, then injects 20 equivalent taps during restriction and requires zero delivery/focus regain.
-The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. Runner-v12 first reports the coarse navigation-mode enum and asks whether the corresponding physical Home control/gesture is actually visible and exercisable; mode never implies availability. Unavailable/unknown stops INVALID before an action instruction. Only after the owner confirms availability does the runner instruct one button/gesture Home action and record exercised/resisted or exercised/escaped. Do not tap the overlay Settings control until its later prompt. These remain separate evidence.
+The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. Runner-v12 reports navigation mode only as context and asks whether Home is physically exercisable. `A` takes Path A: exactly one real button/gesture Home action, then an owner result plus independent hold evidence. `U` takes Path B: the owner records control unavailability, the runner requires its pre-cycle fixture-displacement calibration, injects exactly one host `KEYCODE_HOME` under restriction, verifies restriction/attachment/health and no fixture focus/input return, then asks for the visible result. Path B's success is `HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`, never physical Home resistance. `I`, rejected/no-effect transport or uncertain state is INVALID; escape is FAIL. Do not tap the overlay Settings control until its later prompt.
 
 ## Evidence and bailout
 
