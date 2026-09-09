@@ -493,6 +493,7 @@ availability before issuing any action instruction and retains separate `NAV_MOD
 fields. Unavailable/unknown remains INVALID. A control-absence path or host-injected `KEYCODE_HOME` substitute would require an explicit new
 owner/product evidence decision. No runner-v12 physical bundle has been published or executed.
 
-Native Windows PowerShell 5.1, Node/evidence and repository validation are pending final source commit/CI publication in this entry. No formal
-matrix row advanced; TIME-04 and all remaining lifecycle/tamper/safety/Play/production gates remain open. KR-003 remains Open/In Progress,
-PR #16 remains Draft/Open, and KR-004 remains untouched.
+Source `b16c4536c05db51c8df945197e146c30e0a46c9e` passed all three jobs in
+[CI run 34393768118](https://github.com/felipebarbosa4/KidRemote/actions/runs/34393768118): repository/Node/PowerShell 7 validation, native
+Windows PowerShell 5.1 execution, and Android debug/release test/lint/build/isolation. No formal matrix row advanced; TIME-04 and all remaining
+lifecycle/tamper/safety/Play/production gates remain open. KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
