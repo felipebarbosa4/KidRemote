@@ -422,5 +422,7 @@ of `svc data disable` from rejection of the following `settings get global mobil
 OD-36 records the runner defect: v8 treated the global mobile-data setting as a capability bit. Runner-v9 probes only Android's declared Wi-Fi
 and telephony-data features, treats absent transports as `NOT_APPLICABLE`, retains safe typed network operation/exit/error-class diagnostics,
 and keeps unknown/present-path disable/readback/restoration failures closed. It adds no Samsung special case, permission change, airplane-mode
-substitution or enforcement-semantic change. The new immutable bundle is published from the source/hash recorded in the linked evidence and has
-not been physically executed. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+substitution or enforcement-semantic change. The new [immutable runner-v9 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md)
+is published from source `532bc22df0084b62e202a0cda0158dc61331f180` at `C:\platform-tools\kr003-qualification-bundles\532bc22`;
+`bundle.json` SHA-256 is `1689917375f274e28e82b0ae23e12dba6c1454acb81773217e78adb67507eab7`. It has not been physically executed.
+KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.

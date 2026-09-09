@@ -17,6 +17,7 @@ is one excluded configuration-specific active-oracle sample with explicit owner 
 preparation but supplies zero qualification rows. The resulting immutable [runner-v8 qualification bundle](KR-003-SAMSUNG-QUALIFICATION-V8-BUNDLE-2026-09-08.md)
 was invoked once; its [network-preflight INVALID](KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) remains zero-cycle evidence, not an
 enforcement failure. Runner-v9 is the current unexecuted, capability-aware handoff.
+Its immutable [bundle and hashes](KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md) are published separately from the preserved INVALID run.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

@@ -36,6 +36,8 @@ The runner defect is established: it treated a parseable global `mobile_data` se
 
 Runner-v9 uses Android's declared `android.hardware.wifi` and `android.hardware.telephony.data` features. Android defines the latter as support for Telephony data-service APIs, and the package-manager shell returns `true`/exit 0 for a present feature and `false`/exit 1 for an absent feature. An absent path is now explicitly `NOT_APPLICABLE`; a present path must still be disabled and read back; any unknown/unparseable probe fails closed. [Android PackageManager feature constants](https://developer.android.com/reference/android/content/pm/PackageManager), [Android 16 PackageManager source](https://android.googlesource.com/platform/frameworks/base/+/android16-qpr2-release/core/java/android/content/pm/PackageManager.java), [package-manager shell behavior](https://android.googlesource.com/platform/frameworks/base/+/c7498aedb7145c25b8ca4a812019b368e83e8bde/services/core/java/com/android/server/pm/PackageManagerShellCommand.java), [Samsung SM-X400 support page](https://www.samsung.com/sec/support/model/SM-X400NZAEKOO/).
 
+The bounded fix is source `532bc22df0084b62e202a0cda0158dc61331f180`; its immutable [runner-v9 bundle](KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md) is at `C:\platform-tools\kr003-qualification-bundles\532bc22` with `bundle.json` SHA-256 `1689917375f274e28e82b0ae23e12dba6c1454acb81773217e78adb67507eab7`. It has not been physically executed.
+
 ## Artifact integrity
 
 | File | SHA-256 |
