@@ -4,7 +4,9 @@ Status, 2026-09-08: **BLOCKED before sample 1 on the unchanged Mi 8 configuratio
 The independent oracle prerequisite is unsatisfied; the per-cycle visual fallback conflicts with the maximum-three-human constraint.
 Do not run Q7 on the unchanged configuration. OD-31's separate generic path subsequently produced a Samsung transport PASS and
 [configuration-specific calibration PASS](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md). Its separate runner-v8 qualification
-attempt stopped INVALID in network preflight with zero cycles; runner-v9 corrects that capability assumption. Q7 and its Mi 8 evidence stay
+attempt stopped INVALID in network preflight with zero cycles; runner-v9 corrected that capability assumption. Its next Samsung execution retained
+100 automated PASS rows but stopped `INVALID:SCREEN_OR_KEYGUARD` before checkpoint-3 owner agreement. Runner-v10 adds reversible verified Stay
+awake while plugged in orchestration; the INVALID attempt remains non-resumable. Q7 and its Mi 8 evidence stay
 historical/configuration-specific, and the evidence contract below is not weakened.
 
 - **Goal:** Measure 100 offline expiry cycles without 100 repetitive human confirmations while retaining an independently calibrated enforcement oracle.

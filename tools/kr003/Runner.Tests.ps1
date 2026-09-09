@@ -26,6 +26,8 @@ function Reset-Run([string]$Name) {
     $script:Manifest=[PSCustomObject]@{EndedUtc=$null}
     $script:Terminal='FAIL'; $script:Reason='SETTINGS_RECOVERY'; $script:StartedAt='2026-09-06T00:00:00Z'
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
+    $script:StayAwakeOriginal=$null;$script:StayAwakeApplied=$null;$script:StayAwakeTouched=$false;$script:StayAwakeEvidence=$null
+    $script:StayAwakeRestoreStatus='NOT_CHANGED';$script:StayAwakeRestoration=$null
     $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
@@ -81,6 +83,20 @@ try {
     Assert-Equal (Read-Json 'summary.json').InternalPairedStatistics.P95 195
     Assert-Equal (Read-Json 'summary.json').QualificationRequested $true
 
+    # One hundred valid automated rows cannot be pooled/resumed around an invalid third checkpoint.
+    Reset-Run 'full-one-hundred-checkpoint-invalid'
+    $script:Rows=@(1..100 | ForEach-Object { New-Row $_ })
+    $script:Terminal='INVALID';$script:Reason='SCREEN_OR_KEYGUARD';$script:CalibrationOnly=$false
+    $script:HumanCheckpoints=@(
+        [PSCustomObject]@{Name='PREFLIGHT_NORMAL_PASS';Result='PASS'},
+        [PSCustomObject]@{Name='PREFLIGHT_NEGATIVE_CONTROL';Result='PASS'},
+        [PSCustomObject]@{Name='POST_RUN_SAFETY';Result='INVALID'}
+    )
+    Check-Summary 100 'SCREEN_OR_KEYGUARD'
+    Assert-Equal (Read-Json 'summary.json').Status 'INVALID'
+    Assert-Equal (Read-Json 'summary.json').HumanCheckpointSessions 2
+    Assert-Equal (Get-KRAutomatedRunVerdict $script:Rows $script:HumanCheckpoints $true) 'INCOMPLETE'
+
     Reset-Run 'partial-safety-checkpoint'
     $script:SafetyFileName='safety-calibration.json'
     $script:Safety=[PSCustomObject]@{Phase='calibration';Result='INCOMPLETE';Reason=$null;EndedUtc=$null;HomePhysical='PASS';RecoveryReason='UNRECORDED';ReentryPhysical='UNRECORDED';ClearTouch='UNRECORDED'}
@@ -134,6 +150,85 @@ try {
     Complete-LabRun 6>$null
     Assert-Equal (Read-Json 'network-restoration.json').Status 'RESTORED_AND_FLAGS_VERIFIED'
     Assert-Equal (Read-Json 'network-restoration.json').Settings[1].Observed '0'
+
+    # Stay-awake setup uses only sanitized setting/power state, verifies each cycle boundary, and restores the exact original value.
+    Reset-Run 'stay-awake-restored'
+    $script:SyntheticStayAwake=0;$script:SyntheticPowerSource='USB';$script:StayCommands=@();$script:RejectStayEnable=$false;$script:RejectStayRestore=$false
+    function Invoke-LabAdbResult {
+        param($Arguments)
+        $command=$Arguments -join ' ';$script:StayCommands+=$command
+        if($command -eq 'shell settings get global stay_on_while_plugged_in'){return [PSCustomObject]@{Stdout=[string]$script:SyntheticStayAwake;ExitCode=0;StderrClass='NONE'}}
+        if($command -eq 'shell dumpsys battery'){
+            $usb=if($script:SyntheticPowerSource -eq 'USB'){'true'}else{'false'}
+            return [PSCustomObject]@{Stdout="AC powered: false`nUSB powered: $usb`nWireless powered: false`nDock powered: false";ExitCode=0;StderrClass='NONE'}
+        }
+        if($command -eq 'shell svc power stayon true'){
+            if($script:RejectStayEnable){return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='PERMISSION_DENIAL'}}
+            $script:SyntheticStayAwake=15;return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'}
+        }
+        if($command -like 'shell settings put global stay_on_while_plugged_in *'){
+            if($script:RejectStayRestore){return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='PERMISSION_DENIAL'}}
+            $script:SyntheticStayAwake=[int]$Arguments[-1];return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'}
+        }
+        throw 'UNEXPECTED_DEVICE_COMMAND_IN_UNIT_TEST'
+    }
+    Enter-StayAwake
+    Assert-Equal $script:StayAwakeEvidence.Establishment 'VERIFIED'
+    Assert-Equal $script:StayAwakeEvidence.PowerSourceAfter 'USB'
+    Assert-StayAwake
+    Assert-Equal $script:StayAwakeEvidence.VerificationCount 2
+    Restore-StayAwake
+    Assert-Equal $script:SyntheticStayAwake 0
+    Assert-Equal $script:StayAwakeRestoreStatus 'RESTORED_AND_SETTING_VERIFIED'
+
+    # An already-enabled/awake device is verified without an unnecessary mutation.
+    Reset-Run 'stay-awake-already-enabled'
+    $script:SyntheticStayAwake=15;$script:SyntheticPowerSource='USB';$script:StayCommands=@();$script:RejectStayEnable=$false;$script:RejectStayRestore=$false
+    Enter-StayAwake
+    Assert-Equal $script:StayAwakeTouched $false
+    Assert-Equal ($script:StayCommands -contains 'shell svc power stayon true') $false
+
+    # Enable rejection, post-enable mismatch, unplug/timeout and restoration rejection all remain fail closed.
+    Reset-Run 'stay-awake-enable-rejected'
+    $script:SyntheticStayAwake=0;$script:SyntheticPowerSource='USB';$script:RejectStayEnable=$true;$script:RejectStayRestore=$false
+    $stayFailure=$null;try{Enter-StayAwake}catch{$stayFailure=$_.Exception.Message}
+    Assert-Equal $stayFailure 'INVALID:STAY_AWAKE_ENABLE_FAILED'
+    Restore-StayAwake
+    Assert-Equal $script:StayAwakeRestoreStatus 'RESTORED_AND_SETTING_VERIFIED'
+
+    Reset-Run 'stay-awake-verification-failed'
+    $script:SyntheticStayAwake=0;$script:SyntheticPowerSource='USB';$script:RejectStayEnable=$false;$script:RejectStayRestore=$false
+    function Invoke-LabAdbResult {
+        param($Arguments)
+        $command=$Arguments -join ' '
+        if($command -eq 'shell settings get global stay_on_while_plugged_in'){return [PSCustomObject]@{Stdout='0';ExitCode=0;StderrClass='NONE'}}
+        if($command -eq 'shell dumpsys battery'){return [PSCustomObject]@{Stdout="AC powered: false`nUSB powered: true`nWireless powered: false`nDock powered: false";ExitCode=0;StderrClass='NONE'}}
+        return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'}
+    }
+    $stayFailure=$null;try{Enter-StayAwake}catch{$stayFailure=$_.Exception.Message}
+    Assert-Equal $stayFailure 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
+
+    $state=[PSCustomObject]@{Setting=15;PowerSource='UNPLUGGED';PlugMask=0}
+    $stayFailure=$null;try{Assert-KRStayAwakeState $state}catch{$stayFailure=$_.Exception.Message}
+    Assert-Equal $stayFailure 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
+
+    Reset-Run 'stay-awake-restore-failed'
+    $script:SyntheticStayAwake=0;$script:SyntheticPowerSource='USB';$script:RejectStayEnable=$false;$script:RejectStayRestore=$true
+    # Replace only the external process boundary for this synthetic restoration test.
+    function Invoke-LabAdbResult {
+        param($Arguments)
+        $command=$Arguments -join ' '
+        if($command -eq 'shell settings get global stay_on_while_plugged_in'){return [PSCustomObject]@{Stdout=[string]$script:SyntheticStayAwake;ExitCode=0;StderrClass='NONE'}}
+        if($command -eq 'shell dumpsys battery'){return [PSCustomObject]@{Stdout="AC powered: false`nUSB powered: true`nWireless powered: false`nDock powered: false";ExitCode=0;StderrClass='NONE'}}
+        if($command -eq 'shell svc power stayon true'){$script:SyntheticStayAwake=15;return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'}}
+        if($command -like 'shell settings put global stay_on_while_plugged_in *'){return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='PERMISSION_DENIAL'}}
+    }
+    Enter-StayAwake;Restore-StayAwake
+    Assert-Equal $script:StayAwakeRestoreStatus 'RESTORE_FAILED_OWNER_ACTION_REQUIRED'
+    $script:Terminal='INVALID';$script:Reason='SCREEN_OR_KEYGUARD';Complete-LabRun 6>$null
+    Assert-Equal (Read-Json 'summary.json').Status 'INVALID'
+    Assert-Equal (Read-Json 'summary.json').Reason 'SCREEN_OR_KEYGUARD'
+    Assert-Equal ((Read-Json 'summary.json').FinalizationErrors -contains 'STAY_AWAKE_UNVERIFIED') $true
 
     # Exercise the real post-observer oracle path against the incident's fresh-but-blocked signal pattern.
     Reset-Run 'recovery-oracle-disagreement'
@@ -210,10 +305,12 @@ try {
     function Wait-FixtureFocus { param($Focused) }
     function Assert-FixturePositiveControl { param($Before,$FailureCode); $copy=$Before.PSObject.Copy(); $copy.taps=$Before.taps+1; return $copy }
     function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds) return New-SafetyFrame (-not $script:ClearMode) }
-    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); if($null -ne $Poll){& $Poll | Out-Null}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
+    $script:DelayedPromptPolls=0
+    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); if($null -ne $Poll){1..3|ForEach-Object{$script:DelayedPromptPolls++;& $Poll | Out-Null}}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
     function Invoke-FocusedRecoveryDiagnostic { param($OutputName); $script:Diagnostic=[PSCustomObject]@{Result='EVIDENCE_CAPTURED';Reason='PHYSICAL_PASS_RECORDED'} }
     function Check-EarlyStop {}
     function Start-Sleep {}
+    function Assert-StayAwake {}
     Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null
     $safety=Read-Json 'safety-final.json'
     Assert-Equal $safety.FinalVisibilityPhysical 'PASS'
@@ -223,6 +320,7 @@ try {
     Assert-Equal $safety.ClearTouch 'FIXTURE_COUNTER_INCREMENT'
     Assert-Equal $safety.IndependentExpirySamples 0
     Assert-Equal $safety.Result 'PHYSICAL_PASS_RECORDED'
+    Assert-Equal ($script:DelayedPromptPolls -ge 3) $true
     Assert-Equal $script:HumanCheckpoints.Count 1
     Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
 

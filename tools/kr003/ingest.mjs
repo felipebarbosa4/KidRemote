@@ -8,7 +8,7 @@ const hash = path => createHash("sha256").update(readFileSync(path)).digest("hex
 function validateQ9NetworkEvidence(directory,read,required) {
   const capabilitiesPath=resolve(directory,'network-capabilities.json'),operationsPath=resolve(directory,'network-operations.json');
   if(!existsSync(capabilitiesPath)||!existsSync(operationsPath)) {
-    assert(!required,'Final runner-v9 evidence requires network capability and operation journals');
+    assert(!required,'Final runner-v9+ evidence requires network capability and operation journals');
     return null;
   }
   const capabilities=read('network-capabilities.json'),operations=read('network-operations.json');
@@ -32,9 +32,31 @@ function validateQ9NetworkEvidence(directory,read,required) {
   return {capabilities,operations};
 }
 
+function validateQ10StayAwakeEvidence(directory,read,required) {
+  const statePath=resolve(directory,'stay-awake.json'),restorationPath=resolve(directory,'stay-awake-restoration.json');
+  if(!existsSync(statePath)||!existsSync(restorationPath)) {
+    assert(!required,'Runner-v10 evidence after cycle start requires stay-awake establishment and restoration journals');
+    return null;
+  }
+  const state=read('stay-awake.json'),restoration=read('stay-awake-restoration.json');
+  assert.deepEqual(Object.keys(state),['Schema','Mechanism','OriginalSetting','AppliedSetting','Changed','PowerSourceBefore','PowerSourceAfter','Establishment','VerificationSource','VerificationCount','LastPowerSource','LastVerifiedUtc']);
+  assert.equal(state.Schema,1);assert.equal(state.Mechanism,'ANDROID_STAY_ON_WHILE_PLUGGED_IN');
+  assert(Number.isInteger(state.OriginalSetting)&&state.OriginalSetting>=0&&state.OriginalSetting<=15);
+  assert(Number.isInteger(state.AppliedSetting)&&state.AppliedSetting>=0&&state.AppliedSetting<=15);
+  assert.equal(typeof state.Changed,'boolean');assert.equal(state.Establishment,'VERIFIED');
+  for(const key of ['PowerSourceBefore','PowerSourceAfter','LastPowerSource']) assert(['AC','USB','WIRELESS','DOCK','MULTIPLE'].includes(state[key]));
+  assert.equal(state.VerificationSource,'GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY');
+  assert(Number.isInteger(state.VerificationCount)&&state.VerificationCount>=1);assert.match(state.LastVerifiedUtc,/^\d{4}-\d{2}-\d{2}T/);
+  assert.deepEqual(Object.keys(restoration),['Schema','Status','OriginalSetting','ObservedSetting','Changed','VerificationSource','AtUtc']);
+  assert.equal(restoration.Schema,1);assert.equal(restoration.Status,'RESTORED_AND_SETTING_VERIFIED');
+  assert.equal(restoration.OriginalSetting,state.OriginalSetting);assert.equal(restoration.ObservedSetting,state.OriginalSetting);
+  assert.equal(restoration.Changed,state.Changed);assert.equal(restoration.VerificationSource,'GLOBAL_SETTING_READBACK');
+  return {state,restoration};
+}
+
 function ingestQ7(directory, manifest, rows, summary, read) {
   const configurationBound=manifest.Bundle.protocol==='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';
-  if(configurationBound) assert([8,9].includes(manifest.Bundle.runnerVersion));
+  if(configurationBound) assert([8,9,10].includes(manifest.Bundle.runnerVersion));
   else assert.equal(manifest.Bundle.runnerVersion,7);
   assert.equal(manifest.Bundle.diagnosticOnly,false);
   assert.equal(manifest.Bundle.requiresOffline,true);
@@ -45,7 +67,11 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(manifest.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
   assert.equal(summary.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
   if(configurationBound) {
-    if(manifest.Bundle.runnerVersion===9) assert.equal(manifest.Bundle.networkCapabilityModel,'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA');
+    if(manifest.Bundle.runnerVersion>=9) assert.equal(manifest.Bundle.networkCapabilityModel,'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA');
+    if(manifest.Bundle.runnerVersion===10) {
+      assert.equal(manifest.Bundle.awakeStateModel,'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE');
+      assert.equal(manifest.StayAwakeRequested,true);
+    }
     const expected=manifest.Bundle.approvedConfiguration;
     assert.deepEqual(Object.keys(expected),['schema','manufacturer','model','androidVersion','apiLevel','securityPatch','buildId']);
     assert.equal(expected.schema,1);
@@ -72,18 +98,27 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(new Set(rows.map(r=>`${r.Phase}:${r.Attempt}`)).size,rows.length,'Duplicate attempt');
   const qualificationRows=rows.filter(r=>r.Phase==='QUALIFICATION');
   const completed=qualificationRows.filter(r=>r.AutomatedOracle==='PASS'&&r.InputOracle==='PASS');
-  const q9Network=configurationBound&&manifest.Bundle.runnerVersion===9?validateQ9NetworkEvidence(directory,read,false):null;
+  const q9Network=configurationBound&&manifest.Bundle.runnerVersion>=9?validateQ9NetworkEvidence(directory,read,false):null;
   assert(completed.every((r,i)=>r.Attempt===i+1),'Completed active-oracle attempts must be consecutive');
   assert.equal(new Set(completed.map(r=>r.Revision)).size,completed.length,'Duplicate active-oracle revision');
   const finalStatuses=['PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY','FAILED_P95'];
   if(!finalStatuses.includes(summary.Status)) {
     const checkpoints=existsSync(resolve(directory,'human-checkpoints.json'))?read('human-checkpoints.json'):[];
+    const structurallyValid=completed.filter(r=>r.PhysicalObserver==='NOT_SAMPLED'&&Number.isInteger(r.LatencyMs)&&r.LatencyMs>=0&&r.HoldMillis>=10000&&r.InjectedBlockedTaps>=20&&r.PositiveControlTap==='REACHED_FIXTURE');
+    if(completed.length===100) assert.equal(structurallyValid.length,100,'A retained 100-cycle automated set must preserve every active-oracle field');
+    const sorted=structurallyValid.map(r=>r.LatencyMs).sort((a,b)=>a-b);
+    const stats=sorted.length===completed.length&&sorted.length?{Count:sorted.length,P50:sorted[Math.ceil(.5*sorted.length)-1],P95:sorted[Math.ceil(.95*sorted.length)-1],Max:sorted.at(-1)}:null;
+    if(stats&&summary.StatisticsAvailable) assert.deepEqual(summary.InternalPairedStatistics,stats,'Host summary percentile mismatch');
+    if(configurationBound&&manifest.Bundle.runnerVersion===10) validateQ10StayAwakeEvidence(directory,read,completed.length>0);
     return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
-      automatedExpiryCycles:completed.length,humanCheckpointSessions:checkpoints.length,partial:true,
+      automatedExpiryCycles:completed.length,qualificationRows:qualificationRows.length,automatedStats:stats,
+      humanCheckpointSessions:checkpoints.filter(c=>c.Result==='PASS').length,
+      checkpointResults:checkpoints.map(c=>({name:c.Name,result:c.Result,evidence:c.Evidence??'UNSPECIFIED'})),partial:true,
       networkCapabilities:q9Network?.capabilities??'UNSPECIFIED',kr003Complete:false};
   }
   if(configurationBound) {
-    if(manifest.Bundle.runnerVersion===9) validateQ9NetworkEvidence(directory,read,true);
+    if(manifest.Bundle.runnerVersion>=9) validateQ9NetworkEvidence(directory,read,true);
+    if(manifest.Bundle.runnerVersion===10) validateQ10StayAwakeEvidence(directory,read,true);
     const expected=manifest.Bundle.approvedConfiguration;
     const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
     for(const device of [manifest.InitialDevice,manifest.Device]) {

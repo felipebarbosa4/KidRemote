@@ -49,7 +49,7 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     $bundle=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
     $diagnosticBundle=($bundle.protocol -eq 'KR003-Q3-RECOVERY-DIAGNOSTIC' -and $bundle.diagnosticOnly)
-    $qualificationBundle=($bundle.protocol -eq 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -and $bundle.runnerVersion -eq 9 -and -not $bundle.diagnosticOnly)
+    $qualificationBundle=($bundle.protocol -eq 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -and $bundle.runnerVersion -eq 10 -and -not $bundle.diagnosticOnly)
     if (-not $diagnosticBundle -and -not $qualificationBundle) { throw 'INVALID:BUNDLE_SCHEMA' }
     foreach($name in @('Clear-KR003-Lab.ps1','Qualification.psm1')) {
         $entries=@($bundle.files | Where-Object { $_.name -ceq $name })

@@ -35,7 +35,11 @@ The first [configuration-bound qualification attempt](../test-plans/evidence/KR-
 stopped `INVALID:ADB_REJECTED` in mobile-data isolation after the Wi-Fi disable/readback boundary and before ARM or cycle 1. The v8 runner had
 mistaken a parseable global `mobile_data` setting for proof of telephony capability and discarded the exact operation exit/stderr. Runner-v9
 instead probes Android's declared Wi-Fi and telephony-data system features, skips absent paths as `NOT_APPLICABLE`, and preserves the disable,
-readback, restoration and fail-closed requirements for every present path. No enforcement result or matrix row advances.
+readback, restoration and fail-closed requirements for every present path. Its physical [runner-v9 execution](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md)
+then retained 100 automated active-oracle PASS rows with p95 317 ms and checkpoints 1/2 PASS, but stopped `INVALID:SCREEN_OR_KEYGUARD` before
+any checkpoint-3 owner response. The approximately five-minute prompt interval and combined eligibility loss do not distinguish display timeout
+from keyguard, so the whole run remains non-resumable INVALID. Runner-v10 adds only reversible, verified Android Stay awake while plugged in lab
+orchestration and exact-setting restoration. No formal matrix row, enforcement support boundary or production result advances.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

@@ -60,6 +60,12 @@ $script:StartedAt = [DateTime]::UtcNow.ToString('o')
 $script:Terminal = 'INCOMPLETE'
 $script:Reason = 'NOT_STARTED'
 $script:RequiredPermissionsEstablished = $false
+$script:StayAwakeOriginal = $null
+$script:StayAwakeApplied = $null
+$script:StayAwakeTouched = $false
+$script:StayAwakeEvidence = $null
+$script:StayAwakeRestoreStatus = 'NOT_CHANGED'
+$script:StayAwakeRestoration = $null
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -220,6 +226,88 @@ function Assert-FixedSettings {
         $value = (Invoke-LabAdb @('shell','settings','get','global',$key)).Trim()
         if ($value -notmatch '^[0-9]+$') { $value = 'UNSPECIFIED' }
         if ($value -cne $script:Device.$key) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
+    }
+    Assert-StayAwake
+}
+
+function Get-StayAwakeSetting {
+    $result=Invoke-LabAdbResult -Arguments @('shell','settings','get','global','stay_on_while_plugged_in')
+    if($result.ExitCode -ne 0 -or $result.StderrClass -ne 'NONE'){throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN'}
+    return Convert-KRStayAwakeSetting $result.Stdout
+}
+
+function Get-StayAwakeState {
+    $setting=Get-StayAwakeSetting
+    $battery=Invoke-LabAdbResult -Arguments @('shell','dumpsys','battery')
+    if($battery.ExitCode -ne 0 -or $battery.StderrClass -ne 'NONE'){throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN'}
+    $power=Convert-KRPowerSourceProbe $battery.Stdout
+    return [PSCustomObject]@{Setting=[int]$setting;PowerSource=$power.PowerSource;PlugMask=[int]$power.PlugMask}
+}
+
+function Save-StayAwakeEvidence {
+    if($null -ne $script:StayAwakeEvidence){Write-JsonFile 'stay-awake.json' $script:StayAwakeEvidence}
+}
+
+function Enter-StayAwake {
+    $before=Get-StayAwakeState
+    if($before.PowerSource -eq 'UNPLUGGED'){throw 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'}
+    $script:StayAwakeOriginal=[int]$before.Setting
+    $script:StayAwakeEvidence=[PSCustomObject]@{
+        Schema=1;Mechanism='ANDROID_STAY_ON_WHILE_PLUGGED_IN';OriginalSetting=[int]$before.Setting;AppliedSetting=$null
+        Changed=$false;PowerSourceBefore=$before.PowerSource;PowerSourceAfter='UNSPECIFIED';Establishment='STARTED'
+        VerificationSource='GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY';VerificationCount=0;LastPowerSource='UNSPECIFIED';LastVerifiedUtc=$null
+    }
+    Save-StayAwakeEvidence
+    if($before.Setting -ne 15){
+        # Journal intent before the reversible mutation. Android's svc command wakes the display and enables the supported plugged-source mask.
+        $script:StayAwakeTouched=$true
+        $script:StayAwakeEvidence.Changed=$true
+        Save-StayAwakeEvidence
+        $enable=Invoke-LabAdbResult -Arguments @('shell','svc','power','stayon','true')
+        if($enable.ExitCode -ne 0 -or $enable.StderrClass -ne 'NONE'){throw 'INVALID:STAY_AWAKE_ENABLE_FAILED'}
+    }
+    $after=Get-StayAwakeState
+    Assert-KRStayAwakeState $after
+    $script:StayAwakeApplied=[int]$after.Setting
+    $script:StayAwakeEvidence.AppliedSetting=[int]$after.Setting
+    $script:StayAwakeEvidence.PowerSourceAfter=$after.PowerSource
+    $script:StayAwakeEvidence.Establishment='VERIFIED'
+    $script:StayAwakeEvidence.VerificationCount=1
+    $script:StayAwakeEvidence.LastPowerSource=$after.PowerSource
+    $script:StayAwakeEvidence.LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-StayAwakeEvidence
+}
+
+function Assert-StayAwake {
+    if($null -eq $script:StayAwakeApplied){throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN'}
+    $state=Get-StayAwakeState
+    Assert-KRStayAwakeState $state $script:StayAwakeApplied
+    $script:StayAwakeEvidence.VerificationCount=[int]$script:StayAwakeEvidence.VerificationCount+1
+    $script:StayAwakeEvidence.LastPowerSource=$state.PowerSource
+    $script:StayAwakeEvidence.LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-StayAwakeEvidence
+}
+
+function Restore-StayAwake {
+    if($null -eq $script:StayAwakeOriginal){return}
+    $record=[PSCustomObject]@{
+        Schema=1;Status='STARTED';OriginalSetting=[int]$script:StayAwakeOriginal;ObservedSetting=$null
+        Changed=[bool]$script:StayAwakeTouched;VerificationSource='GLOBAL_SETTING_READBACK';AtUtc=$null
+    }
+    try{
+        if($script:StayAwakeTouched){
+            $restore=Invoke-LabAdbResult -Arguments @('shell','settings','put','global','stay_on_while_plugged_in',([string]$script:StayAwakeOriginal))
+            if($restore.ExitCode -ne 0 -or $restore.StderrClass -ne 'NONE'){throw 'INVALID:STAY_AWAKE_RESTORE_FAILED'}
+        }
+        $record.ObservedSetting=Get-StayAwakeSetting
+        if($record.ObservedSetting -ne $script:StayAwakeOriginal){throw 'INVALID:STAY_AWAKE_RESTORE_FAILED'}
+        $record.Status='RESTORED_AND_SETTING_VERIFIED'
+    }catch{
+        $record.Status='RESTORE_FAILED_OWNER_ACTION_REQUIRED'
+    }finally{
+        $record.AtUtc=[DateTime]::UtcNow.ToString('o')
+        $script:StayAwakeRestoration=$record
+        $script:StayAwakeRestoreStatus=$record.Status
     }
 }
 
@@ -560,6 +648,7 @@ function Invoke-Expiry {
         }
     }
     # Check again after any owner response; do not trust a stale pre-prompt sample.
+    Assert-StayAwake
     $snapshot = Get-LabState
     $fixtureFinal=Get-FixtureState
     Assert-KRHold -Snapshot $snapshot -Revision $revision -FixtureTaps $fixture.taps -FixtureState $fixtureFinal
@@ -804,6 +893,7 @@ function Stop-ForSafetyResult {
 
 function Invoke-QualificationSafetyCheckpoint {
     param([ValidateSet('calibration','final')][string]$Phase)
+    Assert-StayAwake
     $start=Get-LabState
     Assert-KRHealth $start
     if (-not $start.restriction -or -not $start.attached -or $start.disposition -ne 'ORDINARY_APP') {
@@ -963,6 +1053,7 @@ function Write-FinalSummary {
         ('Focused diagnostic result: ' + $Summary.DiagnosticResult + '; reason: ' + $Summary.DiagnosticReason)
         ('Lab-only bailout: ' + $Summary.DiagnosticBailoutStatus + '; never consumer recovery evidence.')
         ('Network restoration: ' + $Summary.NetworkRestoration)
+        ('Stay-awake restoration: ' + $Summary.StayAwakeRestoration)
         ('Finalization errors: ' + ($script:FinalizationErrors -join ', '))
         'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'
         'Partial/current attempts and physical recovery responses are retained. No KR-003 closure or Play approval is implied.'
@@ -990,6 +1081,11 @@ function Complete-LabRun {
             $script:FinalizationErrors += 'DIAGNOSTIC_BAILOUT_UNVERIFIED'
         }
     }
+    try { Restore-StayAwake } catch {
+        $script:StayAwakeRestoreStatus='RESTORE_FAILED_OWNER_ACTION_REQUIRED'
+        $script:FinalizationErrors += 'STAY_AWAKE_RESTORE'
+    }
+    if ($script:StayAwakeRestoreStatus -eq 'RESTORE_FAILED_OWNER_ACTION_REQUIRED') { $script:FinalizationErrors += 'STAY_AWAKE_UNVERIFIED' }
     try { Restore-Network } catch {
         $script:RadioRestoreStatus='RESTORE_FAILED_OWNER_ACTION_REQUIRED'
         $script:FinalizationErrors += 'NETWORK_RESTORE'
@@ -998,6 +1094,9 @@ function Complete-LabRun {
     if (-not (Test-Path -LiteralPath $runDirectory -ErrorAction SilentlyContinue)) { return }
     Invoke-FinalStep 'NETWORK_REPORT' {
         Write-JsonFile 'network-restoration.json' ([PSCustomObject]@{Status=$script:RadioRestoreStatus; Settings=@($script:RadioResults)})
+    }
+    Invoke-FinalStep 'STAY_AWAKE_REPORT' {
+        if($null -ne $script:StayAwakeRestoration){Write-JsonFile 'stay-awake-restoration.json' $script:StayAwakeRestoration}
     }
     Invoke-FinalStep 'MANIFEST_REPORT' {
         if ($null -ne $script:Manifest) {
@@ -1040,6 +1139,7 @@ function Complete-LabRun {
         ValidPairedObservations=$null; InternalPairedStatistics=$null; StatisticsAvailable=$false
         CalibrationExcluded=$true; SafetyChecksPassed=$script:SafetyPassed; Offline=$script:Offline
         Kr003Complete=$false; ProductionApproved=$false; NetworkRestoration=$script:RadioRestoreStatus
+        StayAwakeRestoration=$script:StayAwakeRestoreStatus
         FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly -and -not $RecoveryDiagnostic)
         RecoveryDiagnosticRequested=[bool]$RecoveryDiagnostic
         DiagnosticResult=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Result })
@@ -1058,7 +1158,7 @@ function Complete-LabRun {
     Invoke-FinalStep 'SUMMARY_REPORT' { Write-FinalSummary $summary }
     Write-Host ('Evidence saved: ' + $runDirectory)
     Write-Host ('Primary result: ' + $script:Terminal + ':' + $script:Reason)
-    Write-Host 'The agent reads this directory directly. If network restoration is unverified, preserve network-original.json for owner-assisted recovery.'
+    Write-Host 'The agent reads this directory directly. If network or stay-awake restoration is unverified, preserve the original-state journals for owner-assisted recovery.'
 }
 
 try {
@@ -1072,7 +1172,7 @@ try {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
         if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'INVALID:BUNDLE_INTEGRITY' }
     }
-    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true; EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS' }
+    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; StayAwakeRequested = $true; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true; EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS' }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
     $script:Device = Read-DeviceConfiguration
@@ -1091,6 +1191,10 @@ try {
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
     Assert-QualificationPermissionState $ready
+    Write-Host 'Temporarily enabling Android Stay awake while plugged in. The exact original setting is journalled and restored during finalization.'
+    Enter-StayAwake
+    $awakeReady=Get-LabState
+    Assert-KRHealth $awakeReady
     Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
     Enter-OfflineNetwork
     $script:Manifest.Device=$script:Device
@@ -1121,6 +1225,7 @@ try {
         throw
     }
     $script:SafetyPassed=$true
+    Assert-StayAwake
     $final=Get-LabState
     Assert-QualificationPermissionState $final
     Write-JsonFile 'final-metrics.json' $final
@@ -1164,5 +1269,6 @@ try {
 # Machine callers must not interpret a stopped, online-only, cleanup-failed or reporting-failed run as qualification.
 if ($script:Terminal -eq 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
     $script:RadioRestoreStatus -eq 'RESTORED_AND_FLAGS_VERIFIED' -and $script:FinalizationErrors.Count -eq 0 -and
+    $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and
     $null -ne $script:DiagnosticBailout -and $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
 exit 2

@@ -33,8 +33,9 @@ $calibratedBy=[PSCustomObject]@{
     candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
 $configurationBundle=[PSCustomObject]@{
-    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=9;diagnosticOnly=$false;requiresOffline=$true
+    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=10;diagnosticOnly=$false;requiresOffline=$true
     networkCapabilityModel='ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA'
+    awakeStateModel='ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE'
     oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
     approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
@@ -72,6 +73,22 @@ Assert-Reject { Assert-KRNetworkOffline ([PSCustomObject]@{Wifi='PRESENT';Mobile
 Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='UNKNOWN'}) ([PSCustomObject]@{wifi_on='1';mobile_data='1'}) } 'INVALID:NETWORK_CAPABILITY_UNKNOWN'
 Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT'}) ([PSCustomObject]@{wifi_on='1';mobile_data='1'}) } 'INVALID:NETWORK_CAPABILITY_UNKNOWN'
 Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'}) ([PSCustomObject]@{wifi_on='1';mobile_data='UNSPECIFIED'}) } 'INVALID:RADIO_INITIAL_STATE_UNKNOWN'
+
+# Android's public plugged-source bitmask and sanitized battery dump are sufficient to verify the lab stay-awake condition.
+Assert-Equal (Convert-KRStayAwakeSetting "15`r`n") 15
+Assert-Reject { Convert-KRStayAwakeSetting 'null' } 'INVALID:STAY_AWAKE_STATE_UNKNOWN'
+Assert-Reject { Convert-KRStayAwakeSetting '16' } 'INVALID:STAY_AWAKE_STATE_UNKNOWN'
+$android10Power=Convert-KRPowerSourceProbe "Current Battery Service state:`n AC powered: false`n USB powered: true`n Wireless powered: false`n"
+Assert-Equal $android10Power.PowerSource 'USB'
+Assert-Equal $android10Power.PlugMask 2
+$android16Power=Convert-KRPowerSourceProbe "Current Battery Service state:`n AC powered: false`n USB powered: true`n Wireless powered: false`n Dock powered: false`n"
+Assert-Equal $android16Power.PowerSource 'USB'
+$unpluggedPower=Convert-KRPowerSourceProbe "AC powered: false`nUSB powered: false`nWireless powered: false`nDock powered: false"
+Assert-Equal $unpluggedPower.PowerSource 'UNPLUGGED'
+Assert-Reject { Convert-KRPowerSourceProbe "AC powered: false`nUSB powered: true" } 'INVALID:STAY_AWAKE_STATE_UNKNOWN'
+Assert-KRStayAwakeState ([PSCustomObject]@{Setting=15;PowerSource='USB';PlugMask=2}) 15
+Assert-Reject { Assert-KRStayAwakeState ([PSCustomObject]@{Setting=1;PowerSource='USB';PlugMask=2}) } 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
+Assert-Reject { Assert-KRStayAwakeState ([PSCustomObject]@{Setting=15;PowerSource='UNPLUGGED';PlugMask=0}) } 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
 
 Assert-Equal (Get-KRStatistics @()).Count 0
 Assert-Equal (Get-KRStatistics @(1..100)).P95 95
@@ -115,6 +132,10 @@ $s.removals=1
 Assert-Reject { Assert-KRHold $s 2 0 $f } 'FAIL:RESTRICTION_LOST'
 $s = New-Snapshot; $s.heartbeat=$false
 Assert-Reject { Assert-KRHold $s 2 0 $f } 'FAIL:PERMISSION_OR_SERVICE_LOST'
+$s = New-Snapshot; $s.eligible=$false
+Assert-Reject { Assert-KRHealth $s } 'INVALID:SCREEN_OR_KEYGUARD'
+$s = New-Snapshot; $s.eligible=$false; $s.eligibilityLost=$true
+Assert-Reject { Assert-KRHold $s 2 0 $f } 'INVALID:SCREEN_OR_KEYGUARD'
 $s = New-Snapshot; $s.eligibilityLost=$true
 Assert-Reject { Assert-KRHold $s 2 0 $f } 'INVALID:ELIGIBILITY_INTERRUPTED'
 $s = New-Snapshot; $f.focused=$true
@@ -309,6 +330,7 @@ Assert-Equal $topLevelExits.Count 1
 Assert-Equal ($topLevelExits[0].Extent.StartOffset -gt ($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.TryStatementAst] })[-1].Extent.EndOffset) $true
 $mainTry=($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.TryStatementAst] })[-1].Body.Extent.Text
 Assert-Equal ($mainTry.IndexOf('Enter-OfflineNetwork') -lt $mainTry.IndexOf('Invoke-Expiry -Attempt 0')) $true
+Assert-Equal ($mainTry.IndexOf('Enter-StayAwake') -lt $mainTry.IndexOf('Enter-OfflineNetwork')) $true
 
 # Exercise actual process argument binding with portable PowerShell as a harmless subprocess, never ADB.
 foreach($name in @('Invoke-LabAdbResult','Invoke-LabAdb')) {
@@ -421,6 +443,7 @@ Invoke-Expression $functionAst.Extent.Text
 function Save-Progress {}
 function Clear-ToOrdinary {}
 function Assert-FixedSettings {}
+function Assert-StayAwake {}
 function Assert-QualificationPermissionState { param($Snapshot) }
 function Check-EarlyStop {}
 function Start-Sleep {}

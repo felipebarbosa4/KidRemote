@@ -30,13 +30,13 @@ The fixture is a separate package/UID with no candidate callback, shared storage
 
 ## Owner interaction and duration
 
-Keep the device unlocked, interactive and connected to the owner-controlled Windows host. The owner interacts only:
+Begin with the device unlocked, interactive and connected to external power and the owner-controlled Windows host. The runner temporarily enables Android's Stay awake while plugged in setting, retains only the original/applied integer and coarse power-source class, verifies both throughout unattended cycles, and restores/verifies the exact original setting in finalization. It does not remove or weaken PIN/pattern/password security. Unknown state, unplugging, enable/readback failure or restoration failure is INVALID. The owner interacts only:
 
 1. At the initial preflight session: confirm the runner-established offline state, watch the excluded ten-second restricted hold and answer the continuous-block prompt, then confirm the controlled CLEAR/tap is visibly ordinary.
-2. During attempts 1–100: no interaction or confirmation is required; do not use the device. This unattended section is expected to take approximately 35–45 minutes.
+2. During attempts 1–100: no interaction or confirmation is required; do not use the device. The measured runner-v9 section took approximately 60 minutes; allow approximately 60–70 minutes.
 3. At the post-run session: watch the held restriction for ten seconds and complete only the guided Home, root Settings, Digital Wellbeing, overlay recovery and ordinary re-entry checks before the automated CLEAR.
 
-Total elapsed time is expected to be approximately 45–60 minutes depending on setup and owner response time.
+Total elapsed time is expected to be approximately 75–90 minutes depending on setup and owner response time.
 
 ## Verdicts and stopping rules
 

@@ -5,8 +5,9 @@ function Assert-KRConfigurationQualificationBundle {
     param($Bundle)
     if ($null -eq $Bundle -or $Bundle.schema -ne 1 -or
         $Bundle.protocol -ne 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -or
-        $Bundle.runnerVersion -ne 9 -or $Bundle.diagnosticOnly -or -not $Bundle.requiresOffline -or
+        $Bundle.runnerVersion -ne 10 -or $Bundle.diagnosticOnly -or -not $Bundle.requiresOffline -or
         $Bundle.networkCapabilityModel -ne 'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA' -or
+        $Bundle.awakeStateModel -ne 'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE' -or
         $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
         $Bundle.humanCheckpointMaximum -ne 3 -or $Bundle.physicalExecution -ne 'NOT_RUN') {
         throw 'INVALID:BUNDLE_SCHEMA'
@@ -45,6 +46,45 @@ function Assert-KRConfigurationQualificationBundle {
         $Bundle.fixtureSha256 -cne $calibration.fixtureSha256) {
         throw 'INVALID:BUNDLE_CALIBRATION_APK_MISMATCH'
     }
+}
+
+function Convert-KRStayAwakeSetting {
+    param([AllowNull()][string]$Raw)
+    $value=([string]$Raw).Trim()
+    if ($value -notmatch '^\d{1,2}$') { throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN' }
+    $setting=[int]$value
+    if ($setting -lt 0 -or $setting -gt 15) { throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN' }
+    return $setting
+}
+
+function Convert-KRPowerSourceProbe {
+    param([AllowNull()][string]$Raw)
+    $fields=[ordered]@{AC=1;USB=2;WIRELESS=4;DOCK=8}
+    $active=@()
+    $mask=0
+    foreach($name in $fields.Keys) {
+        $matchesFound=[regex]::Matches([string]$Raw,('(?im)^\s*' + $name + ' powered:\s*(true|false)\s*$'))
+        if ($name -eq 'DOCK' -and $matchesFound.Count -eq 0) { continue }
+        if ($matchesFound.Count -ne 1) { throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN' }
+        if ($matchesFound[0].Groups[1].Value.ToLowerInvariant() -eq 'true') {
+            $active += $name
+            $mask = $mask -bor $fields[$name]
+        }
+    }
+    $source=if($active.Count -eq 0){'UNPLUGGED'}elseif($active.Count -eq 1){$active[0]}else{'MULTIPLE'}
+    return [PSCustomObject]@{PowerSource=$source;PlugMask=[int]$mask;VerificationSource='DUMPSYS_BATTERY_SANITIZED_FIELDS'}
+}
+
+function Assert-KRStayAwakeState {
+    param($State,[int]$ExpectedSetting=-1)
+    if ($null -eq $State -or
+        $State.PSObject.Properties.Name -notcontains 'Setting' -or
+        $State.PSObject.Properties.Name -notcontains 'PowerSource' -or
+        $State.PSObject.Properties.Name -notcontains 'PlugMask') { throw 'INVALID:STAY_AWAKE_STATE_UNKNOWN' }
+    if ($State.PowerSource -notin @('AC','USB','WIRELESS','DOCK','MULTIPLE') -or
+        $State.PlugMask -lt 1 -or $State.PlugMask -gt 15) { throw 'INVALID:STAY_AWAKE_VERIFICATION_FAILED' }
+    if ($ExpectedSetting -ge 0 -and $State.Setting -ne $ExpectedSetting) { throw 'INVALID:STAY_AWAKE_VERIFICATION_FAILED' }
+    if (($State.Setting -band $State.PlugMask) -ne $State.PlugMask) { throw 'INVALID:STAY_AWAKE_VERIFICATION_FAILED' }
 }
 
 function Convert-KRSystemFeatureProbe {
@@ -538,4 +578,4 @@ function Get-KRSafetyCheckpointReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason
+Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Convert-KRStayAwakeSetting, Convert-KRPowerSourceProbe, Assert-KRStayAwakeState, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

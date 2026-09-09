@@ -62,11 +62,12 @@ const calibratedBy={
   physicalAgreement:calibrationSummary.PhysicalAgreement,candidateSha256,fixtureSha256,
 };
 const manifest={
-  schema:1,protocol:"KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION",sourceCommit:commit,runnerVersion:9,
+  schema:1,protocol:"KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION",sourceCommit:commit,runnerVersion:10,
   diagnosticOnly:false,requiresOffline:true,createdUtc:new Date().toISOString(),candidateSha256,fixtureSha256,files,
   approvedConfiguration,ownerProvidedLabels:{device:"Galaxy Tab S10 Lite",software:"One UI 8.5"},
   physicalExecution:"NOT_RUN",calibratedBy,oracleModel:"ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS",
   networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA",
+  awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE",
   humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false,
 };
 assert.equal(git("status","--porcelain"),"","Build unexpectedly changed tracked source");
