@@ -69,6 +69,7 @@ jobs:
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/kr003/Qualification.Tests.ps1
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/OracleTransport.Tests.ps1
           ./tools/kr003/UiAutomationTransport.Tests.ps1

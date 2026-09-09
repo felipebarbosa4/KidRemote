@@ -15,7 +15,8 @@ boundary, with verified cleanup and zero samples. The immutable [runner-v5 repla
 corrected only that host alias and ARM reply validation. Its subsequent [Samsung calibration PASS](KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md)
 is one excluded configuration-specific active-oracle sample with explicit owner agreement and verified cleanup; it permits qualification-bundle
 preparation but supplies zero qualification rows. The resulting immutable [runner-v8 qualification bundle](KR-003-SAMSUNG-QUALIFICATION-V8-BUNDLE-2026-09-08.md)
-is bound to that exact captured configuration and calibration; physical execution is Not run.
+was invoked once; its [network-preflight INVALID](KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) remains zero-cycle evidence, not an
+enforcement failure. Runner-v9 is the current unexecuted, capability-aware handoff.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

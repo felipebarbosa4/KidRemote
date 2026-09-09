@@ -5,7 +5,8 @@ function Assert-KRConfigurationQualificationBundle {
     param($Bundle)
     if ($null -eq $Bundle -or $Bundle.schema -ne 1 -or
         $Bundle.protocol -ne 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -or
-        $Bundle.runnerVersion -ne 8 -or $Bundle.diagnosticOnly -or -not $Bundle.requiresOffline -or
+        $Bundle.runnerVersion -ne 9 -or $Bundle.diagnosticOnly -or -not $Bundle.requiresOffline -or
+        $Bundle.networkCapabilityModel -ne 'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA' -or
         $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
         $Bundle.humanCheckpointMaximum -ne 3 -or $Bundle.physicalExecution -ne 'NOT_RUN') {
         throw 'INVALID:BUNDLE_SCHEMA'
@@ -43,6 +44,49 @@ function Assert-KRConfigurationQualificationBundle {
     if ($Bundle.candidateSha256 -cne $calibration.candidateSha256 -or
         $Bundle.fixtureSha256 -cne $calibration.fixtureSha256) {
         throw 'INVALID:BUNDLE_CALIBRATION_APK_MISMATCH'
+    }
+}
+
+function Convert-KRSystemFeatureProbe {
+    param($Probe)
+    if ($null -eq $Probe -or
+        $Probe.PSObject.Properties.Name -notcontains 'ExitCode' -or
+        $Probe.PSObject.Properties.Name -notcontains 'Stdout' -or
+        $Probe.PSObject.Properties.Name -notcontains 'StderrClass' -or
+        $Probe.StderrClass -ne 'NONE') { return 'UNKNOWN' }
+    $value=([string]$Probe.Stdout).Trim().ToLowerInvariant()
+    if ([int]$Probe.ExitCode -eq 0 -and $value -eq 'true') { return 'PRESENT' }
+    if ([int]$Probe.ExitCode -eq 1 -and $value -eq 'false') { return 'ABSENT' }
+    return 'UNKNOWN'
+}
+
+function Get-KRNetworkIsolationPlan {
+    param($Capabilities,$Device)
+    if ($null -eq $Capabilities -or $null -eq $Device) { throw 'INVALID:NETWORK_CAPABILITY_UNKNOWN' }
+    $plan=@()
+    foreach($entry in @(
+        [PSCustomObject]@{Capability='Wifi';Setting='wifi_on';Service='wifi'},
+        [PSCustomObject]@{Capability='MobileData';Setting='mobile_data';Service='data'}
+    )) {
+        if($Capabilities.PSObject.Properties.Name -notcontains $entry.Capability -or
+            $Device.PSObject.Properties.Name -notcontains $entry.Setting) { throw 'INVALID:NETWORK_CAPABILITY_UNKNOWN' }
+        $capability=[string]$Capabilities.($entry.Capability)
+        if ($capability -eq 'UNKNOWN' -or $capability -notin @('PRESENT','ABSENT')) { throw 'INVALID:NETWORK_CAPABILITY_UNKNOWN' }
+        $initial=if($capability -eq 'ABSENT'){'NOT_APPLICABLE'}else{[string]$Device.($entry.Setting)}
+        if ($capability -eq 'PRESENT' -and $initial -notin @('0','1')) { throw 'INVALID:RADIO_INITIAL_STATE_UNKNOWN' }
+        $plan += [PSCustomObject]@{
+            Capability=$entry.Capability; Setting=$entry.Setting; Service=$entry.Service
+            Presence=$capability; Initial=$initial
+        }
+    }
+    return @($plan)
+}
+
+function Assert-KRNetworkOffline {
+    param($Capabilities,$Device)
+    $plan=@(Get-KRNetworkIsolationPlan $Capabilities $Device)
+    if(@($plan | Where-Object { $_.Presence -eq 'PRESENT' -and $_.Initial -ne '0' }).Count) {
+        throw 'INVALID:OFFLINE_RADIOS_NOT_DISABLED'
     }
 }
 
@@ -494,4 +538,4 @@ function Get-KRSafetyCheckpointReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason
+Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

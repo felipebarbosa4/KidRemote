@@ -117,7 +117,8 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
     assert.match(module,new RegExp(`'${phase}'`));
   }
   assert.match(packager,/protocol:"KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION"/);
-  assert.match(packager,/runnerVersion:8/);
+  assert.match(packager,/runnerVersion:9/);
+  assert.match(packager,/networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA"/);
   assert.match(packager,/calibration-20260908-231756-97a0855b/);
   assert.match(packager,/BP4A\.251205\.006/);
   assert.match(packager,/humanCheckpointMaximum:3/);
@@ -199,7 +200,7 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
   const fixture='f'.repeat(64);
   const approvedConfiguration={schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'};
   const calibratedBy={protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',sourceCommit:'a'.repeat(40),runDirectory:'calibration-20260908-231756-97a0855b',status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',reason:'COMPLETED',summarySha256:'b'.repeat(64),deviceSha256:'c'.repeat(64),transportDeviceEvidenceSha256:'d'.repeat(64),calibrationSamples:1,qualificationSamples:0,physicalAgreement:'PASS',candidateSha256:candidate,fixtureSha256:fixture};
-  const bundle={protocol:'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:8,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,approvedConfiguration,ownerProvidedLabels:{device:'Galaxy Tab S10 Lite',software:'One UI 8.5'},physicalExecution:'NOT_RUN',calibratedBy,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false};
+  const bundle={protocol:'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:9,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,approvedConfiguration,ownerProvidedLabels:{device:'Galaxy Tab S10 Lite',software:'One UI 8.5'},physicalExecution:'NOT_RUN',calibratedBy,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',networkCapabilityModel:'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA',humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false};
   const capturedDevice={Manufacturer:'samsung',Model:'SM-X400',Android:'16',Api:'36',Patch:'2026-07-05',BuildId:'BP4A.251205.006',wifi_on:'0',mobile_data:'0'};
   save('manifest.json',{Bundle:bundle,InitialDevice:capturedDevice,Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true});
   const calibration={Attempt:0,Phase:'CALIBRATION',Revision:99,PhysicalObserver:'PASS',AutomatedOracle:'PASS',InputOracle:'PASS',LatencyMs:111,HoldMillis:10000,InjectedBlockedTaps:20,PositiveControlTap:'REACHED_FIXTURE'};
@@ -220,11 +221,25 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
   save('recovery-final.json',{Phases:phases});
   save('final-metrics.json',{samples:rows.map(r=>r.LatencyMs),sampleCount:100});
   save('network-restoration.json',{Status:'RESTORED_AND_FLAGS_VERIFIED'});
+  save('network-capabilities.json',{Schema:1,Wifi:'PRESENT',MobileData:'ABSENT',VerificationSource:'PM_HAS_FEATURE',AtUtc:'2026-09-09T00:00:00Z'});
+  save('network-operations.json',[
+    {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z'},
+    {Sequence:2,Operation:'PROBE_MOBILE_DATA_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:1,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:01Z'},
+  ]);
   save('diagnostic-bailout.json',{Status:'VERIFIED',RestrictionReleased:true,LatencySamplesPreserved:true});
   save('permission-verification.json',{UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE',UsageAccessVerificationSource:'CMD_APPOPS_GET_GET_USAGE_STATS',AccessibilityVerificationSource:'SECURE_SETTINGS_CURRENT_USER_COMPONENT_NAME',UsageAccessParseResult:'MODE_ALLOWED',AccessibilityParseResult:'GLOBAL_ENABLED_COMPONENT_MATCH_FULL'});
   const sorted=rows.map(r=>r.LatencyMs).sort((a,b)=>a-b), stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
   save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',HumanCheckpointSessions:3,PhysicalExpiryObservations:2,InternalPairedStatistics:stats,ValidPairedObservations:100,Status:'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY',Offline:true,SafetyChecksPassed:true,FinalizationErrors:[]});
   assert.equal(ingestQualification(dir).automatedExpiryCycles,100);
+  save('network-operations.json',[
+    {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z',RawStderr:'forbidden'},
+    {Sequence:2,Operation:'PROBE_MOBILE_DATA_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:1,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:01Z'},
+  ]);
+  assert.throws(()=>ingestQualification(dir));
+  save('network-operations.json',[
+    {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z'},
+    {Sequence:2,Operation:'PROBE_MOBILE_DATA_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:1,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:01Z'},
+  ]);
   save('manifest.json',{Bundle:bundle,InitialDevice:{...capturedDevice,BuildId:'DRIFTED'},Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true});
   assert.throws(()=>ingestQualification(dir));
   save('manifest.json',{Bundle:bundle,InitialDevice:capturedDevice,Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true});
@@ -247,6 +262,26 @@ test("Q7 partial run preserves completed automated count without fabricating qua
   assert.equal(result.automatedExpiryCycles,2);
   assert.equal(result.humanCheckpointSessions,2);
   assert.equal(result.partial,true);
+}));
+
+test("configuration qualification network-preflight INVALID retains zero cycles and checkpoints",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const candidate='5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b',fixture='f'.repeat(64);
+  const approvedConfiguration={schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'};
+  const calibratedBy={protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',sourceCommit:'a'.repeat(40),runDirectory:'calibration-20260908-231756-97a0855b',status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',reason:'COMPLETED',summarySha256:'b'.repeat(64),deviceSha256:'c'.repeat(64),transportDeviceEvidenceSha256:'d'.repeat(64),calibrationSamples:1,qualificationSamples:0,physicalAgreement:'PASS',candidateSha256:candidate,fixtureSha256:fixture};
+  const bundle={protocol:'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:9,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,approvedConfiguration,ownerProvidedLabels:{device:'Galaxy Tab S10 Lite',software:'One UI 8.5'},physicalExecution:'NOT_RUN',calibratedBy,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',networkCapabilityModel:'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA',humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false};
+  save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:false});
+  save('attempts.json',[]);save('human-checkpoints.json',[]);
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'INVALID',Reason:'ADB_REJECTED'});
+  save('network-capabilities.json',{Schema:1,Wifi:'PRESENT',MobileData:'ABSENT',VerificationSource:'PM_HAS_FEATURE',AtUtc:'2026-09-09T00:00:00Z'});
+  save('network-operations.json',[
+    {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z'},
+    {Sequence:2,Operation:'PROBE_MOBILE_DATA_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:1,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:01Z'},
+    {Sequence:3,Operation:'DISABLE_WIFI',Phase:'ISOLATION',Result:'REJECTED',ExitCode:1,StderrClass:'PERMISSION_DENIAL',AtUtc:'2026-09-09T00:00:02Z'},
+  ]);
+  const result=ingestQualification(dir);
+  assert.equal(result.status,'INVALID');assert.equal(result.automatedExpiryCycles,0);assert.equal(result.humanCheckpointSessions,0);
+  assert.equal(result.networkCapabilities.MobileData,'ABSENT');assert.equal(result.partial,true);
 }));
 
 test("Q6 ingestion requires 100 physical rows, offline restoration and both phase-local safety checkpoints",()=>temporary(dir=>{

@@ -44,6 +44,8 @@ $script:RadioOriginal = $null
 $script:RadioTouched = @()
 $script:RadioRestoreStatus = 'NOT_CHANGED'
 $script:RadioResults = @()
+$script:NetworkCapabilities = $null
+$script:NetworkOperations = @()
 $script:FinalizationErrors = @()
 $script:Recovery = $null
 $script:Diagnostic = $null
@@ -64,7 +66,7 @@ function Write-JsonFile {
     ConvertTo-Json -InputObject $Value -Depth 20 | Set-Content -LiteralPath (Join-Path $runDirectory $Name) -Encoding UTF8
 }
 
-function Invoke-LabAdb {
+function Invoke-LabAdbResult {
     param([string[]]$Arguments)
     # Raw stdout/stderr may contain shell diagnostics. Keep it in memory and never export it.
     $process = New-Object System.Diagnostics.Process
@@ -90,9 +92,53 @@ function Invoke-LabAdb {
         }
         $stdout = $stdoutTask.GetAwaiter().GetResult()
         $stderr = $stderrTask.GetAwaiter().GetResult()
-        if ($process.ExitCode -ne 0 -or $stderr -match 'SecurityException|Permission Denial') { throw 'INVALID:ADB_REJECTED' }
-        return $stdout
+        $stderrClass=if($stderr -match 'SecurityException'){'SECURITY_EXCEPTION'}elseif($stderr -match 'Permission Denial'){'PERMISSION_DENIAL'}elseif([string]::IsNullOrWhiteSpace($stderr)){'NONE'}else{'OTHER'}
+        return [PSCustomObject]@{Stdout=$stdout;ExitCode=[int]$process.ExitCode;StderrClass=$stderrClass}
     } finally { $process.Dispose() }
+}
+
+function Invoke-LabAdb {
+    param([string[]]$Arguments)
+    $result=Invoke-LabAdbResult -Arguments $Arguments
+    if ($result.ExitCode -ne 0 -or $result.StderrClass -in @('SECURITY_EXCEPTION','PERMISSION_DENIAL')) { throw 'INVALID:ADB_REJECTED' }
+    return $result.Stdout
+}
+
+function Add-NetworkOperation {
+    param([string]$Operation,[string]$Phase,[string]$Result,[int]$ExitCode,[string]$StderrClass)
+    $allowed=@('PROBE_WIFI_CAPABILITY','PROBE_MOBILE_DATA_CAPABILITY','DISABLE_WIFI','DISABLE_MOBILE_DATA','VERIFY_WIFI_OFF','VERIFY_MOBILE_DATA_OFF','RESTORE_WIFI','RESTORE_MOBILE_DATA','VERIFY_WIFI_RESTORED','VERIFY_MOBILE_DATA_RESTORED')
+    if($Operation -notin $allowed -or $Phase -notin @('PREFLIGHT','ISOLATION','FINALIZATION') -or
+        $Result -notin @('ACCEPTED','REJECTED','TIMEOUT') -or
+        $StderrClass -notin @('NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE')) { throw 'INVALID:NETWORK_OPERATION_SCHEMA' }
+    $script:NetworkOperations += [PSCustomObject]@{
+        Sequence=$script:NetworkOperations.Count + 1; Operation=$Operation; Phase=$Phase; Result=$Result
+        ExitCode=$ExitCode; StderrClass=$StderrClass; AtUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Write-JsonFile 'network-operations.json' @($script:NetworkOperations)
+}
+
+function Invoke-NetworkAdb {
+    param([string[]]$Arguments,[string]$Operation,[string]$Phase,[int[]]$AcceptedExitCodes=@(0))
+    try { $result=Invoke-LabAdbResult -Arguments $Arguments } catch {
+        if($_.Exception.Message -eq 'INVALID:ADB_TIMEOUT') { Add-NetworkOperation $Operation $Phase 'TIMEOUT' -1 'UNAVAILABLE' }
+        throw
+    }
+    $accepted=$result.ExitCode -in $AcceptedExitCodes -and $result.StderrClass -notin @('SECURITY_EXCEPTION','PERMISSION_DENIAL')
+    Add-NetworkOperation $Operation $Phase $(if($accepted){'ACCEPTED'}else{'REJECTED'}) $result.ExitCode $result.StderrClass
+    if(-not $accepted) { throw 'INVALID:ADB_REJECTED' }
+    return $result
+}
+
+function Get-NetworkCapabilities {
+    $wifiProbe=Invoke-NetworkAdb @('shell','pm','has-feature','android.hardware.wifi') 'PROBE_WIFI_CAPABILITY' 'PREFLIGHT' @(0,1)
+    $mobileProbe=Invoke-NetworkAdb @('shell','pm','has-feature','android.hardware.telephony.data') 'PROBE_MOBILE_DATA_CAPABILITY' 'PREFLIGHT' @(0,1)
+    $capabilities=[PSCustomObject]@{
+        Schema=1; Wifi=Convert-KRSystemFeatureProbe $wifiProbe; MobileData=Convert-KRSystemFeatureProbe $mobileProbe
+        VerificationSource='PM_HAS_FEATURE'; AtUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Write-JsonFile 'network-capabilities.json' $capabilities
+    if($capabilities.Wifi -eq 'UNKNOWN' -or $capabilities.MobileData -eq 'UNKNOWN') { throw 'INVALID:NETWORK_CAPABILITY_UNKNOWN' }
+    return $capabilities
 }
 
 function Get-LabState {
@@ -167,7 +213,10 @@ function Assert-FixturePositiveControl {
 }
 
 function Assert-FixedSettings {
-    foreach ($key in @('wifi_on','mobile_data','airplane_mode_on','auto_time','auto_time_zone','low_power')) {
+    $keys=@('airplane_mode_on','auto_time','auto_time_zone','low_power')
+    if($script:NetworkCapabilities.Wifi -eq 'PRESENT'){$keys+='wifi_on'}
+    if($script:NetworkCapabilities.MobileData -eq 'PRESENT'){$keys+='mobile_data'}
+    foreach ($key in $keys) {
         $value = (Invoke-LabAdb @('shell','settings','get','global',$key)).Trim()
         if ($value -notmatch '^[0-9]+$') { $value = 'UNSPECIFIED' }
         if ($value -cne $script:Device.$key) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
@@ -188,10 +237,11 @@ function Assert-QualificationPermissionState {
 }
 
 function Wait-RadioFlag {
-    param([string]$Key, [string]$Expected)
+    param([string]$Key,[string]$Expected,[string]$Operation,[string]$Phase)
     $watch = [Diagnostics.Stopwatch]::StartNew()
     do {
-        $actual = (Invoke-LabAdb @('shell','settings','get','global',$Key)).Trim()
+        $response=Invoke-NetworkAdb @('shell','settings','get','global',$Key) $Operation $Phase
+        $actual = ([string]$response.Stdout).Trim()
         if ($actual -ceq $Expected) { return }
         Start-Sleep -Milliseconds 250
     } while ($watch.Elapsed.TotalSeconds -lt 8)
@@ -200,16 +250,21 @@ function Wait-RadioFlag {
 
 function Enter-OfflineNetwork {
     # Calling the runner with -OfflineNetwork explicitly opts into this reversible device action.
-    if ($script:Device.wifi_on -notin @('0','1') -or $script:Device.mobile_data -notin @('0','1')) { throw 'INVALID:RADIO_INITIAL_STATE_UNKNOWN' }
-    $script:RadioOriginal = [PSCustomObject]@{wifi_on=$script:Device.wifi_on;mobile_data=$script:Device.mobile_data}
+    $plan=@(Get-KRNetworkIsolationPlan $script:NetworkCapabilities $script:Device)
+    $script:RadioOriginal = [PSCustomObject]@{
+        wifi_on=($plan | Where-Object Setting -eq 'wifi_on').Initial
+        mobile_data=($plan | Where-Object Setting -eq 'mobile_data').Initial
+    }
     Write-JsonFile 'network-original.json' $script:RadioOriginal
-    foreach ($pair in @(@('wifi_on','wifi'),@('mobile_data','data'))) {
-        if ($script:RadioOriginal.($pair[0]) -eq '1') {
+    foreach ($target in $plan) {
+        if ($target.Presence -eq 'PRESENT' -and $target.Initial -eq '1') {
             # Journal before changing anything, including a partially failed command.
-            $script:RadioTouched += $pair[0]
+            $script:RadioTouched += $target.Setting
             Write-JsonFile 'network-touched.json' @($script:RadioTouched)
-            $null = Invoke-LabAdb @('shell','svc',$pair[1],'disable')
-            Wait-RadioFlag -Key $pair[0] -Expected '0'
+            $operation=if($target.Setting -eq 'wifi_on'){'DISABLE_WIFI'}else{'DISABLE_MOBILE_DATA'}
+            $verify=if($target.Setting -eq 'wifi_on'){'VERIFY_WIFI_OFF'}else{'VERIFY_MOBILE_DATA_OFF'}
+            $null = Invoke-NetworkAdb @('shell','svc',$target.Service,'disable') $operation 'ISOLATION'
+            Wait-RadioFlag $target.Setting '0' $verify 'ISOLATION'
         }
     }
     $script:Device = Read-DeviceConfiguration
@@ -218,23 +273,31 @@ function Enter-OfflineNetwork {
 function Restore-Network {
     $script:RadioResults = @()
     if ($null -eq $script:RadioOriginal) { return }
-    foreach ($pair in @(@('wifi_on','wifi'),@('mobile_data','data'))) {
-        $result = [PSCustomObject]@{ Setting=$pair[0]; Original=$script:RadioOriginal.($pair[0]); Changed=($pair[0] -in $script:RadioTouched); Observed='UNSPECIFIED'; Status='UNVERIFIED'; AtUtc=$null }
+    $plan=@(Get-KRNetworkIsolationPlan $script:NetworkCapabilities $script:RadioOriginal)
+    foreach ($target in $plan) {
+        $result = [PSCustomObject]@{ Setting=$target.Setting; Presence=$target.Presence; Original=$target.Initial; Changed=($target.Setting -in $script:RadioTouched); Observed='UNSPECIFIED'; Status='UNVERIFIED'; AtUtc=$null }
         try {
-            if ($result.Changed) {
-                $null = Invoke-LabAdb @('shell','svc',$pair[1],'enable')
-                Wait-RadioFlag -Key $pair[0] -Expected '1'
+            if($target.Presence -eq 'ABSENT') {
+                $result.Observed='NOT_APPLICABLE';$result.Status='NOT_APPLICABLE_VERIFIED'
+            } else {
+                $restore=if($target.Setting -eq 'wifi_on'){'RESTORE_WIFI'}else{'RESTORE_MOBILE_DATA'}
+                $verify=if($target.Setting -eq 'wifi_on'){'VERIFY_WIFI_RESTORED'}else{'VERIFY_MOBILE_DATA_RESTORED'}
+                if ($result.Changed -and $result.Original -eq '1') {
+                    $null = Invoke-NetworkAdb @('shell','svc',$target.Service,'enable') $restore 'FINALIZATION'
+                    Wait-RadioFlag $target.Setting '1' $verify 'FINALIZATION'
+                }
+                $response=Invoke-NetworkAdb @('shell','settings','get','global',$target.Setting) $verify 'FINALIZATION'
+                $flag = ([string]$response.Stdout).Trim()
+                if ($flag -match '^[01]$') { $result.Observed=$flag }
+                $result.Status = if ($result.Observed -ceq $result.Original) { 'VERIFIED' } else { 'MISMATCH' }
             }
-            $flag = (Invoke-LabAdb @('shell','settings','get','global',$pair[0])).Trim()
-            if ($flag -match '^[01]$') { $result.Observed=$flag }
-            $result.Status = if ($result.Observed -ceq $result.Original) { 'VERIFIED' } else { 'MISMATCH' }
         } catch { $result.Status='RESTORE_OR_READ_FAILED' }
         finally {
             $result.AtUtc=[DateTime]::UtcNow.ToString('o')
             $script:RadioResults += $result
         }
     }
-    $script:RadioRestoreStatus = if (@($script:RadioResults | Where-Object { $_.Status -ne 'VERIFIED' }).Count) { 'RESTORE_FAILED_OWNER_ACTION_REQUIRED' } else { 'RESTORED_AND_FLAGS_VERIFIED' }
+    $script:RadioRestoreStatus = if (@($script:RadioResults | Where-Object { $_.Status -notin @('VERIFIED','NOT_APPLICABLE_VERIFIED') }).Count) { 'RESTORE_FAILED_OWNER_ACTION_REQUIRED' } else { 'RESTORED_AND_FLAGS_VERIFIED' }
 }
 
 function Open-Fixture {
@@ -1017,6 +1080,7 @@ try {
     $script:Manifest.InitialDevice = $script:Device
     Write-JsonFile 'manifest.json' $script:Manifest
     Assert-KRBoundDeviceConfiguration $script:Device $script:Bundle.approvedConfiguration
+    $script:NetworkCapabilities=Get-NetworkCapabilities
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256
     $null = Invoke-LabAdb @('shell','am','start','-n',"$candidatePackage/.MainActivity")
@@ -1030,8 +1094,8 @@ try {
     Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
     Enter-OfflineNetwork
     $script:Manifest.Device=$script:Device
-    if ($script:Device.wifi_on -ne '0' -or $script:Device.mobile_data -ne '0') { throw 'INVALID:OFFLINE_RADIOS_NOT_DISABLED' }
-    $offlineResult=Read-DiagnosticResult 'OFFLINE CHECK: verify Wi-Fi and mobile data are off and this lab device has no other Internet path. P=confirmed, F/I=not established.'
+    Assert-KRNetworkOffline $script:NetworkCapabilities $script:Device
+    $offlineResult=Read-DiagnosticResult 'OFFLINE CHECK: verify every device-reported network transport is off and this lab device has no other Internet path. P=confirmed, F/I=not established.'
     if ($offlineResult -ne 'PASS') { throw 'INVALID:OFFLINE_OWNER_NOT_CONFIRMED' }
     $script:Offline=$true
     $script:Manifest.OfflineOwnerConfirmed=$true

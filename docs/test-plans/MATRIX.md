@@ -129,7 +129,9 @@ then independently passed permission/positive controls and issued ARM, but the s
 hold; cleanup succeeded. Those attempts advance no device row. The fresh [runner-v5 calibration](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md)
 subsequently passed one excluded configuration-specific active-oracle sample: 127 ms attachment, 22,371 ms hold, 20 denied fixture taps, no focus
 regain, explicit owner agreement and verified cleanup. This advances the Samsung calibration prerequisite only. Formal `TIME-04` remains open:
-there are zero qualification rows, no offline result and no 100-sample p95. Permission-revocation, safety, lifecycle and production gates do not advance.
+the first [qualification attempt](evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) stopped `INVALID:ADB_REJECTED` during
+mobile-data isolation after Wi-Fi disable/readback, before offline confirmation, ARM, checkpoints or cycle 1. There are zero qualification rows,
+no offline result and no 100-sample p95. Permission-revocation, safety, lifecycle and production gates do not advance.
 Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
 Android 17/API 37 is the current documented platform; whether to add it to the approved physical support gate remains **UNSPECIFIED** and it does

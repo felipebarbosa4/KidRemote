@@ -66,7 +66,7 @@ The resulting runner repeats an excluded calibration at the beginning, then perf
 human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
 state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
 
-Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v8 protocol.
+Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v9 protocol.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
@@ -78,7 +78,7 @@ Use the exact populated command in the latest bundle handoff:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-qualification-bundles\NEW_UNIQUE_COMMIT_DIRECTORY\Start-KR003.ps1" -OfflineNetwork
 ```
 
-`-ExecutionPolicy Bypass` applies only to that process. Runner v8 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It journals original radio flags, disables enabled Wi-Fi/mobile data, obtains an explicit operator confirmation, and restores/read-backs each changed flag during independently guarded finalization. Keep only the manifest-bound authorized device connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots or repairs host/WSL state.
+`-ExecutionPolicy Bypass` applies only to that process. Runner v9 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It probes declared Wi-Fi and telephony-data capabilities, journals original state for present transports, disables and reads back each enabled path, obtains an explicit operator confirmation, and restores/read-backs each changed path during independently guarded finalization. Absent paths are `NOT_APPLICABLE`; unknown capability/state fails closed. Keep only the manifest-bound authorized device connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots, substitutes airplane mode or repairs host/WSL state.
 
 The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 35–45 minutes; budget approximately 45–60 minutes including preflight and final owner work. The screen must remain unlocked/interactive. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
 
@@ -88,7 +88,7 @@ The third human session follows sample 100 and runs the guided Home/Settings/Dig
 
 ## Evidence and bailout
 
-Every execution creates a new `C:\platform-tools\kr003-qualification\run-*` directory. It contains bundle/device/APK identity, prior/final metrics, calibration, attempt JSON/CSV, human checkpoints, sanitized telemetry/trace, fixture counters, final safety/recovery, radio journals, sample-preserving bailout evidence and summaries. The agent reads it directly from `/mnt/c`; do not copy logs manually.
+Every execution creates a new `C:\platform-tools\kr003-qualification\run-*` directory. It contains bundle/device/APK identity, prior/final metrics, calibration, attempt JSON/CSV, human checkpoints, sanitized telemetry/trace, fixture counters, final safety/recovery, typed network capability/operation/radio journals, sample-preserving bailout evidence and summaries. Network operation records retain only enum, phase, result, exit code and coarse stderr class—not raw output. The agent reads it directly from `/mnt/c`; do not copy logs manually.
 
 Normal finalization automatically invokes debug CLEAR and verifies the complete timing sample array is unchanged. If the terminal is forcibly interrupted or the phone remains trapped, run the bundle's separate bailout from a second PowerShell window:
 

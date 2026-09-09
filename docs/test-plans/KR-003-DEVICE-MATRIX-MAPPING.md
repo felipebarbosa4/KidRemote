@@ -1,7 +1,7 @@
 # KR-003 exact-device matrix mapping
 
 - **Goal:** Map sanitized metadata from a newly authorized Android device to existing KR-003 physical requirements without generalizing between configurations.
-- **Context:** Mi 8/API 29 evidence exists. The authorized Samsung SM-X400 onboarding record establishes Android 16/API 36/build `BP4A.251205.006` and transport PASS; its later exact-configuration active-oracle calibration passed, while 100-cycle qualification remains Not run.
+- **Context:** Mi 8/API 29 evidence exists. The authorized Samsung SM-X400 onboarding record establishes Android 16/API 36/build `BP4A.251205.006` and transport PASS; its later exact-configuration active-oracle calibration passed, while the first qualification attempt stopped INVALID before cycle 1.
 - **Constraints:** Use only validated [generic onboarding](KR-003-DEVICE-ONBOARDING.md) and linked exact-configuration evidence; no model/API inference from appearance, marketing name or owner expectation; no cross-device evidence transfer.
 - **Done when:** Every applicable required row is named from exact read values, non-applicable rows stay open, and the evidence key fixes build, power and permission state.
 
@@ -30,7 +30,7 @@ Given one validated `device.json` and its SHA-256:
 | Android 16 + API 36 | Android 16/API 36 configuration | API 28, API 35 and every untested OEM variant |
 | Android 17 + API 37 | Supplemental current-platform configuration pending owner support-boundary decision | Existing API 28/35/36 and every untested OEM variant |
 | Manufacturer `samsung` | One exact Samsung OEM variant | Google reference, other Samsung model/build/configuration and other OEMs |
-| SM-X400 / Android 16 / API 36 / `BP4A.251205.006` | Metadata/transport plus one excluded active-oracle calibration PASS for the Android 16/API 36 and exact Samsung-variant keys; four runner-v4 host exceptions advance no row | 100-cycle offline TIME-04 p95, safety/lifecycle/revocation/tamper, API 28/35, Google reference and other OEM/model/build rows |
+| SM-X400 / Android 16 / API 36 / `BP4A.251205.006` | Metadata/transport plus one excluded active-oracle calibration PASS for the Android 16/API 36 and exact Samsung-variant keys; runner-v4 host exceptions and the zero-cycle qualification network INVALID advance no row | 100-cycle offline TIME-04 p95, safety/lifecycle/revocation/tamper, API 28/35, Google reference and other OEM/model/build rows |
 | Mi 8 / Xiaomi / API 29 | Preserved Mi 8 supplemental/OEM evidence only | All required 28/35/36 and Samsung/Google/other-OEM rows |
 | Any mismatch/unknown | INVALID mapping | All rows remain open until corrected metadata is read |
 

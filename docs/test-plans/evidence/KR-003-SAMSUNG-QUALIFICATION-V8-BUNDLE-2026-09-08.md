@@ -12,7 +12,14 @@
 - Mounted path: `/mnt/c/platform-tools/kr003-qualification-bundles/33c2b36`
 - Protocol / runner: `KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION` / version 8
 - `bundle.json` SHA-256: `a828d4689bfc552411f016262df1bd44f6b606c37efe1be66b73858bced4e4a0`
-- Physical execution: **Not run**
+- Physical execution at publication: **Not run**
+
+## Subsequent execution
+
+The owner later invoked this immutable bundle once. The preserved [run](KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) stopped
+`INVALID:ADB_REJECTED` in mobile-data isolation after the Wi-Fi disable/readback boundary, before offline confirmation, ARM, checkpoints or cycle 1.
+It remains an independent pre-cycle INVALID with zero qualification rows. The immutable manifest's `physicalExecution=NOT_RUN` records its
+packaging-time state; it is not a claim that the bundle was never subsequently invoked.
 
 The manifest binds captured `samsung` / `SM-X400` / Android `16` / API `36` / build `BP4A.251205.006` / security patch `2026-07-05`. `Galaxy Tab S10 Lite` and `One UI 8.5` remain separate owner-provided labels. It binds calibration source `4690d3951d0952fefe43eab9de0799599c6ea903`, directory `calibration-20260908-231756-97a0855b`, calibration summary/device hashes and transport evidence hash `e14837ade8cd72b48186ebc1bbdec439bb1ba1be263a8b6204696333db485ae7`.
 

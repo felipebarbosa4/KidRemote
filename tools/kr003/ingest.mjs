@@ -5,9 +5,37 @@ import assert from "node:assert/strict";
 const decode = path => readFileSync(path,"utf8").replace(/^\uFEFF/,"");
 const hash = path => createHash("sha256").update(readFileSync(path)).digest("hex");
 
+function validateQ9NetworkEvidence(directory,read,required) {
+  const capabilitiesPath=resolve(directory,'network-capabilities.json'),operationsPath=resolve(directory,'network-operations.json');
+  if(!existsSync(capabilitiesPath)||!existsSync(operationsPath)) {
+    assert(!required,'Final runner-v9 evidence requires network capability and operation journals');
+    return null;
+  }
+  const capabilities=read('network-capabilities.json'),operations=read('network-operations.json');
+  assert.deepEqual(Object.keys(capabilities),['Schema','Wifi','MobileData','VerificationSource','AtUtc']);
+  assert.equal(capabilities.Schema,1);assert(['PRESENT','ABSENT','UNKNOWN'].includes(capabilities.Wifi));
+  assert(['PRESENT','ABSENT','UNKNOWN'].includes(capabilities.MobileData));assert.equal(capabilities.VerificationSource,'PM_HAS_FEATURE');
+  assert(Array.isArray(operations));
+  const operationNames=['PROBE_WIFI_CAPABILITY','PROBE_MOBILE_DATA_CAPABILITY','DISABLE_WIFI','DISABLE_MOBILE_DATA','VERIFY_WIFI_OFF','VERIFY_MOBILE_DATA_OFF','RESTORE_WIFI','RESTORE_MOBILE_DATA','VERIFY_WIFI_RESTORED','VERIFY_MOBILE_DATA_RESTORED'];
+  operations.forEach((operation,index)=>{
+    assert.deepEqual(Object.keys(operation),['Sequence','Operation','Phase','Result','ExitCode','StderrClass','AtUtc']);
+    assert.equal(operation.Sequence,index+1);assert(operationNames.includes(operation.Operation));
+    assert(['PREFLIGHT','ISOLATION','FINALIZATION'].includes(operation.Phase));assert(['ACCEPTED','REJECTED','TIMEOUT'].includes(operation.Result));
+    assert(Number.isInteger(operation.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(operation.StderrClass));
+  });
+  assert.equal(operations.filter(o=>o.Operation==='PROBE_WIFI_CAPABILITY').length,1);
+  assert.equal(operations.filter(o=>o.Operation==='PROBE_MOBILE_DATA_CAPABILITY').length,1);
+  if(required) {
+    assert.notEqual(capabilities.Wifi,'UNKNOWN');assert.notEqual(capabilities.MobileData,'UNKNOWN');
+    assert(operations.filter(o=>o.Operation.startsWith('PROBE_')).every(o=>o.Result==='ACCEPTED'));
+  }
+  return {capabilities,operations};
+}
+
 function ingestQ7(directory, manifest, rows, summary, read) {
   const configurationBound=manifest.Bundle.protocol==='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';
-  assert.equal(manifest.Bundle.runnerVersion,configurationBound?8:7);
+  if(configurationBound) assert([8,9].includes(manifest.Bundle.runnerVersion));
+  else assert.equal(manifest.Bundle.runnerVersion,7);
   assert.equal(manifest.Bundle.diagnosticOnly,false);
   assert.equal(manifest.Bundle.requiresOffline,true);
   assert.equal(manifest.Bundle.oracleModel,'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS');
@@ -17,6 +45,7 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(manifest.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
   assert.equal(summary.EvidenceModel,'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS');
   if(configurationBound) {
+    if(manifest.Bundle.runnerVersion===9) assert.equal(manifest.Bundle.networkCapabilityModel,'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA');
     const expected=manifest.Bundle.approvedConfiguration;
     assert.deepEqual(Object.keys(expected),['schema','manufacturer','model','androidVersion','apiLevel','securityPatch','buildId']);
     assert.equal(expected.schema,1);
@@ -43,15 +72,18 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(new Set(rows.map(r=>`${r.Phase}:${r.Attempt}`)).size,rows.length,'Duplicate attempt');
   const qualificationRows=rows.filter(r=>r.Phase==='QUALIFICATION');
   const completed=qualificationRows.filter(r=>r.AutomatedOracle==='PASS'&&r.InputOracle==='PASS');
+  const q9Network=configurationBound&&manifest.Bundle.runnerVersion===9?validateQ9NetworkEvidence(directory,read,false):null;
   assert(completed.every((r,i)=>r.Attempt===i+1),'Completed active-oracle attempts must be consecutive');
   assert.equal(new Set(completed.map(r=>r.Revision)).size,completed.length,'Duplicate active-oracle revision');
   const finalStatuses=['PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY','FAILED_P95'];
   if(!finalStatuses.includes(summary.Status)) {
     const checkpoints=existsSync(resolve(directory,'human-checkpoints.json'))?read('human-checkpoints.json'):[];
     return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
-      automatedExpiryCycles:completed.length,humanCheckpointSessions:checkpoints.length,partial:true,kr003Complete:false};
+      automatedExpiryCycles:completed.length,humanCheckpointSessions:checkpoints.length,partial:true,
+      networkCapabilities:q9Network?.capabilities??'UNSPECIFIED',kr003Complete:false};
   }
   if(configurationBound) {
+    if(manifest.Bundle.runnerVersion===9) validateQ9NetworkEvidence(directory,read,true);
     const expected=manifest.Bundle.approvedConfiguration;
     const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
     for(const device of [manifest.InitialDevice,manifest.Device]) {

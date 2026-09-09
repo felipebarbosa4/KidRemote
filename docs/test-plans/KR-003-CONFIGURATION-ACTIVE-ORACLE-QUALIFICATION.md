@@ -5,7 +5,7 @@
 - **Constraints:** Exact manifest-bound metadata and APK hashes; owner-operated authorized lab device; no pooling/resume, screenshots, UI nodes/text/content, package history, serial, permission grant, uninstall, data clear, reboot, production move or cross-device inference.
 - **Done when:** One new run contains an excluded passing preflight, exactly 100 consecutive active-oracle rows, three passing checkpoint sessions, offline confirmation, nearest-rank p95 at most 2,000 ms, complete metric agreement, verified CLEAR/bailout and verified radio restoration.
 
-Protocol: **`KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION`**, runner version 8.
+Protocol: **`KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION`**, runner version 9.
 
 ## Configuration and provenance gate
 
@@ -19,7 +19,7 @@ The runner preserves the approved Q7 evidence model:
 
 1. Verify bundle and installed/pulled APK hashes; capture only minimized device/configuration fields.
 2. Verify candidate Usage Access and Accessibility independently through typed runner parsing, plus fresh heartbeat, healthy candidate and eligibility. Unknown fails closed. Recheck before and after every expiry; revocation after initial success is a failure.
-3. Journal current Wi-Fi/mobile flags, reversibly disable enabled radios, require owner offline confirmation, and verify restoration during finalization. Radio flags do not prove absence of every possible network path.
+3. Query the declared `android.hardware.wifi` and `android.hardware.telephony.data` features, journal state only for present transports, reversibly disable enabled transports, require owner offline confirmation, and verify restoration during finalization. Absent transports are `NOT_APPLICABLE`; unknown capability/state fails closed. Radio flags do not prove absence of every possible network path.
 4. Run one excluded active-oracle preflight expiry and obtain the first physical agreement checkpoint.
 5. CLEAR and require the same tap to reach the independent fixture; obtain the second physical negative-control checkpoint.
 6. Reset metrics, then run attempts 1–100 unattended. Each fresh revision requires a per-cycle positive control, attachment, a minimum ten-second blocked hold, 20 denied input taps, zero focus regain, stable fixture identity/coordinate, fresh/continuous candidate state and one paired latency.
@@ -45,6 +45,8 @@ Total elapsed time is expected to be approximately 45–60 minutes depending on 
 - **INVALID:** configuration/hash/provenance mismatch, unknown/unparseable permission or oracle state, broken positive control, stale/ambiguous reply, interrupted eligibility, host/evidence uncertainty, owner `I`, or incomplete/faulted finalization.
 
 Any FAIL, INVALID, or owner stop preserves the current attempt and terminates the run. It is never replaced, resumed or pooled. The standalone CLEAR helper changes only the disposable lab timer and verifies that latency samples are preserved; it is not consumer recovery evidence. If normal finalization cannot verify network restoration, preserve the run directory and use its minimized `network-original.json` record for owner-assisted restoration.
+
+The runner retains `network-capabilities.json` and `network-operations.json` with typed feature presence, operation/phase/result, exit code and coarse stderr class only. It never persists raw `pm`, `settings` or `svc` output. An absent `pm has-feature` result is the documented `false`/exit-1 outcome, not an ADB rejection. A present Wi-Fi or mobile-data path keeps the same disable, readback and restoration gate; airplane mode is not substituted.
 
 ## Interpretation
 

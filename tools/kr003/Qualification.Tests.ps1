@@ -33,7 +33,8 @@ $calibratedBy=[PSCustomObject]@{
     candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
 $configurationBundle=[PSCustomObject]@{
-    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=8;diagnosticOnly=$false;requiresOffline=$true
+    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=9;diagnosticOnly=$false;requiresOffline=$true
+    networkCapabilityModel='ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA'
     oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
     approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
@@ -47,6 +48,30 @@ $wrongBundle=$configurationBundle.PSObject.Copy();$wrongBundle.calibratedBy=$wro
 Assert-Reject { Assert-KRConfigurationQualificationBundle $wrongBundle } 'INVALID:BUNDLE_CALIBRATION_SCHEMA'
 $arrayReplyBundle=$configurationBundle.PSObject.Copy();$arrayReplyBundle.approvedConfiguration=@($approvedConfiguration,$approvedConfiguration)
 Assert-Reject { Assert-KRConfigurationQualificationBundle $arrayReplyBundle } 'INVALID:BUNDLE_CONFIGURATION_SCHEMA'
+
+$presentProbe=[PSCustomObject]@{ExitCode=0;Stdout="true`r`n";StderrClass='NONE'}
+$absentProbe=[PSCustomObject]@{ExitCode=1;Stdout='false';StderrClass='NONE'}
+Assert-Equal (Convert-KRSystemFeatureProbe $presentProbe) 'PRESENT'
+Assert-Equal (Convert-KRSystemFeatureProbe $absentProbe) 'ABSENT'
+foreach($unknownProbe in @(
+    [PSCustomObject]@{ExitCode=0;Stdout='false';StderrClass='NONE'},
+    [PSCustomObject]@{ExitCode=1;Stdout='true';StderrClass='NONE'},
+    [PSCustomObject]@{ExitCode=0;Stdout='unexpected';StderrClass='NONE'},
+    [PSCustomObject]@{ExitCode=0;Stdout='true';StderrClass='OTHER'},
+    [PSCustomObject]@{ExitCode=2;Stdout='';StderrClass='SECURITY_EXCEPTION'}
+)){Assert-Equal (Convert-KRSystemFeatureProbe $unknownProbe) 'UNKNOWN'}
+$wifiOnly=Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='ABSENT'}) ([PSCustomObject]@{wifi_on='1';mobile_data='1'})
+Assert-Equal $wifiOnly.Count 2
+Assert-Equal $wifiOnly[0].Initial '1'
+Assert-Equal $wifiOnly[1].Initial 'NOT_APPLICABLE'
+$cellular=Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'}) ([PSCustomObject]@{wifi_on='0';mobile_data='1'})
+Assert-Equal $cellular[0].Initial '0'
+Assert-Equal $cellular[1].Initial '1'
+Assert-KRNetworkOffline ([PSCustomObject]@{Wifi='PRESENT';MobileData='ABSENT'}) ([PSCustomObject]@{wifi_on='0';mobile_data='1'})
+Assert-Reject { Assert-KRNetworkOffline ([PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'}) ([PSCustomObject]@{wifi_on='0';mobile_data='1'}) } 'INVALID:OFFLINE_RADIOS_NOT_DISABLED'
+Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='UNKNOWN'}) ([PSCustomObject]@{wifi_on='1';mobile_data='1'}) } 'INVALID:NETWORK_CAPABILITY_UNKNOWN'
+Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT'}) ([PSCustomObject]@{wifi_on='1';mobile_data='1'}) } 'INVALID:NETWORK_CAPABILITY_UNKNOWN'
+Assert-Reject { Get-KRNetworkIsolationPlan ([PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'}) ([PSCustomObject]@{wifi_on='1';mobile_data='UNSPECIFIED'}) } 'INVALID:RADIO_INITIAL_STATE_UNKNOWN'
 
 Assert-Equal (Get-KRStatistics @()).Count 0
 Assert-Equal (Get-KRStatistics @(1..100)).P95 95
@@ -282,38 +307,103 @@ Assert-Equal $parseErrors.Count 0
 $topLevelExits=@($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.ExitStatementAst] })
 Assert-Equal $topLevelExits.Count 1
 Assert-Equal ($topLevelExits[0].Extent.StartOffset -gt ($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.TryStatementAst] })[-1].Extent.EndOffset) $true
+$mainTry=($ast.EndBlock.Statements | Where-Object { $_ -is [Management.Automation.Language.TryStatementAst] })[-1].Body.Extent.Text
+Assert-Equal ($mainTry.IndexOf('Enter-OfflineNetwork') -lt $mainTry.IndexOf('Invoke-Expiry -Attempt 0')) $true
 
 # Exercise actual process argument binding with portable PowerShell as a harmless subprocess, never ADB.
-$processAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Invoke-LabAdb'},$true)
-Invoke-Expression $processAst.Extent.Text
+foreach($name in @('Invoke-LabAdbResult','Invoke-LabAdb')) {
+    $processAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
+    Invoke-Expression $processAst.Extent.Text
+}
 $Adb=Join-Path $PSHOME $(if($PSVersionTable.PSEdition -eq 'Core'){'pwsh'}else{'powershell.exe'})
 Assert-Equal (Invoke-LabAdb @('-NoProfile','-Command','Write-Output synthetic')).Trim() 'synthetic'
 Assert-Reject { Invoke-LabAdb @('unsafe"argument') } 'INVALID:ADB_ARGUMENT'
 
 # Reversible network setup is tested only with in-memory command stubs, never a device.
-foreach($name in @('Enter-OfflineNetwork','Restore-Network')) {
+foreach($name in @('Add-NetworkOperation','Invoke-NetworkAdb','Wait-RadioFlag','Enter-OfflineNetwork','Restore-Network')) {
     $fn=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true)
     Invoke-Expression $fn.Extent.Text
 }
-$script:NetworkCommands=@()
-function Invoke-LabAdb {
+$script:NetworkCommands=@();$script:NetworkOperations=@();$script:SyntheticWifi='1';$script:SyntheticMobile='1';$script:RejectNetworkOperation=''
+function Invoke-LabAdbResult {
     param($Arguments)
-    $script:NetworkCommands+=($Arguments -join ' ')
-    if (($Arguments -join ' ') -eq 'shell settings get global wifi_on') { return '1' }
-    if (($Arguments -join ' ') -eq 'shell settings get global mobile_data') { return '0' }
-    return ''
+    $command=$Arguments -join ' ';$script:NetworkCommands+=$command
+    $operation=switch($command){
+        'shell svc wifi disable'{'DISABLE_WIFI'};'shell svc data disable'{'DISABLE_MOBILE_DATA'}
+        'shell svc wifi enable'{'RESTORE_WIFI'};'shell svc data enable'{'RESTORE_MOBILE_DATA'}
+        default{''}
+    }
+    if($script:RejectNetworkOperation -and $operation -eq $script:RejectNetworkOperation){return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='PERMISSION_DENIAL'}}
+    switch($command){
+        'shell svc wifi disable'{$script:SyntheticWifi='0'}
+        'shell svc data disable'{$script:SyntheticMobile='0'}
+        'shell svc wifi enable'{$script:SyntheticWifi='1'}
+        'shell svc data enable'{$script:SyntheticMobile='1'}
+    }
+    $stdout=switch($command){
+        'shell settings get global wifi_on'{$script:SyntheticWifi}
+        'shell settings get global mobile_data'{$script:SyntheticMobile}
+        default{''}
+    }
+    [PSCustomObject]@{Stdout=$stdout;ExitCode=0;StderrClass='NONE'}
 }
-function Wait-RadioFlag { param($Key,$Expected) }
 function Write-JsonFile { param($Name,$Value) }
-function Read-DeviceConfiguration { [PSCustomObject]@{wifi_on='0';mobile_data='0'} }
-$script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'
+function Read-DeviceConfiguration { [PSCustomObject]@{wifi_on=$script:SyntheticWifi;mobile_data=$script:SyntheticMobile} }
+$script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='ABSENT'}
+$script:RadioTouched=@();$script:RadioRestoreStatus='NOT_CHANGED';$script:RadioResults=@()
 $script:Device=[PSCustomObject]@{wifi_on='1';mobile_data='0'}
 Enter-OfflineNetwork
 Restore-Network
-Assert-Equal ($script:NetworkCommands -join ',') 'shell svc wifi disable,shell svc wifi enable,shell settings get global wifi_on,shell settings get global mobile_data'
+Assert-Equal ($script:NetworkCommands -join ',') 'shell svc wifi disable,shell settings get global wifi_on,shell svc wifi enable,shell settings get global wifi_on,shell settings get global wifi_on'
 Assert-Equal $script:RadioRestoreStatus 'RESTORED_AND_FLAGS_VERIFIED'
-$script:Device=[PSCustomObject]@{wifi_on='UNSPECIFIED';mobile_data='1'}
-Assert-Reject { Enter-OfflineNetwork } 'INVALID:RADIO_INITIAL_STATE_UNKNOWN'
+Assert-Equal $script:RadioResults[1].Status 'NOT_APPLICABLE_VERIFIED'
+Assert-Equal ([bool](($script:NetworkCommands -join ',') -match 'svc data')) $false
+
+# Both declared transports are isolated and restored; already-off paths are verified but never mutated.
+$script:NetworkCommands=@();$script:NetworkOperations=@();$script:SyntheticWifi='0';$script:SyntheticMobile='1';$script:RejectNetworkOperation=''
+$script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'}
+$script:RadioTouched=@();$script:RadioResults=@();$script:Device=[PSCustomObject]@{wifi_on='0';mobile_data='1'}
+Enter-OfflineNetwork
+Assert-Equal ([bool](($script:NetworkCommands -join ',') -match 'svc wifi disable')) $false
+Assert-Equal $script:SyntheticMobile '0'
+Restore-Network
+Assert-Equal $script:SyntheticWifi '0'
+Assert-Equal $script:SyntheticMobile '1'
+Assert-Equal $script:RadioRestoreStatus 'RESTORED_AND_FLAGS_VERIFIED'
+
+# A rejected disable is typed, fails before cycles, and a prior partial mutation is still restored.
+$script:NetworkCommands=@();$script:NetworkOperations=@();$script:SyntheticWifi='1';$script:SyntheticMobile='1';$script:RejectNetworkOperation='DISABLE_WIFI'
+$script:RadioTouched=@();$script:RadioOriginal=$null;$script:Device=[PSCustomObject]@{wifi_on='1';mobile_data='1'}
+Assert-Reject { Enter-OfflineNetwork } 'INVALID:ADB_REJECTED'
+Assert-Equal $script:NetworkOperations[-1].Operation 'DISABLE_WIFI'
+Assert-Equal $script:NetworkOperations[-1].StderrClass 'PERMISSION_DENIAL'
+Assert-Equal (($script:NetworkOperations[-1].PSObject.Properties.Name) -join ',') 'Sequence,Operation,Phase,Result,ExitCode,StderrClass,AtUtc'
+
+$script:NetworkCommands=@();$script:NetworkOperations=@();$script:SyntheticWifi='1';$script:SyntheticMobile='1';$script:RejectNetworkOperation='DISABLE_MOBILE_DATA'
+$script:RadioTouched=@();$script:RadioOriginal=$null;$script:Device=[PSCustomObject]@{wifi_on='1';mobile_data='1'}
+Assert-Reject { Enter-OfflineNetwork } 'INVALID:ADB_REJECTED'
+Assert-Equal $script:SyntheticWifi '0'
+Assert-Equal $script:NetworkOperations[-1].Operation 'DISABLE_MOBILE_DATA'
+$script:RejectNetworkOperation='';Restore-Network
+Assert-Equal $script:SyntheticWifi '1'
+Assert-Equal $script:SyntheticMobile '1'
+Assert-Equal $script:RadioRestoreStatus 'RESTORED_AND_FLAGS_VERIFIED'
+
+# Verification failures and restoration failures remain fail closed without changing the primary result.
+$script:NetworkCommands=@();$script:NetworkOperations=@();$script:SyntheticWifi='1';$script:SyntheticMobile='0';$script:RejectNetworkOperation=''
+$script:RadioTouched=@();$script:Device=[PSCustomObject]@{wifi_on='1';mobile_data='0'}
+function Invoke-LabAdbResult {
+    param($Arguments)
+    $command=$Arguments -join ' ';$script:NetworkCommands+=$command
+    if($command -eq 'shell svc wifi disable'){return [PSCustomObject]@{Stdout='';ExitCode=0;StderrClass='NONE'}}
+    if($command -eq 'shell settings get global wifi_on'){return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='OTHER'}}
+    [PSCustomObject]@{Stdout='0';ExitCode=0;StderrClass='NONE'}
+}
+Assert-Reject { Enter-OfflineNetwork } 'INVALID:ADB_REJECTED'
+Assert-Equal $script:NetworkOperations[-1].Operation 'VERIFY_WIFI_OFF'
+$script:PrimaryResult='INVALID:ADB_REJECTED';Restore-Network
+Assert-Equal $script:RadioRestoreStatus 'RESTORE_FAILED_OWNER_ACTION_REQUIRED'
+Assert-Equal $script:PrimaryResult 'INVALID:ADB_REJECTED'
 
 $focusAst=$ast.Find({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Wait-FixtureFocus'},$true)
 Invoke-Expression $focusAst.Extent.Text

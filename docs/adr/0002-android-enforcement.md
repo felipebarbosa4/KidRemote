@@ -31,6 +31,11 @@ Runner v5 removes that unused alias and validates the scalar ARM reply without c
 revision 23 attached in 127 ms, the independent fixture received none of 20 blocked taps and did not regain focus across 22,371 ms, the owner
 explicitly agreed with the continuous visible restriction, and CLEAR was verified. This establishes only the calibration prerequisite on that
 exact configuration. It is not the required 100-cycle offline p95 result, safety/lifecycle support or a transferable device guarantee.
+The first [configuration-bound qualification attempt](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) then
+stopped `INVALID:ADB_REJECTED` in mobile-data isolation after the Wi-Fi disable/readback boundary and before ARM or cycle 1. The v8 runner had
+mistaken a parseable global `mobile_data` setting for proof of telephony capability and discarded the exact operation exit/stderr. Runner-v9
+instead probes Android's declared Wi-Fi and telephony-data system features, skips absent paths as `NOT_APPLICABLE`, and preserves the disable,
+readback, restoration and fail-closed requirements for every present path. No enforcement result or matrix row advances.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

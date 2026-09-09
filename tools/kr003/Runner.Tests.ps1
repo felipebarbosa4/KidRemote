@@ -26,6 +26,7 @@ function Reset-Run([string]$Name) {
     $script:Manifest=[PSCustomObject]@{EndedUtc=$null}
     $script:Terminal='FAIL'; $script:Reason='SETTINGS_RECOVERY'; $script:StartedAt='2026-09-06T00:00:00Z'
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
+    $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
     $script:DiagnosticFileName='recovery-diagnostic.json'; $script:Safety=$null; $script:SafetyFileName='safety-incomplete.json'
@@ -113,11 +114,11 @@ try {
     Reset-Run 'radio-partial-failure'
     $script:RadioOriginal=[PSCustomObject]@{wifi_on='1';mobile_data='1'}; $script:RadioTouched=@('wifi_on','mobile_data')
     $script:Commands=@()
-    function Invoke-LabAdb {
+    function Invoke-LabAdbResult {
         param($Arguments)
         $command=$Arguments -join ' '; $script:Commands+=$command
-        if ($command -eq 'shell svc wifi enable') { throw 'SYNTHETIC_WIFI_FAILURE' }
-        return '1'
+        if ($command -eq 'shell svc wifi enable') { return [PSCustomObject]@{Stdout='';ExitCode=1;StderrClass='OTHER'} }
+        return [PSCustomObject]@{Stdout='1';ExitCode=0;StderrClass='NONE'}
     }
     Complete-LabRun 6>$null
     Assert-True ($script:Commands -contains 'shell svc data enable')
@@ -129,7 +130,7 @@ try {
     # Genuine success path persists both observed restored flags, including an untouched mobile-data flag.
     Reset-Run 'radio-restored'
     $script:RadioOriginal=[PSCustomObject]@{wifi_on='1';mobile_data='0'}; $script:RadioTouched=@('wifi_on')
-    function Invoke-LabAdb { param($Arguments) if ($Arguments[-1] -eq 'mobile_data') { return '0' }; return '1' }
+    function Invoke-LabAdbResult { param($Arguments) [PSCustomObject]@{Stdout=$(if ($Arguments[-1] -eq 'mobile_data'){'0'}else{'1'});ExitCode=0;StderrClass='NONE'} }
     Complete-LabRun 6>$null
     Assert-Equal (Read-Json 'network-restoration.json').Status 'RESTORED_AND_FLAGS_VERIFIED'
     Assert-Equal (Read-Json 'network-restoration.json').Settings[1].Observed '0'

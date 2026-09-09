@@ -399,7 +399,7 @@ Source `33c2b36564d4d164d1992e41a9327a7968e44787` adds only a configuration/cali
 candidate behavior and approved active-oracle gates. The [immutable qualification bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V8-BUNDLE-2026-09-08.md)
 is published at `C:\platform-tools\kr003-qualification-bundles\33c2b36`; its `bundle.json` SHA-256 is
 `a828d4689bfc552411f016262df1bd44f6b606c37efe1be66b73858bced4e4a0`. It is bound to the passed calibration, exact captured configuration and
-APK hashes. Physical execution is **Not run**.
+APK hashes. Physical execution was **Not run at publication**; the later single invocation is recorded below.
 
 Exact pushed head `5719a0983ccdd0f6b4fd30ea3817f08d3ffc73cc` passed all three jobs in
 [CI run 34309000050](https://github.com/felipebarbosa4/KidRemote/actions/runs/34309000050), including PowerShell 7, native Windows PowerShell 5.1,
@@ -409,3 +409,18 @@ Node evidence/security, repository validation and Android debug/release isolatio
 The calibration prerequisite advances only for this exact configuration. Formal TIME-04 remains open with no offline 100-cycle p95, and no
 lifecycle, revocation, tamper, safety, Play or production gate advances. All earlier Samsung INVALID records remain unchanged; the Mi 8 is not
 reinterpreted; KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
+
+## Samsung qualification network-preflight INVALID and runner-v9 handoff — 2026-09-09
+
+The owner invoked the immutable runner-v8 Samsung qualification bundle once. Strict ingestion of
+`run-20260909-003140-758ee7f6` preserves `INVALID:ADB_REJECTED`, zero qualification rows and zero checkpoint sessions. The
+[retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) establishes that Wi-Fi disable/readback
+completed, the runner entered mobile-data isolation, and finalization restored Wi-Fi to its original on state. It cannot distinguish rejection
+of `svc data disable` from rejection of the following `settings get global mobile_data`; the exit code/stderr and resulting mobile setting are
+**UNSPECIFIED**. Diagnostic CLEAR was verified. No ARM, blocked hold, denial oracle or enforcement outcome occurred.
+
+OD-36 records the runner defect: v8 treated the global mobile-data setting as a capability bit. Runner-v9 probes only Android's declared Wi-Fi
+and telephony-data features, treats absent transports as `NOT_APPLICABLE`, retains safe typed network operation/exit/error-class diagnostics,
+and keeps unknown/present-path disable/readback/restoration failures closed. It adds no Samsung special case, permission change, airplane-mode
+substitution or enforcement-semantic change. The new immutable bundle is published from the source/hash recorded in the linked evidence and has
+not been physically executed. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
