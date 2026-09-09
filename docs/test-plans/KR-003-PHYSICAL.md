@@ -67,7 +67,8 @@ it cannot substitute for the existing API 36 gate without an owner support-bound
 and [API levels](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html), reviewed 2026-09-08.
 
 Map each newly read configuration to those requirements before candidate installation. The Samsung SM-X400 metadata maps to Android 16/API 36 and
-one exact Samsung/OEM-variant key, but its transport PASS and calibration INVALID do not pass enforcement on either row. It cannot satisfy
+one exact Samsung/OEM-variant key. Its later active-oracle calibration PASS is one excluded prerequisite sample; the 100-cycle offline TIME-04
+qualification remains Not run, so neither required enforcement row is passed. It cannot satisfy
 Pixel/current-Google, another Samsung build or another OEM row. Mi 8/API 29 evidence cannot satisfy a Samsung row, and Samsung evidence cannot retroactively change the Mi 8 outcome.
 
 ## Required functional/failure rows

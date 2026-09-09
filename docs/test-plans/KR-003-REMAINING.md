@@ -50,7 +50,8 @@ Apply the exact [device-to-matrix mapping](KR-003-DEVICE-MATRIX-MAPPING.md) to e
 
 The physical protocol requires **API 28**, **Android 15/API 35**, **Android 16/API 36**, and each proposed OEM support variant. These are hard
 physical gates under the current contract. The Samsung record establishes an Android 16/API 36 plus exact Samsung-variant configuration and passes
-their transport prerequisite only. Calibration/enforcement is INVALID/Not run, so neither physical enforcement row is passed. API 28 and 35 remain unavailable/unrun.
+its transport and active-oracle calibration prerequisites only. The 100-cycle enforcement qualification is Not run, so formal TIME-04 is not passed.
+API 28 and 35 remain unavailable/unrun.
 Android 17/API 37 is now an official platform. Adding it to the required support set remains **UNSPECIFIED**; any API 37 result is supplemental
 until that owner decision and cannot satisfy the existing API 36 row.
 The broader matrix proposes a current Google reference, Samsung phone/tablet and restrictive tablet/OEM; exact approved support variants remain
