@@ -19,7 +19,11 @@ was invoked once; its [network-preflight INVALID](KR-003-SAMSUNG-QUALIFICATION-N
 enforcement failure. Runner-v9's immutable [bundle and hashes](KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md) remain preserved. Its later
 [physical execution](KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md) retained 100 automated PASS rows at p95 317 ms but stopped
 `INVALID:SCREEN_OR_KEYGUARD` before checkpoint-3 physical agreement. It is one non-resumable INVALID, not a qualification PASS. The immutable
-[runner-v10 bundle](KR-003-SAMSUNG-QUALIFICATION-V10-BUNDLE-2026-09-09.md) is the current unexecuted stay-awake-aware handoff.
+[runner-v10 bundle](KR-003-SAMSUNG-QUALIFICATION-V10-BUNDLE-2026-09-09.md) was then executed once. Its
+[Home-phase FAIL](KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md) retained another 100 automated PASS rows at p95 318 ms and final-visible
+PASS, but no Home action/result: an out-of-sequence Settings-button action led the automated hold poll to emit `FAIL:RESTRICTION_LOST` while
+restriction remained true on an allowed safe surface. The emitted FAIL remains unchanged and the run is not resumable or a Home escape result.
+Runner-v11 is the current unexecuted navigation-aware handoff after publication.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

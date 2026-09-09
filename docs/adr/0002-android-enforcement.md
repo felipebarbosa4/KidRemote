@@ -39,7 +39,13 @@ readback, restoration and fail-closed requirements for every present path. Its p
 then retained 100 automated active-oracle PASS rows with p95 317 ms and checkpoints 1/2 PASS, but stopped `INVALID:SCREEN_OR_KEYGUARD` before
 any checkpoint-3 owner response. The approximately five-minute prompt interval and combined eligibility loss do not distinguish display timeout
 from keyguard, so the whole run remains non-resumable INVALID. Runner-v10 adds only reversible, verified Android Stay awake while plugged in lab
-orchestration and exact-setting restoration. No formal matrix row, enforcement support boundary or production result advances.
+orchestration and exact-setting restoration. Its subsequent [runner-v10 execution](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md)
+retained another 100 automated PASS rows at p95 318 ms, checkpoints 1/2 and final visibility PASS, then emitted automated
+`FAIL:RESTRICTION_LOST` before a Home response. The trace establishes an out-of-sequence overlay Settings-button action followed by the intended
+allowed-safe-surface detach: `restriction=true`, `SAFE_SYSTEM`, no fixture focus/input leak. No system Home action or ordinary-app escape is
+established. Runner-v11 adds only read-only coarse current navigation-mode capture, mode-specific Home instructions and typed action/result/source
+evidence; unknown or an out-of-sequence action stops INVALID. It does not change navigation mode, candidate enforcement or safe-surface semantics.
+No formal matrix row, enforcement support boundary or production result advances.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.

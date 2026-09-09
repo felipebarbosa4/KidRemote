@@ -117,9 +117,10 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
     assert.match(module,new RegExp(`'${phase}'`));
   }
   assert.match(packager,/protocol:"KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION"/);
-  assert.match(packager,/runnerVersion:10/);
+  assert.match(packager,/runnerVersion:11/);
   assert.match(packager,/networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA"/);
   assert.match(packager,/awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE"/);
+  assert.match(packager,/navigationModeModel:"SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM"/);
   assert.match(packager,/calibration-20260908-231756-97a0855b/);
   assert.match(packager,/BP4A\.251205\.006/);
   assert.match(packager,/humanCheckpointMaximum:3/);
@@ -137,6 +138,10 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(runner,/shell','svc','power','stayon','true/);
   assert.match(runner,/stay_on_while_plugged_in/);
   assert.match(runner,/Restore-StayAwake/);
+  assert.match(runner,/settings','--user','current','get','secure','navigation_mode/);
+  assert.match(runner,/HOME_ACTION_EXERCISED_AND_RESISTED|Get-KRHomeActionResult/);
+  assert.match(runner,/Do not tap Open device settings yet/);
+  assert.doesNotMatch(runner,/settings','(?:--user','current',)?'put','secure','navigation_mode/);
   assert.doesNotMatch(runner,/RawBattery|RawSetting|BatteryDump|StackTrace/);
   assert.match(bailout,/Get-BailoutState 'CLEAR'/);
   assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
@@ -205,7 +210,7 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
   const fixture='f'.repeat(64);
   const approvedConfiguration={schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'};
   const calibratedBy={protocol:'KR003-GENERIC-ACTIVE-ORACLE-CALIBRATION',sourceCommit:'a'.repeat(40),runDirectory:'calibration-20260908-231756-97a0855b',status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',reason:'COMPLETED',summarySha256:'b'.repeat(64),deviceSha256:'c'.repeat(64),transportDeviceEvidenceSha256:'d'.repeat(64),calibrationSamples:1,qualificationSamples:0,physicalAgreement:'PASS',candidateSha256:candidate,fixtureSha256:fixture};
-  const bundle={protocol:'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:10,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,approvedConfiguration,ownerProvidedLabels:{device:'Galaxy Tab S10 Lite',software:'One UI 8.5'},physicalExecution:'NOT_RUN',calibratedBy,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',networkCapabilityModel:'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA',awakeStateModel:'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE',humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false};
+  const bundle={protocol:'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION',sourceCommit:'e'.repeat(40),runnerVersion:11,diagnosticOnly:false,requiresOffline:true,candidateSha256:candidate,fixtureSha256:fixture,approvedConfiguration,ownerProvidedLabels:{device:'Galaxy Tab S10 Lite',software:'One UI 8.5'},physicalExecution:'NOT_RUN',calibratedBy,oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',networkCapabilityModel:'ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA',awakeStateModel:'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE',navigationModeModel:'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM',humanCheckpointMaximum:3,qualificationCycles:100,resumeAllowed:false,poolingAllowed:false};
   const capturedDevice={Manufacturer:'samsung',Model:'SM-X400',Android:'16',Api:'36',Patch:'2026-07-05',BuildId:'BP4A.251205.006',wifi_on:'0',mobile_data:'0'};
   save('manifest.json',{Bundle:bundle,InitialDevice:capturedDevice,Device:capturedDevice,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
   const calibration={Attempt:0,Phase:'CALIBRATION',Revision:99,PhysicalObserver:'PASS',AutomatedOracle:'PASS',InputOracle:'PASS',LatencyMs:111,HoldMillis:10000,InjectedBlockedTaps:20,PositiveControlTap:'REACHED_FIXTURE'};
@@ -222,12 +227,13 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
     {Name:'RECOVERY_BUTTON_ATTEMPT',PhysicalResult:'PASS',Oracle:'FRESH_SAFE_TRANSITION_CORROBORATED',SafeTransitionElapsed:1000,LastElapsed:11000,ReattachedAfterSafe:false,UnknownAfterSafe:false},
     {Name:'POST_RECOVERY_STATE',PhysicalResult:'UNRECORDED',Oracle:'SAFE_STATE_OBSERVED'},
   ];
-  save('safety-final.json',{Phase:'final',Result:'PHYSICAL_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HomePhysical:'PASS',RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'});
+  save('safety-final.json',{Phase:'final',Result:'PHYSICAL_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HomePhysical:'PASS',NavigationMode:'GESTURE',HomeActionResult:'HOME_ACTION_EXERCISED_AND_RESISTED',HomeResultSource:'OWNER_RESPONSE',RecoveryReason:'PHYSICAL_PASS_RECORDED',ReentryPhysical:'PASS',ClearTouch:'FIXTURE_COUNTER_INCREMENT'});
   save('recovery-final.json',{Phases:phases});
   save('final-metrics.json',{samples:rows.map(r=>r.LatencyMs),sampleCount:100});
   save('network-restoration.json',{Status:'RESTORED_AND_FLAGS_VERIFIED'});
   save('stay-awake.json',{Schema:1,Mechanism:'ANDROID_STAY_ON_WHILE_PLUGGED_IN',OriginalSetting:0,AppliedSetting:15,Changed:true,PowerSourceBefore:'USB',PowerSourceAfter:'USB',Establishment:'VERIFIED',VerificationSource:'GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY',VerificationCount:203,LastPowerSource:'USB',LastVerifiedUtc:'2026-09-09T01:00:00Z'});
   save('stay-awake-restoration.json',{Schema:1,Status:'RESTORED_AND_SETTING_VERIFIED',OriginalSetting:0,ObservedSetting:0,Changed:true,VerificationSource:'GLOBAL_SETTING_READBACK',AtUtc:'2026-09-09T02:00:00Z'});
+  save('navigation-mode.json',{Schema:1,Mode:'GESTURE',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_2',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
   save('network-capabilities.json',{Schema:1,Wifi:'PRESENT',MobileData:'ABSENT',VerificationSource:'PM_HAS_FEATURE',AtUtc:'2026-09-09T00:00:00Z'});
   save('network-operations.json',[
     {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z'},
@@ -238,6 +244,9 @@ test("Q7 ingestion requires 100 active-oracle rows and exactly three passing hum
   const sorted=rows.map(r=>r.LatencyMs).sort((a,b)=>a-b), stats={Count:100,P50:sorted[49],P95:sorted[94],Max:sorted[99]};
   save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',HumanCheckpointSessions:3,PhysicalExpiryObservations:2,InternalPairedStatistics:stats,ValidPairedObservations:100,Status:'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY',Offline:true,SafetyChecksPassed:true,FinalizationErrors:[]});
   assert.equal(ingestQualification(dir).automatedExpiryCycles,100);
+  save('navigation-mode.json',{Schema:1,Mode:'UNKNOWN',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'UNPARSEABLE',VerificationCount:1,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
+  assert.throws(()=>ingestQualification(dir));
+  save('navigation-mode.json',{Schema:1,Mode:'GESTURE',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_2',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
   save('network-operations.json',[
     {Sequence:1,Operation:'PROBE_WIFI_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:00Z',RawStderr:'forbidden'},
     {Sequence:2,Operation:'PROBE_MOBILE_DATA_CAPABILITY',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:1,StderrClass:'NONE',AtUtc:'2026-09-09T00:00:01Z'},
@@ -301,6 +310,23 @@ test("100 valid Samsung rows followed by checkpoint-3 screen/keyguard INVALID re
     ['PREFLIGHT_NORMAL_PASS','PASS'],['PREFLIGHT_NEGATIVE_CONTROL','PASS'],['POST_RUN_SAFETY','INVALID'],
   ]);
   assert.equal(bundle.resumeAllowed,false);assert.equal(bundle.poolingAllowed,false);assert.equal(result.kr003Complete,false);
+
+  // A later runner-v10 safety-oracle failure keeps all 100 automated rows but never becomes qualification PASS.
+  bundle.runnerVersion=10;bundle.awakeStateModel='ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE';
+  save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
+  save('stay-awake.json',{Schema:1,Mechanism:'ANDROID_STAY_ON_WHILE_PLUGGED_IN',OriginalSetting:0,AppliedSetting:15,Changed:true,PowerSourceBefore:'USB',PowerSourceAfter:'USB',Establishment:'VERIFIED',VerificationSource:'GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY',VerificationCount:204,LastPowerSource:'USB',LastVerifiedUtc:'2026-09-09T01:00:00Z'});
+  save('stay-awake-restoration.json',{Schema:1,Status:'RESTORED_AND_SETTING_VERIFIED',OriginalSetting:0,ObservedSetting:0,Changed:true,VerificationSource:'GLOBAL_SETTING_READBACK',AtUtc:'2026-09-09T02:00:00Z'});
+  save('human-checkpoints.json',[
+    {Name:'PREFLIGHT_NORMAL_PASS',Result:'PASS',Evidence:'TEN_SECOND_VISIBLE_RESULT_PLUS_ACTIVE_FIXTURE_INPUT_DENIAL'},
+    {Name:'PREFLIGHT_NEGATIVE_CONTROL',Result:'PASS',Evidence:'LAB_CLEAR_PLUS_REAL_ADB_INPUT_REACHED_FIXTURE'},
+    {Name:'POST_RUN_SAFETY',Result:'FAIL',Evidence:'GUIDED_CHECKPOINT_STOPPED_WITH_PRESERVED_SUBSTEP_EVIDENCE'},
+  ]);
+  save('safety-final.json',{Phase:'final',Result:'INCOMPLETE',Reason:'RESTRICTION_LOST',FinalVisibilityPhysical:'PASS',HomePhysical:'UNRECORDED',HoldOracle:'RESTRICTION_HELD',RecoveryReason:'UNRECORDED',ReentryPhysical:'UNRECORDED',ClearTouch:'UNRECORDED'});
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'FAIL',Reason:'RESTRICTION_LOST',StatisticsAvailable:true,InternalPairedStatistics:stats,ValidPairedObservations:100});
+  const failed=ingestQualification(dir);
+  assert.equal(failed.status,'FAIL');assert.equal(failed.reason,'RESTRICTION_LOST');
+  assert.equal(failed.automatedExpiryCycles,100);assert.equal(failed.safetyCheckpoint.homePhysical,'UNRECORDED');
+  assert.equal(failed.safetyCheckpoint.finalVisibilityPhysical,'PASS');
 }));
 
 test("configuration qualification network-preflight INVALID retains zero cycles and checkpoints",()=>temporary(dir=>{

@@ -33,9 +33,10 @@ $calibratedBy=[PSCustomObject]@{
     candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
 $configurationBundle=[PSCustomObject]@{
-    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=10;diagnosticOnly=$false;requiresOffline=$true
+    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=11;diagnosticOnly=$false;requiresOffline=$true
     networkCapabilityModel='ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA'
     awakeStateModel='ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE'
+    navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM'
     oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
     approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
@@ -89,6 +90,24 @@ Assert-Reject { Convert-KRPowerSourceProbe "AC powered: false`nUSB powered: true
 Assert-KRStayAwakeState ([PSCustomObject]@{Setting=15;PowerSource='USB';PlugMask=2}) 15
 Assert-Reject { Assert-KRStayAwakeState ([PSCustomObject]@{Setting=1;PowerSource='USB';PlugMask=2}) } 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
 Assert-Reject { Assert-KRStayAwakeState ([PSCustomObject]@{Setting=15;PowerSource='UNPLUGGED';PlugMask=0}) } 'INVALID:STAY_AWAKE_VERIFICATION_FAILED'
+
+# Android's current-user navigation setting is reduced to a coarse instruction enum; unknown values fail closed.
+Assert-Equal (Convert-KRNavigationMode '0') 'THREE_BUTTON'
+Assert-Equal (Convert-KRNavigationMode "1`r`n") 'TWO_BUTTON'
+Assert-Equal (Convert-KRNavigationMode '2') 'GESTURE'
+Assert-Equal (Convert-KRNavigationMode 'null') 'UNKNOWN'
+Assert-Equal (Convert-KRNavigationMode '3') 'UNKNOWN'
+Assert-Equal (Get-KRHomeActionInstruction 'THREE_BUTTON') 'tap the on-screen Home button once'
+Assert-Equal (Get-KRHomeActionInstruction 'GESTURE') 'swipe up once from the bottom edge to go Home; do not swipe and hold'
+Assert-Reject { Get-KRHomeActionInstruction 'UNKNOWN' } 'INVALID:NAVIGATION_MODE_UNKNOWN'
+Assert-Equal (Get-KRHomeActionResult 'PASS') 'HOME_ACTION_EXERCISED_AND_RESISTED'
+Assert-Equal (Get-KRHomeActionResult 'FAIL') 'HOME_ACTION_EXERCISED_AND_ESCAPED'
+Assert-Equal (Get-KRHomeActionResult 'INVALID') 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+$settingsAction=New-Snapshot
+$settingsAction.traceHead=1
+$settingsAction.events=@([PSCustomObject]@{sequence=1;line='t=21000 kind=recovery_open_requested trigger=settings_button eventType=-1 identity=NONE disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED adapter=APPLIED nextAdapter=APPLIED revision=2'})
+Assert-Equal (Test-KRRecoveryButtonAction $settingsAction) $true
+Assert-Equal (Test-KRRecoveryButtonAction (New-Snapshot)) $false
 
 Assert-Equal (Get-KRStatistics @()).Count 0
 Assert-Equal (Get-KRStatistics @(1..100)).P95 95

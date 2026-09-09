@@ -6,7 +6,10 @@ Do not run Q7 on the unchanged configuration. OD-31's separate generic path subs
 [configuration-specific calibration PASS](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md). Its separate runner-v8 qualification
 attempt stopped INVALID in network preflight with zero cycles; runner-v9 corrected that capability assumption. Its next Samsung execution retained
 100 automated PASS rows but stopped `INVALID:SCREEN_OR_KEYGUARD` before checkpoint-3 owner agreement. Runner-v10 adds reversible verified Stay
-awake while plugged in orchestration; the INVALID attempt remains non-resumable. Q7 and its Mi 8 evidence stay
+awake while plugged in orchestration. Its later Samsung execution retained another 100 automated PASS rows but emitted an automated
+`FAIL:RESTRICTION_LOST` during the Home prompt after an out-of-sequence overlay Settings action; Home remained unrecorded and restriction stayed
+true on an allowed safe surface. Runner-v11 makes the current button/gesture Home action explicit and fail-closed. Both stopped attempts remain
+non-resumable. Q7 and its Mi 8 evidence stay
 historical/configuration-specific, and the evidence contract below is not weakened.
 
 - **Goal:** Measure 100 offline expiry cycles without 100 repetitive human confirmations while retaining an independently calibrated enforcement oracle.
@@ -66,7 +69,7 @@ The fixture counter and focus callbacks are independent of the candidate's Acces
 
 1. **Preflight normal PASS:** the active oracle runs on an excluded fresh expiry. The owner watches the complete ten-second restricted hold and confirms continuous visible blocking with no flicker or ordinary use.
 2. **Preflight controlled negative:** the runner deliberately clears only that disposable restriction and injects the same real tap. Automation requires the fixture counter to increment; the owner confirms the overlay is absent and ordinary fixture feedback is visible. This is an excluded negative control, not a consumer recovery claim or qualification sample.
-3. **Post-run safety/agreement:** after unattended sample 100 remains restricted, the owner validates visible persistence plus the existing guided physical Home, root Settings, expected Digital Wellbeing block, one-button persistent Settings recovery and ordinary re-entry route. CLEAR/input verification is automated. This is one checkpoint session with separately journalled substeps.
+3. **Post-run safety/agreement:** after unattended sample 100 remains restricted, the owner validates visible persistence, exercises the current Android system Home action once (tap the on-screen Home control in button mode; swipe up once from the bottom in gesture mode), then follows separately prompted root Settings, expected Digital Wellbeing block, one-button persistent Settings recovery and ordinary re-entry. The overlay Settings button must not be used during the Home phase. CLEAR/input verification is automated. This is one checkpoint session with separately journalled substeps.
 
 Any non-PASS checkpoint stops the run. The two preflight checkpoints occur before metrics are reset for the 100 rows. The final safety checkpoint adds no latency sample.
 

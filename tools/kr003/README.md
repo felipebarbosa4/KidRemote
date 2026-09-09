@@ -66,7 +66,7 @@ The resulting runner repeats an excluded calibration at the beginning, then perf
 human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
 state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
 
-Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v10 protocol.
+Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v11 protocol.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
@@ -80,11 +80,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003
 
 `-ExecutionPolicy Bypass` applies only to that process. Runner v9 requires `-OfflineNetwork` and rejects diagnostic/calibration-only modes. It probes declared Wi-Fi and telephony-data capabilities, journals original state for present transports, disables and reads back each enabled path, obtains an explicit operator confirmation, and restores/read-backs each changed path during independently guarded finalization. Absent paths are `NOT_APPLICABLE`; unknown capability/state fails closed. Keep only the manifest-bound authorized device connected. The runner installs in place and pulls/hashes installed APKs; it never uninstalls, clears app data, grants permissions, reboots, substitutes airplane mode or repairs host/WSL state.
 
-The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 60–70 minutes on the measured Samsung configuration; budget approximately 75–90 minutes including preflight and final owner work. The screen must begin unlocked/interactive and the device must remain connected to external power. Runner-v10 temporarily enables Android's Stay awake while plugged in setting, verifies the setting and plugged source throughout the automated section, then restores and verifies the exact original setting during finalization. It never disables lock security. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
+The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md) is bundled. The 100-cycle section runs unattended for approximately 60–70 minutes on the measured Samsung configuration; budget approximately 75–90 minutes including preflight and final owner work. The screen must begin unlocked/interactive and the device must remain connected to external power. Runner-v11 temporarily enables Android's Stay awake while plugged in setting, verifies the setting and plugged source throughout the automated section, then restores and verifies the exact original setting during finalization. It never disables lock security. It also reduces the current-user Android navigation setting to a coarse enum and stops before qualification if the mode is unknown. Any automated failure stops and remains in the evidence—there is no replacement, resume or pooling.
 
 Q7 first asks for one normal visible expiry checkpoint, then one controlled unblocked negative checkpoint. The 100-cycle section has no P prompts:
 each cycle proves input reaches the fixture before arm, then injects 20 equivalent taps during restriction and requires zero delivery/focus regain.
-The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. These remain separate evidence.
+The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. For button navigation, tap the on-screen Home control; for gesture navigation, swipe up once from the bottom edge. Do not tap the overlay Settings control until its later prompt. `P`/`F` means the current-mode Home action was actually exercised and resisted/escaped; `I` means not exercisable or uncertain and stops INVALID. These remain separate evidence.
 
 ## Evidence and bailout
 

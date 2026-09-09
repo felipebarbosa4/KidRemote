@@ -28,6 +28,7 @@ function Reset-Run([string]$Name) {
     $script:RadioOriginal=$null; $script:RadioTouched=@(); $script:RadioRestoreStatus='NOT_CHANGED'; $script:RadioResults=@()
     $script:StayAwakeOriginal=$null;$script:StayAwakeApplied=$null;$script:StayAwakeTouched=$false;$script:StayAwakeEvidence=$null
     $script:StayAwakeRestoreStatus='NOT_CHANGED';$script:StayAwakeRestoration=$null
+    $script:NavigationMode='GESTURE';$script:NavigationModeEvidence=[PSCustomObject]@{Mode='GESTURE'}
     $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
@@ -150,6 +151,29 @@ try {
     Complete-LabRun 6>$null
     Assert-Equal (Read-Json 'network-restoration.json').Status 'RESTORED_AND_FLAGS_VERIFIED'
     Assert-Equal (Read-Json 'network-restoration.json').Settings[1].Observed '0'
+
+    # Navigation mode is read-only, current-user scoped and persisted only as a coarse enum.
+    Reset-Run 'navigation-mode-gesture'
+    $script:SyntheticNavigationMode='2'
+    function Invoke-LabAdbResult { param($Arguments) [PSCustomObject]@{Stdout=$script:SyntheticNavigationMode;ExitCode=0;StderrClass='NONE'} }
+    Capture-NavigationMode
+    Assert-Equal $script:NavigationMode 'GESTURE'
+    Assert-Equal (Read-Json 'navigation-mode.json').ParseResult 'VALUE_2'
+    Assert-NavigationMode
+    Assert-Equal (Read-Json 'navigation-mode.json').VerificationCount 2
+
+    Reset-Run 'navigation-mode-three-button'
+    $script:SyntheticNavigationMode='0'
+    Capture-NavigationMode
+    Assert-Equal $script:NavigationMode 'THREE_BUTTON'
+    Assert-Equal (Read-Json 'navigation-mode.json').ParseResult 'VALUE_0'
+
+    Reset-Run 'navigation-mode-unknown'
+    $script:SyntheticNavigationMode='unexpected'
+    $navigationFailure=$null;try{Capture-NavigationMode}catch{$navigationFailure=$_.Exception.Message}
+    Assert-Equal $navigationFailure 'INVALID:NAVIGATION_MODE_UNKNOWN'
+    Assert-Equal (Read-Json 'navigation-mode.json').Mode 'UNKNOWN'
+    Assert-Equal (Read-Json 'navigation-mode.json').ParseResult 'UNPARSEABLE'
 
     # Stay-awake setup uses only sanitized setting/power state, verifies each cycle boundary, and restores the exact original value.
     Reset-Run 'stay-awake-restored'
@@ -311,10 +335,14 @@ try {
     function Check-EarlyStop {}
     function Start-Sleep {}
     function Assert-StayAwake {}
+    function Assert-NavigationMode {}
     Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null
     $safety=Read-Json 'safety-final.json'
     Assert-Equal $safety.FinalVisibilityPhysical 'PASS'
     Assert-Equal $safety.HomePhysical 'PASS'
+    Assert-Equal $safety.NavigationMode 'GESTURE'
+    Assert-Equal $safety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_RESISTED'
+    Assert-Equal $safety.HomeResultSource 'OWNER_RESPONSE'
     Assert-Equal $safety.RecoveryReason 'PHYSICAL_PASS_RECORDED'
     Assert-Equal $safety.ReentryPhysical 'PASS'
     Assert-Equal $safety.ClearTouch 'FIXTURE_COUNTER_INCREMENT'
@@ -323,6 +351,46 @@ try {
     Assert-Equal ($script:DelayedPromptPolls -ge 3) $true
     Assert-Equal $script:HumanCheckpoints.Count 1
     Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
+
+    # Owner outcomes remain distinct from an automated hold-oracle failure and from no exercisable Home action.
+    Reset-Run 'home-owner-outcomes'
+    $script:SafetyFileName='safety-final.json'
+    $script:Safety=[PSCustomObject]@{HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    Set-HomeActionObservation 'FAIL'
+    Assert-Equal $script:Safety.HomePhysical 'FAIL'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_ESCAPED'
+    Assert-Equal $script:Safety.HomeResultSource 'OWNER_RESPONSE'
+    $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeResultSource='NONE'
+    Set-HomeActionObservation 'INVALID'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+
+    Reset-Run 'home-automated-loss-before-response'
+    $script:SafetyFileName='safety-final.json'
+    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    function Get-LabState {
+        $frame=New-SafetyFrame $true;$frame.revision=42;$frame.sampledRevision=42;$frame.attached=$false;$frame.removals=1
+        return $frame
+    }
+    function Get-FixtureState { [PSCustomObject]@{focused=$false;resumed=$true;taps=0} }
+    $homeFailure=$null;try{Poll-SafetyHold}catch{$homeFailure=$_.Exception.Message}
+    Assert-Equal $homeFailure 'FAIL:RESTRICTION_LOST'
+    Assert-Equal $script:Safety.HomePhysical 'UNRECORDED'
+    Assert-Equal $script:Safety.HomeActionResult 'UNRECORDED'
+    Assert-Equal $script:Safety.HomeResultSource 'AUTOMATED_HOLD_ORACLE'
+
+    Reset-Run 'home-out-of-sequence-settings-action'
+    $script:SafetyFileName='safety-final.json'
+    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    function Get-LabState {
+        $frame=New-SafetyFrame $true
+        $frame.events=@([PSCustomObject]@{line='t=21000 kind=recovery_open_requested trigger=settings_button eventType=-1 identity=NONE disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED adapter=APPLIED nextAdapter=APPLIED revision=42'})
+        return $frame
+    }
+    $homeFailure=$null;try{Poll-SafetyHold}catch{$homeFailure=$_.Exception.Message}
+    Assert-Equal $homeFailure 'INVALID:HOME_ACTION_NOT_EXERCISED'
+    Assert-Equal $script:Safety.HomePhysical 'UNRECORDED'
+    Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+    Assert-Equal $script:Safety.HomeResultSource 'OUT_OF_SEQUENCE_SETTINGS_ACTION'
 
     # Diagnostic CLEAR changes only timer state and preserves the complete latency sample array.
     Reset-Run 'diagnostic-bailout'

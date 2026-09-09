@@ -66,6 +66,8 @@ $script:StayAwakeTouched = $false
 $script:StayAwakeEvidence = $null
 $script:StayAwakeRestoreStatus = 'NOT_CHANGED'
 $script:StayAwakeRestoration = $null
+$script:NavigationMode = 'UNKNOWN'
+$script:NavigationModeEvidence = $null
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -228,6 +230,36 @@ function Assert-FixedSettings {
         if ($value -cne $script:Device.$key) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     }
     Assert-StayAwake
+}
+
+function Get-NavigationModeState {
+    $result=Invoke-LabAdbResult -Arguments @('shell','settings','--user','current','get','secure','navigation_mode')
+    $mode=if($result.ExitCode -eq 0 -and $result.StderrClass -eq 'NONE'){Convert-KRNavigationMode $result.Stdout}else{'UNKNOWN'}
+    $parseResult=if($result.ExitCode -ne 0 -or $result.StderrClass -ne 'NONE'){'ADB_REJECTED'}else{
+        switch($mode){'THREE_BUTTON'{'VALUE_0'};'TWO_BUTTON'{'VALUE_1'};'GESTURE'{'VALUE_2'};default{'UNPARSEABLE'}}
+    }
+    return [PSCustomObject]@{Mode=$mode;ParseResult=$parseResult}
+}
+
+function Capture-NavigationMode {
+    $state=Get-NavigationModeState
+    $script:NavigationMode=$state.Mode
+    $script:NavigationModeEvidence=[PSCustomObject]@{
+        Schema=1;Mode=$state.Mode;VerificationSource='SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE'
+        ParseResult=$state.ParseResult;VerificationCount=1;LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Write-JsonFile 'navigation-mode.json' $script:NavigationModeEvidence
+    if($state.Mode -eq 'UNKNOWN'){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
+}
+
+function Assert-NavigationMode {
+    if($script:NavigationMode -eq 'UNKNOWN' -or $null -eq $script:NavigationModeEvidence){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
+    $state=Get-NavigationModeState
+    if($state.Mode -eq 'UNKNOWN'){throw 'INVALID:NAVIGATION_MODE_UNKNOWN'}
+    if($state.Mode -ne $script:NavigationMode){throw 'INVALID:NAVIGATION_MODE_CHANGED'}
+    $script:NavigationModeEvidence.VerificationCount=[int]$script:NavigationModeEvidence.VerificationCount+1
+    $script:NavigationModeEvidence.LastVerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    Write-JsonFile 'navigation-mode.json' $script:NavigationModeEvidence
 }
 
 function Get-StayAwakeSetting {
@@ -875,9 +907,33 @@ function Save-Safety {
     if ($null -ne $script:Safety) { Write-JsonFile $script:SafetyFileName $script:Safety }
 }
 
+function Set-HomeActionObservation {
+    param([ValidateSet('PASS','FAIL','INVALID')][string]$Result)
+    $script:Safety.HomePhysical=$Result
+    $script:Safety.HomeActionResult=Get-KRHomeActionResult $Result
+    $script:Safety.HomeResultSource='OWNER_RESPONSE'
+    $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-Safety
+}
+
 function Poll-SafetyHold {
     $snapshot=Get-LabState
-    Assert-KRHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:Safety.FixtureTaps -FixtureState (Get-FixtureState)
+    if($script:Safety.CurrentStep -eq 'HOME_ACTION' -and (Test-KRRecoveryButtonAction $snapshot)){
+        $script:Safety.HomeActionResult='HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+        $script:Safety.HomeResultSource='OUT_OF_SEQUENCE_SETTINGS_ACTION'
+        $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+        throw 'INVALID:HOME_ACTION_NOT_EXERCISED'
+    }
+    try{
+        Assert-KRHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:Safety.FixtureTaps -FixtureState (Get-FixtureState)
+    }catch{
+        if($script:Safety.CurrentStep -eq 'HOME_ACTION' -and $script:Safety.HomeActionResult -eq 'UNRECORDED'){
+            $script:Safety.HomeResultSource='AUTOMATED_HOLD_ORACLE'
+            Save-Safety
+        }
+        throw
+    }
     $script:Safety.LastElapsed=[long]$snapshot.elapsed
     $script:Safety.HoldOracle='RESTRICTION_HELD'
     Save-Safety
@@ -894,6 +950,7 @@ function Stop-ForSafetyResult {
 function Invoke-QualificationSafetyCheckpoint {
     param([ValidateSet('calibration','final')][string]$Phase)
     Assert-StayAwake
+    Assert-NavigationMode
     $start=Get-LabState
     Assert-KRHealth $start
     if (-not $start.restriction -or -not $start.attached -or $start.disposition -ne 'ORDINARY_APP') {
@@ -904,7 +961,8 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety=[PSCustomObject]@{
         Schema=1; Protocol=$script:Bundle.protocol; Phase=$Phase; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
         Revision=[long]$start.revision; StartedElapsed=[long]$start.elapsed; LastElapsed=[long]$start.elapsed
-        FixtureTaps=[long]$fixture.taps; HomePhysical='UNRECORDED'; HomeObservedUtc=$null; HoldOracle='PENDING'
+        FixtureTaps=[long]$fixture.taps; NavigationMode=$script:NavigationMode; CurrentStep='START'
+        HomePhysical='UNRECORDED'; HomeActionResult='UNRECORDED'; HomeResultSource='NONE'; HomePromptedUtc=$null; HomeObservedUtc=$null; HoldOracle='PENDING'
         FinalVisibilityPhysical='UNRECORDED'; FinalVisibilityObservedUtc=$null
         RecoveryFile=('recovery-' + $Phase + '.json'); RecoveryReason='UNRECORDED'
         ReentryPhysical='UNRECORDED'; ReentryObservedUtc=$null; ReentryOracle='PENDING'
@@ -914,6 +972,8 @@ function Invoke-QualificationSafetyCheckpoint {
     Save-Safety
 
     if ($Phase -eq 'final') {
+        $script:Safety.CurrentStep='FINAL_VISIBILITY'
+        Save-Safety
         $visibleResult=Read-DiagnosticResult 'POST-RUN VISIBLE CHECK: watch the current restriction continuously for 10 seconds. P=no flicker/disappearance/ordinary use; F=visible failure; I=uncertain.' -Poll { Poll-SafetyHold } -MinimumPassSeconds 10 -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
             param($result)
             $script:Safety.FinalVisibilityPhysical=$result
@@ -923,15 +983,19 @@ function Invoke-QualificationSafetyCheckpoint {
         Stop-ForSafetyResult -Result $visibleResult -Step 'FINAL_VISIBILITY'
     }
 
-    $homeResult=Read-DiagnosticResult 'HOME CHECK: press Home PHYSICALLY once. P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+    $script:Safety.CurrentStep='HOME_ACTION'
+    $script:Safety.HomePromptedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-Safety
+    $homeInstruction=Get-KRHomeActionInstruction $script:NavigationMode
+    $homeResult=Read-DiagnosticResult ('HOME CHECK ('+$script:NavigationMode+'): '+$homeInstruction+'. Do not tap Open device settings yet. Only after exercising that system Home action once: P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=the action was not exercisable or the result is uncertain.') -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
         param($result)
-        $script:Safety.HomePhysical=$result
-        $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
-        Save-Safety
+        Set-HomeActionObservation $result
     }
     Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME')
     $null=Poll-SafetyHold
 
+    $script:Safety.CurrentStep='RECOVERY_DIAGNOSTIC'
+    Save-Safety
     Invoke-FocusedRecoveryDiagnostic -OutputName $script:Safety.RecoveryFile
     $script:Safety.RecoveryReason=$script:Diagnostic.Reason
     Save-Safety
@@ -950,6 +1014,7 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety.FixtureTaps=[long]$fixtureBefore.taps
     $script:Safety.Revision=[long]$reentrySnapshot.revision
     $script:Safety.HoldOracle='PENDING'
+    $script:Safety.CurrentStep='ORDINARY_REENTRY'
     Save-Safety
     $reentry=Read-DiagnosticResult 'ORDINARY RE-ENTRY: P=the disposable ordinary app is blocked again; F=ordinary use is possible/flickers; I=uncertain.' -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
         param($result)
@@ -1191,6 +1256,8 @@ try {
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
     Assert-QualificationPermissionState $ready
+    Write-Host 'Reading the current Android system navigation mode as a coarse Home-action instruction only.'
+    Capture-NavigationMode
     Write-Host 'Temporarily enabling Android Stay awake while plugged in. The exact original setting is journalled and restored during finalization.'
     Enter-StayAwake
     $awakeReady=Get-LabState
