@@ -28,6 +28,8 @@ The immutable [runner-v11 bundle](KR-003-SAMSUNG-QUALIFICATION-V11-BUNDLE-2026-0
 during final-visible polling with failed cleanup/restoration; RUN B retained final-visible PASS but no exercisable Home control/action. Prepared
 runner-v12 separates navigation mode from control availability and action outcome. The owner-approved dual path is now available in an
 [immutable runner-v12 bundle](KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md); it has not been physically executed.
+OD-40's [immutable excluded dual-Home diagnostic bundle](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-BUNDLE-2026-09-09.md) reuses that Home logic for one
+short exact-configuration check. It is also physically unexecuted and definitionally contributes zero qualification/TIME-04 rows and no matrix PASS.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.

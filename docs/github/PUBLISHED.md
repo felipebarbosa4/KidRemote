@@ -514,3 +514,18 @@ The [immutable runner-v12 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFIC
 PowerShell 5.1 and Android test/lint/build/release-isolation jobs. The mounted bundle is byte-identical to source and passed native Windows
 PowerShell 5.1 startup and reserved-variable checks without any device command. No matrix row advanced; KR-003 and draft PR #16 remain open,
 and KR-004 remains untouched.
+
+## Samsung excluded dual-Home diagnostic handoff — 2026-09-09
+
+OD-40 authorizes one short, non-qualifying exercise of the exact runner-v12/OD-39 Home implementation before any further full qualification.
+The diagnostic independently verifies shell-tap transport, calibrates exactly one fixed host `KEYCODE_HOME` against the focused ordinary fixture,
+arms one excluded ten-second restriction, performs one Path A or Path B check, then verifies CLEAR, ordinary fixture input and exact stay-awake
+restoration. Network and navigation state are not changed. Its manifest and strict ingester require zero qualification rows, zero TIME-04 rows,
+no matrix contribution, no resume/pooling and the distinct Path B result.
+
+The [immutable diagnostic bundle](../test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-BUNDLE-2026-09-09.md) is published from source
+`4288c798bdf959857a2e0729e529d63910f9480c` at `C:\platform-tools\kr003-dual-home-diagnostic-bundles\4288c79`; its `bundle.json` SHA-256 is
+`041ce2546f6e8dd374674ce0c031ed26fed2c91293b63bdc176edc9148ef4999`. Physical execution is **Not run**. Exact-source
+[CI run 34415929533](https://github.com/felipebarbosa4/KidRemote/actions/runs/34415929533) passed repository/Node checks, native Windows PowerShell
+5.1, PowerShell 7 and Android test/lint/build/release-isolation. Mounted payload hashes and source identity passed, and the actual bundle entrypoint
+passed native PowerShell 5.1 startup without a device command. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 is untouched.

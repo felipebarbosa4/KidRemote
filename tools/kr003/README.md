@@ -80,6 +80,8 @@ node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-dual-home-diagnostic-bu
 
 Its owner command uses `-DualHomeDiagnostic`, not `-OfflineNetwork`. It independently verifies shell-tap and fixed `KEYCODE_HOME` transport, arms one excluded ten-second restriction, invokes the same OD-39 Path A/Path B code, and verifies CLEAR, fixture ordinary use and exact stay-awake restoration. It never changes network or navigation state and always contributes zero qualification rows, zero TIME-04 rows and no matrix result. Ingest it with `node tools/kr003/ingest.mjs home-diagnostic ACTUAL_DIAGNOSTIC_DIRECTORY`. A configuration-specific diagnostic PASS permits only consideration of one later fresh full qualification; it is not that qualification and cannot be resumed or pooled.
 
+The current immutable diagnostic handoff is `C:\platform-tools\kr003-dual-home-diagnostic-bundles\4288c79`, source `4288c798bdf959857a2e0729e529d63910f9480c`, with `bundle.json` SHA-256 `041ce2546f6e8dd374674ce0c031ed26fed2c91293b63bdc176edc9148ef4999`. It remains physically **Not run**.
+
 ## Execute (owner / PowerShell)
 
 Use the exact populated command in the latest bundle handoff:
