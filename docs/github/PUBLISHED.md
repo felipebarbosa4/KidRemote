@@ -386,3 +386,21 @@ Exact-source [CI run 34305581473](https://github.com/felipebarbosa4/KidRemote/ac
 is published at `C:\platform-tools\kr003-oracle-calibration-bundles\4690d39`; its `bundle.json` SHA-256 is
 `8599225eb453ceaa391f9aa2aea30cc6f04e1a2e450b98a39ec7a03c6ae216fd`. Physical execution is Not run. The four v4 INVALID records remain
 separate, historical evidence is unchanged, no matrix row advanced, no 100 samples began and KR-004 was untouched.
+
+## Samsung calibration PASS and qualification-v8 handoff — 2026-09-08
+
+The fresh [runner-v5 physical calibration](../test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) passed on exactly
+`samsung` / `SM-X400` / Android 16 / API 36 / build `BP4A.251205.006` / security patch `2026-07-05`. It retained runner permission/health
+verification, an independent fixture positive control, ARM revision 23, attachment at 127 ms, a 22,371 ms blocked hold with 20 denied taps and
+no focus regain, explicit owner physical agreement, verified CLEAR and a final unarmed/unrestricted state. It contributes one excluded calibration
+sample and zero qualification samples. Owner labels Galaxy Tab S10 Lite / One UI 8.5 remain distinct from captured system metadata.
+
+Source `33c2b36564d4d164d1992e41a9327a7968e44787` adds only a configuration/calibration-bound runner-v8 qualification path around the unchanged
+candidate behavior and approved active-oracle gates. The [immutable qualification bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V8-BUNDLE-2026-09-08.md)
+is published at `C:\platform-tools\kr003-qualification-bundles\33c2b36`; its `bundle.json` SHA-256 is
+`a828d4689bfc552411f016262df1bd44f6b606c37efe1be66b73858bced4e4a0`. It is bound to the passed calibration, exact captured configuration and
+APK hashes. Physical execution is **Not run**.
+
+The calibration prerequisite advances only for this exact configuration. Formal TIME-04 remains open with no offline 100-cycle p95, and no
+lifecycle, revocation, tamper, safety, Play or production gate advances. All earlier Samsung INVALID records remain unchanged; the Mi 8 is not
+reinterpreted; KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
