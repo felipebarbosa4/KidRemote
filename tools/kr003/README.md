@@ -66,7 +66,7 @@ The resulting runner repeats an excluded calibration at the beginning, then perf
 human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
 state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
 
-Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` prepares configuration-bound runner-v12 with OD-39's prospective dual-path Home gate. Navigation mode, control exercisability, physical action exercise, host stimulus and outcome remain separate. Packaging never performs physical execution.
+Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` prepares configuration-bound runner-v12 with OD-39's prospective dual-path Home gate. Navigation mode, control exercisability, physical action exercise, host stimulus and outcome remain separate. The current immutable Samsung handoff is `C:\platform-tools\kr003-qualification-bundles\80dcdf4`; packaging did not physically execute it.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 

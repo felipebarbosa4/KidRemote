@@ -497,3 +497,20 @@ Source `b16c4536c05db51c8df945197e146c30e0a46c9e` passed all three jobs in
 [CI run 34393768118](https://github.com/felipebarbosa4/KidRemote/actions/runs/34393768118): repository/Node/PowerShell 7 validation, native
 Windows PowerShell 5.1 execution, and Android debug/release test/lint/build/isolation. No formal matrix row advanced; TIME-04 and all remaining
 lifecycle/tamper/safety/Play/production gates remain open. KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
+
+## Samsung runner-v12 dual-path Home decision and immutable handoff — 2026-09-09
+
+OD-39 records the owner's prospective dual-path decision. Path A requires one real, physically exercisable owner Home action plus independent
+no-escape corroboration. Path B applies only after the owner confirms that Home is unavailable as presented: one fixed host `KEYCODE_HOME` must
+first displace the unblocked focused independent fixture and the fixture must be returned to verified test state; one later restricted stimulus
+must preserve restriction/attachment/health, cause no fixture focus/input return, and agree with the owner's visible observation. Path B records
+`HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`, never physical Home resistance. Unknown remains INVALID and escape remains FAIL. Historical
+runs are unchanged and non-poolable.
+
+The [immutable runner-v12 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md) is published from source
+`80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd` at `C:\platform-tools\kr003-qualification-bundles\80dcdf4`; its `bundle.json` SHA-256 is
+`9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28`. Physical execution is **Not run**. Exact-source
+[CI run 34406041885](https://github.com/felipebarbosa4/KidRemote/actions/runs/34406041885) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android test/lint/build/release-isolation jobs. The mounted bundle is byte-identical to source and passed native Windows
+PowerShell 5.1 startup and reserved-variable checks without any device command. No matrix row advanced; KR-003 and draft PR #16 remain open,
+and KR-004 remains untouched.

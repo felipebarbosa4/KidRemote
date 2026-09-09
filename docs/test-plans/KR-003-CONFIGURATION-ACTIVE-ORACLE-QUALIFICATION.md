@@ -5,7 +5,7 @@
 - **Constraints:** Exact manifest-bound metadata and APK hashes; owner-operated authorized lab device; no pooling/resume, screenshots, UI nodes/text/content, package history, serial, permission grant, uninstall, data clear, reboot, production move or cross-device inference.
 - **Done when:** One new run contains an excluded passing preflight, exactly 100 consecutive active-oracle rows, three passing checkpoint sessions, offline confirmation, nearest-rank p95 at most 2,000 ms, complete metric agreement, verified CLEAR/bailout and verified radio restoration.
 
-Protocol: **`KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION`**, prepared runner version 12. No runner-v12 physical bundle has been published or executed.
+Protocol: **`KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION`**, runner version 12. The configuration-bound [immutable runner-v12 bundle](evidence/KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md) is published; it has not been physically executed.
 
 ## Configuration and provenance gate
 

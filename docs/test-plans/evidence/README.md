@@ -26,7 +26,8 @@ restriction remained true on an allowed safe surface. The emitted FAIL remains u
 The immutable [runner-v11 bundle](KR-003-SAMSUNG-QUALIFICATION-V11-BUNDLE-2026-09-09.md) was then executed twice. Both independent
 [runner-v11 attempts](KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) retain 100 automated PASS rows but remain INVALID: RUN A stopped
 during final-visible polling with failed cleanup/restoration; RUN B retained final-visible PASS but no exercisable Home control/action. Prepared
-runner-v12 separates navigation mode from control availability and action outcome; no runner-v12 physical bundle is published or executed.
+runner-v12 separates navigation mode from control availability and action outcome. The owner-approved dual path is now available in an
+[immutable runner-v12 bundle](KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md); it has not been physically executed.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
