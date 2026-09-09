@@ -67,4 +67,5 @@ The correction removes the unused script-scoped flag, names the response `$armRe
 
 ## Disposition
 
-All four runs remain independently and correctly `INVALID:HOST_EXCEPTION`. None is pooled or counted. The transport and permission-verifier results remain configuration-specific, all historical Mi 8/Samsung evidence remains unchanged, and cleanup succeeded four times. The replacement bundle is a future one-run handoff only; no physical execution is authorized by this record.
+All four runs remain independently and correctly `INVALID:HOST_EXCEPTION`. None is pooled or counted. The transport and permission-verifier results remain configuration-specific, all historical Mi 8/Samsung evidence remains unchanged, and cleanup succeeded four times. The immutable
+[runner-v5 replacement](KR-003-SAMSUNG-CALIBRATION-V5-BUNDLE-2026-09-08.md) is a future one-run handoff only; no physical execution is authorized by this record.

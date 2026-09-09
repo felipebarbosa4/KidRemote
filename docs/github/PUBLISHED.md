@@ -368,3 +368,21 @@ Issue #3 and PR #16 were updated and read back; the
 [CI run 34301950737](https://github.com/felipebarbosa4/KidRemote/actions/runs/34301950737). All earlier Samsung evidence remains unchanged;
 KR-003 remains Open/In Progress, PR #16 Draft/Open, and KR-004 Open/Backlog. No rerun, qualification, gate change, merge, closure, production move
 or KR-004 work occurred.
+
+## Samsung runner-v4 ARM exceptions and runner-v5 handoff — 2026-09-08
+
+The owner invoked runner-v4 source `af723c5a7af530a2c694e2749c533de1e18f4cab` four times. Every independent mounted directory passed strict
+ingestion as `INVALID:HOST_EXCEPTION`, `HostStage=ARM`, `ExceptionClass=PROPERTY_NOT_FOUND_EXCEPTION`, finalization `COMPLETED`, cleanup
+`VERIFIED`, zero calibration/qualification samples. Permission verification and the positive fixture control passed, and ARM returned an armed
+10,000 ms scalar response; no attachment verification, blocked hold, fixture-denial oracle or owner prompt started.
+
+The [preserved four-run evidence](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) establishes the deterministic
+host defect: top-level `$armed` held the ARM reply, then case-insensitive same-scope `$script:Armed=$true` overwrote it before strict `.revision`
+access. Source `4690d3951d0952fefe43eab9de0799599c6ea903` removes the unused flag, uses `$armReply`, and adds a fail-closed scalar/revision validator.
+Candidate, permission, enforcement, oracle, cleanup and evidence-gate behavior are unchanged.
+
+Exact-source [CI run 34305581473](https://github.com/felipebarbosa4/KidRemote/actions/runs/34305581473) passed all three jobs, including PowerShell
+`7.6.5` and native Windows PowerShell `5.1.26100.33296`. The immutable [runner-v5 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V5-BUNDLE-2026-09-08.md)
+is published at `C:\platform-tools\kr003-oracle-calibration-bundles\4690d39`; its `bundle.json` SHA-256 is
+`8599225eb453ceaa391f9aa2aea30cc6f04e1a2e450b98a39ec7a03c6ae216fd`. Physical execution is Not run. The four v4 INVALID records remain
+separate, historical evidence is unchanged, no matrix row advanced, no 100 samples began and KR-004 was untouched.
