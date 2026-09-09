@@ -19,5 +19,6 @@ Do not run the replacement calibration, start 100 samples, close KR-003, merge P
 
 Source `af723c5a7af530a2c694e2749c533de1e18f4cab` contains the bounded rename and regressions. Its immutable runner-v4 bundle is recorded in
 [KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md), with bundle hash
-`4d98e4e40c7b2eec77e59b8fb672cc89a5356356742ae2ae3f50f6be6f7b8320`. Exact-source CI run `34301619476` passed PowerShell 7 and native Windows PowerShell 5.1 entrypoint/collision regressions plus Node, Android,
-JVM and release-isolation checks. GitHub publication readback remains pending; physical execution remains Not run.
+`4d98e4e40c7b2eec77e59b8fb672cc89a5356356742ae2ae3f50f6be6f7b8320`. Exact-source CI run `34301619476` and publication-head CI run
+`34301950737` passed PowerShell 7 and native Windows PowerShell 5.1 entrypoint/collision regressions plus Node, Android, JVM and release-isolation
+checks. Issue #3 and draft PR #16 were synchronized and read back; KR-003 remains Open/In Progress and KR-004 Open/Backlog. Physical execution remains Not run.
