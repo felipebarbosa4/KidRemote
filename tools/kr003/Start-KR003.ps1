@@ -1,20 +1,26 @@
 <#
-Goal: KR-003 offline qualification with 100 active-oracle cycles on one calibration-approved configuration and no more than three human checkpoint sessions.
-Context: The manifest binds this reusable Q7 evidence model to one exact captured device configuration and calibration PASS.
-Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; reversible radio opt-in only.
-Done when: The independent input/focus oracle passes 100 cycles, all three human checkpoints pass, and cleanup restores state.
+Goal: KR-003 offline qualification or its explicitly excluded dual-Home diagnostic on one calibration-approved configuration.
+Context: The manifest selects either the reusable Q7 evidence model or a zero-row diagnostic that exercises the exact same OD-39 Home implementation.
+Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; reversible radio opt-in only for qualification.
+Done when: The selected manifest-bound mode passes its independent oracle and physical gates, and cleanup restores state.
 #>
 param(
     [string]$Adb = 'C:\platform-tools\adb.exe',
-    [string]$OutputRoot = 'C:\platform-tools\kr003-qualification',
+    [string]$OutputRoot = '',
     [switch]$OfflineNetwork,
     [switch]$CalibrationOnly,
-    [switch]$RecoveryDiagnostic
+    [switch]$RecoveryDiagnostic,
+    [switch]$DualHomeDiagnostic
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'DevicePreflight.psm1') -Force
+
+$script:IsDualHomeDiagnostic=[bool]$DualHomeDiagnostic
+if([string]::IsNullOrWhiteSpace($OutputRoot)) {
+    $OutputRoot=if($script:IsDualHomeDiagnostic){'C:\platform-tools\kr003-dual-home-diagnostic'}else{'C:\platform-tools\kr003-qualification'}
+}
 
 $candidatePackage = 'dev.kidremote.spike.enforcement'
 $fixturePackage = 'dev.kidremote.spike.ordinary'
@@ -22,7 +28,7 @@ $candidateReceiver = "$candidatePackage/.LabControlReceiver"
 $fixtureReceiver = "$fixturePackage/.FixtureReceiver"
 $fixtureActivity = "$fixturePackage/.FixtureActivity"
 $candidateService = "$candidatePackage/.EnforcementAccessibilityService"
-$runId = 'run-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
+$runId = $(if($script:IsDualHomeDiagnostic){'diagnostic-'}else{'run-'}) + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
 $runDirectory = Join-Path $OutputRoot $runId
 $script:Request = 0L
 $script:Cursor = 0L
@@ -71,6 +77,8 @@ $script:NavigationModeEvidence = $null
 $script:HomeKeyOperations = @()
 $script:HomeKeyTransport = $null
 $script:RestrictedHomeStimulus = $null
+$script:DualHomeRestriction = $null
+$script:DualHomeCleanup = $null
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -542,6 +550,123 @@ function Invoke-HomeKeyPositiveControl {
         }
     }
     return $script:HomeKeyTransport
+}
+
+function Invoke-DualHomeShellInputPrecondition {
+    Open-Fixture
+    $null=Wait-FixtureFocus -Focused $true
+    $before=Get-FixtureState
+    $after=Assert-FixturePositiveControl -Before $before -FailureCode 'INVALID:SHELL_INPUT_TRANSPORT_NOT_VERIFIED'
+    $record=[PSCustomObject]@{
+        Schema=1;Stimulus='ADB_SHELL_INPUT_TAP_FIXTURE_PROBE';FixtureRole='INDEPENDENT_ORDINARY_FIXTURE'
+        Result='FIXTURE_COUNTER_INCREMENTED_ONCE';SameFixture=($before.instance -eq $after.instance)
+        BeforeFocused=[bool]$before.focused;AfterFocused=[bool]$after.focused
+        BeforeResumed=[bool]$before.resumed;AfterResumed=[bool]$after.resumed
+        TapDelta=[long]$after.taps-[long]$before.taps;VerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    }
+    Write-JsonFile 'shell-input-precondition.json' $record
+    if(-not $record.SameFixture -or -not $record.BeforeFocused -or -not $record.AfterFocused -or
+        -not $record.BeforeResumed -or -not $record.AfterResumed -or $record.TapDelta -ne 1) {
+        throw 'INVALID:SHELL_INPUT_TRANSPORT_NOT_VERIFIED'
+    }
+    return $record
+}
+
+function Invoke-DualHomeDiagnosticRestriction {
+    Save-Progress
+    $record=[PSCustomObject]@{
+        Schema=1;Phase='EXCLUDED_HOME_DIAGNOSTIC';QualificationRows=0;Time04Rows=0
+        StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Status='STARTED';Revision=$null
+        CandidateSampleCountBefore=$null;CandidateSampleCountAfter=$null;AttachmentLatencyMs=$null
+        Restriction=$false;Attached=$false;Disposition='UNSPECIFIED';CandidateHealth='UNKNOWN'
+        FixtureFocused=$null;FixtureResumed=$null;FixtureTapBaseline=$null;Reason=$null
+    }
+    $script:DualHomeRestriction=$record
+    Write-JsonFile 'dual-home-restriction.json' $record
+    try {
+        Clear-ToOrdinary
+        $before=Get-LabState
+        Assert-KRHealth $before
+        Assert-QualificationPermissionState $before
+        $fixture=Get-FixtureState
+        if(-not $fixture.focused -or -not $fixture.resumed -or -not $fixture.probeReady) {
+            throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE'
+        }
+        $record.CandidateSampleCountBefore=[long]$before.sampleCount
+        $serviceBaseline=$script:ServiceConnections
+        $armed=Get-LabState 'ARM'
+        $revision=[long]$armed.revision
+        $record.Revision=$revision
+        if(-not $armed.armed -or $armed.remaining -ne 10000 -or $revision -le $script:LastRevision) {
+            throw 'FAIL:FRESH_ARM_FAILED'
+        }
+        $script:LastRevision=$revision
+        $attached=Wait-LabCondition -TimeoutSeconds 22 -FailureCode 'FAIL:NO_ATTACHMENT' -Condition {
+            param($snapshot)
+            Assert-KRHealth $snapshot
+            if($script:ServiceConnections -ne $serviceBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'}
+            if($snapshot.revision -ne $revision){throw 'FAIL:REVISION_CHANGED'}
+            if($snapshot.eligibilityLost){throw 'INVALID:ELIGIBILITY_INTERRUPTED'}
+            return $snapshot.restriction -and $snapshot.attached -and $snapshot.sampledRevision -eq $revision -and
+                $snapshot.adapter -eq 'APPLIED' -and $snapshot.disposition -eq 'ORDINARY_APP'
+        }
+        $blockedFixture=Wait-FixtureFocus -Focused $false
+        if(-not $blockedFixture.resumed -or -not $blockedFixture.probeReady){throw 'INVALID:FIXTURE_INPUT_ORACLE_UNAVAILABLE'}
+        Assert-KRHold -Snapshot $attached -Revision $revision -FixtureTaps $blockedFixture.taps -FixtureState $blockedFixture
+        $record.CandidateSampleCountAfter=[long]$attached.sampleCount
+        $record.AttachmentLatencyMs=Get-KRPairedLatency -Snapshot $attached -Revision $revision -Before @($before.samples)
+        $record.Restriction=[bool]$attached.restriction
+        $record.Attached=[bool]$attached.attached
+        $record.Disposition=[string]$attached.disposition
+        $record.CandidateHealth='HEALTHY_ELIGIBLE'
+        $record.FixtureFocused=[bool]$blockedFixture.focused
+        $record.FixtureResumed=[bool]$blockedFixture.resumed
+        $record.FixtureTapBaseline=[long]$blockedFixture.taps
+        $record.Status='RESTRICTION_ESTABLISHED'
+        return $record
+    } catch {
+        $message=$_.Exception.Message
+        $record.Status=if($message -like 'FAIL:*'){'FAILED'}else{'INVALID'}
+        $record.Reason=if($message -match '^(FAIL|INVALID):[A-Z0-9_]+$'){$message}else{'INVALID:HOST_EXCEPTION'}
+        throw
+    } finally {
+        $record.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Write-JsonFile 'dual-home-restriction.json' $record
+    }
+}
+
+function Invoke-DualHomeDiagnosticCleanup {
+    if(-not $script:LabControlReady){return}
+    $record=[PSCustomObject]@{
+        Schema=1;Status='STARTED';ClearAttempted=$false;CandidateState='UNVERIFIED';CandidateHealth='UNKNOWN'
+        FixtureOrdinaryUse='UNVERIFIED';StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Reason=$null
+    }
+    $script:DualHomeCleanup=$record
+    Write-JsonFile 'dual-home-cleanup.json' $record
+    try {
+        $record.ClearAttempted=$true
+        $null=Get-LabState 'CLEAR'
+        $released=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached } -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+        Assert-KRHealth $released
+        Assert-QualificationPermissionState $released
+        $record.CandidateState='UNARMED_UNRESTRICTED_UNATTACHED'
+        $record.CandidateHealth='HEALTHY_ELIGIBLE'
+        Open-Fixture
+        $null=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached -and $snapshot.disposition -eq 'ORDINARY_APP' } -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+        $fixture=Wait-FixtureFocus -Focused $true
+        $after=Assert-FixturePositiveControl -Before $fixture -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+        if($after.taps -ne $fixture.taps+1){throw 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'}
+        $record.FixtureOrdinaryUse='FOCUSED_RESUMED_TAP_VERIFIED'
+        $record.Status='VERIFIED'
+    } catch {
+        $message=$_.Exception.Message
+        $record.Status='FAILED'
+        $record.Reason=if($message -match '^(FAIL|INVALID):[A-Z0-9_]+$'){$message}else{'INVALID:DUAL_HOME_CLEANUP_HOST_EXCEPTION'}
+        throw
+    } finally {
+        $record.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Write-JsonFile 'dual-home-cleanup.json' $record
+    }
 }
 
 function Read-Result {
@@ -1222,7 +1347,7 @@ function Stop-ForSafetyResult {
 }
 
 function Invoke-QualificationSafetyCheckpoint {
-    param([ValidateSet('calibration','final')][string]$Phase)
+    param([ValidateSet('calibration','final','diagnostic')][string]$Phase,[switch]$HomeOnly)
     Assert-StayAwake
     Assert-NavigationMode
     $start=Get-LabState
@@ -1247,7 +1372,7 @@ function Invoke-QualificationSafetyCheckpoint {
     }
     Save-Safety
 
-    if ($Phase -eq 'final') {
+    if ($Phase -eq 'final' -or $HomeOnly) {
         $script:Safety.CurrentStep='FINAL_VISIBILITY'
         Save-Safety
         $visibleResult=Read-DiagnosticResult 'POST-RUN VISIBLE CHECK: watch the current restriction continuously for 10 seconds. P=no flicker/disappearance/ordinary use; F=visible failure; I=uncertain.' -Poll { Poll-SafetyHold } -MinimumPassSeconds 10 -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
@@ -1293,6 +1418,14 @@ function Invoke-QualificationSafetyCheckpoint {
         }
         Stop-ForSafetyResult -Result $homeResult -Step ($Phase.ToUpperInvariant() + '_HOME_CONTROL_UNAVAILABLE')
         $null=Poll-RestrictedHomeStimulusHold
+    }
+
+    if($HomeOnly){
+        $script:Safety.Result='HOME_DIAGNOSTIC_PASS_RECORDED'
+        $script:Safety.Reason=$script:Safety.HomeActionResult
+        $script:Safety.EndedUtc=[DateTime]::UtcNow.ToString('o')
+        Save-Safety
+        return
     }
 
     $script:Safety.CurrentStep='RECOVERY_DIAGNOSTIC'
@@ -1411,18 +1544,18 @@ function Write-FinalSummary {
         }
     }
     $markdown = @(
-        $(if ($RecoveryDiagnostic) { '# KR-003 focused recovery diagnostic result' } else { '# KR-003 qualification result' })
+        $(if ($script:IsDualHomeDiagnostic) { '# KR-003 excluded dual-Home diagnostic result' } elseif ($RecoveryDiagnostic) { '# KR-003 focused recovery diagnostic result' } else { '# KR-003 qualification result' })
         ''
         ('Primary status: ' + $Summary.Status + '; reason: ' + $Summary.Reason)
-        ('Valid automated active-oracle cycles: ' + $Summary.ValidPairedObservations + '/100.')
-        ('Human checkpoint sessions: ' + $Summary.HumanCheckpointSessions + '/3; physical expiry observations: ' + $Summary.PhysicalExpiryObservations + '.')
+        $(if($script:IsDualHomeDiagnostic){'Qualification rows: 0; TIME-04 rows: 0; this diagnostic is excluded.'}else{('Valid automated active-oracle cycles: ' + $Summary.ValidPairedObservations + '/100.')})
+        $(if($script:IsDualHomeDiagnostic){('Home diagnostic owner session result: ' + $Summary.HomeGateResult + '; action result: ' + $Summary.HomeActionResult + '.')}else{('Human checkpoint sessions: ' + $Summary.HumanCheckpointSessions + '/3; physical expiry observations: ' + $Summary.PhysicalExpiryObservations + '.')})
         ('Internal paired statistics: ' + ($Summary.InternalPairedStatistics | ConvertTo-Json -Compress))
         ('Focused diagnostic result: ' + $Summary.DiagnosticResult + '; reason: ' + $Summary.DiagnosticReason)
         ('Lab-only bailout: ' + $Summary.DiagnosticBailoutStatus + '; never consumer recovery evidence.')
         ('Network restoration: ' + $Summary.NetworkRestoration)
         ('Stay-awake restoration: ' + $Summary.StayAwakeRestoration)
         ('Finalization errors: ' + ($script:FinalizationErrors -join ', '))
-        'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'
+        $(if($script:IsDualHomeDiagnostic){'The Home result is configuration-specific diagnostic evidence only; it is not qualification, TIME-04 or a matrix PASS.'}else{'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'})
         'Partial/current attempts and physical recovery responses are retained. No KR-003 closure or Play approval is implied.'
     ) -join [Environment]::NewLine
     try { $markdown | Set-Content -LiteralPath (Join-Path $runDirectory 'SUMMARY.md') -Encoding UTF8 } catch {
@@ -1446,6 +1579,13 @@ function Complete-LabRun {
         Invoke-FinalStep 'DIAGNOSTIC_BAILOUT' { Invoke-DiagnosticBailout }
         if ($null -eq $script:DiagnosticBailout -or $script:DiagnosticBailout.Status -ne 'VERIFIED') {
             $script:FinalizationErrors += 'DIAGNOSTIC_BAILOUT_UNVERIFIED'
+        }
+    }
+    if($script:IsDualHomeDiagnostic -and $script:LabControlReady -and
+        ($null -eq $script:DualHomeCleanup -or $script:DualHomeCleanup.Status -ne 'VERIFIED')) {
+        Invoke-FinalStep 'DUAL_HOME_CLEANUP' { Invoke-DualHomeDiagnosticCleanup }
+        if($null -eq $script:DualHomeCleanup -or $script:DualHomeCleanup.Status -ne 'VERIFIED') {
+            $script:FinalizationErrors += 'DUAL_HOME_CLEANUP_UNVERIFIED'
         }
     }
     try { Restore-StayAwake } catch {
@@ -1507,12 +1647,19 @@ function Complete-LabRun {
         CalibrationExcluded=$true; SafetyChecksPassed=$script:SafetyPassed; Offline=$script:Offline
         Kr003Complete=$false; ProductionApproved=$false; NetworkRestoration=$script:RadioRestoreStatus
         StayAwakeRestoration=$script:StayAwakeRestoreStatus
-        FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly -and -not $RecoveryDiagnostic)
+        FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly -and -not $RecoveryDiagnostic -and -not $script:IsDualHomeDiagnostic)
         RecoveryDiagnosticRequested=[bool]$RecoveryDiagnostic
+        DualHomeDiagnosticRequested=[bool]$script:IsDualHomeDiagnostic
+        QualificationRows=@($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' }).Count
+        Time04Rows=$(if($script:IsDualHomeDiagnostic){0}else{@($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' }).Count})
+        MatrixContribution=$(if($script:IsDualHomeDiagnostic){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
+        HomeGateResult=$(if($null -eq $script:Safety -or $script:Safety.PSObject.Properties.Name -notcontains 'HomeGateResult'){'UNRECORDED'}else{$script:Safety.HomeGateResult})
+        HomeActionResult=$(if($null -eq $script:Safety -or $script:Safety.PSObject.Properties.Name -notcontains 'HomeActionResult'){'UNRECORDED'}else{$script:Safety.HomeActionResult})
+        DualHomeCleanupStatus=$(if($null -eq $script:DualHomeCleanup){'NOT_STARTED'}else{$script:DualHomeCleanup.Status})
         DiagnosticResult=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Result })
         DiagnosticReason=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Reason })
         DiagnosticBailoutStatus=$(if ($null -eq $script:DiagnosticBailout) { 'NOT_REQUIRED_OR_NOT_STARTED' } else { $script:DiagnosticBailout.Status })
-        EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'
+        EvidenceModel=$(if($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
         HumanCheckpointSessions=@($script:HumanCheckpoints | Where-Object { $_.Result -eq 'PASS' }).Count
         PhysicalExpiryObservations=@($script:HumanCheckpoints | Where-Object { $_.Name -in @('PREFLIGHT_NORMAL_PASS','POST_RUN_SAFETY') -and $_.Result -eq 'PASS' }).Count
     }
@@ -1533,13 +1680,24 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    Assert-KRConfigurationQualificationBundle $script:Bundle
-    if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
+    if($script:IsDualHomeDiagnostic){
+        Assert-KRDualHomeDiagnosticBundle $script:Bundle
+        if($RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork){throw 'INVALID:DUAL_HOME_DIAGNOSTIC_MODE_REQUIRED'}
+    }else{
+        Assert-KRConfigurationQualificationBundle $script:Bundle
+        if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
+    }
     foreach ($entry in $script:Bundle.files) {
         if ($entry.name -notmatch '^[A-Za-z0-9_.-]+$') { throw 'INVALID:BUNDLE_PATH' }
         if ((Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $PSScriptRoot $entry.name)).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'INVALID:BUNDLE_INTEGRITY' }
     }
-    $script:Manifest = [PSCustomObject]@{ Schema = 1; RunId = $runId; StartedUtc = $script:StartedAt; EndedUtc = $null; Bundle = $script:Bundle; Device = $null; InitialDevice = $null; OfflineNetworkRequested = $true; OfflineOwnerConfirmed = $false; StayAwakeRequested = $true; CalibrationOnly = $false; RecoveryDiagnostic = $false; PhysicalRun = $true; EvidenceModel='ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS' }
+    $script:Manifest = [PSCustomObject]@{
+        Schema=1;RunId=$runId;StartedUtc=$script:StartedAt;EndedUtc=$null;Bundle=$script:Bundle;Device=$null;InitialDevice=$null
+        OfflineNetworkRequested=(-not $script:IsDualHomeDiagnostic);OfflineOwnerConfirmed=$false;NetworkMutationAllowed=(-not $script:IsDualHomeDiagnostic)
+        StayAwakeRequested=$true;CalibrationOnly=$false;RecoveryDiagnostic=$false;DualHomeDiagnostic=$script:IsDualHomeDiagnostic
+        PhysicalRun=$true;EvidenceModel=$(if($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
+        QualificationRows=0;Time04Rows=0;MatrixContribution=$(if($script:IsDualHomeDiagnostic){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
+    }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
     $script:Device = Read-DeviceConfiguration
@@ -1547,7 +1705,7 @@ try {
     $script:Manifest.InitialDevice = $script:Device
     Write-JsonFile 'manifest.json' $script:Manifest
     Assert-KRBoundDeviceConfiguration $script:Device $script:Bundle.approvedConfiguration
-    $script:NetworkCapabilities=Get-NetworkCapabilities
+    if(-not $script:IsDualHomeDiagnostic){$script:NetworkCapabilities=Get-NetworkCapabilities}
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256
     $null = Invoke-LabAdb @('shell','am','start','-n',"$candidatePackage/.MainActivity")
@@ -1564,55 +1722,81 @@ try {
     Enter-StayAwake
     $awakeReady=Get-LabState
     Assert-KRHealth $awakeReady
-    Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
-    Enter-OfflineNetwork
-    $script:Manifest.Device=$script:Device
-    Assert-KRNetworkOffline $script:NetworkCapabilities $script:Device
-    $offlineResult=Read-DiagnosticResult 'OFFLINE CHECK: verify every device-reported network transport is off and this lab device has no other Internet path. P=confirmed, F/I=not established.'
-    if ($offlineResult -ne 'PASS') { throw 'INVALID:OFFLINE_OWNER_NOT_CONFIRMED' }
-    $script:Offline=$true
-    $script:Manifest.OfflineOwnerConfirmed=$true
-    Write-JsonFile 'manifest.json' $script:Manifest
-    $null=Get-LabState 'RESET_METRICS'
-    $calibrationZero=Get-LabState
-    if ($calibrationZero.sampleCount -ne 0) { throw 'INVALID:CALIBRATION_METRICS_RESET_FAILED' }
-    Write-Host 'HUMAN CHECKPOINT 1/3 — normal persistent restriction and active input denial.' -ForegroundColor Cyan
-    Invoke-Expiry -Attempt 0 -Calibration -PhysicalObservation
-    Invoke-NegativeControlCheckpoint
-    Write-Host 'Calibrating the independent Android Home stimulus against the ordinary fixture. This adds no qualification row.' -ForegroundColor Cyan
-    $null=Invoke-HomeKeyPositiveControl
-    $null=Get-LabState 'RESET_METRICS'
-    $zero=Get-LabState
-    if ($zero.sampleCount -ne 0) { throw 'INVALID:QUALIFICATION_METRICS_RESET_FAILED' }
-    for ($attempt=1; $attempt -le 100; $attempt++) {
-        Invoke-Expiry -Attempt $attempt
-    }
-    Write-Host 'HUMAN CHECKPOINT 3/3 — post-run expiry agreement and guided Home/Settings/recovery safety route.' -ForegroundColor Cyan
-    try { Invoke-QualificationSafetyCheckpoint -Phase 'final' } catch {
-        if (-not @($script:HumanCheckpoints | Where-Object { $_.Name -eq 'POST_RUN_SAFETY' }).Count) {
-            $checkpointResult=if ($_.Exception.Message -like 'FAIL:*') { 'FAIL' } else { 'INVALID' }
-            Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result $checkpointResult -Evidence 'GUIDED_CHECKPOINT_STOPPED_WITH_PRESERVED_SUBSTEP_EVIDENCE'
+    Assert-QualificationPermissionState $awakeReady
+    if($script:IsDualHomeDiagnostic){
+        Write-Host 'EXCLUDED DUAL-HOME DIAGNOSTIC — zero qualification rows, zero TIME-04 rows, and no network mutation.' -ForegroundColor Cyan
+        Write-Host 'Verifying shell input transport against the independent ordinary fixture.' -ForegroundColor Cyan
+        $null=Invoke-DualHomeShellInputPrecondition
+        Write-Host 'Calibrating one host Android Home stimulus against the unblocked independent fixture.' -ForegroundColor Cyan
+        $homeTransport=Invoke-HomeKeyPositiveControl
+        if($homeTransport.Status -ne 'CALIBRATED' -or $homeTransport.ReturnToFixture -ne 'VERIFIED'){
+            throw 'INVALID:HOME_KEY_TRANSPORT_NOT_CALIBRATED'
         }
-        throw
-    }
-    $script:SafetyPassed=$true
-    Assert-StayAwake
-    $final=Get-LabState
-    Assert-QualificationPermissionState $final
-    Write-JsonFile 'final-metrics.json' $final
-    $stats=Get-KRStatistics -Values @($script:Rows | ForEach-Object { $_.LatencyMs })
-    if ($final.sampleCount -ne 100 -or $final.samples.Count -ne 100 -or
-        (($final.samples -join ',') -cne (($script:Rows | ForEach-Object { $_.LatencyMs }) -join ',')) -or
-        $final.p50 -ne $stats.P50 -or $final.p95 -ne $stats.P95 -or $final.max -ne $stats.Max) {
-        throw 'INVALID:AGGREGATE_MISMATCH'
+        Write-Host 'Arming one excluded ten-second restriction for the dual-Home check.' -ForegroundColor Cyan
+        $null=Invoke-DualHomeDiagnosticRestriction
+        Invoke-QualificationSafetyCheckpoint -Phase 'diagnostic' -HomeOnly
+        $postHome=Get-LabState
+        Assert-KRHealth $postHome
+        Assert-QualificationPermissionState $postHome
+        Invoke-DualHomeDiagnosticCleanup
+        Restore-StayAwake
+        if($script:StayAwakeRestoreStatus -ne 'RESTORED_AND_SETTING_VERIFIED'){
+            throw 'INVALID:STAY_AWAKE_RESTORE_FAILED'
+        }
+        $script:SafetyPassed=$true
+        $script:Terminal='PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY'
+        $script:Reason=$script:Safety.HomeActionResult
+    }else{
+        Write-Host 'Temporarily disabling Wi-Fi/mobile data for this authorized offline lab run. Original radio flags are journalled and restored during finalization.'
+        Enter-OfflineNetwork
+        $script:Manifest.Device=$script:Device
+        Assert-KRNetworkOffline $script:NetworkCapabilities $script:Device
+        $offlineResult=Read-DiagnosticResult 'OFFLINE CHECK: verify every device-reported network transport is off and this lab device has no other Internet path. P=confirmed, F/I=not established.'
+        if ($offlineResult -ne 'PASS') { throw 'INVALID:OFFLINE_OWNER_NOT_CONFIRMED' }
+        $script:Offline=$true
+        $script:Manifest.OfflineOwnerConfirmed=$true
+        Write-JsonFile 'manifest.json' $script:Manifest
+        $null=Get-LabState 'RESET_METRICS'
+        $calibrationZero=Get-LabState
+        if ($calibrationZero.sampleCount -ne 0) { throw 'INVALID:CALIBRATION_METRICS_RESET_FAILED' }
+        Write-Host 'HUMAN CHECKPOINT 1/3 — normal persistent restriction and active input denial.' -ForegroundColor Cyan
+        Invoke-Expiry -Attempt 0 -Calibration -PhysicalObservation
+        Invoke-NegativeControlCheckpoint
+        Write-Host 'Calibrating the independent Android Home stimulus against the ordinary fixture. This adds no qualification row.' -ForegroundColor Cyan
+        $null=Invoke-HomeKeyPositiveControl
+        $null=Get-LabState 'RESET_METRICS'
+        $zero=Get-LabState
+        if ($zero.sampleCount -ne 0) { throw 'INVALID:QUALIFICATION_METRICS_RESET_FAILED' }
+        for ($attempt=1; $attempt -le 100; $attempt++) {
+            Invoke-Expiry -Attempt $attempt
+        }
+        Write-Host 'HUMAN CHECKPOINT 3/3 — post-run expiry agreement and guided Home/Settings/recovery safety route.' -ForegroundColor Cyan
+        try { Invoke-QualificationSafetyCheckpoint -Phase 'final' } catch {
+            if (-not @($script:HumanCheckpoints | Where-Object { $_.Name -eq 'POST_RUN_SAFETY' }).Count) {
+                $checkpointResult=if ($_.Exception.Message -like 'FAIL:*') { 'FAIL' } else { 'INVALID' }
+                Add-HumanCheckpoint -Name 'POST_RUN_SAFETY' -Result $checkpointResult -Evidence 'GUIDED_CHECKPOINT_STOPPED_WITH_PRESERVED_SUBSTEP_EVIDENCE'
+            }
+            throw
+        }
+        $script:SafetyPassed=$true
+        Assert-StayAwake
+        $final=Get-LabState
+        Assert-QualificationPermissionState $final
+        Write-JsonFile 'final-metrics.json' $final
+        $stats=Get-KRStatistics -Values @($script:Rows | ForEach-Object { $_.LatencyMs })
+        if ($final.sampleCount -ne 100 -or $final.samples.Count -ne 100 -or
+            (($final.samples -join ',') -cne (($script:Rows | ForEach-Object { $_.LatencyMs }) -join ',')) -or
+            $final.p50 -ne $stats.P50 -or $final.p95 -ne $stats.P95 -or $final.max -ne $stats.Max) {
+            throw 'INVALID:AGGREGATE_MISMATCH'
+        }
+        $script:Terminal=Get-KRAutomatedRunVerdict -Rows $script:Rows -HumanCheckpoints $script:HumanCheckpoints -Offline $script:Offline
+        $script:Reason='COMPLETED'
     }
     $endDevice = Read-DeviceConfiguration
     Write-JsonFile 'end-device.json' $endDevice
     if (($endDevice | ConvertTo-Json -Compress) -cne ($script:Device | ConvertTo-Json -Compress)) { throw 'INVALID:DEVICE_CONFIGURATION_CHANGED' }
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256 -NoInstall
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256 -NoInstall
-    $script:Terminal=Get-KRAutomatedRunVerdict -Rows $script:Rows -HumanCheckpoints $script:HumanCheckpoints -Offline $script:Offline
-    $script:Reason='COMPLETED'
 } catch {
     $message = $_.Exception.Message
     if ($message -notmatch '^(FAIL|INVALID|INTERRUPTED):[A-Z0-9_]+$') { $message = 'INVALID:HOST_EXCEPTION' }
@@ -1638,6 +1822,12 @@ try {
 }
 
 # Machine callers must not interpret a stopped, online-only, cleanup-failed or reporting-failed run as qualification.
+if($script:IsDualHomeDiagnostic -and $script:Terminal -eq 'PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY' -and
+    $script:SafetyPassed -and $null -ne $script:Safety -and $script:Safety.HomeGateResult -eq 'PASS' -and
+    $null -ne $script:DualHomeCleanup -and $script:DualHomeCleanup.Status -eq 'VERIFIED' -and
+    $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and $script:RadioRestoreStatus -eq 'NOT_CHANGED' -and
+    $script:FinalizationErrors.Count -eq 0 -and $null -ne $script:DiagnosticBailout -and
+    $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
 if ($script:Terminal -eq 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
     $script:RadioRestoreStatus -eq 'RESTORED_AND_FLAGS_VERIFIED' -and $script:FinalizationErrors.Count -eq 0 -and
     $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and

@@ -6,7 +6,13 @@ $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'DevicePreflight.psm1') -Force
 $script:Checks=0
-function Assert-Equal($Actual,$Expected) { $script:Checks++; if ($Actual -cne $Expected) { throw "Expected $Expected; got $Actual" } }
+function Assert-Equal($Actual,$Expected) {
+    $script:Checks++
+    if ($Actual -cne $Expected) {
+        $caller=(Get-PSCallStack)[1]
+        throw ("Expected {0}; got {1} at test line {2}" -f $Expected,$Actual,$caller.ScriptLineNumber)
+    }
+}
 function Assert-True($Value) { Assert-Equal ([bool]$Value) $true }
 $tokens=$null; $parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'Start-KR003.ps1'),[ref]$tokens,[ref]$parseErrors)
@@ -30,6 +36,7 @@ function Reset-Run([string]$Name) {
     $script:StayAwakeRestoreStatus='NOT_CHANGED';$script:StayAwakeRestoration=$null
     $script:NavigationMode='GESTURE';$script:NavigationModeEvidence=[PSCustomObject]@{Mode='GESTURE'}
     $script:HomeKeyOperations=@();$script:HomeKeyTransport=$null;$script:RestrictedHomeStimulus=$null
+    $script:DualHomeRestriction=$null;$script:DualHomeCleanup=$null;$script:IsDualHomeDiagnostic=$false
     $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null
@@ -216,6 +223,19 @@ try {
     Assert-Equal $transport.Status 'NO_EFFECT'
     Assert-Equal $transport.Effect 'FIXTURE_NOT_DISPLACED'
     Assert-Equal $transport.ReturnToFixture 'VERIFIED'
+
+    # The short diagnostic separately proves shell tap transport and retains only a typed one-count result.
+    Reset-Run 'dual-home-shell-input-precondition'
+    $script:InputFixture=$homeBefore
+    function Open-Fixture {}
+    function Wait-FixtureFocus { param($Focused);return $script:InputFixture }
+    function Get-FixtureState { return $script:InputFixture }
+    function Assert-FixturePositiveControl { param($Before,$FailureCode);$after=$Before.PSObject.Copy();$after.taps=[long]$Before.taps+1;return $after }
+    $inputPrecondition=Invoke-DualHomeShellInputPrecondition
+    Assert-Equal $inputPrecondition.Result 'FIXTURE_COUNTER_INCREMENTED_ONCE'
+    Assert-Equal $inputPrecondition.SameFixture $true
+    Assert-Equal $inputPrecondition.TapDelta 1
+    Assert-Equal (Read-Json 'shell-input-precondition.json').FixtureRole 'INDEPENDENT_ORDINARY_FIXTURE'
 
     # Stay-awake setup uses only sanitized setting/power state, verifies each cycle boundary, and restores the exact original value.
     Reset-Run 'stay-awake-restored'
@@ -438,6 +458,22 @@ try {
     Assert-Equal $script:HumanCheckpoints.Count 1
     Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
 
+    # The excluded diagnostic invokes the same Path A checkpoint code but stops before recovery and creates no rows.
+    Reset-Run 'dual-home-diagnostic-path-a'
+    $script:IsDualHomeDiagnostic=$true
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC'}
+    $script:NavigationMode='GESTURE';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'AVAILABLE'};return 'AVAILABLE' }
+    Invoke-QualificationSafetyCheckpoint -Phase 'diagnostic' -HomeOnly 6>$null
+    $diagnosticSafety=Read-Json 'safety-diagnostic.json'
+    Assert-Equal $diagnosticSafety.Phase 'diagnostic'
+    Assert-Equal $diagnosticSafety.Result 'HOME_DIAGNOSTIC_PASS_RECORDED'
+    Assert-Equal $diagnosticSafety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_RESISTED'
+    Assert-Equal $diagnosticSafety.RecoveryReason 'UNRECORDED'
+    Assert-Equal $script:Rows.Count 0
+    Assert-Equal $script:HumanCheckpoints.Count 0
+
     # The same Path A orchestration gives a button instruction only after THREE_BUTTON is physically available.
     Reset-Run 'q7-three-button-control-available'
     $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
@@ -484,6 +520,22 @@ try {
     Assert-Equal $safety.HomeResultSource 'OWNER_RESPONSE_PLUS_INDEPENDENT_HOST_STIMULUS'
     Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'PHYSICAL HOME ACTION' }).Count 0
     Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME CONTROL UNAVAILABLE CHECK' }).Count 1
+
+    # The excluded diagnostic invokes the exact same Path B code and retains its distinct non-physical result.
+    Reset-Run 'dual-home-diagnostic-path-b'
+    $script:IsDualHomeDiagnostic=$true
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC'}
+    $script:NavigationMode='THREE_BUTTON';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
+    $script:HomeKeyTransport=[PSCustomObject]@{Status='CALIBRATED';InvocationCount=1;ReturnToFixture='VERIFIED'}
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'UNAVAILABLE'};return 'UNAVAILABLE' }
+    Invoke-QualificationSafetyCheckpoint -Phase 'diagnostic' -HomeOnly 6>$null
+    $diagnosticSafety=Read-Json 'safety-diagnostic.json'
+    Assert-Equal $diagnosticSafety.HomeEvidencePath 'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS'
+    Assert-Equal $diagnosticSafety.HomePhysical 'CONTROL_UNAVAILABLE'
+    Assert-Equal $diagnosticSafety.HomeActionResult 'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE'
+    Assert-Equal $diagnosticSafety.HomeActionOutcome 'UNRECORDED'
+    Assert-Equal $script:Rows.Count 0
 
     # Owner outcomes remain distinct from an automated hold-oracle failure and from no exercisable Home action.
     Reset-Run 'home-owner-outcomes'
@@ -571,6 +623,53 @@ try {
     Assert-Equal $script:DiagnosticBailout.PermissionsAltered $false
     Assert-Equal $script:DiagnosticBailout.ConsumerRecoveryEvidence $false
     Assert-Equal (Read-Json 'diagnostic-bailout.json').AfterSampleCount 2
+
+    # One excluded diagnostic restriction establishes the ordinary-surface hold without creating a row.
+    Reset-Run 'dual-home-restriction-zero-rows'
+    $script:IsDualHomeDiagnostic=$true;$script:LastRevision=-1;$script:ServiceConnections=0
+    function New-DualHomeFrame([bool]$Restricted,[bool]$Attached,[int]$SampleCount) {
+        [PSCustomObject]@{
+            elapsed=20000;sampledAt=19990;revision=42;sampledRevision=$(if($Attached){42}else{41});recordedRevision=$(if($Attached){42}else{41})
+            remaining=$(if($Restricted -and -not $Attached){10000}else{0});restriction=$Restricted;armed=$Restricted;attached=$Attached
+            disposition='ORDINARY_APP';heartbeat=$true;usage=$true;accessibility=$true;uncertain=$false;eligible=$true;eligibilityLost=$false
+            adapter=$(if($Attached){'APPLIED'}else{'NOT_REQUIRED'});removals=0;samples=$(if($SampleCount -eq 2){@(123,234)}else{@(123)});sampleCount=$SampleCount
+            traceHead=20;traceLost=$false;events=@()
+        }
+    }
+    $normalFixture=[PSCustomObject]@{schema=2;instance=1;probeReady=$true;probeX=540;probeY=1900;focused=$true;resumed=$true;taps=7;focusGains=2;focusLosses=1;lastFocusChange=1}
+    $blockedFixture=$normalFixture.PSObject.Copy();$blockedFixture.focused=$false;$blockedFixture.focusLosses=2
+    function Clear-ToOrdinary {}
+    function Get-LabState { param($Operation='SNAPSHOT');if($Operation -eq 'ARM'){return New-DualHomeFrame $true $false 1};return New-DualHomeFrame $false $false 1 }
+    function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds);return New-DualHomeFrame $true $true 2 }
+    function Get-FixtureState { return $normalFixture }
+    function Wait-FixtureFocus { param($Focused);if($Focused){return $normalFixture};return $blockedFixture }
+    function Assert-QualificationPermissionState { param($Snapshot) }
+    $restriction=Invoke-DualHomeDiagnosticRestriction
+    Assert-Equal $restriction.Status 'RESTRICTION_ESTABLISHED'
+    Assert-Equal $restriction.QualificationRows 0
+    Assert-Equal $restriction.Time04Rows 0
+    Assert-Equal $restriction.AttachmentLatencyMs 234
+    Assert-Equal $restriction.FixtureFocused $false
+    Assert-Equal $script:Rows.Count 0
+    Assert-Equal @((Read-Json 'attempts.json')).Count 0
+
+    # Diagnostic cleanup verifies candidate release, healthy permissions and ordinary fixture input without uninstall/clear-data.
+    Reset-Run 'dual-home-cleanup'
+    $script:IsDualHomeDiagnostic=$true;$script:LabControlReady=$true
+    $released=New-DualHomeFrame $false $false 1
+    function Get-LabState { param($Operation='SNAPSHOT');return $released }
+    function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds);return $released }
+    function Open-Fixture {}
+    function Wait-FixtureFocus { param($Focused);return $normalFixture }
+    function Assert-FixturePositiveControl { param($Before,$FailureCode);$after=$Before.PSObject.Copy();$after.taps=[long]$Before.taps+1;return $after }
+    Invoke-DualHomeDiagnosticCleanup
+    $cleanup=Read-Json 'dual-home-cleanup.json'
+    Assert-Equal $cleanup.Status 'VERIFIED'
+    Assert-Equal $cleanup.CandidateState 'UNARMED_UNRESTRICTED_UNATTACHED'
+    Assert-Equal $cleanup.CandidateHealth 'HEALTHY_ELIGIBLE'
+    Assert-Equal $cleanup.FixtureOrdinaryUse 'FOCUSED_RESUMED_TAP_VERIFIED'
+    $permissionFunction=$ast.Find({param($node)$node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Assert-QualificationPermissionState'},$true)
+    Invoke-Expression $permissionFunction.Extent.Text
 
     # The version-compatible shell verifier agrees with healthy telemetry, then treats revocation after establishment as FAIL.
     Reset-Run 'qualification-permission-verification'

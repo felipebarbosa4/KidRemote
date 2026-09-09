@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, cpSync, readFileSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
-import { ingestCheckpoint, ingestQualification, ingestRecoveryDiagnostic, ingestOracleTransport, ingestDeviceTransport, ingestOracleCalibration, ingestUiAutomationTransport, ingestMonkeyTransport } from "./ingest.mjs";
+import { ingestCheckpoint, ingestQualification, ingestDualHomeDiagnostic, ingestRecoveryDiagnostic, ingestOracleTransport, ingestDeviceTransport, ingestOracleCalibration, ingestUiAutomationTransport, ingestMonkeyTransport } from "./ingest.mjs";
 import { validateAndroidSpike } from "../validate-android-spike.mjs";
 const temporary = fn => {
   const directory=mkdtempSync(join(tmpdir(),"kr003-synthetic-"));
@@ -128,6 +128,11 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(packager,/humanCheckpointMaximum:3/);
   assert.match(packager,/diagnosticOnly:false/);
   assert.match(packager,/requiresOffline:true/);
+  assert.match(packager,/protocol:"KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC"/);
+  assert.match(packager,/diagnosticScope:"HOME_GATE_ONLY"/);
+  assert.match(packager,/networkIsolation:"NOT_REQUIRED_AND_NOT_PERFORMED"/);
+  assert.match(packager,/matrixContribution:"NONE",humanCheckpointMaximum:1,qualificationCycles:0,time04Rows:0/);
+  assert.match(packager,/--dual-home-diagnostic/);
   assert.match(packager,/assert\.equal\(candidateSha256,calibrationSummary\.CandidateSha256/);
   assert.match(packager,/Clear-KR003-Lab\.ps1/);
   assert.match(runner,/EqualityDiagnosticImplemented=\$false/);
@@ -151,6 +156,11 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(runner,/PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS/);
   assert.match(runner,/HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE/);
   assert.match(runner,/HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS/);
+  assert.match(runner,/Invoke-DualHomeShellInputPrecondition/);
+  assert.match(runner,/Invoke-DualHomeDiagnosticRestriction/);
+  assert.match(runner,/Invoke-QualificationSafetyCheckpoint -Phase 'diagnostic' -HomeOnly/);
+  assert.match(runner,/PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY/);
+  assert.match(runner,/QualificationRows=0;Time04Rows=0/);
   assert.doesNotMatch(runner,/HomeActionOutcome='HOME_ACTION_RESISTED'.*PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS/s);
   assert(runner.indexOf("$homeControl=Read-HomeControlExercisability")<runner.indexOf("$homeInstruction=Get-KRHomeActionInstruction"));
   assert.match(runner,/HOME_ACTION_EXERCISED_AND_RESISTED|Get-KRHomeActionResult/);
@@ -165,6 +175,50 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.doesNotMatch(runner,/KEYCODE_(?:BACK|APP_SWITCH|POWER)|input','keyevent',(?!'KEYCODE_HOME')/);
   assert.doesNotMatch(bailout,/Invoke-BailoutAdb @\('(?:uninstall|root|reboot)'|shell','pm','clear|enabled_accessibility_services|appops','set|svc','(?:wifi|data)','disable/);
 });
+
+test("excluded dual-Home diagnostic is zero-row, fail-closed and keeps Path B distinct",()=>temporary(dir=>{
+  const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
+  const device={Manufacturer:'samsung',Model:'SM-X400',Android:'16',Api:'36',Patch:'2026-07-05',BuildId:'BP4A.251205.006',wifi_on:'1',mobile_data:'0',airplane_mode_on:'0',auto_time:'1',auto_time_zone:'1',low_power:'0'};
+  const fixtureBaseline={schema:2,request:20,elapsed:20000,instance:7,taps:4,focusGains:3,focusLosses:3,lastFocusChange:19000,probeX:540,probeY:1900,focused:false,resumed:true,probeReady:true};
+  const bundle={
+    schema:1,protocol:'KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC',sourceCommit:'a'.repeat(40),runnerVersion:12,
+    diagnosticOnly:true,diagnosticScope:'HOME_GATE_ONLY',requiresOffline:false,networkIsolation:'NOT_REQUIRED_AND_NOT_PERFORMED',physicalExecution:'NOT_RUN',
+    candidateSha256:'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b',fixtureSha256:'223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc',
+    approvedConfiguration:{schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'},
+    calibratedBy:{status:'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY',qualificationSamples:0,physicalAgreement:'PASS'},
+    oracleModel:'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS',awakeStateModel:'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE',
+    navigationModeModel:'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM',homeSafetyModel:'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME',
+    homeKeyTransportModel:'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS',
+    homeLogicBaseline:{sourceCommit:'80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd',bundleDirectory:'80dcdf4',bundleJsonSha256:'9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28'},
+    matrixContribution:'NONE',humanCheckpointMaximum:1,qualificationCycles:0,time04Rows:0,resumeAllowed:false,poolingAllowed:false,
+  };
+  save('manifest.json',{Bundle:bundle,InitialDevice:device,Device:device,OfflineNetworkRequested:false,OfflineOwnerConfirmed:false,NetworkMutationAllowed:false,DualHomeDiagnostic:true,EvidenceModel:'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC',QualificationRows:0,Time04Rows:0,MatrixContribution:'NONE'});
+  save('attempts.json',[]);
+  save('summary.json',{Status:'PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY',Reason:'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE',QualificationRequested:false,DualHomeDiagnosticRequested:true,QualificationRows:0,Time04Rows:0,MatrixContribution:'NONE',ValidPairedObservations:0,EvidenceModel:'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC',Kr003Complete:false,ProductionApproved:false,Offline:false,SafetyChecksPassed:true,FinalizationErrors:[],HomeGateResult:'PASS',DualHomeCleanupStatus:'VERIFIED'});
+  save('network-restoration.json',{Status:'NOT_CHANGED',Settings:[]});
+  save('permission-verification.json',{UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY'});
+  save('shell-input-precondition.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_TAP_FIXTURE_PROBE',FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Result:'FIXTURE_COUNTER_INCREMENTED_ONCE',SameFixture:true,BeforeFocused:true,AfterFocused:true,BeforeResumed:true,AfterResumed:true,TapDelta:1,VerifiedUtc:'2026-09-09T22:00:00Z'});
+  save('home-key-transport.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Status:'CALIBRATED',Effect:'FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS',InvocationCount:1,CommandResult:'ACCEPTED',ExitCode:0,StderrClass:'NONE',BeforeFocused:true,BeforeResumed:true,AfterFocused:false,AfterResumed:false,FocusLossDelta:1,TapDelta:0,ReturnToFixture:'VERIFIED',StartedUtc:'2026-09-09T22:00:00Z',EndedUtc:'2026-09-09T22:00:01Z'});
+  save('home-key-operations.json',[
+    {Sequence:1,Operation:'POSITIVE_CONTROL_KEYCODE_HOME',Phase:'PREFLIGHT',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T22:00:00Z'},
+    {Sequence:2,Operation:'RESTRICTED_KEYCODE_HOME',Phase:'RESTRICTED_CHECK',Result:'ACCEPTED',ExitCode:0,StderrClass:'NONE',AtUtc:'2026-09-09T22:00:20Z'},
+  ]);
+  save('home-key-restricted.json',{Schema:1,Phase:'diagnostic',Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,TransportCalibration:'CALIBRATED',InvocationCount:1,CommandResult:'ACCEPTED',ExitCode:0,StderrClass:'NONE',FixtureTapsBefore:4,FixtureFocusGainsBefore:3,FixtureBaseline:fixtureBaseline,ObservationCount:4,CandidateContinuity:'VERIFIED',FixtureFocusRegain:'NONE',FixtureInputLeak:'NONE',OwnerObservation:'PASS',OwnerObservedUtc:'2026-09-09T22:00:30Z',Status:'HELD_WITH_OWNER_AGREEMENT',LastVerifiedUtc:'2026-09-09T22:00:30Z'});
+  save('dual-home-restriction.json',{Schema:1,Phase:'EXCLUDED_HOME_DIAGNOSTIC',QualificationRows:0,Time04Rows:0,StartedUtc:'2026-09-09T22:00:05Z',EndedUtc:'2026-09-09T22:00:16Z',Status:'RESTRICTION_ESTABLISHED',Revision:42,CandidateSampleCountBefore:5,CandidateSampleCountAfter:6,AttachmentLatencyMs:234,Restriction:true,Attached:true,Disposition:'ORDINARY_APP',CandidateHealth:'HEALTHY_ELIGIBLE',FixtureFocused:false,FixtureResumed:true,FixtureTapBaseline:4,Reason:null});
+  const safety={Phase:'diagnostic',Protocol:'KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC',IndependentExpirySamples:0,HomeControlExercisability:'UNAVAILABLE',HomeEvidencePath:'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS',HomeGateResult:'PASS',HomeActionResult:'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE',RecoveryReason:'UNRECORDED',ReentryPhysical:'UNRECORDED',ClearTouch:'UNRECORDED',Result:'HOME_DIAGNOSTIC_PASS_RECORDED',FinalVisibilityPhysical:'PASS',HoldOracle:'RESTRICTION_HELD',HomePhysical:'CONTROL_UNAVAILABLE',HomeActionState:'HOME_ACTION_NOT_EXERCISABLE',HomeActionOutcome:'UNRECORDED',HomeStimulusPhysical:'PASS'};
+  save('safety-diagnostic.json',safety);
+  save('dual-home-cleanup.json',{Status:'VERIFIED',ClearAttempted:true,CandidateState:'UNARMED_UNRESTRICTED_UNATTACHED',CandidateHealth:'HEALTHY_ELIGIBLE',FixtureOrdinaryUse:'FOCUSED_RESUMED_TAP_VERIFIED'});
+  save('stay-awake.json',{Schema:1,Mechanism:'ANDROID_STAY_ON_WHILE_PLUGGED_IN',OriginalSetting:0,AppliedSetting:15,Changed:true,PowerSourceBefore:'USB',PowerSourceAfter:'USB',Establishment:'VERIFIED',VerificationSource:'GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY',VerificationCount:3,LastPowerSource:'USB',LastVerifiedUtc:'2026-09-09T22:00:30Z'});
+  save('stay-awake-restoration.json',{Schema:1,Status:'RESTORED_AND_SETTING_VERIFIED',OriginalSetting:0,ObservedSetting:0,Changed:true,VerificationSource:'GLOBAL_SETTING_READBACK',AtUtc:'2026-09-09T22:00:40Z'});
+  save('navigation-mode.json',{Schema:1,Mode:'THREE_BUTTON',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_0',VerificationCount:2,LastVerifiedUtc:'2026-09-09T22:00:30Z'});
+  save('diagnostic-bailout.json',{Status:'VERIFIED',RestrictionReleased:true});
+  const result=ingestDualHomeDiagnostic(dir);
+  assert.equal(result.status,'PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY');assert.equal(result.homeResult,'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE');
+  assert.equal(result.qualificationRows,0);assert.equal(result.time04Rows,0);assert.equal(result.matrixContribution,'NONE');
+  save('attempts.json',[{Phase:'QUALIFICATION'}]);assert.throws(()=>ingestDualHomeDiagnostic(dir),/must never contain attempt rows/);save('attempts.json',[]);
+  save('safety-diagnostic.json',{...safety,HomeActionResult:'HOME_ACTION_EXERCISED_AND_RESISTED'});assert.throws(()=>ingestDualHomeDiagnostic(dir));save('safety-diagnostic.json',safety);
+  save('network-operations.json',[]);assert.throws(()=>ingestDualHomeDiagnostic(dir),/must not retain network-operations/);unlinkSync(join(dir,'network-operations.json'));
+}));
 
 test("UiAutomation injection result cannot replace independent fixture delivery or finish evidence",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));

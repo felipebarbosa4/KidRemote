@@ -40,9 +40,24 @@ $configurationBundle=[PSCustomObject]@{
     homeSafetyModel='DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME'
     homeKeyTransportModel='ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS'
     oracleModel='ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS';humanCheckpointMaximum=3;physicalExecution='NOT_RUN'
+    qualificationCycles=100;resumeAllowed=$false;poolingAllowed=$false
     approvedConfiguration=$approvedConfiguration;calibratedBy=$calibratedBy;candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
 Assert-KRConfigurationQualificationBundle $configurationBundle
+$diagnosticBundle=$configurationBundle.PSObject.Copy()
+$diagnosticBundle.protocol='KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC'
+$diagnosticBundle.diagnosticOnly=$true;$diagnosticBundle.requiresOffline=$false
+$diagnosticBundle.humanCheckpointMaximum=1;$diagnosticBundle.qualificationCycles=0
+$diagnosticBundle | Add-Member NoteProperty diagnosticScope 'HOME_GATE_ONLY'
+$diagnosticBundle | Add-Member NoteProperty matrixContribution 'NONE'
+$diagnosticBundle | Add-Member NoteProperty time04Rows 0
+Assert-KRDualHomeDiagnosticBundle $diagnosticBundle
+$wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.qualificationCycles=1
+Assert-Reject { Assert-KRDualHomeDiagnosticBundle $wrongDiagnostic } 'INVALID:BUNDLE_SCHEMA'
+$wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.time04Rows=1
+Assert-Reject { Assert-KRDualHomeDiagnosticBundle $wrongDiagnostic } 'INVALID:BUNDLE_SCHEMA'
+$wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.requiresOffline=$true
+Assert-Reject { Assert-KRDualHomeDiagnosticBundle $wrongDiagnostic } 'INVALID:BUNDLE_SCHEMA'
 $observedConfiguration=[PSCustomObject]@{Manufacturer='samsung';Model='SM-X400';Android='16';Api='36';Patch='2026-07-05';BuildId='BP4A.251205.006'}
 Assert-KRBoundDeviceConfiguration $observedConfiguration $approvedConfiguration
 $wrongDevice=$observedConfiguration.PSObject.Copy();$wrongDevice.BuildId='DIFFERENT'

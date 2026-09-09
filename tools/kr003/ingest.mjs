@@ -73,7 +73,7 @@ function validateQ11NavigationModeEvidence(directory,read,required) {
   return evidence;
 }
 
-function validateQ12HomeKeyEvidence(directory,read,required) {
+function validateQ12HomeKeyEvidence(directory,read,required,restrictedPhase='final') {
   const transportPath=resolve(directory,'home-key-transport.json'),operationsPath=resolve(directory,'home-key-operations.json');
   if(!existsSync(transportPath)||!existsSync(operationsPath)) {
     assert(!required,'Runner-v12 evidence after the preflight controls requires Home-key transport evidence');
@@ -115,7 +115,7 @@ function validateQ12HomeKeyEvidence(directory,read,required) {
   if(existsSync(restrictedPath)) {
     restricted=read('home-key-restricted.json');
     assert.deepEqual(Object.keys(restricted),['Schema','Phase','Stimulus','StimulusSource','CandidateGenerated','TransportCalibration','InvocationCount','CommandResult','ExitCode','StderrClass','FixtureTapsBefore','FixtureFocusGainsBefore','FixtureBaseline','ObservationCount','CandidateContinuity','FixtureFocusRegain','FixtureInputLeak','OwnerObservation','OwnerObservedUtc','Status','LastVerifiedUtc']);
-    assert.equal(restricted.Schema,1);assert.equal(restricted.Phase,'final');assert.equal(restricted.Stimulus,'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME');
+    assert.equal(restricted.Schema,1);assert.equal(restricted.Phase,restrictedPhase);assert.equal(restricted.Stimulus,'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME');
     assert.equal(restricted.StimulusSource,'HOST_ADB');assert.equal(restricted.CandidateGenerated,false);assert.equal(restricted.TransportCalibration,'CALIBRATED');
     assert([0,1].includes(restricted.InvocationCount));assert(['UNRECORDED','ACCEPTED','REJECTED','TIMEOUT'].includes(restricted.CommandResult));
     assert(restricted.ExitCode===null||Number.isInteger(restricted.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(restricted.StderrClass));
@@ -339,6 +339,117 @@ function ingestQ7(directory, manifest, rows, summary, read) {
   assert.equal(bailout.LatencySamplesPreserved,true);
   return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,automatedExpiryCycles:100,
     physicalExpiryObservations:2,humanCheckpointSessions:3,stats,kr003Complete:false};
+}
+
+export function ingestDualHomeDiagnostic(directory) {
+  const read=name=>JSON.parse(decode(resolve(directory,name)));
+  const manifest=read('manifest.json'),summary=read('summary.json'),rows=read('attempts.json'),bundle=manifest.Bundle;
+  assert.equal(bundle.protocol,'KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC');assert.match(bundle.sourceCommit,/^[a-f0-9]{40}$/);
+  assert.equal(bundle.runnerVersion,12);assert.equal(bundle.diagnosticOnly,true);assert.equal(bundle.diagnosticScope,'HOME_GATE_ONLY');
+  assert.equal(bundle.requiresOffline,false);assert.equal(bundle.networkIsolation,'NOT_REQUIRED_AND_NOT_PERFORMED');
+  assert.equal(bundle.physicalExecution,'NOT_RUN');assert.equal(bundle.oracleModel,'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS');
+  assert.equal(bundle.awakeStateModel,'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE');
+  assert.equal(bundle.navigationModeModel,'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM');
+  assert.equal(bundle.homeSafetyModel,'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME');
+  assert.equal(bundle.homeKeyTransportModel,'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS');
+  assert.equal(bundle.matrixContribution,'NONE');assert.equal(bundle.humanCheckpointMaximum,1);
+  assert.equal(bundle.qualificationCycles,0);assert.equal(bundle.time04Rows,0);assert.equal(bundle.resumeAllowed,false);assert.equal(bundle.poolingAllowed,false);
+  assert.deepEqual(bundle.homeLogicBaseline,{sourceCommit:'80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd',bundleDirectory:'80dcdf4',bundleJsonSha256:'9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28'});
+  assert.deepEqual(bundle.approvedConfiguration,{schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'});
+  assert.equal(bundle.candidateSha256,'5b27c891fe155ee4d26e4da68f8323f178f7116e73d8097ce07199e5800e318b');
+  assert.equal(bundle.fixtureSha256,'223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc');
+  assert.equal(bundle.calibratedBy.status,'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY');
+  assert.equal(bundle.calibratedBy.qualificationSamples,0);assert.equal(bundle.calibratedBy.physicalAgreement,'PASS');
+  assert.equal(manifest.OfflineNetworkRequested,false);assert.equal(manifest.OfflineOwnerConfirmed,false);assert.equal(manifest.NetworkMutationAllowed,false);
+  assert.equal(manifest.DualHomeDiagnostic,true);assert.equal(manifest.EvidenceModel,'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC');
+  assert.equal(manifest.QualificationRows,0);assert.equal(manifest.Time04Rows,0);assert.equal(manifest.MatrixContribution,'NONE');
+  assert(Array.isArray(rows));assert.equal(rows.length,0,'Excluded Home diagnostic must never contain attempt rows');
+  assert.equal(summary.QualificationRequested,false);assert.equal(summary.DualHomeDiagnosticRequested,true);
+  assert.equal(summary.QualificationRows,0);assert.equal(summary.Time04Rows,0);assert.equal(summary.MatrixContribution,'NONE');
+  assert.equal(summary.ValidPairedObservations,0);assert.equal(summary.EvidenceModel,'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC');
+  assert.equal(summary.Kr003Complete,false);assert.equal(summary.ProductionApproved,false);assert.equal(summary.Offline,false);
+  for(const forbidden of ['network-capabilities.json','network-operations.json','network-original.json','network-touched.json']) {
+    assert.equal(existsSync(resolve(directory,forbidden)),false,`Home-only diagnostic must not retain ${forbidden}`);
+  }
+  const network=read('network-restoration.json');assert.deepEqual(network,{Status:'NOT_CHANGED',Settings:[]});
+
+  const expected=bundle.approvedConfiguration,observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
+  for(const device of [manifest.InitialDevice,manifest.Device]) {
+    if(device) {
+      for(const [expectedKey,observedKey] of Object.entries(observedKeys)) assert.equal(device[observedKey],expected[expectedKey]);
+      assert.equal(Object.hasOwn(device,'BuildFingerprint'),false);assert.equal(Object.hasOwn(device,'User'),false);
+    }
+  }
+  const permissionPath=resolve(directory,'permission-verification.json');
+  if(existsSync(permissionPath)) {
+    const permission=read('permission-verification.json');
+    assert(['ENABLED','DISABLED','UNKNOWN'].includes(permission.UsageAccessRunner));
+    assert(['ENABLED','DISABLED','UNKNOWN'].includes(permission.AccessibilityRunner));
+    assert(['FRESH','STALE','UNKNOWN'].includes(permission.ServiceHeartbeat));
+    assert(['HEALTHY','DEGRADED','UNKNOWN'].includes(permission.CandidateHealth));
+  }
+  const shellPath=resolve(directory,'shell-input-precondition.json');
+  if(existsSync(shellPath)) {
+    const shell=read('shell-input-precondition.json');
+    assert.deepEqual(Object.keys(shell),['Schema','Stimulus','FixtureRole','Result','SameFixture','BeforeFocused','AfterFocused','BeforeResumed','AfterResumed','TapDelta','VerifiedUtc']);
+    assert.equal(shell.Schema,1);assert.equal(shell.Stimulus,'ADB_SHELL_INPUT_TAP_FIXTURE_PROBE');
+    assert.equal(shell.FixtureRole,'INDEPENDENT_ORDINARY_FIXTURE');assert.equal(shell.Result,'FIXTURE_COUNTER_INCREMENTED_ONCE');
+    assert.equal(shell.SameFixture,true);assert.equal(shell.BeforeFocused,true);assert.equal(shell.AfterFocused,true);
+    assert.equal(shell.BeforeResumed,true);assert.equal(shell.AfterResumed,true);assert.equal(shell.TapDelta,1);
+  }
+  const homeKey=(existsSync(resolve(directory,'home-key-transport.json'))||existsSync(resolve(directory,'home-key-operations.json')))?validateQ12HomeKeyEvidence(directory,read,true,'diagnostic'):null;
+  const restrictionPath=resolve(directory,'dual-home-restriction.json');
+  if(existsSync(restrictionPath)) {
+    const restriction=read('dual-home-restriction.json');
+    assert.deepEqual(Object.keys(restriction),['Schema','Phase','QualificationRows','Time04Rows','StartedUtc','EndedUtc','Status','Revision','CandidateSampleCountBefore','CandidateSampleCountAfter','AttachmentLatencyMs','Restriction','Attached','Disposition','CandidateHealth','FixtureFocused','FixtureResumed','FixtureTapBaseline','Reason']);
+    assert.equal(restriction.Schema,1);assert.equal(restriction.Phase,'EXCLUDED_HOME_DIAGNOSTIC');
+    assert.equal(restriction.QualificationRows,0);assert.equal(restriction.Time04Rows,0);
+    assert(['STARTED','RESTRICTION_ESTABLISHED','FAILED','INVALID'].includes(restriction.Status));
+  }
+  const safetyPath=resolve(directory,'safety-diagnostic.json');
+  const safety=existsSync(safetyPath)?read('safety-diagnostic.json'):null;
+  if(safety) {
+    assert.equal(safety.Phase,'diagnostic');assert.equal(safety.Protocol,bundle.protocol);assert.equal(safety.IndependentExpirySamples,0);
+    assert(['AVAILABLE','UNAVAILABLE','UNKNOWN'].includes(safety.HomeControlExercisability));
+    assert(['UNRESOLVED','PATH_A_PHYSICAL_HOME_ACTION','PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS'].includes(safety.HomeEvidencePath));
+    assert(['UNRECORDED','PASS','FAIL','INVALID'].includes(safety.HomeGateResult));
+    assert(['UNRECORDED','HOME_ACTION_EXERCISED_AND_RESISTED','HOME_ACTION_EXERCISED_AND_ESCAPED','HOME_ACTION_RESULT_UNCERTAIN','HOME_CONTROL_UNAVAILABLE_WITHOUT_CALIBRATED_STIMULUS','HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE','HOME_ESCAPE_PATH_ESTABLISHED_WITH_CONTROL_UNAVAILABLE'].includes(safety.HomeActionResult));
+    assert.equal(safety.RecoveryReason,'UNRECORDED');assert.equal(safety.ReentryPhysical,'UNRECORDED');assert.equal(safety.ClearTouch,'UNRECORDED');
+  }
+
+  const completed=summary.Status==='PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY';
+  if(completed) {
+    assert.equal(summary.SafetyChecksPassed,true);assert.deepEqual(summary.FinalizationErrors,[]);
+    assert.equal(summary.HomeGateResult,'PASS');assert(safety);assert.equal(safety.Result,'HOME_DIAGNOSTIC_PASS_RECORDED');
+    assert.equal(safety.FinalVisibilityPhysical,'PASS');assert.equal(safety.HoldOracle,'RESTRICTION_HELD');
+    assert(existsSync(shellPath));assert(homeKey);assert.equal(homeKey.transport.Status,'CALIBRATED');assert.equal(homeKey.transport.ReturnToFixture,'VERIFIED');
+    const restriction=read('dual-home-restriction.json');assert.equal(restriction.Status,'RESTRICTION_ESTABLISHED');
+    assert.equal(restriction.Restriction,true);assert.equal(restriction.Attached,true);assert.equal(restriction.Disposition,'ORDINARY_APP');
+    assert.equal(restriction.CandidateHealth,'HEALTHY_ELIGIBLE');assert.equal(restriction.FixtureFocused,false);assert.equal(restriction.FixtureResumed,true);
+    assert(Number.isInteger(restriction.AttachmentLatencyMs)&&restriction.AttachmentLatencyMs>=0);
+    if(safety.HomeEvidencePath==='PATH_A_PHYSICAL_HOME_ACTION') {
+      assert.equal(safety.HomeControlExercisability,'AVAILABLE');assert.equal(safety.HomeGateResult,'PASS');
+      assert.equal(safety.HomeActionResult,'HOME_ACTION_EXERCISED_AND_RESISTED');assert.equal(safety.HomeActionState,'HOME_ACTION_EXERCISED');
+      assert.equal(safety.HomeActionOutcome,'HOME_ACTION_RESISTED');assert.equal(safety.HomePhysical,'PASS');assert.equal(safety.HomeStimulusPhysical,'NOT_APPLICABLE');
+      assert.equal(homeKey.restricted,null);
+    } else {
+      assert.equal(safety.HomeEvidencePath,'PATH_B_CONTROL_UNAVAILABLE_HOST_STIMULUS');assert.equal(safety.HomeControlExercisability,'UNAVAILABLE');
+      assert.equal(safety.HomePhysical,'CONTROL_UNAVAILABLE');assert.equal(safety.HomeActionState,'HOME_ACTION_NOT_EXERCISABLE');
+      assert.equal(safety.HomeActionOutcome,'UNRECORDED');assert.equal(safety.HomeActionResult,'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE');
+      assert(homeKey.restricted);assert.equal(homeKey.restricted.Phase,'diagnostic');assert.equal(homeKey.restricted.InvocationCount,1);
+      assert.equal(homeKey.restricted.CandidateContinuity,'VERIFIED');assert.equal(homeKey.restricted.FixtureFocusRegain,'NONE');
+      assert.equal(homeKey.restricted.FixtureInputLeak,'NONE');assert.equal(homeKey.restricted.OwnerObservation,'PASS');assert.equal(homeKey.restricted.Status,'HELD_WITH_OWNER_AGREEMENT');
+    }
+    const cleanup=read('dual-home-cleanup.json');assert.equal(cleanup.Status,'VERIFIED');assert.equal(cleanup.ClearAttempted,true);
+    assert.equal(cleanup.CandidateState,'UNARMED_UNRESTRICTED_UNATTACHED');assert.equal(cleanup.CandidateHealth,'HEALTHY_ELIGIBLE');
+    assert.equal(cleanup.FixtureOrdinaryUse,'FOCUSED_RESUMED_TAP_VERIFIED');assert.equal(summary.DualHomeCleanupStatus,'VERIFIED');
+    const awake=validateQ10StayAwakeEvidence(directory,read,true,true);assert.equal(awake.restoration.Status,'RESTORED_AND_SETTING_VERIFIED');
+    const bailout=read('diagnostic-bailout.json');assert.equal(bailout.Status,'VERIFIED');assert.equal(bailout.RestrictionReleased,true);
+    validateQ11NavigationModeEvidence(directory,read,true);
+  } else {
+    assert(['FAIL','INVALID','INTERRUPTED'].includes(summary.Status));
+  }
+  return {sourceCommit:bundle.sourceCommit,status:summary.Status,reason:summary.Reason,homePath:safety?.HomeEvidencePath??'UNSPECIFIED',homeResult:safety?.HomeActionResult??'UNSPECIFIED',qualificationRows:0,time04Rows:0,matrixContribution:'NONE',kr003Complete:false};
 }
 
 export function ingestCheckpoint(csvPath, tracePath) {
@@ -769,6 +880,6 @@ function ingestAlternateTransport(directory,monkey) {
 
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="device" ? ingestDeviceTransport(first) : kind==="calibration" ? ingestOracleCalibration(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="home-diagnostic" ? ingestDualHomeDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="device" ? ingestDeviceTransport(first) : kind==="calibration" ? ingestOracleCalibration(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

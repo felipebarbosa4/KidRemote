@@ -70,6 +70,16 @@ Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` 
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
+## Excluded dual-Home diagnostic
+
+OD-40 permits a short pre-qualification exercise of the exact runner-v12 Home implementation on the manifest-bound Samsung configuration. Build it only from clean committed source and the approved calibration:
+
+```sh
+node tools/kr003/package.mjs /mnt/c/platform-tools/kr003-dual-home-diagnostic-bundles/NEW_UNIQUE_COMMIT_DIRECTORY /mnt/c/platform-tools/kr003-oracle-calibration/calibration-20260908-231756-97a0855b --dual-home-diagnostic
+```
+
+Its owner command uses `-DualHomeDiagnostic`, not `-OfflineNetwork`. It independently verifies shell-tap and fixed `KEYCODE_HOME` transport, arms one excluded ten-second restriction, invokes the same OD-39 Path A/Path B code, and verifies CLEAR, fixture ordinary use and exact stay-awake restoration. It never changes network or navigation state and always contributes zero qualification rows, zero TIME-04 rows and no matrix result. Ingest it with `node tools/kr003/ingest.mjs home-diagnostic ACTUAL_DIAGNOSTIC_DIRECTORY`. A configuration-specific diagnostic PASS permits only consideration of one later fresh full qualification; it is not that qualification and cannot be resumed or pooled.
+
 ## Execute (owner / PowerShell)
 
 Use the exact populated command in the latest bundle handoff:
@@ -120,6 +130,7 @@ pwsh -NoProfile -File tools/kr003/OracleCalibration.Tests.ps1
 pwsh -NoProfile -File tools/kr003/PowerShellSafety.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleCalibrationEntrypoint.Tests.ps1
 pwsh -NoProfile -File tools/kr003/QualificationEntrypoint.Tests.ps1
+pwsh -NoProfile -File tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

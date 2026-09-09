@@ -141,7 +141,9 @@ two later [runner-v11 attempts](evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMP
 stopped INVALID during a final-visible candidate snapshot with unverified cleanup; RUN B retained final-visible PASS but no exercisable Home
 control/action despite coarse `THREE_BUTTON` mode. Neither is resumable or poolable, neither establishes Home resistance/escape, and neither
 advances a formal row. OD-39 now prospectively approves either an exercised physical Home action or owner-confirmed control unavailability plus
-a separately fixture-calibrated host Home stimulus and independent no-escape evidence. This does not alter either run. The combined earlier eligibility signal does not
+a separately fixture-calibrated host Home stimulus and independent no-escape evidence. This does not alter either run. OD-40's prepared short
+dual-Home diagnostic exercises only that gate and is definitionally excluded: zero qualification rows, zero `TIME-04` rows and no matrix PASS,
+regardless of its future result. The combined earlier eligibility signal does not
 separately pass `TIME-02` or `TIME-03`. Permission-revocation, broader safety, lifecycle and production
 gates do not advance.
 Proposed minimum: one current Google reference device, one Samsung phone/tablet,
