@@ -501,6 +501,27 @@ function Read-DiagnosticResult {
     }
 }
 
+function Read-HomeControlExercisability {
+    param([string]$Prompt, [scriptblock]$Poll, [scriptblock]$OnObserved)
+    Check-EarlyStop
+    Write-Host $Prompt -ForegroundColor Cyan
+    Write-Host '[A] available now  [N] not visible/unavailable  [I] uncertain  [Q] stop and run cleanup'
+    while ($true) {
+        if (-not [Console]::KeyAvailable) {
+            if ($null -ne $Poll) { & $Poll | Out-Null }
+            Start-Sleep -Milliseconds 100
+            continue
+        }
+        $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
+        if ($key -in @('A','N','I')) {
+            $result = switch ($key) { 'A' { 'AVAILABLE' }; 'N' { 'UNAVAILABLE' }; 'I' { 'UNKNOWN' } }
+            if ($null -ne $OnObserved) { & $OnObserved $result }
+            return $result
+        }
+        if ($key -eq 'Q') { throw 'INTERRUPTED:OPERATOR_STOP' }
+    }
+}
+
 function Check-EarlyStop {
     while ([Console]::KeyAvailable) {
         $key = [Console]::ReadKey($true).KeyChar.ToString().ToUpperInvariant()
@@ -911,15 +932,35 @@ function Set-HomeActionObservation {
     param([ValidateSet('PASS','FAIL','INVALID')][string]$Result)
     $script:Safety.HomePhysical=$Result
     $script:Safety.HomeActionResult=Get-KRHomeActionResult $Result
+    $script:Safety.HomeActionState=if($Result -in @('PASS','FAIL')){'HOME_ACTION_EXERCISED'}else{'HOME_ACTION_UNKNOWN'}
+    $script:Safety.HomeActionOutcome=switch($Result){'PASS'{'HOME_ACTION_RESISTED'}'FAIL'{'HOME_ACTION_ESCAPED'}default{'UNKNOWN'}}
     $script:Safety.HomeResultSource='OWNER_RESPONSE'
     $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
 }
 
+function Set-HomeControlObservation {
+    param([ValidateSet('AVAILABLE','UNAVAILABLE','UNKNOWN')][string]$Result)
+    $script:Safety.HomeControlExercisability=$Result
+    $script:Safety.HomeControlSource='OWNER_RESPONSE'
+    $script:Safety.HomeControlObservedUtc=[DateTime]::UtcNow.ToString('o')
+    if($Result -ne 'AVAILABLE') {
+        $script:Safety.HomePhysical='INVALID'
+        $script:Safety.HomeActionResult='HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+        $script:Safety.HomeActionState=if($Result -eq 'UNAVAILABLE'){'HOME_ACTION_NOT_EXERCISABLE'}else{'HOME_ACTION_UNKNOWN'}
+        $script:Safety.HomeActionOutcome='UNRECORDED'
+        $script:Safety.HomeResultSource='OWNER_RESPONSE'
+        $script:Safety.HomeObservedUtc=$script:Safety.HomeControlObservedUtc
+    }
+    Save-Safety
+}
+
 function Poll-SafetyHold {
     $snapshot=Get-LabState
-    if($script:Safety.CurrentStep -eq 'HOME_ACTION' -and (Test-KRRecoveryButtonAction $snapshot)){
+    if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION') -and (Test-KRRecoveryButtonAction $snapshot)){
         $script:Safety.HomeActionResult='HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+        $script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISED'
+        $script:Safety.HomeActionOutcome='UNRECORDED'
         $script:Safety.HomeResultSource='OUT_OF_SEQUENCE_SETTINGS_ACTION'
         $script:Safety.HomeObservedUtc=[DateTime]::UtcNow.ToString('o')
         Save-Safety
@@ -928,7 +969,7 @@ function Poll-SafetyHold {
     try{
         Assert-KRHold -Snapshot $snapshot -Revision $script:Safety.Revision -FixtureTaps $script:Safety.FixtureTaps -FixtureState (Get-FixtureState)
     }catch{
-        if($script:Safety.CurrentStep -eq 'HOME_ACTION' -and $script:Safety.HomeActionResult -eq 'UNRECORDED'){
+        if($script:Safety.CurrentStep -in @('HOME_CONTROL','HOME_ACTION') -and $script:Safety.HomeActionResult -eq 'UNRECORDED'){
             $script:Safety.HomeResultSource='AUTOMATED_HOLD_ORACLE'
             Save-Safety
         }
@@ -961,7 +1002,9 @@ function Invoke-QualificationSafetyCheckpoint {
     $script:Safety=[PSCustomObject]@{
         Schema=1; Protocol=$script:Bundle.protocol; Phase=$Phase; StartedUtc=[DateTime]::UtcNow.ToString('o'); EndedUtc=$null
         Revision=[long]$start.revision; StartedElapsed=[long]$start.elapsed; LastElapsed=[long]$start.elapsed
-        FixtureTaps=[long]$fixture.taps; NavigationMode=$script:NavigationMode; CurrentStep='START'
+        FixtureTaps=[long]$fixture.taps; NavigationMode=$script:NavigationMode; NavigationModeClassification=(Get-KRNavigationModeClassification $script:NavigationMode); CurrentStep='START'
+        HomeControlExercisability='UNKNOWN'; HomeControlSource='NONE'; HomeControlPromptedUtc=$null; HomeControlObservedUtc=$null
+        HomeActionState='HOME_ACTION_NOT_EXERCISED'; HomeActionOutcome='UNRECORDED'
         HomePhysical='UNRECORDED'; HomeActionResult='UNRECORDED'; HomeResultSource='NONE'; HomePromptedUtc=$null; HomeObservedUtc=$null; HoldOracle='PENDING'
         FinalVisibilityPhysical='UNRECORDED'; FinalVisibilityObservedUtc=$null
         RecoveryFile=('recovery-' + $Phase + '.json'); RecoveryReason='UNRECORDED'
@@ -983,11 +1026,22 @@ function Invoke-QualificationSafetyCheckpoint {
         Stop-ForSafetyResult -Result $visibleResult -Step 'FINAL_VISIBILITY'
     }
 
+    $script:Safety.CurrentStep='HOME_CONTROL'
+    $script:Safety.HomeControlPromptedUtc=[DateTime]::UtcNow.ToString('o')
+    Save-Safety
+    $navigationClassification=Get-KRNavigationModeClassification $script:NavigationMode
+    $homeControl=Read-HomeControlExercisability ('HOME CONTROL CHECK ('+$navigationClassification+'): navigation mode does not establish that its Home control is visible while restricted. Without performing a Home action yet: A=the current system Home control is visibly available and physically exercisable now; N=it is not visible or unavailable; I=uncertain. Do not tap Open device settings.') -Poll { Poll-SafetyHold } -OnObserved {
+        param($result)
+        Set-HomeControlObservation $result
+    }
+    if($homeControl -ne 'AVAILABLE') { throw ('INVALID:SAFETY_' + $Phase.ToUpperInvariant() + '_HOME_CONTROL') }
+    $null=Poll-SafetyHold
+
     $script:Safety.CurrentStep='HOME_ACTION'
     $script:Safety.HomePromptedUtc=[DateTime]::UtcNow.ToString('o')
     Save-Safety
     $homeInstruction=Get-KRHomeActionInstruction $script:NavigationMode
-    $homeResult=Read-DiagnosticResult ('HOME CHECK ('+$script:NavigationMode+'): '+$homeInstruction+'. Do not tap Open device settings yet. Only after exercising that system Home action once: P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=the action was not exercisable or the result is uncertain.') -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
+    $homeResult=Read-DiagnosticResult ('HOME ACTION CHECK ('+$navigationClassification+'): the owner has confirmed that the control is available. '+$homeInstruction+'. Do not tap Open device settings. After exercising that system Home action once: P=restriction remained continuously visible and Home was not usable; F=escape/flicker/disappearance; I=the action or result is uncertain.') -Poll { Poll-SafetyHold } -PassReady { $script:Safety.HoldOracle -eq 'RESTRICTION_HELD' } -OnObserved {
         param($result)
         Set-HomeActionObservation $result
     }
@@ -1256,7 +1310,7 @@ try {
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
     Assert-QualificationPermissionState $ready
-    Write-Host 'Reading the current Android system navigation mode as a coarse Home-action instruction only.'
+    Write-Host 'Reading the current Android system navigation mode as a coarse mode signal only; control availability is checked separately.'
     Capture-NavigationMode
     Write-Host 'Temporarily enabling Android Stay awake while plugged in. The exact original setting is journalled and restored during finalization.'
     Enter-StayAwake

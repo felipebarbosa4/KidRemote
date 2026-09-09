@@ -15,7 +15,7 @@ not interchangeable evidence. `Prepared` is tooling; `Not run` remains the physi
 | --- | --- | --- | --- |
 | New-device metadata / transport | A,B,D | [Samsung SM-X400 / Android 16 API 36 transport passed](evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md); exact metadata and one counter-correlated tap are preserved | Complete for transport only on that exact configuration; no enforcement inference |
 | Active-oracle calibration | A,B,C,D | **PASS on exact Samsung SM-X400 configuration:** runner-v5 retained one excluded 127 ms attachment, 22,371 ms hold, 20 denied taps, zero focus regain, continuous service, explicit owner agreement and verified cleanup; all earlier INVALID runs remain unchanged | Complete only for this configuration prerequisite; no qualification/offline/safety transfer |
-| AC-3 / TIME-04: 100 zero expiries | B,C,D | Samsung runner-v9 retained 100 automated PASS rows (p95 317 ms) then checkpoint-3 INVALID. Runner-v10 separately retained 100 automated PASS rows (p95 318 ms), checkpoints 1/2 and final visibility PASS, then emitted automated `FAIL:RESTRICTION_LOST` after an out-of-sequence Settings action while Home remained unrecorded; cleanup passed. Q7 remains blocked on Mi 8 | One entirely fresh offline run must complete all 100 rows and all three checkpoints; neither stopped run can be resumed, replaced or pooled |
+| AC-3 / TIME-04: 100 zero expiries | B,C,D | Samsung runner-v9 retained 100 automated PASS rows (p95 317 ms) then checkpoint-3 INVALID. Runner-v10 separately retained 100 automated PASS rows (p95 318 ms) then a Home-phase FAIL with no Home action. Runner-v11 RUN A retained 100 PASS rows (p95 299 ms) then final-visible `ADB_REJECTED` with unverified cleanup; RUN B retained 100 PASS rows (p95 304 ms) and final-visible PASS but no exercisable Home control/action. Q7 remains blocked on Mi 8 | One entirely fresh offline run must complete all 100 rows and all three checkpoints, including an exercised physical Home action; no stopped run can be resumed, replaced or pooled |
 | TIME-01 eligible total / TIME-02 screen off / TIME-03 keyguard | A,B,C | Pure monotonic cases pass; future phase runner can journal state before/after | Owner physically toggles screen/keyguard and observes eligibility; no automated unlock |
 | TIME-05 process death | B,C | Prepare a journal-before/after debug self-termination phase after qualification | Verify the candidate process actually changes; do not substitute fixture kill or force-stop |
 | TIME-06 app/service restart | B,C | Snapshot/revision/heartbeat controls exist | Physical restriction recovery remains observed evidence |
@@ -51,7 +51,9 @@ Apply the exact [device-to-matrix mapping](KR-003-DEVICE-MATRIX-MAPPING.md) to e
 The physical protocol requires **API 28**, **Android 15/API 35**, **Android 16/API 36**, and each proposed OEM support variant. These are hard
 physical gates under the current contract. The Samsung record establishes an Android 16/API 36 plus exact Samsung-variant configuration and passes
 its transport and active-oracle calibration prerequisites only. One qualification stopped INVALID in network preflight; a second retained 100
-automated PASS rows and p95 317 ms but stopped INVALID before checkpoint-3 physical agreement. Formal TIME-04 is not passed and neither run is resumable.
+automated PASS rows and p95 317 ms but stopped INVALID before checkpoint-3 physical agreement. Three later 100-row sets also stopped during
+checkpoint 3: runner-v10 before an established Home action, runner-v11 RUN A before final-visible completion, and runner-v11 RUN B because no
+Home control/action was exercisable. Formal TIME-04 is not passed and none is resumable or poolable.
 API 28 and 35 remain unavailable/unrun.
 Android 17/API 37 is now an official platform. Adding it to the required support set remains **UNSPECIFIED**; any API 37 result is supplemental
 until that owner decision and cannot satisfy the existing API 36 row.

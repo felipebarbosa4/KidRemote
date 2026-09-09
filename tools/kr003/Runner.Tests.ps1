@@ -330,7 +330,9 @@ try {
     function Assert-FixturePositiveControl { param($Before,$FailureCode); $copy=$Before.PSObject.Copy(); $copy.taps=$Before.taps+1; return $copy }
     function Wait-LabCondition { param($Condition,$FailureCode,$TimeoutSeconds) return New-SafetyFrame (-not $script:ClearMode) }
     $script:DelayedPromptPolls=0
-    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); if($null -ne $Poll){1..3|ForEach-Object{$script:DelayedPromptPolls++;& $Poll | Out-Null}}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved); $script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){& $Poll|Out-Null};if($null -ne $OnObserved){& $OnObserved 'AVAILABLE'};return 'AVAILABLE' }
+    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady); $script:HomeActionPrompts+=$Prompt;if($null -ne $Poll){1..3|ForEach-Object{$script:DelayedPromptPolls++;& $Poll | Out-Null}}; if($null -ne $OnObserved){& $OnObserved 'PASS'}; return 'PASS' }
     function Invoke-FocusedRecoveryDiagnostic { param($OutputName); $script:Diagnostic=[PSCustomObject]@{Result='EVIDENCE_CAPTURED';Reason='PHYSICAL_PASS_RECORDED'} }
     function Check-EarlyStop {}
     function Start-Sleep {}
@@ -341,6 +343,11 @@ try {
     Assert-Equal $safety.FinalVisibilityPhysical 'PASS'
     Assert-Equal $safety.HomePhysical 'PASS'
     Assert-Equal $safety.NavigationMode 'GESTURE'
+    Assert-Equal $safety.NavigationModeClassification 'NAV_MODE_GESTURE'
+    Assert-Equal $safety.HomeControlExercisability 'AVAILABLE'
+    Assert-Equal $safety.HomeControlSource 'OWNER_RESPONSE'
+    Assert-Equal $safety.HomeActionState 'HOME_ACTION_EXERCISED'
+    Assert-Equal $safety.HomeActionOutcome 'HOME_ACTION_RESISTED'
     Assert-Equal $safety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_RESISTED'
     Assert-Equal $safety.HomeResultSource 'OWNER_RESPONSE'
     Assert-Equal $safety.RecoveryReason 'PHYSICAL_PASS_RECORDED'
@@ -349,24 +356,68 @@ try {
     Assert-Equal $safety.IndependentExpirySamples 0
     Assert-Equal $safety.Result 'PHYSICAL_PASS_RECORDED'
     Assert-Equal ($script:DelayedPromptPolls -ge 3) $true
+    Assert-Equal $script:HomeControlPrompts.Count 1
+    Assert-Equal ([bool]($script:HomeControlPrompts[0] -match 'navigation mode does not establish')) $true
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME ACTION CHECK.*swipe up once' }).Count 1
     Assert-Equal $script:HumanCheckpoints.Count 1
     Assert-Equal $script:HumanCheckpoints[0].Name 'POST_RUN_SAFETY'
+
+    # THREE_BUTTON is a mode signal only: an unavailable control records INVALID and no action instruction is issued.
+    Reset-Run 'q7-three-button-control-unavailable'
+    $script:Bundle=[PSCustomObject]@{protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION'}
+    $script:NavigationMode='THREE_BUTTON';$script:ClearMode=$false;$script:OpenCount=0;$script:FixtureReadAfterClear=0
+    $script:HomeControlPrompts=@();$script:HomeActionPrompts=@()
+    function Read-HomeControlExercisability { param($Prompt,$Poll,$OnObserved);$script:HomeControlPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'UNAVAILABLE'};return 'UNAVAILABLE' }
+    function Read-DiagnosticResult { param($Prompt,$Poll,$OnObserved,$MinimumPassSeconds,$PassReady);$script:HomeActionPrompts+=$Prompt;if($null -ne $Poll){&$Poll|Out-Null};if($null -ne $OnObserved){&$OnObserved 'PASS'};return 'PASS' }
+    $controlFailure=$null;try{Invoke-QualificationSafetyCheckpoint -Phase 'final' 6>$null}catch{$controlFailure=$_.Exception.Message}
+    Assert-Equal $controlFailure 'INVALID:SAFETY_FINAL_HOME_CONTROL'
+    $safety=Read-Json 'safety-final.json'
+    Assert-Equal $safety.NavigationModeClassification 'NAV_MODE_THREE_BUTTON'
+    Assert-Equal $safety.HomeControlExercisability 'UNAVAILABLE'
+    Assert-Equal $safety.HomeActionState 'HOME_ACTION_NOT_EXERCISABLE'
+    Assert-Equal $safety.HomeActionOutcome 'UNRECORDED'
+    Assert-Equal $safety.HomePhysical 'INVALID'
+    Assert-Equal @($script:HomeActionPrompts | Where-Object { $_ -match 'HOME ACTION CHECK' }).Count 0
 
     # Owner outcomes remain distinct from an automated hold-oracle failure and from no exercisable Home action.
     Reset-Run 'home-owner-outcomes'
     $script:SafetyFileName='safety-final.json'
-    $script:Safety=[PSCustomObject]@{HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    $script:Safety=[PSCustomObject]@{NavigationModeClassification='NAV_MODE_THREE_BUTTON';HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    Set-HomeControlObservation 'AVAILABLE'
+    Assert-Equal $script:Safety.HomeControlExercisability 'AVAILABLE'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_NOT_EXERCISED'
+    Set-HomeActionObservation 'PASS'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_EXERCISED'
+    Assert-Equal $script:Safety.HomeActionOutcome 'HOME_ACTION_RESISTED'
+    $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISED';$script:Safety.HomeActionOutcome='UNRECORDED';$script:Safety.HomeResultSource='NONE'
     Set-HomeActionObservation 'FAIL'
     Assert-Equal $script:Safety.HomePhysical 'FAIL'
     Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_EXERCISED_AND_ESCAPED'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_EXERCISED'
+    Assert-Equal $script:Safety.HomeActionOutcome 'HOME_ACTION_ESCAPED'
     Assert-Equal $script:Safety.HomeResultSource 'OWNER_RESPONSE'
     $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeResultSource='NONE'
     Set-HomeActionObservation 'INVALID'
     Assert-Equal $script:Safety.HomeActionResult 'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_UNKNOWN'
+
+    # A known navigation mode never establishes control availability. Unavailable and unknown stop before an action.
+    Reset-Run 'home-control-exercisability'
+    $script:SafetyFileName='safety-final.json'
+    $script:Safety=[PSCustomObject]@{HomeControlExercisability='UNKNOWN';HomeControlSource='NONE';HomeControlObservedUtc=$null;HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    Set-HomeControlObservation 'UNAVAILABLE'
+    Assert-Equal $script:Safety.HomeControlExercisability 'UNAVAILABLE'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_NOT_EXERCISABLE'
+    Assert-Equal $script:Safety.HomeActionOutcome 'UNRECORDED'
+    Assert-Equal $script:Safety.HomePhysical 'INVALID'
+    $script:Safety.HomePhysical='UNRECORDED';$script:Safety.HomeActionResult='UNRECORDED';$script:Safety.HomeActionState='HOME_ACTION_NOT_EXERCISED';$script:Safety.HomeResultSource='NONE'
+    Set-HomeControlObservation 'UNKNOWN'
+    Assert-Equal $script:Safety.HomeControlExercisability 'UNKNOWN'
+    Assert-Equal $script:Safety.HomeActionState 'HOME_ACTION_UNKNOWN'
 
     Reset-Run 'home-automated-loss-before-response'
     $script:SafetyFileName='safety-final.json'
-    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
     function Get-LabState {
         $frame=New-SafetyFrame $true;$frame.revision=42;$frame.sampledRevision=42;$frame.attached=$false;$frame.removals=1
         return $frame
@@ -380,7 +431,7 @@ try {
 
     Reset-Run 'home-out-of-sequence-settings-action'
     $script:SafetyFileName='safety-final.json'
-    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
+    $script:Safety=[PSCustomObject]@{CurrentStep='HOME_ACTION';Revision=42;FixtureTaps=0;LastElapsed=0;HoldOracle='PENDING';HomePhysical='UNRECORDED';HomeActionResult='UNRECORDED';HomeActionState='HOME_ACTION_NOT_EXERCISED';HomeActionOutcome='UNRECORDED';HomeResultSource='NONE';HomeObservedUtc=$null}
     function Get-LabState {
         $frame=New-SafetyFrame $true
         $frame.events=@([PSCustomObject]@{line='t=21000 kind=recovery_open_requested trigger=settings_button eventType=-1 identity=NONE disposition=ORDINARY_APP nextDisposition=ORDINARY_APP restriction=true overlay=ATTACHED adapter=APPLIED nextAdapter=APPLIED revision=42'})

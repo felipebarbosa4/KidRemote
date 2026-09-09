@@ -53,6 +53,7 @@ Record exactly 10 attempts and then stop, including failed and invalid attempts.
 and stops progression to the 100-sample run pending review; do not append replacement attempts to this checkpoint or silently discard them.
 The operator—not the runner—must classify visible persistence, flicker, escape, safe-surface usability, re-entry enforcement and clear behaviour.
 A scripted Home injection rejected by the OS is invalid and must be replaced by a physical Home attempt.
+The required observation is an exercised physical Android system Home action that does not restore ordinary use. A coarse button/gesture navigation-mode signal does not prove the control is visible under the restriction, and an unavailable control is INVALID under the current contract rather than a Home-resistance PASS. Treating control absence itself as sufficient no-escape evidence would require an explicit owner/product evidence-model decision.
 
 The optional [owner-operated Mi 8 checkpoint runner](../../tools/kr003-mi8-checkpoint.ps1) can start the harness/disposable Calculator, wait,
 capture only the debug trace tag and collect constrained observer entries. It deliberately does not inject Home and never converts

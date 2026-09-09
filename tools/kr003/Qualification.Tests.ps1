@@ -33,7 +33,7 @@ $calibratedBy=[PSCustomObject]@{
     candidateSha256=('e'*64);fixtureSha256=('f'*64)
 }
 $configurationBundle=[PSCustomObject]@{
-    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=11;diagnosticOnly=$false;requiresOffline=$true
+    schema=1;protocol='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';runnerVersion=12;diagnosticOnly=$false;requiresOffline=$true
     networkCapabilityModel='ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA'
     awakeStateModel='ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE'
     navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM'
@@ -97,6 +97,10 @@ Assert-Equal (Convert-KRNavigationMode "1`r`n") 'TWO_BUTTON'
 Assert-Equal (Convert-KRNavigationMode '2') 'GESTURE'
 Assert-Equal (Convert-KRNavigationMode 'null') 'UNKNOWN'
 Assert-Equal (Convert-KRNavigationMode '3') 'UNKNOWN'
+Assert-Equal (Get-KRNavigationModeClassification 'THREE_BUTTON') 'NAV_MODE_THREE_BUTTON'
+Assert-Equal (Get-KRNavigationModeClassification 'TWO_BUTTON') 'NAV_MODE_TWO_BUTTON'
+Assert-Equal (Get-KRNavigationModeClassification 'GESTURE') 'NAV_MODE_GESTURE'
+Assert-Equal (Get-KRNavigationModeClassification 'UNKNOWN') 'NAV_MODE_UNKNOWN'
 Assert-Equal (Get-KRHomeActionInstruction 'THREE_BUTTON') 'tap the on-screen Home button once'
 Assert-Equal (Get-KRHomeActionInstruction 'GESTURE') 'swipe up once from the bottom edge to go Home; do not swipe and hold'
 Assert-Reject { Get-KRHomeActionInstruction 'UNKNOWN' } 'INVALID:NAVIGATION_MODE_UNKNOWN'

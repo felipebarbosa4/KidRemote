@@ -66,7 +66,7 @@ The resulting runner repeats an excluded calibration at the beginning, then perf
 human checkpoint sessions. It independently rechecks Usage Access/Accessibility plus candidate health before and after every expiry; unknown
 state fails closed and post-establishment revocation fails. It rejects live metadata drift before radio changes or ARM.
 
-Historical Mi 8 Q7 source and immutable bundles remain preserved, but `package.mjs` now produces only the configuration-bound runner-v11 protocol.
+Historical Mi 8 Q7 source and immutable bundles remain preserved. `package.mjs` is prepared for configuration-bound runner-v12, which separates coarse navigation mode, control exercisability, physical action exercise and physical outcome. No runner-v12 bundle is published or executed.
 When the historical Q7 Mi 8 input transport was under investigation, `Test-KR003-OracleTransport.ps1` ran only the disposable fixture receiver and one ADB tap.
 `package-transport.mjs` creates a separate immutable diagnostic bundle; it does not arm the candidate or alter radios, permissions or configuration.
 
@@ -84,7 +84,7 @@ The full [configuration-bound contract](../../docs/test-plans/KR-003-CONFIGURATI
 
 Q7 first asks for one normal visible expiry checkpoint, then one controlled unblocked negative checkpoint. The 100-cycle section has no P prompts:
 each cycle proves input reaches the fixture before arm, then injects 20 equivalent taps during restriction and requires zero delivery/focus regain.
-The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. For button navigation, tap the on-screen Home control; for gesture navigation, swipe up once from the bottom edge. Do not tap the overlay Settings control until its later prompt. `P`/`F` means the current-mode Home action was actually exercised and resisted/escaped; `I` means not exercisable or uncertain and stops INVALID. These remain separate evidence.
+The third human session follows sample 100 and runs the guided Home/Settings/Digital Wellbeing/recovery/re-entry route. Runner-v12 first reports the coarse navigation-mode enum and asks whether the corresponding physical Home control/gesture is actually visible and exercisable; mode never implies availability. Unavailable/unknown stops INVALID before an action instruction. Only after the owner confirms availability does the runner instruct one button/gesture Home action and record exercised/resisted or exercised/escaped. Do not tap the overlay Settings control until its later prompt. These remain separate evidence.
 
 ## Evidence and bailout
 

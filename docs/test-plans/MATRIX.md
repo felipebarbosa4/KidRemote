@@ -137,7 +137,11 @@ but it stopped `INVALID:SCREEN_OR_KEYGUARD` before a checkpoint-3 owner response
 not pass. Runner-v10 then retained a separate 100-row automated PASS set (p50 227 ms, p95 318 ms, max 341 ms), checkpoints 1/2 and final visibility
 PASS, but stopped `FAIL:RESTRICTION_LOST` before a Home response after the overlay Settings control opened an allowed safe surface. Restriction
 remained true, no Home action is established, and the run is neither poolable nor a Home escape result. Formal `TIME-04` still does not pass. The
-combined earlier eligibility signal does not separately pass `TIME-02` or `TIME-03`. Permission-revocation, broader safety, lifecycle and production
+two later [runner-v11 attempts](evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) each retained 100 automated PASS rows: RUN A
+stopped INVALID during a final-visible candidate snapshot with unverified cleanup; RUN B retained final-visible PASS but no exercisable Home
+control/action despite coarse `THREE_BUTTON` mode. Neither is resumable or poolable, neither establishes Home resistance/escape, and neither
+advances a formal row. The current contract still requires an exercised physical Home action. The combined earlier eligibility signal does not
+separately pass `TIME-02` or `TIME-03`. Permission-revocation, broader safety, lifecycle and production
 gates do not advance.
 Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.

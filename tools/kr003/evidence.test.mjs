@@ -117,7 +117,7 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
     assert.match(module,new RegExp(`'${phase}'`));
   }
   assert.match(packager,/protocol:"KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION"/);
-  assert.match(packager,/runnerVersion:11/);
+  assert.match(packager,/runnerVersion:12/);
   assert.match(packager,/networkCapabilityModel:"ANDROID_SYSTEM_FEATURES_WIFI_AND_TELEPHONY_DATA"/);
   assert.match(packager,/awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE"/);
   assert.match(packager,/navigationModeModel:"SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM"/);
@@ -139,8 +139,16 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.match(runner,/stay_on_while_plugged_in/);
   assert.match(runner,/Restore-StayAwake/);
   assert.match(runner,/settings','--user','current','get','secure','navigation_mode/);
+  assert.match(runner,/HOME CONTROL CHECK/);
+  assert.match(runner,/navigation mode does not establish that its Home control is visible/);
+  assert.match(runner,/HomeControlExercisability='UNKNOWN'/);
+  assert.match(runner,/HOME_ACTION_NOT_EXERCISABLE/);
+  assert.match(runner,/HOME_ACTION_RESISTED/);
+  assert.match(runner,/HOME_ACTION_ESCAPED/);
+  assert.match(runner,/if\(\$homeControl -ne 'AVAILABLE'\).*INVALID:SAFETY_/s);
+  assert(runner.indexOf("$homeControl=Read-HomeControlExercisability")<runner.indexOf("$homeInstruction=Get-KRHomeActionInstruction"));
   assert.match(runner,/HOME_ACTION_EXERCISED_AND_RESISTED|Get-KRHomeActionResult/);
-  assert.match(runner,/Do not tap Open device settings yet/);
+  assert.match(runner,/Do not tap Open device settings/);
   assert.doesNotMatch(runner,/settings','(?:--user','current',)?'put','secure','navigation_mode/);
   assert.doesNotMatch(runner,/RawBattery|RawSetting|BatteryDump|StackTrace/);
   assert.match(bailout,/Get-BailoutState 'CLEAR'/);
@@ -327,6 +335,22 @@ test("100 valid Samsung rows followed by checkpoint-3 screen/keyguard INVALID re
   assert.equal(failed.status,'FAIL');assert.equal(failed.reason,'RESTRICTION_LOST');
   assert.equal(failed.automatedExpiryCycles,100);assert.equal(failed.safetyCheckpoint.homePhysical,'UNRECORDED');
   assert.equal(failed.safetyCheckpoint.finalVisibilityPhysical,'PASS');
+  // A partial/INVALID run may truthfully retain failed cleanup; only a final PASS requires successful restoration.
+  save('stay-awake-restoration.json',{Schema:1,Status:'RESTORE_FAILED_OWNER_ACTION_REQUIRED',OriginalSetting:0,ObservedSetting:null,Changed:true,VerificationSource:'GLOBAL_SETTING_READBACK',AtUtc:'2026-09-09T02:00:00Z'});
+  const cleanupFailed=ingestQualification(dir);
+  assert.equal(cleanupFailed.stayAwakeRestoration,'RESTORE_FAILED_OWNER_ACTION_REQUIRED');
+  assert.equal(cleanupFailed.kr003Complete,false);
+
+  // Runner-v12 separates mode, control availability, action exercise and outcome; unavailable remains INVALID.
+  bundle.runnerVersion=12;bundle.navigationModeModel='SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM';
+  save('manifest.json',{Bundle:bundle,EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',OfflineNetworkRequested:true,OfflineOwnerConfirmed:true,StayAwakeRequested:true});
+  save('navigation-mode.json',{Schema:1,Mode:'THREE_BUTTON',VerificationSource:'SECURE_SETTINGS_CURRENT_USER_NAVIGATION_MODE',ParseResult:'VALUE_0',VerificationCount:2,LastVerifiedUtc:'2026-09-09T01:59:00Z'});
+  save('safety-final.json',{Phase:'final',Result:'INCOMPLETE',Reason:'SAFETY_FINAL_HOME_CONTROL',FinalVisibilityPhysical:'PASS',HomePhysical:'INVALID',HoldOracle:'RESTRICTION_HELD',RecoveryReason:'UNRECORDED',ReentryPhysical:'UNRECORDED',ClearTouch:'UNRECORDED',NavigationMode:'THREE_BUTTON',NavigationModeClassification:'NAV_MODE_THREE_BUTTON',HomeControlExercisability:'UNAVAILABLE',HomeControlSource:'OWNER_RESPONSE',HomeActionState:'HOME_ACTION_NOT_EXERCISABLE',HomeActionOutcome:'UNRECORDED',HomeActionResult:'HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN',HomeResultSource:'OWNER_RESPONSE'});
+  save('summary.json',{EvidenceModel:'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS',Status:'INVALID',Reason:'SAFETY_FINAL_HOME_CONTROL',StatisticsAvailable:true,InternalPairedStatistics:stats,ValidPairedObservations:100});
+  const v12Invalid=ingestQualification(dir);
+  assert.equal(v12Invalid.safetyCheckpoint.navigationModeClassification,'NAV_MODE_THREE_BUTTON');
+  assert.equal(v12Invalid.safetyCheckpoint.homeControlExercisability,'UNAVAILABLE');
+  assert.equal(v12Invalid.safetyCheckpoint.homeActionState,'HOME_ACTION_NOT_EXERCISABLE');
 }));
 
 test("configuration qualification network-preflight INVALID retains zero cycles and checkpoints",()=>temporary(dir=>{

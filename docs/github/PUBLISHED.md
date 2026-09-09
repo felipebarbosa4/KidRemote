@@ -471,3 +471,28 @@ Exact-source [CI run 34374977856](https://github.com/felipebarbosa4/KidRemote/ac
 native Windows PowerShell 5.1 and Android build/lint/release-isolation jobs. The actual mounted bundle also passed native Windows PowerShell 5.1
 entrypoint/reserved-variable checks without a device command. No formal matrix row advanced. KR-003 remains Open/In Progress, PR #16 remains
 Draft/Open, and KR-004 remains untouched.
+
+## Samsung runner-v11 qualification attempts and Home-exercisability handoff — 2026-09-09
+
+The owner invoked immutable runner-v11 twice. Strict ingestion preserves both independent results and their 100-row sub-evidence; neither may be
+resumed or pooled. [RUN A and RUN B evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) records:
+
+- RUN A `run-20260909-122154-609630e9`: `INVALID:ADB_REJECTED`, 100/100 automated active-oracle PASS rows, p50 218 ms / p95 299 ms / max 316 ms,
+  checkpoints 1/2 PASS, then a candidate `SNAPSHOT` rejection during final-visible polling before a physical final-visible or Home response.
+  The exact process exit/stderr cause was not retained. Diagnostic CLEAR, Wi-Fi restoration and stay-awake restoration were attempted but remain
+  unverified; the historical INVALID is unchanged.
+- RUN B `run-20260909-132619-dc9c6864`: `INVALID:SAFETY_FINAL_HOME`, 100/100 automated PASS rows, p50 160 ms / p95 304 ms / max 333 ms,
+  checkpoints 1/2 and final-visible PASS. Runner-v11 captured coarse `THREE_BUTTON`, but `HomePhysical=INVALID` and
+  `HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN`. The owner observed the restriction and **Open device settings** control but no navigation bar/Home
+  control; no Home action, system transition, escape or resistance is established. Restriction stayed active/attached until verified finalizer
+  CLEAR; network and stay-awake restoration passed.
+
+OD-39 clarifies the existing requirement rather than selecting a weaker alternative: KR-003-PHYSICAL requires one actually exercised physical
+Android system Home action which does not restore ordinary use. Control absence alone cannot pass. Prepared runner-v12 asks about control
+availability before issuing any action instruction and retains separate `NAV_MODE_*`, control-exercisability, action-exercise and action-outcome
+fields. Unavailable/unknown remains INVALID. A control-absence path or host-injected `KEYCODE_HOME` substitute would require an explicit new
+owner/product evidence decision. No runner-v12 physical bundle has been published or executed.
+
+Native Windows PowerShell 5.1, Node/evidence and repository validation are pending final source commit/CI publication in this entry. No formal
+matrix row advanced; TIME-04 and all remaining lifecycle/tamper/safety/Play/production gates remain open. KR-003 remains Open/In Progress,
+PR #16 remains Draft/Open, and KR-004 remains untouched.

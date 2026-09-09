@@ -32,10 +32,10 @@ function validateQ9NetworkEvidence(directory,read,required) {
   return {capabilities,operations};
 }
 
-function validateQ10StayAwakeEvidence(directory,read,required) {
+function validateQ10StayAwakeEvidence(directory,read,evidenceRequired,successfulRestorationRequired=false) {
   const statePath=resolve(directory,'stay-awake.json'),restorationPath=resolve(directory,'stay-awake-restoration.json');
   if(!existsSync(statePath)||!existsSync(restorationPath)) {
-    assert(!required,'Runner-v10 evidence after cycle start requires stay-awake establishment and restoration journals');
+    assert(!evidenceRequired,'Runner-v10 evidence after cycle start requires stay-awake establishment and restoration journals');
     return null;
   }
   const state=read('stay-awake.json'),restoration=read('stay-awake-restoration.json');
@@ -48,8 +48,11 @@ function validateQ10StayAwakeEvidence(directory,read,required) {
   assert.equal(state.VerificationSource,'GLOBAL_SETTING_PLUS_DUMPSYS_BATTERY');
   assert(Number.isInteger(state.VerificationCount)&&state.VerificationCount>=1);assert.match(state.LastVerifiedUtc,/^\d{4}-\d{2}-\d{2}T/);
   assert.deepEqual(Object.keys(restoration),['Schema','Status','OriginalSetting','ObservedSetting','Changed','VerificationSource','AtUtc']);
-  assert.equal(restoration.Schema,1);assert.equal(restoration.Status,'RESTORED_AND_SETTING_VERIFIED');
-  assert.equal(restoration.OriginalSetting,state.OriginalSetting);assert.equal(restoration.ObservedSetting,state.OriginalSetting);
+  assert.equal(restoration.Schema,1);assert(['RESTORED_AND_SETTING_VERIFIED','RESTORE_FAILED_OWNER_ACTION_REQUIRED'].includes(restoration.Status));
+  assert.equal(restoration.OriginalSetting,state.OriginalSetting);
+  assert(restoration.ObservedSetting===null||(Number.isInteger(restoration.ObservedSetting)&&restoration.ObservedSetting>=0&&restoration.ObservedSetting<=15));
+  if(restoration.Status==='RESTORED_AND_SETTING_VERIFIED') assert.equal(restoration.ObservedSetting,state.OriginalSetting);
+  if(successfulRestorationRequired) assert.equal(restoration.Status,'RESTORED_AND_SETTING_VERIFIED');
   assert.equal(restoration.Changed,state.Changed);assert.equal(restoration.VerificationSource,'GLOBAL_SETTING_READBACK');
   return {state,restoration};
 }
@@ -73,7 +76,7 @@ function validateQ11NavigationModeEvidence(directory,read,required) {
 
 function ingestQ7(directory, manifest, rows, summary, read) {
   const configurationBound=manifest.Bundle.protocol==='KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION';
-  if(configurationBound) assert([8,9,10,11].includes(manifest.Bundle.runnerVersion));
+  if(configurationBound) assert([8,9,10,11,12].includes(manifest.Bundle.runnerVersion));
   else assert.equal(manifest.Bundle.runnerVersion,7);
   assert.equal(manifest.Bundle.diagnosticOnly,false);
   assert.equal(manifest.Bundle.requiresOffline,true);
@@ -127,7 +130,7 @@ function ingestQ7(directory, manifest, rows, summary, read) {
     const sorted=structurallyValid.map(r=>r.LatencyMs).sort((a,b)=>a-b);
     const stats=sorted.length===completed.length&&sorted.length?{Count:sorted.length,P50:sorted[Math.ceil(.5*sorted.length)-1],P95:sorted[Math.ceil(.95*sorted.length)-1],Max:sorted.at(-1)}:null;
     if(stats&&summary.StatisticsAvailable) assert.deepEqual(summary.InternalPairedStatistics,stats,'Host summary percentile mismatch');
-    if(configurationBound&&manifest.Bundle.runnerVersion>=10) validateQ10StayAwakeEvidence(directory,read,completed.length>0);
+    const stayAwake=configurationBound&&manifest.Bundle.runnerVersion>=10?validateQ10StayAwakeEvidence(directory,read,completed.length>0,false):null;
     const navigationMode=configurationBound&&manifest.Bundle.runnerVersion>=11?validateQ11NavigationModeEvidence(directory,read,completed.length>0):null;
     let safetyCheckpoint='UNSPECIFIED';
     if(existsSync(resolve(directory,'safety-final.json'))) {
@@ -142,17 +145,29 @@ function ingestQ7(directory, manifest, rows, summary, read) {
         safetyCheckpoint.navigationMode=safety.NavigationMode;safetyCheckpoint.homeActionResult=safety.HomeActionResult;
         safetyCheckpoint.homeResultSource=safety.HomeResultSource;
       }
+      if(manifest.Bundle.runnerVersion>=12) {
+        assert(['NAV_MODE_THREE_BUTTON','NAV_MODE_TWO_BUTTON','NAV_MODE_GESTURE','NAV_MODE_UNKNOWN'].includes(safety.NavigationModeClassification));
+        assert(['AVAILABLE','UNAVAILABLE','UNKNOWN'].includes(safety.HomeControlExercisability));
+        assert(['NONE','OWNER_RESPONSE'].includes(safety.HomeControlSource));
+        assert(['HOME_ACTION_EXERCISED','HOME_ACTION_NOT_EXERCISABLE','HOME_ACTION_NOT_EXERCISED','HOME_ACTION_UNKNOWN'].includes(safety.HomeActionState));
+        assert(['HOME_ACTION_RESISTED','HOME_ACTION_ESCAPED','UNRECORDED','UNKNOWN'].includes(safety.HomeActionOutcome));
+        safetyCheckpoint.navigationModeClassification=safety.NavigationModeClassification;
+        safetyCheckpoint.homeControlExercisability=safety.HomeControlExercisability;
+        safetyCheckpoint.homeActionState=safety.HomeActionState;
+        safetyCheckpoint.homeActionOutcome=safety.HomeActionOutcome;
+      }
     }
     return {sourceCommit:manifest.Bundle.sourceCommit,status:summary.Status,reason:summary.Reason,
       automatedExpiryCycles:completed.length,qualificationRows:qualificationRows.length,automatedStats:stats,
       humanCheckpointSessions:checkpoints.filter(c=>c.Result==='PASS').length,
       checkpointResults:checkpoints.map(c=>({name:c.Name,result:c.Result,evidence:c.Evidence??'UNSPECIFIED'})),partial:true,
       networkCapabilities:q9Network?.capabilities??'UNSPECIFIED',navigationMode:navigationMode?.Mode??'UNSPECIFIED',
+      stayAwakeRestoration:stayAwake?.restoration?.Status??'UNSPECIFIED',
       safetyCheckpoint,kr003Complete:false};
   }
   if(configurationBound) {
     if(manifest.Bundle.runnerVersion>=9) validateQ9NetworkEvidence(directory,read,true);
-    if(manifest.Bundle.runnerVersion>=10) validateQ10StayAwakeEvidence(directory,read,true);
+    if(manifest.Bundle.runnerVersion>=10) validateQ10StayAwakeEvidence(directory,read,true,true);
     if(manifest.Bundle.runnerVersion>=11) validateQ11NavigationModeEvidence(directory,read,true);
     const expected=manifest.Bundle.approvedConfiguration;
     const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
@@ -199,6 +214,13 @@ function ingestQ7(directory, manifest, rows, summary, read) {
     assert(['THREE_BUTTON','TWO_BUTTON','GESTURE'].includes(safety.NavigationMode));
     assert.equal(safety.HomeActionResult,'HOME_ACTION_EXERCISED_AND_RESISTED');
     assert.equal(safety.HomeResultSource,'OWNER_RESPONSE');
+  }
+  if(manifest.Bundle.runnerVersion>=12) {
+    assert.equal(safety.NavigationModeClassification,`NAV_MODE_${safety.NavigationMode}`);
+    assert.equal(safety.HomeControlExercisability,'AVAILABLE');
+    assert.equal(safety.HomeControlSource,'OWNER_RESPONSE');
+    assert.equal(safety.HomeActionState,'HOME_ACTION_EXERCISED');
+    assert.equal(safety.HomeActionOutcome,'HOME_ACTION_RESISTED');
   }
   assert.equal(safety.RecoveryReason,'PHYSICAL_PASS_RECORDED');
   assert.equal(safety.ReentryPhysical,'PASS');

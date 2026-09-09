@@ -45,6 +45,11 @@ retained another 100 automated PASS rows at p95 318 ms, checkpoints 1/2 and fina
 allowed-safe-surface detach: `restriction=true`, `SAFE_SYSTEM`, no fixture focus/input leak. No system Home action or ordinary-app escape is
 established. Runner-v11 adds only read-only coarse current navigation-mode capture, mode-specific Home instructions and typed action/result/source
 evidence; unknown or an out-of-sequence action stops INVALID. It does not change navigation mode, candidate enforcement or safe-surface semantics.
+Two later [runner-v11 attempts](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) each retained 100 automated PASS
+rows but stopped INVALID in checkpoint 3: one on a candidate snapshot rejection before the Home prompt, and one after final-visible PASS because
+no Home control/action was exercisable despite coarse `THREE_BUTTON` mode. The current physical contract still requires an actually exercised
+physical system Home action. Prepared runner-v12 separates mode, control availability, action exercise and outcome while keeping unavailable or
+unknown fail-closed; it is not published or physically executed.
 No formal matrix row, enforcement support boundary or production result advances.
 
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
