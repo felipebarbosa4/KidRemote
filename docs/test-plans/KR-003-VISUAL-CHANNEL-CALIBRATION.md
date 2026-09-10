@@ -1,5 +1,7 @@
 # KR-003 excluded local-only visual-channel calibration
 
+> **Validity correction — 2026-09-10:** [synthetic review](KR-003-VISUAL-VALIDITY-REVIEW.md) reproduces circular restricted-reference acceptance and between-sample blindness. Immutable `0596173` is exploratory only; its PASS cannot authorize any human-checkpoint substitution. Physical execution remains Not run and is not requested. The original sequence and emitted identifiers below are retained for artifact traceability, subject to this scope correction.
+
 - **Goal:** Determine whether a host-captured visual channel can reliably distinguish the known ordinary fixture, the full-screen restriction interval and restored ordinary fixture on one exact authorized Samsung configuration.
 - **Context:** OD-41 is a prospective lab evidence exception. This short mechanism test may justify later design work to replace eligible human VISUAL checkpoints, but it is not qualification or TIME-04 evidence.
 - **Constraints:** Owner-operated local lab only; exact configuration/APK binding; no network mutation; no candidate APK changes or production capture permission; raw PNGs stay outside the repository/cloud; no OCR, UI nodes/text, accounts, package history or secure-content bypass; no resume/pooling; zero qualification/TIME-04 rows and no matrix contribution.
@@ -26,7 +28,7 @@ No owner visual response is requested and no automated visual result is serializ
 
 ## Deterministic local classifier
 
-The analyzer decodes each local PNG through Windows `System.Drawing`, downsamples the complete frame to a fixed 24×24 RGB grid in memory and discards the grid after analysis. It derives ordinary and restricted prototypes from the two fixture-controlled ordinary windows and independently controlled restricted window; candidate telemetry alone never labels a surface. A successful calibration requires:
+The analyzer decodes each local PNG through Windows `System.Drawing`, downsamples the complete frame to a fixed 24×24 RGB grid in memory and discards the grid after analysis. It derives ordinary and restricted prototypes from the same phase-grouped frames it evaluates. Fixture controls independently establish input/focus effects, not the expected restriction's visual identity. These are implemented benchmark filters, not sufficient independent visual calibration:
 
 - at least three frames in each reference/observation phase;
 - at least 10,000 ms restricted-window duration, at least 90% first-to-last sample span and a worst-case sampling gap no greater than 1,500 ms;
@@ -34,14 +36,14 @@ The analyzer decodes each local PNG through Windows `System.Drawing`, downsample
 - nonblank, same-dimension, hash-verified frames;
 - repeatable pre/post ordinary references;
 - ordinary/restricted separation across at least 5% of the 24×24 tiles with changed-region span at least 50% of width and 30% of height, so a small marker cannot establish the restricted surface;
-- every classified frame agreeing with its independently established phase and sufficient nearest-prototype margin.
+- every classified frame agreeing with its phase label and sufficient nearest-prototype margin; this self-fitted agreement does not exclude an unrelated third surface.
 
-Identical hashes on a static surface are counted but do not imply a dropped frame. Capture liveness requires strictly advancing successful capture operations and two controlled full-surface transitions; frozen content across those transitions or reused/non-advancing intervals is INVALID. The analysis reports the conservative worst-case sampling bound from adjacent capture request intervals. It can establish a decoded interruption only when the altered surface is actually sampled; an interruption shorter than that measured bound, an event hidden wholly between samples, compositor/display output not represented by `screencap`, or a visual change below the classifier separation remains unobserved. It never claims every physical display frame, perfect continuity or absence of all flicker.
+Identical hashes on a static surface do not imply dropped frames. Advancing requests and endpoint transitions detect some frozen-output cases but cannot distinguish a freeze confined to the restricted phase from legitimate static content. Sample span is not continuously observed time; the 1,500 ms and 90% filters have no recorded owner-approved sensitivity basis. The gap statistic is conditional on freshness, capture/display correspondence and recognition sensitivity, not a guaranteed physical interruption-detection bound. Events wholly between samples or below spatial sensitivity can be missed.
 
 ## Verdicts
 
-- **PASS — `PASSED_VISUAL_CHANNEL_CALIBRATION_THIS_CONFIGURATION_ONLY:ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED`:** ordinary → restricted → ordinary is deterministically distinguished with sufficient measured coverage, independent fixture/candidate agreement, completed capture, verified CLEAR/ordinary input and exact stay-awake restoration.
-- **FAIL:** a confidently decoded ordinary frame occurs in the restricted window; restriction remains confidently visible after verified CLEAR; or reliable visual and fixture/state evidence contradict. This is an established test-surface/enforcement contradiction, not a capture error.
+- **Emitted PASS — `PASSED_VISUAL_CHANNEL_CALIBRATION_THIS_CONFIGURATION_ONLY:ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED`:** self-fitted phase groups separate under benchmark filters, with independent fixture/candidate agreement, completed capture, verified CLEAR/ordinary input and exact stay-awake restoration. This does not recognize the expected restriction independently or prove continuous visibility.
+- **Emitted FAIL:** a confidently classified sample disagrees with its phase. Preserve the result, but investigate semantic identity/capture reliability separately before calling a visual-only mismatch an established enforcement failure. Independently established input/focus escape remains enforcement evidence.
 - **INVALID:** rejected/empty/blank/protected/undecodable capture; changed dimensions; ambiguous or insufficient surface separation; truncated phases; insufficient cadence/coverage; stale/unverified liveness; unknown permission/health/configuration; uncertain analyzer result; or incomplete cleanup/restoration.
 
 The run always records `QualificationRows=0`, `Time04Rows=0`, `MatrixContribution=NONE` and `HumanObservationSerialized=false`. A stopped attempt is preserved independently and never resumed, replaced or pooled.
@@ -54,7 +56,7 @@ Successful raw media must be retained until strict result ingestion and owner re
 
 ## Prospective checkpoint scope
 
-If this calibration passes, later owner-approved runner design may replace only checkpoints whose asserted fact is visual persistence/disappearance of these calibrated known lab surfaces, and only while capture timing/health and the independent fixture oracle remain valid. It cannot replace:
+No PASS from `0596173` justifies checkpoint substitution. A future independent-reference and sensitivity-calibrated design could be evaluated for the normal/post-run visual-persistence portions only, paired with the fixture oracle. It cannot replace:
 
 - OD-39 Path A's actual physical Home action or Path B's owner observation that Home is unavailable;
 - confirmation that a Home control/gesture is physically exercisable;

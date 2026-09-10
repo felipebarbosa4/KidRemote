@@ -224,3 +224,139 @@ function Get-KRVisualFinalResult {
 }
 
 Export-ModuleMember -Function Get-KRVisualVectorDistance,Get-KRVisualTemporalMetrics,Get-KRVisualSpatialSeparation,Get-KRVisualClassification,Get-KRVisualPngFeature,Invoke-KRVisualAnalysis,Get-KRVisualFinalResult
+
+# Synthetic-only prototype. Not called by Invoke-KRVisualAnalysis or any runner.
+# Keep full pixels: no downsampling or similarity tolerance is validated here.
+function Test-KRVisualExactBytes {
+    param([byte[]]$Left,[byte[]]$Right)
+    if($null -eq $Left -or $null -eq $Right -or $Left.Length -ne $Right.Length){return $false}
+    for($offset=0;$offset -lt $Left.Length;$offset++){if($Left[$offset] -ne $Right[$offset]){return $false}}
+    return $true
+}
+
+function Get-KRVisualContentHash {
+    param([byte[]]$Bytes)
+    $algorithm=[Security.Cryptography.SHA256]::Create()
+    try{return ([BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant()}
+    finally{$algorithm.Dispose()}
+}
+
+function ConvertFrom-KRVisualSyntheticPng {
+    param([byte[]]$Bytes,[int]$Width,[int]$Height)
+    Add-Type -AssemblyName System.Drawing
+    $stream=New-Object IO.MemoryStream
+    $bitmap=$null
+    try{
+        $stream.Write($Bytes,0,$Bytes.Length);$stream.Position=0
+        $bitmap=[Drawing.Bitmap]::FromStream($stream)
+        if($bitmap.Width -ne $Width -or $bitmap.Height -ne $Height){throw 'INVALID:VISUAL_DIMENSIONS'}
+        $pixels=New-Object 'byte[]' ($Width*$Height*4)
+        for($y=0;$y -lt $Height;$y++){
+            for($x=0;$x -lt $Width;$x++){
+                $pixel=$bitmap.GetPixel($x,$y);$offset=($y*$Width+$x)*4
+                $pixels[$offset]=$pixel.R;$pixels[$offset+1]=$pixel.G
+                $pixels[$offset+2]=$pixel.B;$pixels[$offset+3]=$pixel.A
+            }
+        }
+        return ,$pixels
+    }finally{if($null -ne $bitmap){$bitmap.Dispose()};$stream.Dispose()}
+}
+
+function Invoke-KRVisualDedupPrototype {
+    param(
+        [object[]]$Frames,[object[]]$PhaseWindows,[long]$Frequency,$References,
+        [ValidateSet('PNG','DECODED_RGBA8')][string]$Format,
+        [ValidateSet('VERIFIED_SYNTHETIC','STALE','UNKNOWN')][string]$CaptureLiveness='UNKNOWN',
+        [switch]$DisableCache,[switch]$SyntheticOnly,
+        # Collision injection tests lookup only; integrity always uses real SHA-256.
+        [switch]$SyntheticHashCollision
+    )
+    if(-not $SyntheticOnly){throw 'INVALID:SYNTHETIC_ONLY_PROTOTYPE'}
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    if($References.Provenance -cne 'INDEPENDENT_SYNTHETIC' -or [string]::IsNullOrWhiteSpace($References.Version) -or
+        $References.Width -lt 1 -or $References.Height -lt 1 -or $References.Width -gt 256 -or $References.Height -gt 256){
+        throw 'INVALID:SYNTHETIC_REFERENCE_SCHEMA'
+    }
+    $width=[int]$References.Width;$height=[int]$References.Height
+    # Snapshot references before evaluation; never mutate or derive them from Frames.
+    [byte[]]$ordinary=$References.Ordinary.Clone();[byte[]]$restricted=$References.Restricted.Clone()
+    if($ordinary.Length -ne $width*$height*4 -or $restricted.Length -ne $ordinary.Length -or
+        (Test-KRVisualExactBytes $ordinary $restricted)){throw 'INVALID:SYNTHETIC_REFERENCE_SCHEMA'}
+    $context='EXACT_RGBA_V1|'+$References.Version+'|'+$Format+'|RGBA8|'+$width+'x'+$height+'|'+
+        (Get-KRVisualContentHash $ordinary)+'|'+(Get-KRVisualContentHash $restricted)
+    $contextHash=Get-KRVisualContentHash ([Text.Encoding]::UTF8.GetBytes($context))
+    # Invocation-local cache cannot leak labels across reference/configuration versions.
+    $cache=@{};$uniquePixels=@{};$rows=New-Object Collections.Generic.List[object]
+    $recognitions=0;$hits=0;$decodes=0;$unique=0;$invalid=$false;$failed=$false;$previousEnd=-1L
+    $required=@('ORDINARY_BEFORE','RESTRICTED','ORDINARY_AFTER')
+    foreach($frame in $Frames){
+        $label='UNKNOWN';$reason='NONE';$reused=$false
+        # Timing, identity, phase and integrity are processed even for cache hits.
+        $phase=@($PhaseWindows|Where-Object{$frame.StartTicks -ge $_.StartTicks -and $frame.EndTicks -le $_.EndTicks})
+        $timingValid=($frame.Index -eq $rows.Count+1 -and $frame.EndTicks -gt $frame.StartTicks -and $frame.StartTicks -ge $previousEnd)
+        $previousEnd=[long]$frame.EndTicks
+        $phaseValid=($phase.Count -eq 1 -and $frame.Phase -cin $required -and $phase[0].Name -ceq $frame.Phase)
+        $hash=Get-KRVisualContentHash $frame.Bytes
+        $integrityValid=($frame.CaptureStatus -ceq 'ACCEPTED' -and $frame.Sha256 -ceq $hash -and
+            $frame.Width -eq $width -and $frame.Height -eq $height)
+        if(-not $integrityValid){$reason='FRAME_INTEGRITY_INVALID'}else{
+            $key=$contextHash+'|'+$(if($SyntheticHashCollision){'COLLISION'}else{$hash})
+            $match=$null
+            if(-not $DisableCache -and $cache.ContainsKey($key)){
+                foreach($entry in $cache[$key]){
+                    if(Test-KRVisualExactBytes $entry.Bytes $frame.Bytes){$match=$entry;break}
+                }
+            }
+            if(-not $DisableCache -and $null -ne $match){$label=$match.Label;$hits++;$reused=$true}else{
+                try{
+                    if($Format -eq 'PNG'){$decodes++;[byte[]]$pixels=ConvertFrom-KRVisualSyntheticPng $frame.Bytes $width $height}
+                    else{[byte[]]$pixels=$frame.Bytes}
+                    if($pixels.Length -ne $width*$height*4){throw 'INVALID:PIXEL_LAYOUT'}
+                    # Count distinct decoded images, including different PNG encodings.
+                    $pixelKey=Get-KRVisualContentHash $pixels;$pixelSeen=$false
+                    if($uniquePixels.ContainsKey($pixelKey)){
+                        foreach($prior in $uniquePixels[$pixelKey]){if(Test-KRVisualExactBytes $prior $pixels){$pixelSeen=$true;break}}
+                    }else{$uniquePixels[$pixelKey]=New-Object Collections.Generic.List[object]}
+                    if(-not $pixelSeen){$unique++;$uniquePixels[$pixelKey].Add($pixels.Clone())}
+                    $recognitions++
+                    $label=if(Test-KRVisualExactBytes $pixels $ordinary){'ORDINARY'}elseif(Test-KRVisualExactBytes $pixels $restricted){'RESTRICTED'}else{'UNKNOWN'}
+                    if(-not $DisableCache -and $null -eq $match){
+                        if(-not $cache.ContainsKey($key)){$cache[$key]=New-Object Collections.Generic.List[object]}
+                        $cache[$key].Add([PSCustomObject]@{Bytes=$frame.Bytes.Clone();Label=$label})
+                    }
+                }catch{$reason='FRAME_DECODE_INVALID'}
+            }
+        }
+        $verdict='PASS'
+        if(-not $timingValid){$reason='TIMESTAMP_SEQUENCE_INVALID'}
+        elseif(-not $phaseValid){$reason='PHASE_CONTEXT_INVALID'}
+        if($reason -ne 'NONE' -or $label -eq 'UNKNOWN'){
+            $verdict='INVALID';$invalid=$true;if($reason -eq 'NONE'){$reason='UNKNOWN_SURFACE'}
+        }elseif($label -cne $(if($frame.Phase -eq 'RESTRICTED'){'RESTRICTED'}else{'ORDINARY'})){
+            $verdict='FAIL';$failed=$true;$reason='VISUAL_PHASE_CONTRADICTION'
+        }
+        $rows.Add([PSCustomObject]@{Index=$frame.Index;StartTicks=$frame.StartTicks;EndTicks=$frame.EndTicks;
+            Phase=$frame.Phase;Sha256=$hash;Label=$label;Verdict=$verdict;Reason=$reason;CacheHit=$reused})
+    }
+    # Reuse the existing descriptive metrics, NOT their checkpoint-substitution claim.
+    $coverage='SUFFICIENT_SYNTHETIC_BENCHMARK';$temporal=$null
+    foreach($name in $required){
+        if(@($PhaseWindows|Where-Object{$_.Name -eq $name}).Count -ne 1 -or @($rows|Where-Object{$_.Phase -eq $name}).Count -lt 3){$coverage='INSUFFICIENT'}
+    }
+    if($coverage -ne 'INSUFFICIENT'){
+        try{
+            $window=@($PhaseWindows|Where-Object{$_.Name -eq 'RESTRICTED'})[0]
+            $temporal=Get-KRVisualTemporalMetrics @($rows|Where-Object{$_.Phase -eq 'RESTRICTED'}) $window $Frequency
+            if($temporal.WindowMillis -lt 10000 -or $temporal.SpanCoverageRatio -lt 0.90 -or $temporal.WorstCaseSamplingGapMillis -gt 1500){$coverage='INSUFFICIENT'}
+        }catch{$coverage='INSUFFICIENT'}
+    }
+    if($coverage -eq 'INSUFFICIENT' -or $CaptureLiveness -ne 'VERIFIED_SYNTHETIC'){$invalid=$true}
+    $watch.Stop()
+    [PSCustomObject]@{Scope='SYNTHETIC_DEDUP_BENCHMARK_ONLY';Status=$(if($failed){'FAIL'}elseif($invalid){'INVALID'}else{'PASS'});
+        FramesProcessed=$rows.Count;UniqueImages=$unique;RecognitionCalls=$recognitions;CacheHits=$hits;DecodeCalls=$decodes;
+        TotalMillis=$watch.Elapsed.TotalMilliseconds;ContextHash=$contextHash;Rows=$rows.ToArray();Coverage=$coverage;
+        CaptureLiveness=$CaptureLiveness;Temporal=$temporal;QualificationRows=0;Time04Rows=0;MatrixContribution='NONE';
+        HumanObservationSerialized=$false;CheckpointSubstitutionAllowed=$false}
+}
+
+Export-ModuleMember -Function Invoke-KRVisualDedupPrototype,Get-KRVisualContentHash,Test-KRVisualExactBytes

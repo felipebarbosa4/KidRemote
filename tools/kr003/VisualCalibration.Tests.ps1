@@ -107,4 +107,49 @@ if([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT){
     }finally{if(Test-Path -LiteralPath $temporary){Remove-Item -LiteralPath $temporary -Force}}
 }
 
-Write-Host ($script:Checks.ToString()+' visual-calibration assertions passed without ADB or physical media.')
+# Validity-review counterexamples: these PASS expectations document limitations
+# of the immutable v1 algorithm, NOT acceptable restriction-recognition semantics.
+$thirdSurface=New-Fixture
+$unrelated=New-Object 'double[]' (24*24*3)
+for($tile=0;$tile -lt 24*24;$tile++){
+    $unrelated[$tile*3]=0.70
+    $unrelated[$tile*3+1]=$(if(($tile%2) -eq 0){0.60}else{0.50})
+    $unrelated[$tile*3+2]=0.65
+}
+foreach($frame in @($thirdSurface.Frames|Where-Object{$_.Phase -eq 'RESTRICTED'})){$frame.Feature=$unrelated}
+$thirdResult=Get-KRVisualClassification $thirdSurface.Frames $thirdSurface.Windows 1000
+Assert-Equal $thirdResult.Status 'PASS'
+Assert-Equal (@($thirdResult.Classifications|Where-Object{$_.Phase -eq 'RESTRICTED' -and $_.Classification -eq 'RESTRICTED'}).Count) 11
+Assert-Equal ((Get-KRVisualVectorDistance $unrelated $thirdSurface.Restricted) -gt 0.1) $true
+
+# Sustained wrong imagery replaces 9/11 reference observations; the two original
+# expected images also remain closer to the contaminated class than to ordinary.
+$contaminated=New-Fixture
+$contaminatedFrames=@($contaminated.Frames|Where-Object{$_.Phase -eq 'RESTRICTED'})
+for($index=1;$index -lt 10;$index++){$contaminatedFrames[$index].Feature=$unrelated}
+$contaminatedResult=Get-KRVisualClassification $contaminated.Frames $contaminated.Windows 1000
+Assert-Equal $contaminatedResult.Status 'PASS'
+
+# Same sampled observations for two different ground-truth timelines: a 300ms
+# disappearance at 6500..6800 is wholly outside requests 6000..6100/7000..7100.
+$hidden=New-Fixture -StaticHashes
+$hiddenStart=6500;$hiddenEnd=6800
+Assert-Equal (@($hidden.Frames|Where-Object{$_.StartTicks -lt $hiddenEnd -and $_.EndTicks -gt $hiddenStart}).Count) 0
+$hiddenResult=Get-KRVisualClassification $hidden.Frames $hidden.Windows 1000
+Assert-Equal $hiddenResult.Status 'PASS'
+Assert-Equal $hiddenResult.RestrictedTemporalCoverage.ObservedSpanMillis 10100
+Assert-Equal $hiddenResult.RestrictedTemporalCoverage.WindowMillis 10600
+Assert-Equal $hiddenResult.RestrictedTemporalCoverage.SpanCoverageRatio 0.95283
+Assert-Equal $hiddenResult.RestrictedTemporalCoverage.WorstCaseSamplingGapMillis 1100
+# Capture request durations themselves are not observed display intervals.
+# A freeze confined to the restricted phase is observationally identical to a
+# legitimate static surface even with advancing host timestamps and transitions.
+Assert-Equal $hiddenResult.CaptureLiveness 'CONTROLLED_ORDINARY_RESTRICTED_ORDINARY_TRANSITIONS_VERIFIED'
+Assert-Equal (@($hidden.Frames|Where-Object{$_.Phase -eq 'RESTRICTED'}|Select-Object -ExpandProperty Sha256 -Unique).Count) 1
+foreach($reviewResult in @($thirdResult,$contaminatedResult,$hiddenResult)){
+    Assert-Equal $reviewResult.QualificationRows 0
+    Assert-Equal $reviewResult.Time04Rows 0
+    Assert-Equal $reviewResult.MatrixContribution 'NONE'
+}
+
+Write-Host ($script:Checks.ToString()+' visual-calibration assertions passed without ADB or physical media; includes known-limit counterexamples, not checkpoint acceptance.')

@@ -1,5 +1,7 @@
 # KR-003 Samsung excluded visual-channel calibration bundle — 2026-09-10
 
+> **Review correction — 2026-09-10:** [focused synthetic review](../KR-003-VISUAL-VALIDITY-REVIEW.md) limits this unchanged artifact to exploratory sampled-channel measurements. PASS does not independently recognize restriction or justify human-checkpoint substitution. No device execution is requested. Source, paths and hashes below remain immutable; original preparation/validation history is preserved.
+
 - **Goal:** Publish one short, configuration-bound calibration of a local visual evidence channel without executing it.
 - **Context:** OD-41 prospectively allows calibrated visual evidence to replace eligible human VISUAL checkpoints only after this separate mechanism test agrees with the independent fixture/input/focus oracle.
 - **Constraints:** Owner-operated local lab only; raw/image-bearing media outside repository and cloud paths; no upload, assistant/tool vision, OCR, UI node/text capture, secure-content bypass, production capture path, network mutation, qualification/TIME-04 row, matrix claim, historical reinterpretation or KR-004 work.
@@ -27,7 +29,7 @@ The owner-operated runner first foregrounds the disposable ordinary fixture, the
 
 Local Windows `System.Drawing` decoding reduces each complete frame in memory to a 24×24 RGB grid. Only sanitized distances, spatial coverage, hashes, timing bounds and typed classifications persist. The grid and image bytes are not emitted. Phase labels come from independent ordinary-fixture controls, a fresh restriction/attachment oracle, and verified CLEAR—not candidate visual telemetry alone. PASS requires repeatable ordinary references, spatially distributed ordinary/restricted separation, at least three frames in each main phase, a restricted window of at least ten seconds, at least 90% measured span coverage, strictly advancing/non-overlapping requests, worst-case sampling gap no greater than 1,500 ms, and agreement with the independent fixture/candidate health oracle.
 
-The run-reported `DefensibleInterruptionDetectionBoundMillis` is the shortest interruption duration the sampled channel can conservatively claim it would detect for that run; PASS caps it at 1,500 ms. Shorter events, events wholly between samples, compositor/display behavior not represented by `screencap`, and sub-threshold visual changes remain unobserved. Repeated images on a static surface are allowed when capture intervals advance and the controlled ordinary → restricted → ordinary transitions remain visible. Frozen output across transitions, reused timestamps, blank/protected output, ambiguous classification or insufficient coverage is INVALID. A confidently decoded ordinary surface during the restricted window, or restricted surface after verified CLEAR, is FAIL.
+The serialized `DefensibleInterruptionDetectionBoundMillis` is a conditional request-gap statistic, not a demonstrated minimum physical interruption sensitivity. The 1,500 ms cap has no recorded owner-approved tolerance basis; 90% sample span is not 90% continuous observation. Restricted references are self-fitted, and an unrelated third surface can pass. A freeze confined to the restricted interval can also be indistinguishable from static content. See the review for synthetic counterexamples and limits on interpreting emitted visual-only FAIL labels; independent input/focus evidence retains its own meaning.
 
 The same run continuously checks permission/heartbeat/health, service-connection stability, fixture displacement/focus and twenty blocked input probes, then CLEAR, ordinary fixture focus/input restoration and exact stay-awake restoration. This tests whether capture interferes with the candidate and fixture, but that interference result is **UNSPECIFIED** until the physical calibration runs.
 
@@ -53,9 +55,9 @@ Local checks passed 27 Node evidence/security tests, native Windows PowerShell 5
 
 No ADB or Samsung operation was performed during preparation, testing, packaging or mounted verification. Pre-publication artifacts `d303082`, `03f4bc2` and `5150e72` were successively rejected or superseded while the standalone bailout and PowerShell 7 test harness were tightened. Their runner payloads after `03f4bc2` are byte-identical to the final one, but none is recommended. All remain unmodified and must not be used. Only `0596173` is published.
 
-## One future owner command
+## Original owner command — on hold after validity review
 
-Do not run automatically. To perform this one short calibration once:
+Historical handoff syntax only; no execution is requested or recommended by this review:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-visual-calibration-bundles\0596173\Start-KR003.ps1" -VisualCalibration
@@ -67,6 +69,6 @@ Press `Q` while the runner is active to request normal cleanup. If the main cons
 
 ## Prospective qualification scope
 
-A configuration-specific calibration PASS could justify a later, separately approved runner design replacing only human assertions of visible persistence/disappearance on these known calibrated ordinary/restricted surfaces, such as the ten-second visible portions of the normal and post-run checkpoints, and only with the independent fixture/input/focus oracle. It does not itself modify immutable runner-v12 or advance qualification.
+A PASS from this artifact cannot justify replacement of human visual assertions. Independent expected-surface references, held-out negative validation and a separately justified temporal sensitivity contract are required first. Only then could the normal/post-run ten-second visual portions be evaluated for substitution with the fixture oracle. No immutable runner-v12 or qualification change is made.
 
 It cannot establish Home-control exercisability, serialize a human observation, replace OD-39 Path A's physical Home action or Path B's physical control-unavailable observation, or replace Settings, Digital Wellbeing, recovery/re-entry, emergency/accessibility, keyguard/lock or other unresolved physical safety actions without separate calibration and owner approval.

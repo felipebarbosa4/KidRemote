@@ -14,6 +14,8 @@ The authorized [Samsung SM-X400 / Android 16 transport passed](docs/test-plans/e
 OD-41 now permits one prospective owner-local visual-channel calibration to test whether known ordinary/restricted/ordinary surfaces can be classified with measured temporal bounds and independent fixture agreement. Its [immutable excluded bundle](docs/test-plans/evidence/KR-003-SAMSUNG-VISUAL-CALIBRATION-BUNDLE-2026-09-10.md) is published but physically **Not run**. This does not change the production capture prohibition or qualify any matrix row.
 No production application, backend deployment, database exposure or Play approval exists.
 
+The [visual validity review](docs/test-plans/KR-003-VISUAL-VALIDITY-REVIEW.md) limits unchanged visual bundle `0596173` to exploratory sampled-channel measurements: self-fitted group separation and sample span do not prove expected restriction identity or continuous visibility. No human checkpoint replacement or physical execution is requested.
+
 Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order, then:
 
 | Need | Source of truth |

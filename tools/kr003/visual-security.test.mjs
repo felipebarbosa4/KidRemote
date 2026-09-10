@@ -28,3 +28,15 @@ test("visual runner has local-only capture and no upload or OCR path",()=>{
   assert.match(source,/MatrixContribution='NONE'/);
   assert.match(source,/HumanObservationSerialized=\$false/);
 });
+
+test("synthetic dedup prototype is not wired into physical runner and emits no pixels",()=>{
+  const module=readFileSync(resolve(root,"tools/kr003/VisualCalibration.psm1"),"utf8");
+  const runner=readFileSync(resolve(root,"tools/kr003/Start-KR003.ps1"),"utf8");
+  assert.doesNotMatch(runner,/Invoke-KRVisualDedupPrototype/);
+  assert.match(module,/if\(-not \$SyntheticOnly\)\{throw 'INVALID:SYNTHETIC_ONLY_PROTOTYPE'\}/);
+  const prototype=module.slice(module.indexOf("function Invoke-KRVisualDedupPrototype"));
+  assert.doesNotMatch(prototype,/Get-KRVisualCentroid|Get-KRVisualPngFeature|Get-Content|ReadAllBytes|WriteAllBytes|Out-File|Set-Content/);
+  assert.match(prototype,/CheckpointSubstitutionAllowed=\$false/);
+  const result=prototype.slice(prototype.indexOf("$watch.Stop()"));
+  assert.doesNotMatch(result,/Pixels|\.Bytes|\.Ordinary|\.Restricted/);
+});
