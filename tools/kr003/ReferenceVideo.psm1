@@ -8,7 +8,7 @@ function Assert-KRReferenceEnrollment {
         if($Enrollment.PSObject.Properties.Name -notcontains $field){throw 'INVALID:REFERENCE_PROVENANCE'}
     }
     if($Enrollment.ConfigurationHash -cne $ConfigurationHash -or $Enrollment.CandidateHash -cne $CandidateHash -or
-        $Enrollment.FixtureHash -cne $FixtureHash -or $Enrollment.FrozenTicks -ge $HeldOutStart -or
+        $Enrollment.FixtureHash -cne $FixtureHash -or $null -eq $Enrollment.FrozenTicks -or $Enrollment.FrozenTicks -le 0 -or $Enrollment.FrozenTicks -ge $HeldOutStart -or
         $Enrollment.ClassifierVersion -cne 'EXACT_FULL_PIXEL_REFERENCE_V1' -or @($Enrollment.References).Count -ne 2){throw 'INVALID:REFERENCE_PROVENANCE'}
     foreach($role in @('ORDINARY','RESTRICTED')){
         foreach($reference in $Enrollment.References){
@@ -18,6 +18,8 @@ function Assert-KRReferenceEnrollment {
         }
         $roleReferences=@($Enrollment.References|Where-Object{$_.Role -ceq $role})
         if($roleReferences.Count -ne 1 -or $roleReferences[0].OwnerConfirmation -cne 'MATCHES_DISPLAYED_SURFACE' -or
+            $null -eq $roleReferences[0].ConfirmedTicks -or $null -eq $roleReferences[0].CapturedTicks -or
+            $roleReferences[0].CapturedTicks -le 0 -or
             $roleReferences[0].ConfirmedTicks -gt $Enrollment.FrozenTicks -or $roleReferences[0].CapturedTicks -gt $roleReferences[0].ConfirmedTicks -or
             $roleReferences[0].Sha256 -cnotmatch '^[a-f0-9]{64}$' -or $roleReferences[0].CaptureConfiguration -cne 'NATIVE_PNG_UNSCALED'){
             throw 'INVALID:REFERENCE_NOT_INDEPENDENTLY_CONFIRMED'
@@ -30,6 +32,9 @@ function Get-KRVideoTimestampCharacterization {
     if($Frames.Count -lt 2 -or $TimeBaseNumerator -le 0 -or $TimeBaseDenominator -le 0){throw 'INVALID:VIDEO_TIMESTAMP_UNVERIFIED'}
     $intervals=@();$prior=$null
     foreach($frame in $Frames){
+        $parsedPts=0L
+        if($null -eq $frame -or $frame.PSObject.Properties.Name -notcontains 'Pts' -or
+            -not [long]::TryParse([string]$frame.Pts,[ref]$parsedPts)){throw 'INVALID:VIDEO_TIMESTAMP_UNVERIFIED'}
         if($null -ne $prior){
             $delta=[long]$frame.Pts-[long]$prior.Pts
             if($delta -le 0){throw 'INVALID:VIDEO_TIMESTAMP_ORDER'}
@@ -39,6 +44,7 @@ function Get-KRVideoTimestampCharacterization {
     }
     [PSCustomObject]@{TimestampProvenance='DECODED_FRAME_ORIGINAL_PTS_AND_STREAM_TIME_BASE';FrameCount=$Frames.Count;
         TimeBaseNumerator=$TimeBaseNumerator;TimeBaseDenominator=$TimeBaseDenominator;
+        OriginalFramePts=@($Frames|ForEach-Object{$_.Pts});
         FirstPts=$Frames[0].Pts;LastPts=$Frames[-1].Pts;FrameIntervalsMillis=$intervals;
         MaximumFrameIntervalMillis=($intervals|Measure-Object -Maximum).Maximum;
         NativeSampleSpanMillis=([long]$Frames[-1].Pts-[long]$Frames[0].Pts)*1000.0*$TimeBaseNumerator/$TimeBaseDenominator;
