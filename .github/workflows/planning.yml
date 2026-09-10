@@ -34,6 +34,7 @@ jobs:
           pwsh -NoProfile -File tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
           pwsh -NoProfile -File tools/kr003/VisualCalibration.Tests.ps1
           pwsh -NoProfile -File tools/kr003/VisualDedup.Tests.ps1
+          pwsh -NoProfile -File tools/kr003/ReferenceVideo.Tests.ps1
           pwsh -NoProfile -File tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
       - name: Test finalization and recovery without a device
         run: pwsh -NoProfile -File tools/kr003/Runner.Tests.ps1
@@ -86,6 +87,8 @@ jobs:
           ./tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
           ./tools/kr003/VisualCalibration.Tests.ps1
           ./tools/kr003/VisualDedup.Tests.ps1
+          ./tools/kr003/ReferenceVideo.Tests.ps1
+          ./tools/kr003/ReferenceVideoCodec.Tests.ps1
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
@@ -99,6 +102,8 @@ jobs:
           ./tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
           ./tools/kr003/VisualCalibration.Tests.ps1
           ./tools/kr003/VisualDedup.Tests.ps1
+          ./tools/kr003/ReferenceVideo.Tests.ps1
+          ./tools/kr003/ReferenceVideoCodec.Tests.ps1
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1

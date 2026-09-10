@@ -1,5 +1,11 @@
 # Planning publication status
 
+## KR-003 review/prototype publication and reference/video prerequisite work — 2026-09-10
+
+The owner requested publication of `b1c4a1b262d595feaba1d068db7500d5b7eca9f5`; it was pushed over verified remote `630eaad4cfa84d40aedf8ead6f93c593f1c212c3`. [CI 34521866149](https://github.com/felipebarbosa4/KidRemote/actions/runs/34521866149) passed all jobs, including Windows PowerShell 5.1/7 and required Android isolation. No physical media was published. Earlier statements that the review/prototype is only local are historical.
+
+[Reference/video preparation](../test-plans/KR-003-REFERENCE-VIDEO-PREPARATION.md) records a synthetic codec/reference mismatch and preserves unknown host alignment/sensitivity. No new physical bundle is ready or published; no ADB or Samsung operation was performed. Existing `0596173` remains unchanged and exploratory-only. Zero qualification/TIME-04/matrix contribution; KR-004 untouched.
+
 - **Goal:** Record the GitHub planning state that was actually observed and changed.
 - **Context:** Reconciled against the repository manifests and GitHub on 2026-09-05.
 - **Constraints:** Planning evidence is not implementation, policy approval, database-test or physical-device evidence.

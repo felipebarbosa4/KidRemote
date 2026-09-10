@@ -55,6 +55,8 @@ budgets, package names or provider configuration; those remain **UNSPECIFIED** u
 
 **OD-41 implementation validity clarification — 2026-09-10:** the [focused synthetic review](test-plans/KR-003-VISUAL-VALIDITY-REVIEW.md) establishes that immutable visual bundle `0596173` is an exploratory sampled-channel benchmark, not sufficient checkpoint-substitution calibration. Its self-fitted reference accepts unrelated imagery; sample span is not continuous observation. The owner approved capture, not a 1,500 ms missed-interruption tolerance. Required sensitivity remains **UNSPECIFIED**. No human checkpoint replacement is authorized by this artifact's PASS; the approved lab-only exception and historical decisions remain unchanged.
 
+**OD-41 prospective reference/video preparation — 2026-09-10:** the owner authorizes one excluded setup with at most two local reference confirmations, frozen before a separate held-out video characterization, always `CheckpointReplacementAuthorized=false`. [Prerequisite checks](test-plans/KR-003-REFERENCE-VIDEO-PREPARATION.md) found that the existing exact-reference classifier rejects all ten correctly sourced synthetic frames after the tested lossy encode/decode; native PTS preservation works but host alignment is not established. This is not Samsung or enforcement evidence. The end-to-end diagnostic is not yet ready and no physical bundle is published. No new similarity threshold or missed-interruption tolerance is approved.
+
 Exact Kotlin, Compose, Room, Gradle, AGP, Java toolchain, Android SDK, Flutter, Supabase CLI/client, Deno/Edge runtime and FCM SDK versions: **UNSPECIFIED**.
 No app/bootstrap dependency versions are chosen in this pass. The verified Actions checkout pin is documented in TOOLING.
 
