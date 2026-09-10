@@ -148,6 +148,7 @@ pwsh -NoProfile -File tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
 pwsh -NoProfile -File tools/kr003/VisualCalibration.Tests.ps1
 pwsh -NoProfile -File tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
 pwsh -NoProfile -File tools/kr003/VisualCaptureWorker.Tests.ps1
+pwsh -NoProfile -File tools/kr003/VisualBailoutEntrypoint.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

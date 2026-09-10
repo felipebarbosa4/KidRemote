@@ -86,6 +86,7 @@ jobs:
           ./tools/kr003/VisualCalibration.Tests.ps1
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
+          ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
@@ -97,3 +98,4 @@ jobs:
           ./tools/kr003/VisualCalibration.Tests.ps1
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
+          ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1

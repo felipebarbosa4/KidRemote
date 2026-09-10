@@ -1,6 +1,6 @@
 <#
-Goal: release only the disposable KR-003 lab timer if an owner becomes trapped during the focused diagnostic.
-Context: owner-operated Windows ADB; debug receiver protected by android.permission.DUMP.
+Goal: release only the disposable KR-003 lab timer if an owner becomes trapped during an approved runner or excluded diagnostic.
+Context: owner-operated Windows ADB; debug receiver protected by android.permission.DUMP; the bundle protocol is allowlisted before use.
 Constraints: no uninstall, app-data clear, permission change, input injection, network change, or evidence claim.
 Done when: restriction/overlay are absent and the exact latency sample array is unchanged.
 #>
@@ -50,7 +50,8 @@ try {
     $bundle=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
     $diagnosticBundle=($bundle.protocol -eq 'KR003-Q3-RECOVERY-DIAGNOSTIC' -and $bundle.diagnosticOnly)
     $qualificationBundle=($bundle.protocol -eq 'KR003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION' -and $bundle.runnerVersion -eq 12 -and -not $bundle.diagnosticOnly)
-    if (-not $diagnosticBundle -and -not $qualificationBundle) { throw 'INVALID:BUNDLE_SCHEMA' }
+    $visualCalibrationBundle=($bundle.protocol -eq 'KR003-VISUAL-CHANNEL-CALIBRATION' -and $bundle.runnerVersion -eq 1 -and $bundle.diagnosticOnly -and $bundle.diagnosticScope -eq 'VISUAL_CHANNEL_ONLY')
+    if (-not $diagnosticBundle -and -not $qualificationBundle -and -not $visualCalibrationBundle) { throw 'INVALID:BUNDLE_SCHEMA' }
     foreach($name in @('Clear-KR003-Lab.ps1','Qualification.psm1')) {
         $entries=@($bundle.files | Where-Object { $_.name -ceq $name })
         if ($entries.Count -ne 1) { throw 'INVALID:BUNDLE_INTEGRITY' }
