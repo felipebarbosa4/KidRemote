@@ -47,6 +47,8 @@ Total elapsed time is expected to be approximately 75–90 minutes depending on 
 
 Any FAIL, INVALID, or owner stop preserves the current attempt and terminates the run. It is never replaced, resumed or pooled. The standalone CLEAR helper changes only the disposable lab timer and verifies that latency samples are preserved; it is not consumer recovery evidence. If normal finalization cannot verify network restoration, preserve the run directory and use its minimized `network-original.json` record for owner-assisted restoration.
 
+OD-41 was approved after immutable runner-v12 publication. It authorizes only a separate excluded local visual-channel calibration; it does not retroactively modify this bundle or turn its automated result into a human observation. Any future visual-checkpoint substitution requires a new explicit runner/evidence design after that channel calibrates successfully.
+
 The runner retains `network-capabilities.json` and `network-operations.json` with typed feature presence, operation/phase/result, exit code and coarse stderr class only. It never persists raw `pm`, `settings` or `svc` output. An absent `pm has-feature` result is the documented `false`/exit-1 outcome, not an ADB rejection. A present Wi-Fi or mobile-data path keeps the same disable, readback and restoration gate; airplane mode is not substituted.
 
 OD-39 is the approved prospective evidence decision. Path A remains the stronger directly exercised physical-action observation. Path B is an

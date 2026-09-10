@@ -1,14 +1,9 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Assert-KRConfigurationBoundBundleCore {
+function Assert-KRConfigurationBoundIdentity {
     param($Bundle)
     if ($null -eq $Bundle -or $Bundle.schema -ne 1 -or
-        $Bundle.awakeStateModel -ne 'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE' -or
-        $Bundle.navigationModeModel -ne 'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM' -or
-        $Bundle.homeSafetyModel -ne 'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME' -or
-        $Bundle.homeKeyTransportModel -ne 'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS' -or
-        $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
         $Bundle.physicalExecution -ne 'NOT_RUN') {
         throw 'INVALID:BUNDLE_SCHEMA'
     }
@@ -48,6 +43,18 @@ function Assert-KRConfigurationBoundBundleCore {
     }
 }
 
+function Assert-KRConfigurationBoundBundleCore {
+    param($Bundle)
+    Assert-KRConfigurationBoundIdentity $Bundle
+    if ($Bundle.awakeStateModel -ne 'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE' -or
+        $Bundle.navigationModeModel -ne 'SECURE_SETTINGS_CURRENT_USER_COARSE_ENUM' -or
+        $Bundle.homeSafetyModel -ne 'DUAL_PATH_PHYSICAL_OR_CALIBRATED_HOST_KEYCODE_HOME' -or
+        $Bundle.homeKeyTransportModel -ne 'ADB_KEYCODE_HOME_PLUS_INDEPENDENT_FIXTURE_FOCUS' -or
+        $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS') {
+        throw 'INVALID:BUNDLE_SCHEMA'
+    }
+}
+
 function Assert-KRConfigurationQualificationBundle {
     param($Bundle)
     if ($null -eq $Bundle -or
@@ -72,6 +79,24 @@ function Assert-KRDualHomeDiagnosticBundle {
         throw 'INVALID:BUNDLE_SCHEMA'
     }
     Assert-KRConfigurationBoundBundleCore $Bundle
+}
+
+function Assert-KRVisualCalibrationBundle {
+    param($Bundle)
+    if ($null -eq $Bundle -or
+        $Bundle.protocol -ne 'KR003-VISUAL-CHANNEL-CALIBRATION' -or
+        $Bundle.runnerVersion -ne 1 -or -not $Bundle.diagnosticOnly -or $Bundle.requiresOffline -or
+        $Bundle.diagnosticScope -ne 'VISUAL_CHANNEL_ONLY' -or $Bundle.matrixContribution -ne 'NONE' -or
+        $Bundle.humanCheckpointMaximum -ne 0 -or $Bundle.qualificationCycles -ne 0 -or
+        $Bundle.time04Rows -ne 0 -or $Bundle.resumeAllowed -or $Bundle.poolingAllowed -or
+        $Bundle.oracleModel -ne 'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS' -or
+        $Bundle.awakeStateModel -ne 'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE' -or
+        $Bundle.captureModel -ne 'ADB_EXEC_OUT_SCREENCAP_PNG_WITH_HOST_MONOTONIC_INTERVALS' -or
+        $Bundle.classifierModel -ne 'DETERMINISTIC_FULL_FRAME_RGB_GRID_NEAREST_PROTOTYPE' -or
+        $Bundle.rawMediaPolicy -ne 'OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT') {
+        throw 'INVALID:BUNDLE_SCHEMA'
+    }
+    Assert-KRConfigurationBoundIdentity $Bundle
 }
 
 function Convert-KRStayAwakeSetting {
@@ -701,4 +726,4 @@ function Get-KRSafetyCheckpointReason {
     return 'PHYSICAL_PASS_RECORDED'
 }
 
-Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRDualHomeDiagnosticBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Convert-KRStayAwakeSetting, Convert-KRNavigationMode, Get-KRNavigationModeClassification, Get-KRHomeActionInstruction, Get-KRHomeActionResult, Assert-KRHomeKeyPositiveControlEffect, Assert-KRHomeKeyPositiveControlReturn, Assert-KRRestrictedHomeStimulusHold, Test-KRRecoveryButtonAction, Convert-KRPowerSourceProbe, Assert-KRStayAwakeState, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason
+Export-ModuleMember -Function Assert-KRConfigurationQualificationBundle, Assert-KRDualHomeDiagnosticBundle, Assert-KRVisualCalibrationBundle, Assert-KRBoundDeviceConfiguration, Convert-KRSystemFeatureProbe, Convert-KRStayAwakeSetting, Convert-KRNavigationMode, Get-KRNavigationModeClassification, Get-KRHomeActionInstruction, Get-KRHomeActionResult, Assert-KRHomeKeyPositiveControlEffect, Assert-KRHomeKeyPositiveControlReturn, Assert-KRRestrictedHomeStimulusHold, Test-KRRecoveryButtonAction, Convert-KRPowerSourceProbe, Assert-KRStayAwakeState, Get-KRNetworkIsolationPlan, Assert-KRNetworkOffline, Get-KRStatistics, Convert-KRReply, Assert-KRHealth, Assert-KRHold, Get-KRPairedLatency, Get-KRRunVerdict, Get-KRValidRows, Assert-KRIndependentFixtureBlock, Get-KRAutomatedRunVerdict, Get-KRValidAutomatedRows, New-KRRecoveryEvidence, Update-KRRecoveryEvidence, Test-KRRecoveryStableSafe, New-KRDiagnosticPhase, Update-KRDiagnosticPhase, Test-KRDiagnosticStableSafe, Get-KRFocusedDiagnosticReason, Get-KRSafetyCheckpointReason

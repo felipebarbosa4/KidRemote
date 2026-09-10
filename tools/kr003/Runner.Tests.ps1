@@ -36,7 +36,9 @@ function Reset-Run([string]$Name) {
     $script:StayAwakeRestoreStatus='NOT_CHANGED';$script:StayAwakeRestoration=$null
     $script:NavigationMode='GESTURE';$script:NavigationModeEvidence=[PSCustomObject]@{Mode='GESTURE'}
     $script:HomeKeyOperations=@();$script:HomeKeyTransport=$null;$script:RestrictedHomeStimulus=$null
-    $script:DualHomeRestriction=$null;$script:DualHomeCleanup=$null;$script:IsDualHomeDiagnostic=$false
+    $script:DualHomeRestriction=$null;$script:DualHomeCleanup=$null;$script:IsDualHomeDiagnostic=$false;$script:IsVisualCalibration=$false
+    $script:VisualRestriction=$null;$script:VisualCleanup=$null;$script:VisualCaptureProcess=$null;$script:VisualCaptureStatus='NOT_STARTED'
+    $script:VisualAnalysis=$null;$script:VisualPhases=@();$script:VisualCurrentPhase=$null
     $script:NetworkCapabilities=[PSCustomObject]@{Wifi='PRESENT';MobileData='PRESENT'};$script:NetworkOperations=@()
     $script:FinalizationErrors=@(); $script:SafetyPassed=$false; $script:Offline=$true; $script:CalibrationOnly=$true; $script:HumanCheckpoints=@()
     $script:RecoveryDiagnostic=$false; $script:LabControlReady=$false; $script:Diagnostic=$null; $script:DiagnosticBailout=$null

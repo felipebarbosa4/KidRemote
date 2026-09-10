@@ -78,6 +78,10 @@ These are required research/tests, not claimed results. All physical outcomes cu
 | Unlocked bootloader | System integrity untrusted | Unsupported; normal UI warning/diagnostic if supportable |
 | Parent credential available to child | Parent-authorized actions indistinguishable | Outside child-tamper protection; account hygiene/recovery |
 
+### KR-003 local visual-evidence exception
+
+OD-41 permits capture only on an explicitly authorized local KR-003 lab configuration. Capture is host-orchestrated, adds no candidate permission or production code path, never requests secure-layer bypass, and remains paired with the independent fixture/input/focus oracle. Raw media and image-bearing derivatives stay under the owner-controlled local run directory and are prohibited from repository, GitHub, CI-artifact, cloud, external-API and assistant/tool-image paths. Machine output is allowlisted to hashes, dimensions, monotonic timing bounds, distances and typed classifications. Blank/protected/ambiguous capture fails closed. The production prohibition on screenshots, recording, surveillance and content collection is unchanged.
+
 Current Android force-stop behaviour is intentionally persistent until user interaction.
 [Android 15 package state](https://developer.android.com/about/versions/15/behavior-changes-all).
 Device Owner/Lock Task boundaries differ; see ADR-0002, never transfer their guarantees to consumer mode.

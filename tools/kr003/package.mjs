@@ -1,4 +1,4 @@
-// Goal: produce one immutable 100-cycle qualification bundle or explicitly excluded dual-Home diagnostic bound to the approved Samsung calibration evidence.
+// Goal: produce one immutable 100-cycle qualification bundle or one explicitly excluded configuration-bound diagnostic.
 // Context: runner-v5 calibration passed on the exact SM-X400 / Android 16 / API 36 / build BP4A.251205.006 configuration.
 // Constraints: strict evidence ingestion, exact APK/configuration binding, no device command, overwrite, physical claim, raw output or KR-004 work.
 // Done when: clean committed source and calibration provenance are verified, all payloads are hashed, and the selected mode remains physically NOT_RUN.
@@ -13,7 +13,8 @@ const sha256=path=>createHash("sha256").update(readFileSync(path)).digest("hex")
 const readJson=path=>JSON.parse(readFileSync(path,"utf8").replace(/^\uFEFF/,""));
 assert.equal(git("status","--porcelain"),"","Commit all changes before making a qualification bundle");
 const commit=git("rev-parse","HEAD"),destination=process.argv[2],calibrationArgument=process.argv[3];
-const diagnosticMode=process.argv[4]==="--dual-home-diagnostic";
+const selectedMode=process.argv[4]??"",diagnosticMode=selectedMode==="--dual-home-diagnostic",visualMode=selectedMode==="--visual-calibration";
+assert(["","--dual-home-diagnostic","--visual-calibration"].includes(selectedMode),"Unknown package mode");
 assert(process.argv.length<=5,"Unexpected package argument");
 assert(destination,"Provide a new output directory (no overwrite)");
 assert(calibrationArgument,"Provide the approved calibration evidence directory");
@@ -44,7 +45,11 @@ const mapping={
   "Clear-KR003-Lab.ps1":"tools/kr003/Clear-KR003-Lab.ps1",
   "Qualification.psm1":"tools/kr003/Qualification.psm1",
   "DevicePreflight.psm1":"tools/kr003/DevicePreflight.psm1",
-  "protocol.md":diagnosticMode?"docs/test-plans/KR-003-DUAL-HOME-DIAGNOSTIC.md":"docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md",
+  ...(visualMode?{
+    "Capture-KR003-Frames.ps1":"tools/kr003/Capture-KR003-Frames.ps1",
+    "VisualCalibration.psm1":"tools/kr003/VisualCalibration.psm1",
+  }:{}),
+  "protocol.md":visualMode?"docs/test-plans/KR-003-VISUAL-CHANNEL-CALIBRATION.md":diagnosticMode?"docs/test-plans/KR-003-DUAL-HOME-DIAGNOSTIC.md":"docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md",
   "candidate.apk":"spikes/android-enforcement/app/build/outputs/apk/debug/app-debug.apk",
   "ordinary-fixture.apk":"spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk",
 };
@@ -88,7 +93,19 @@ const diagnosticManifest={
   homeLogicBaseline:{sourceCommit:"80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd",bundleDirectory:"80dcdf4",bundleJsonSha256:"9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28"},
   matrixContribution:"NONE",humanCheckpointMaximum:1,qualificationCycles:0,time04Rows:0,resumeAllowed:false,poolingAllowed:false,
 };
-const manifest=diagnosticMode?diagnosticManifest:qualificationManifest;
+const visualManifest={
+  schema:1,protocol:"KR003-VISUAL-CHANNEL-CALIBRATION",sourceCommit:commit,runnerVersion:1,
+  diagnosticOnly:true,diagnosticScope:"VISUAL_CHANNEL_ONLY",requiresOffline:false,networkIsolation:"NOT_REQUIRED_AND_NOT_PERFORMED",
+  createdUtc:new Date().toISOString(),candidateSha256,fixtureSha256,files,approvedConfiguration,
+  ownerProvidedLabels:{device:"Galaxy Tab S10 Lite",software:"One UI 8.5"},physicalExecution:"NOT_RUN",calibratedBy,
+  oracleModel:"ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS",
+  awakeStateModel:"ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE",
+  captureModel:"ADB_EXEC_OUT_SCREENCAP_PNG_WITH_HOST_MONOTONIC_INTERVALS",
+  classifierModel:"DETERMINISTIC_FULL_FRAME_RGB_GRID_NEAREST_PROTOTYPE",
+  rawMediaPolicy:"OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT",
+  matrixContribution:"NONE",humanCheckpointMaximum:0,qualificationCycles:0,time04Rows:0,resumeAllowed:false,poolingAllowed:false,
+};
+const manifest=visualMode?visualManifest:diagnosticMode?diagnosticManifest:qualificationManifest;
 assert.equal(git("status","--porcelain"),"","Build unexpectedly changed tracked source");
 writeFileSync(resolve(output,"bundle.json"),JSON.stringify(manifest,null,2)+"\n",{flag:"wx"});
 process.stdout.write(JSON.stringify({output,bundle:basename(output),...manifest},null,2)+"\n");

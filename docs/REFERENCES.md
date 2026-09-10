@@ -63,6 +63,9 @@ Recheck current docs at implementation and before release. No exact mobile/backe
 | [Android system navigation](https://support.google.com/android/answer/9079644) | Gesture Home is swipe up from the bottom; three-button Home uses the on-screen Home control; OEM steps may vary | 2026-09-09 |
 | [Android 16 navigation-mode setting](https://android.googlesource.com/platform/frameworks/base/+/android16-release/core/java/android/provider/Settings.java) | Hidden current-user secure value maps 0/1/2 to three-button/two-button/gestural; shell use is read-only and unknown fails closed | 2026-09-09 |
 | [Android 16 navigation resource](https://android.googlesource.com/platform/frameworks/base/+/android16-release/core/res/res/values/config.xml) | AOSP navigation interaction mode independently documents the same 0/1/2 meanings | 2026-09-09 |
+| [ADB screencap](https://developer.android.com/tools/adb#screencap) | Official host screenshot command and raw PNG streaming through `exec-out` | 2026-09-10 |
+| [FLAG_SECURE](https://developer.android.com/security/fraud-prevention/activities#flag-secure) | Secure-window screenshots may be blank; visual calibration must fail closed and never bypass protection | 2026-09-10 |
+| [Android 16 SurfaceFlinger capture path](https://android.googlesource.com/platform/frameworks/native/+/refs/heads/android16-release/services/surfaceflinger/SurfaceFlinger.cpp) | Current platform capture permission and secure-layer behavior reviewed for the lab-only channel | 2026-09-10 |
 | [Direct Boot](https://developer.android.com/privacy-and-security/direct-boot) | Device/credential-encrypted storage and component availability | 2026-09-05 |
 | [Android Keystore](https://developer.android.com/privacy-and-security/keystore) | Key storage/wrapping boundary; compromised OS limitations | 2026-09-05 |
 | [Auto Backup](https://developer.android.com/identity/data/autobackup) | Backup/device-transfer exclusion requirements | 2026-09-05 |

@@ -1,7 +1,7 @@
 <#
-Goal: KR-003 offline qualification or its explicitly excluded dual-Home diagnostic on one calibration-approved configuration.
-Context: The manifest selects either the reusable Q7 evidence model or a zero-row diagnostic that exercises the exact same OD-39 Home implementation.
-Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; reversible radio opt-in only for qualification.
+Goal: KR-003 offline qualification or one explicitly excluded configuration-bound diagnostic.
+Context: The manifest selects the reusable Q7 model, the OD-39 Home diagnostic, or the local-only visual-channel calibration.
+Constraints: Debug fixture input only; no raw identity, host/permission change, uninstall, data clear or reboot; raw visual media never leaves the owner-local visual run directory.
 Done when: The selected manifest-bound mode passes its independent oracle and physical gates, and cleanup restores state.
 #>
 param(
@@ -10,17 +10,22 @@ param(
     [switch]$OfflineNetwork,
     [switch]$CalibrationOnly,
     [switch]$RecoveryDiagnostic,
-    [switch]$DualHomeDiagnostic
+    [switch]$DualHomeDiagnostic,
+    [switch]$VisualCalibration
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'Qualification.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'DevicePreflight.psm1') -Force
+if($VisualCalibration){Import-Module (Join-Path $PSScriptRoot 'VisualCalibration.psm1') -Force}
 
 $script:IsDualHomeDiagnostic=[bool]$DualHomeDiagnostic
+$script:IsVisualCalibration=[bool]$VisualCalibration
+if($script:IsDualHomeDiagnostic -and $script:IsVisualCalibration){throw 'INVALID:DIAGNOSTIC_MODE_CONFLICT'}
 if([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot=if($script:IsDualHomeDiagnostic){'C:\platform-tools\kr003-dual-home-diagnostic'}else{'C:\platform-tools\kr003-qualification'}
+    $OutputRoot=if($script:IsDualHomeDiagnostic){'C:\platform-tools\kr003-dual-home-diagnostic'}elseif($script:IsVisualCalibration){'C:\platform-tools\kr003-visual-calibration'}else{'C:\platform-tools\kr003-qualification'}
 }
+if($script:IsVisualCalibration -and -not ([IO.Path]::GetFullPath($OutputRoot).TrimEnd('\') -ieq 'C:\platform-tools\kr003-visual-calibration')){throw 'INVALID:VISUAL_OUTPUT_ROOT_NOT_OWNER_LOCAL'}
 
 $candidatePackage = 'dev.kidremote.spike.enforcement'
 $fixturePackage = 'dev.kidremote.spike.ordinary'
@@ -28,7 +33,7 @@ $candidateReceiver = "$candidatePackage/.LabControlReceiver"
 $fixtureReceiver = "$fixturePackage/.FixtureReceiver"
 $fixtureActivity = "$fixturePackage/.FixtureActivity"
 $candidateService = "$candidatePackage/.EnforcementAccessibilityService"
-$runId = $(if($script:IsDualHomeDiagnostic){'diagnostic-'}else{'run-'}) + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
+$runId = $(if($script:IsVisualCalibration){'visual-'}elseif($script:IsDualHomeDiagnostic){'diagnostic-'}else{'run-'}) + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N').Substring(0,8)
 $runDirectory = Join-Path $OutputRoot $runId
 $script:Request = 0L
 $script:Cursor = 0L
@@ -79,6 +84,13 @@ $script:HomeKeyTransport = $null
 $script:RestrictedHomeStimulus = $null
 $script:DualHomeRestriction = $null
 $script:DualHomeCleanup = $null
+$script:VisualRestriction = $null
+$script:VisualCleanup = $null
+$script:VisualCaptureProcess = $null
+$script:VisualCaptureStatus = 'NOT_STARTED'
+$script:VisualAnalysis = $null
+$script:VisualPhases = @()
+$script:VisualCurrentPhase = $null
 
 function Write-JsonFile {
     param([string]$Name, $Value)
@@ -572,17 +584,17 @@ function Invoke-DualHomeShellInputPrecondition {
     return $record
 }
 
-function Invoke-DualHomeDiagnosticRestriction {
+function Invoke-ExcludedDiagnosticRestriction {
+    param([string]$Phase,[string]$EvidenceFile)
     Save-Progress
     $record=[PSCustomObject]@{
-        Schema=1;Phase='EXCLUDED_HOME_DIAGNOSTIC';QualificationRows=0;Time04Rows=0
+        Schema=1;Phase=$Phase;QualificationRows=0;Time04Rows=0
         StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Status='STARTED';Revision=$null
         CandidateSampleCountBefore=$null;CandidateSampleCountAfter=$null;AttachmentLatencyMs=$null
         Restriction=$false;Attached=$false;Disposition='UNSPECIFIED';CandidateHealth='UNKNOWN'
         FixtureFocused=$null;FixtureResumed=$null;FixtureTapBaseline=$null;Reason=$null
     }
-    $script:DualHomeRestriction=$record
-    Write-JsonFile 'dual-home-restriction.json' $record
+    Write-JsonFile $EvidenceFile $record
     try {
         Clear-ToOrdinary
         $before=Get-LabState
@@ -631,31 +643,36 @@ function Invoke-DualHomeDiagnosticRestriction {
         throw
     } finally {
         $record.EndedUtc=[DateTime]::UtcNow.ToString('o')
-        Write-JsonFile 'dual-home-restriction.json' $record
+        Write-JsonFile $EvidenceFile $record
     }
 }
 
-function Invoke-DualHomeDiagnosticCleanup {
+function Invoke-DualHomeDiagnosticRestriction {
+    $script:DualHomeRestriction=Invoke-ExcludedDiagnosticRestriction -Phase 'EXCLUDED_HOME_DIAGNOSTIC' -EvidenceFile 'dual-home-restriction.json'
+    return $script:DualHomeRestriction
+}
+
+function Invoke-ExcludedDiagnosticCleanup {
+    param([string]$EvidenceFile,[string]$FailureCode)
     if(-not $script:LabControlReady){return}
     $record=[PSCustomObject]@{
         Schema=1;Status='STARTED';ClearAttempted=$false;CandidateState='UNVERIFIED';CandidateHealth='UNKNOWN'
         FixtureOrdinaryUse='UNVERIFIED';StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Reason=$null
     }
-    $script:DualHomeCleanup=$record
-    Write-JsonFile 'dual-home-cleanup.json' $record
+    Write-JsonFile $EvidenceFile $record
     try {
         $record.ClearAttempted=$true
         $null=Get-LabState 'CLEAR'
-        $released=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached } -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+        $released=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached } -FailureCode $FailureCode
         Assert-KRHealth $released
         Assert-QualificationPermissionState $released
         $record.CandidateState='UNARMED_UNRESTRICTED_UNATTACHED'
         $record.CandidateHealth='HEALTHY_ELIGIBLE'
         Open-Fixture
-        $null=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached -and $snapshot.disposition -eq 'ORDINARY_APP' } -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+        $null=Wait-LabCondition -Condition { param($snapshot) -not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached -and $snapshot.disposition -eq 'ORDINARY_APP' } -FailureCode $FailureCode
         $fixture=Wait-FixtureFocus -Focused $true
-        $after=Assert-FixturePositiveControl -Before $fixture -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
-        if($after.taps -ne $fixture.taps+1){throw 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'}
+        $after=Assert-FixturePositiveControl -Before $fixture -FailureCode $FailureCode
+        if($after.taps -ne $fixture.taps+1){throw $FailureCode}
         $record.FixtureOrdinaryUse='FOCUSED_RESUMED_TAP_VERIFIED'
         $record.Status='VERIFIED'
     } catch {
@@ -665,8 +682,174 @@ function Invoke-DualHomeDiagnosticCleanup {
         throw
     } finally {
         $record.EndedUtc=[DateTime]::UtcNow.ToString('o')
-        Write-JsonFile 'dual-home-cleanup.json' $record
+        Write-JsonFile $EvidenceFile $record
     }
+    return $record
+}
+
+function Invoke-DualHomeDiagnosticCleanup {
+    $script:DualHomeCleanup=Invoke-ExcludedDiagnosticCleanup -EvidenceFile 'dual-home-cleanup.json' -FailureCode 'INVALID:DUAL_HOME_CLEANUP_UNVERIFIED'
+}
+
+function Save-VisualPhases {
+    Write-JsonFile 'visual-phases.json' ([PSCustomObject]@{
+        Schema=1;Frequency=[Diagnostics.Stopwatch]::Frequency;Phases=@($script:VisualPhases)
+        QualificationRows=0;Time04Rows=0;MatrixContribution='NONE'
+    })
+}
+
+function Start-VisualPhase {
+    param([ValidateSet('ORDINARY_BEFORE','EXPIRY_TRANSITION','RESTRICTED','CLEAR_TRANSITION','ORDINARY_AFTER')][string]$Name)
+    if($null -ne $script:VisualCurrentPhase){throw 'INVALID:VISUAL_PHASE_OVERLAP'}
+    $script:VisualCurrentPhase=[PSCustomObject]@{Name=$Name;StartTicks=[Diagnostics.Stopwatch]::GetTimestamp();EndTicks=$null;Oracle='PENDING'}
+}
+
+function Complete-VisualPhase {
+    param([string]$Oracle)
+    if($null -eq $script:VisualCurrentPhase){throw 'INVALID:VISUAL_PHASE_MISSING'}
+    $script:VisualCurrentPhase.EndTicks=[Diagnostics.Stopwatch]::GetTimestamp()
+    $script:VisualCurrentPhase.Oracle=$Oracle
+    $script:VisualPhases+= $script:VisualCurrentPhase
+    $script:VisualCurrentPhase=$null
+    Save-VisualPhases
+}
+
+function Get-VisualCaptureWorkerState {
+    $statePath=Join-Path $runDirectory 'capture-worker.json'
+    if(-not (Test-Path -LiteralPath $statePath)){return $null}
+    try{return Get-Content -LiteralPath $statePath -Raw|ConvertFrom-Json}catch{return $null}
+}
+
+function Start-VisualCapture {
+    if($null -ne $script:VisualCaptureProcess){throw 'INVALID:VISUAL_CAPTURE_ALREADY_STARTED'}
+    $workerPath=Join-Path $PSScriptRoot 'Capture-KR003-Frames.ps1'
+    if(-not (Test-Path -LiteralPath $workerPath)){throw 'INVALID:VISUAL_CAPTURE_WORKER_MISSING'}
+    $enginePath=(Get-Process -Id $PID).Path
+    foreach($value in @($enginePath,$workerPath,$Adb,$runDirectory)){if($value.Contains('"')){throw 'INVALID:VISUAL_CAPTURE_PATH'}}
+    $startInfo=New-Object Diagnostics.ProcessStartInfo
+    $startInfo.FileName=$enginePath;$startInfo.UseShellExecute=$false;$startInfo.CreateNoWindow=$true
+    $startInfo.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$workerPath+'" -Adb "'+$Adb+'" -RunDirectory "'+$runDirectory+'"'
+    $process=New-Object Diagnostics.Process;$process.StartInfo=$startInfo;[void]$process.Start()
+    $script:VisualCaptureProcess=$process;$script:VisualCaptureStatus='STARTING'
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    do{
+        $state=Get-VisualCaptureWorkerState
+        if($null -ne $state -and $state.Status -eq 'INVALID'){throw $state.Reason}
+        if($null -ne $state -and $state.Status -eq 'RUNNING' -and $state.FrameCount -ge 2){$script:VisualCaptureStatus='RUNNING';return}
+        if($process.HasExited){throw 'INVALID:VISUAL_CAPTURE_START_FAILED'}
+        Start-Sleep -Milliseconds 100
+    }while($watch.Elapsed.TotalSeconds -lt 12)
+    throw 'INVALID:VISUAL_CAPTURE_START_TIMEOUT'
+}
+
+function Assert-VisualCapturePreflight {
+    $journalPath=Join-Path $runDirectory 'frame-journal.jsonl'
+    $entries=@(Get-Content -LiteralPath $journalPath|Where-Object{-not [string]::IsNullOrWhiteSpace($_)}|Select-Object -First 2|ForEach-Object{$_|ConvertFrom-Json})
+    if($entries.Count -ne 2){throw 'INVALID:VISUAL_CAPTURE_PREFLIGHT_INCOMPLETE'}
+    $dimensions=@()
+    foreach($entry in $entries){
+        if($entry.ExitCode -ne 0 -or $entry.StderrClass -ne 'NONE' -or $entry.FileName -notmatch '^frame-[0-9]{6}\.png$'){throw 'INVALID:VISUAL_CAPTURE_PREFLIGHT_REJECTED'}
+        $path=Join-Path (Join-Path $runDirectory 'raw-frames') $entry.FileName
+        if((Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant() -cne $entry.Sha256){throw 'INVALID:VISUAL_FRAME_HASH'}
+        $feature=Get-KRVisualPngFeature $path
+        if($feature.Blank){throw 'INVALID:VISUAL_CAPTURE_BLANK_OR_PROTECTED'}
+        $dimensions+="$($feature.Width)x$($feature.Height)"
+    }
+    if(@($dimensions|Select-Object -Unique).Count -ne 1){throw 'INVALID:VISUAL_FRAME_DIMENSIONS_CHANGED'}
+    Write-JsonFile 'visual-capture-preflight.json' ([PSCustomObject]@{
+        Schema=1;Capability='SUPPORTED_THIS_CONFIGURATION_ONLY';Mechanism='ADB_EXEC_OUT_SCREENCAP_PNG'
+        AcceptedFrames=2;Dimensions=$dimensions[0];BlankOrProtected=$false;SecureContentBypassRequested=$false
+        RawContentEmitted=$false;VerifiedUtc=[DateTime]::UtcNow.ToString('o')
+    })
+}
+
+function Wait-VisualSamples {
+    param([int]$StartingCount,[int]$MinimumNewFrames=3,[int]$MinimumMillis=2500)
+    $started=[Diagnostics.Stopwatch]::GetTimestamp();$frequency=[Diagnostics.Stopwatch]::Frequency
+    while((([Diagnostics.Stopwatch]::GetTimestamp()-$started)*1000.0/$frequency) -lt $MinimumMillis){
+        Check-EarlyStop
+        $state=Get-VisualCaptureWorkerState
+        if($null -eq $state -or $state.Status -eq 'INVALID'){throw 'INVALID:VISUAL_CAPTURE_INTERRUPTED'}
+        Start-Sleep -Milliseconds 100
+    }
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    do{
+        $state=Get-VisualCaptureWorkerState
+        if($null -eq $state -or $state.Status -eq 'INVALID'){throw 'INVALID:VISUAL_CAPTURE_INTERRUPTED'}
+        if($state.FrameCount -ge $StartingCount+$MinimumNewFrames){return [int]$state.FrameCount}
+        Start-Sleep -Milliseconds 100
+    }while($watch.Elapsed.TotalSeconds -lt 8)
+    throw 'INVALID:VISUAL_CAPTURE_RATE_INSUFFICIENT'
+}
+
+function Stop-VisualCapture {
+    if($null -eq $script:VisualCaptureProcess){return}
+    $stopPath=Join-Path $runDirectory 'capture.stop'
+    if(-not (Test-Path -LiteralPath $stopPath)){[IO.File]::WriteAllText($stopPath,'stop',(New-Object Text.UTF8Encoding($false)))}
+    if(-not $script:VisualCaptureProcess.WaitForExit(15000)){
+        $script:VisualCaptureProcess.Kill();$script:VisualCaptureStatus='INVALID';throw 'INVALID:VISUAL_CAPTURE_STOP_TIMEOUT'
+    }
+    $state=Get-VisualCaptureWorkerState
+    if($null -eq $state -or $state.Status -ne 'COMPLETED' -or $script:VisualCaptureProcess.ExitCode -ne 0){$script:VisualCaptureStatus='INVALID';throw 'INVALID:VISUAL_CAPTURE_INCOMPLETE'}
+    $script:VisualCaptureStatus='COMPLETED'
+}
+
+function Invoke-VisualRestrictedHold {
+    $revision=[long]$script:VisualRestriction.Revision;$tapBaseline=[long]$script:VisualRestriction.FixtureTapBaseline
+    $fixtureBaseline=Get-FixtureState;$serviceBaseline=$script:ServiceConnections;$startElapsed=(Get-LabState).elapsed
+    $record=[PSCustomObject]@{
+        Schema=1;Status='STARTED';Revision=$revision;InjectedBlockedTaps=0;HoldMillis=0
+        CandidateContinuity='UNVERIFIED';FixtureFocusRegain='UNKNOWN';FixtureInputLeak='UNKNOWN';ServiceContinuity='UNVERIFIED'
+        StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Reason=$null
+    }
+    Write-JsonFile 'visual-independent-oracle.json' $record
+    try{
+        for($probe=1;$probe -le 20;$probe++){
+            Check-EarlyStop
+            $candidate=Get-LabState;$fixture=Get-FixtureState
+            if($script:ServiceConnections -ne $serviceBaseline){throw 'INVALID:ENFORCEMENT_SERVICE_RESTARTED'}
+            Assert-KRHold -Snapshot $candidate -Revision $revision -FixtureTaps $tapBaseline -FixtureState $fixture
+            Assert-KRIndependentFixtureBlock -Baseline $fixtureBaseline -Current $fixture
+            Invoke-FixtureProbeTap $fixtureBaseline;$record.InjectedBlockedTaps=$probe;Start-Sleep -Milliseconds 500
+            $fixtureAfter=Get-FixtureState;$candidateAfter=Get-LabState
+            Assert-KRIndependentFixtureBlock -Baseline $fixtureBaseline -Current $fixtureAfter
+            Assert-KRHold -Snapshot $candidateAfter -Revision $revision -FixtureTaps $tapBaseline -FixtureState $fixtureAfter
+            Assert-QualificationPermissionState $candidateAfter
+            $record.HoldMillis=[long]$candidateAfter.elapsed-[long]$startElapsed
+            Write-JsonFile 'visual-independent-oracle.json' $record
+        }
+        if($record.HoldMillis -lt 10000){throw 'INVALID:VISUAL_RESTRICTED_HOLD_TOO_SHORT'}
+        $record.CandidateContinuity='RESTRICTION_ATTACHED_HEALTHY_ELIGIBLE'
+        $record.FixtureFocusRegain='NONE';$record.FixtureInputLeak='NONE';$record.ServiceContinuity='VERIFIED';$record.Status='PASS'
+    }catch{
+        $message=$_.Exception.Message;$record.Status=if($message -like 'FAIL:*'){'FAIL'}else{'INVALID'}
+        $record.Reason=if($message -match '^(FAIL|INVALID):[A-Z0-9_]+$'){$message}else{'INVALID:VISUAL_ORACLE_HOST_EXCEPTION'}
+        throw
+    }finally{$record.EndedUtc=[DateTime]::UtcNow.ToString('o');Write-JsonFile 'visual-independent-oracle.json' $record}
+    return $record
+}
+
+function Invoke-VisualCalibrationCleanup {
+    if(-not $script:LabControlReady){return}
+    $record=[PSCustomObject]@{Schema=1;Status='STARTED';ClearAttempted=$false;CandidateState='UNVERIFIED';CandidateHealth='UNKNOWN';FixtureOrdinaryUse='UNVERIFIED';StartedUtc=[DateTime]::UtcNow.ToString('o');EndedUtc=$null;Reason=$null}
+    $script:VisualCleanup=$record;Write-JsonFile 'visual-cleanup.json' $record
+    try{
+        Start-VisualPhase 'CLEAR_TRANSITION';$record.ClearAttempted=$true;$null=Get-LabState 'CLEAR'
+        $released=Wait-LabCondition -Condition {param($snapshot)-not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached} -FailureCode 'INVALID:VISUAL_CLEANUP_UNVERIFIED'
+        Assert-KRHealth $released;Assert-QualificationPermissionState $released
+        Open-Fixture;$null=Wait-LabCondition -Condition {param($snapshot)-not $snapshot.armed -and -not $snapshot.restriction -and -not $snapshot.attached -and $snapshot.disposition -eq 'ORDINARY_APP'} -FailureCode 'INVALID:VISUAL_CLEANUP_UNVERIFIED'
+        $fixture=Wait-FixtureFocus -Focused $true;Complete-VisualPhase 'CLEAR_AND_ORDINARY_FOCUS_ESTABLISHED'
+        Start-VisualPhase 'ORDINARY_AFTER';$captureState=Get-VisualCaptureWorkerState;$after=Assert-FixturePositiveControl -Before $fixture -FailureCode 'INVALID:VISUAL_CLEANUP_UNVERIFIED'
+        if($after.taps -ne $fixture.taps+1){throw 'INVALID:VISUAL_CLEANUP_UNVERIFIED'}
+        $null=Wait-VisualSamples -StartingCount ([int]$captureState.FrameCount)
+        $final=Get-LabState;Assert-KRHealth $final;Assert-QualificationPermissionState $final
+        Complete-VisualPhase 'ORDINARY_FOCUSED_RESUMED_TAP_VERIFIED'
+        $record.CandidateState='UNARMED_UNRESTRICTED_UNATTACHED';$record.CandidateHealth='HEALTHY_ELIGIBLE'
+        $record.FixtureOrdinaryUse='FOCUSED_RESUMED_TAP_VERIFIED';$record.Status='VERIFIED'
+    }catch{
+        $message=$_.Exception.Message;$record.Status='FAILED';$record.Reason=if($message -match '^(FAIL|INVALID):[A-Z0-9_]+$'){$message}else{'INVALID:VISUAL_CLEANUP_HOST_EXCEPTION'}
+        throw
+    }finally{$record.EndedUtc=[DateTime]::UtcNow.ToString('o');Write-JsonFile 'visual-cleanup.json' $record}
 }
 
 function Read-Result {
@@ -1544,18 +1727,18 @@ function Write-FinalSummary {
         }
     }
     $markdown = @(
-        $(if ($script:IsDualHomeDiagnostic) { '# KR-003 excluded dual-Home diagnostic result' } elseif ($RecoveryDiagnostic) { '# KR-003 focused recovery diagnostic result' } else { '# KR-003 qualification result' })
+        $(if ($script:IsVisualCalibration) { '# KR-003 excluded local-only visual-channel calibration result' } elseif ($script:IsDualHomeDiagnostic) { '# KR-003 excluded dual-Home diagnostic result' } elseif ($RecoveryDiagnostic) { '# KR-003 focused recovery diagnostic result' } else { '# KR-003 qualification result' })
         ''
         ('Primary status: ' + $Summary.Status + '; reason: ' + $Summary.Reason)
-        $(if($script:IsDualHomeDiagnostic){'Qualification rows: 0; TIME-04 rows: 0; this diagnostic is excluded.'}else{('Valid automated active-oracle cycles: ' + $Summary.ValidPairedObservations + '/100.')})
-        $(if($script:IsDualHomeDiagnostic){('Home diagnostic owner session result: ' + $Summary.HomeGateResult + '; action result: ' + $Summary.HomeActionResult + '.')}else{('Human checkpoint sessions: ' + $Summary.HumanCheckpointSessions + '/3; physical expiry observations: ' + $Summary.PhysicalExpiryObservations + '.')})
+        $(if($script:IsVisualCalibration){'Qualification rows: 0; TIME-04 rows: 0; no matrix contribution.'}elseif($script:IsDualHomeDiagnostic){'Qualification rows: 0; TIME-04 rows: 0; this diagnostic is excluded.'}else{('Valid automated active-oracle cycles: ' + $Summary.ValidPairedObservations + '/100.')})
+        $(if($script:IsVisualCalibration){('Visual analysis: ' + $Summary.VisualAnalysisStatus + '; reason: ' + $Summary.VisualAnalysisReason + '.')}elseif($script:IsDualHomeDiagnostic){('Home diagnostic owner session result: ' + $Summary.HomeGateResult + '; action result: ' + $Summary.HomeActionResult + '.')}else{('Human checkpoint sessions: ' + $Summary.HumanCheckpointSessions + '/3; physical expiry observations: ' + $Summary.PhysicalExpiryObservations + '.')})
         ('Internal paired statistics: ' + ($Summary.InternalPairedStatistics | ConvertTo-Json -Compress))
         ('Focused diagnostic result: ' + $Summary.DiagnosticResult + '; reason: ' + $Summary.DiagnosticReason)
         ('Lab-only bailout: ' + $Summary.DiagnosticBailoutStatus + '; never consumer recovery evidence.')
         ('Network restoration: ' + $Summary.NetworkRestoration)
         ('Stay-awake restoration: ' + $Summary.StayAwakeRestoration)
         ('Finalization errors: ' + ($script:FinalizationErrors -join ', '))
-        $(if($script:IsDualHomeDiagnostic){'The Home result is configuration-specific diagnostic evidence only; it is not qualification, TIME-04 or a matrix PASS.'}else{'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'})
+        $(if($script:IsVisualCalibration){'Raw PNGs remain only in this owner-local run directory. The automated visual result is not a human observation, qualification row, TIME-04 row or matrix PASS.'}elseif($script:IsDualHomeDiagnostic){'The Home result is configuration-specific diagnostic evidence only; it is not qualification, TIME-04 or a matrix PASS.'}else{'The 100 rows are active-oracle cycles, not 100 human observations. Human checkpoints and internal latency remain separate evidence.'})
         'Partial/current attempts and physical recovery responses are retained. No KR-003 closure or Play approval is implied.'
     ) -join [Environment]::NewLine
     try { $markdown | Set-Content -LiteralPath (Join-Path $runDirectory 'SUMMARY.md') -Encoding UTF8 } catch {
@@ -1588,6 +1771,16 @@ function Complete-LabRun {
             $script:FinalizationErrors += 'DUAL_HOME_CLEANUP_UNVERIFIED'
         }
     }
+    if($script:IsVisualCalibration -and $null -ne $script:VisualCaptureProcess){
+        try{Stop-VisualCapture}catch{
+            $script:VisualCaptureStatus='INVALID';$script:FinalizationErrors+='VISUAL_CAPTURE_STOP'
+        }
+    }
+    if($script:IsVisualCalibration -and $script:VisualCaptureStatus -eq 'COMPLETED' -and $null -eq $script:VisualAnalysis -and $script:VisualPhases.Count -ge 3){
+        try{$script:VisualAnalysis=Invoke-KRVisualAnalysis -RunDirectory $runDirectory;Write-JsonFile 'visual-analysis.json' $script:VisualAnalysis}catch{
+            $script:FinalizationErrors+='VISUAL_ANALYSIS'
+        }
+    }
     try { Restore-StayAwake } catch {
         $script:StayAwakeRestoreStatus='RESTORE_FAILED_OWNER_ACTION_REQUIRED'
         $script:FinalizationErrors += 'STAY_AWAKE_RESTORE'
@@ -1604,6 +1797,15 @@ function Complete-LabRun {
     }
     Invoke-FinalStep 'STAY_AWAKE_REPORT' {
         if($null -ne $script:StayAwakeRestoration){Write-JsonFile 'stay-awake-restoration.json' $script:StayAwakeRestoration}
+    }
+    Invoke-FinalStep 'VISUAL_RETENTION_REPORT' {
+        if($script:IsVisualCalibration){
+            Write-JsonFile 'visual-retention.json' ([PSCustomObject]@{
+                Schema=1;RawMedia='RETAINED_OWNER_LOCAL';Directory='raw-frames';RepositoryUploadAllowed=$false;CloudUploadAllowed=$false
+                ToolContentOutputAllowed=$false;AutomaticDeletion=$false;MinimumReviewRetention='UNTIL_RESULT_INGESTED_AND_OWNER_REVIEW_COMPLETE'
+                FailedOrInvalidRetention='PRESERVE_UNTIL_ROOT_CAUSE_DISPOSITION';Deletion='EXPLICIT_OWNER_ACTION_ONLY'
+            })
+        }
     }
     Invoke-FinalStep 'MANIFEST_REPORT' {
         if ($null -ne $script:Manifest) {
@@ -1647,19 +1849,24 @@ function Complete-LabRun {
         CalibrationExcluded=$true; SafetyChecksPassed=$script:SafetyPassed; Offline=$script:Offline
         Kr003Complete=$false; ProductionApproved=$false; NetworkRestoration=$script:RadioRestoreStatus
         StayAwakeRestoration=$script:StayAwakeRestoreStatus
-        FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly -and -not $RecoveryDiagnostic -and -not $script:IsDualHomeDiagnostic)
+        FinalizationErrors=@(); QualificationRequested=(-not $CalibrationOnly -and -not $RecoveryDiagnostic -and -not $script:IsDualHomeDiagnostic -and -not $script:IsVisualCalibration)
         RecoveryDiagnosticRequested=[bool]$RecoveryDiagnostic
         DualHomeDiagnosticRequested=[bool]$script:IsDualHomeDiagnostic
+        VisualCalibrationRequested=[bool]$script:IsVisualCalibration
         QualificationRows=@($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' }).Count
-        Time04Rows=$(if($script:IsDualHomeDiagnostic){0}else{@($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' }).Count})
-        MatrixContribution=$(if($script:IsDualHomeDiagnostic){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
+        Time04Rows=$(if($script:IsDualHomeDiagnostic -or $script:IsVisualCalibration){0}else{@($script:Rows | Where-Object { $_.Phase -eq 'QUALIFICATION' }).Count})
+        MatrixContribution=$(if($script:IsDualHomeDiagnostic -or $script:IsVisualCalibration){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
         HomeGateResult=$(if($null -eq $script:Safety -or $script:Safety.PSObject.Properties.Name -notcontains 'HomeGateResult'){'UNRECORDED'}else{$script:Safety.HomeGateResult})
         HomeActionResult=$(if($null -eq $script:Safety -or $script:Safety.PSObject.Properties.Name -notcontains 'HomeActionResult'){'UNRECORDED'}else{$script:Safety.HomeActionResult})
         DualHomeCleanupStatus=$(if($null -eq $script:DualHomeCleanup){'NOT_STARTED'}else{$script:DualHomeCleanup.Status})
+        VisualCleanupStatus=$(if($null -eq $script:VisualCleanup){'NOT_STARTED'}else{$script:VisualCleanup.Status})
+        VisualCaptureStatus=$script:VisualCaptureStatus
+        VisualAnalysisStatus=$(if($null -eq $script:VisualAnalysis){'NOT_AVAILABLE'}else{$script:VisualAnalysis.Status})
+        VisualAnalysisReason=$(if($null -eq $script:VisualAnalysis){'NOT_AVAILABLE'}else{$script:VisualAnalysis.Reason})
         DiagnosticResult=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Result })
         DiagnosticReason=$(if ($null -eq $script:Diagnostic) { $null } else { $script:Diagnostic.Reason })
         DiagnosticBailoutStatus=$(if ($null -eq $script:DiagnosticBailout) { 'NOT_REQUIRED_OR_NOT_STARTED' } else { $script:DiagnosticBailout.Status })
-        EvidenceModel=$(if($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
+        EvidenceModel=$(if($script:IsVisualCalibration){'EXCLUDED_LOCAL_ONLY_VISUAL_CHANNEL_CALIBRATION'}elseif($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
         HumanCheckpointSessions=@($script:HumanCheckpoints | Where-Object { $_.Result -eq 'PASS' }).Count
         PhysicalExpiryObservations=@($script:HumanCheckpoints | Where-Object { $_.Name -in @('PREFLIGHT_NORMAL_PASS','POST_RUN_SAFETY') -and $_.Result -eq 'PASS' }).Count
     }
@@ -1680,9 +1887,12 @@ try {
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }
     New-Item -ItemType Directory -Path $runDirectory | Out-Null
     $script:Bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'bundle.json') -Raw | ConvertFrom-Json
-    if($script:IsDualHomeDiagnostic){
+    if($script:IsVisualCalibration){
+        Assert-KRVisualCalibrationBundle $script:Bundle
+        if($RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork -or $DualHomeDiagnostic){throw 'INVALID:VISUAL_CALIBRATION_MODE_REQUIRED'}
+    }elseif($script:IsDualHomeDiagnostic){
         Assert-KRDualHomeDiagnosticBundle $script:Bundle
-        if($RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork){throw 'INVALID:DUAL_HOME_DIAGNOSTIC_MODE_REQUIRED'}
+        if($RecoveryDiagnostic -or $CalibrationOnly -or $OfflineNetwork -or $VisualCalibration){throw 'INVALID:DUAL_HOME_DIAGNOSTIC_MODE_REQUIRED'}
     }else{
         Assert-KRConfigurationQualificationBundle $script:Bundle
         if ($RecoveryDiagnostic -or $CalibrationOnly -or -not $OfflineNetwork) { throw 'INVALID:OFFLINE_QUALIFICATION_MODE_REQUIRED' }
@@ -1693,10 +1903,10 @@ try {
     }
     $script:Manifest = [PSCustomObject]@{
         Schema=1;RunId=$runId;StartedUtc=$script:StartedAt;EndedUtc=$null;Bundle=$script:Bundle;Device=$null;InitialDevice=$null
-        OfflineNetworkRequested=(-not $script:IsDualHomeDiagnostic);OfflineOwnerConfirmed=$false;NetworkMutationAllowed=(-not $script:IsDualHomeDiagnostic)
-        StayAwakeRequested=$true;CalibrationOnly=$false;RecoveryDiagnostic=$false;DualHomeDiagnostic=$script:IsDualHomeDiagnostic
-        PhysicalRun=$true;EvidenceModel=$(if($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
-        QualificationRows=0;Time04Rows=0;MatrixContribution=$(if($script:IsDualHomeDiagnostic){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
+        OfflineNetworkRequested=(-not $script:IsDualHomeDiagnostic -and -not $script:IsVisualCalibration);OfflineOwnerConfirmed=$false;NetworkMutationAllowed=(-not $script:IsDualHomeDiagnostic -and -not $script:IsVisualCalibration)
+        StayAwakeRequested=$true;CalibrationOnly=$false;RecoveryDiagnostic=$false;DualHomeDiagnostic=$script:IsDualHomeDiagnostic;VisualCalibration=$script:IsVisualCalibration
+        PhysicalRun=$true;EvidenceModel=$(if($script:IsVisualCalibration){'EXCLUDED_LOCAL_ONLY_VISUAL_CHANNEL_CALIBRATION'}elseif($script:IsDualHomeDiagnostic){'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC'}else{'ACTIVE_FIXTURE_ORACLE_PLUS_THREE_HUMAN_CHECKPOINTS'})
+        QualificationRows=0;Time04Rows=0;MatrixContribution=$(if($script:IsDualHomeDiagnostic -or $script:IsVisualCalibration){'NONE'}else{'SUBJECT_TO_FULL_QUALIFICATION_VERDICT'})
     }
     Write-JsonFile 'manifest.json' $script:Manifest
     if ((Invoke-LabAdb @('get-state')).Trim() -ne 'device') { throw 'INVALID:DEVICE_UNAVAILABLE' }
@@ -1705,7 +1915,7 @@ try {
     $script:Manifest.InitialDevice = $script:Device
     Write-JsonFile 'manifest.json' $script:Manifest
     Assert-KRBoundDeviceConfiguration $script:Device $script:Bundle.approvedConfiguration
-    if(-not $script:IsDualHomeDiagnostic){$script:NetworkCapabilities=Get-NetworkCapabilities}
+    if(-not $script:IsDualHomeDiagnostic -and -not $script:IsVisualCalibration){$script:NetworkCapabilities=Get-NetworkCapabilities}
     Verify-InstalledApk -Package $candidatePackage -File 'candidate.apk' -Hash $script:Bundle.candidateSha256
     Verify-InstalledApk -Package $fixturePackage -File 'ordinary-fixture.apk' -Hash $script:Bundle.fixtureSha256
     $null = Invoke-LabAdb @('shell','am','start','-n',"$candidatePackage/.MainActivity")
@@ -1716,14 +1926,48 @@ try {
     $ready = Wait-LabCondition -Condition { param($s) $s.usage -and $s.accessibility -and $s.heartbeat -and $s.eligible -and -not $s.uncertain } -FailureCode 'INVALID:MANUAL_PERMISSION_OR_UNLOCK_SETUP_REQUIRED'
     Assert-KRHealth $ready
     Assert-QualificationPermissionState $ready
-    Write-Host 'Reading the current Android system navigation mode as a coarse mode signal only; control availability is checked separately.'
-    Capture-NavigationMode
+    if(-not $script:IsVisualCalibration){
+        Write-Host 'Reading the current Android system navigation mode as a coarse mode signal only; control availability is checked separately.'
+        Capture-NavigationMode
+    }
     Write-Host 'Temporarily enabling Android Stay awake while plugged in. The exact original setting is journalled and restored during finalization.'
     Enter-StayAwake
     $awakeReady=Get-LabState
     Assert-KRHealth $awakeReady
     Assert-QualificationPermissionState $awakeReady
-    if($script:IsDualHomeDiagnostic){
+    if($script:IsVisualCalibration){
+        Write-Host 'EXCLUDED LOCAL-ONLY VISUAL CALIBRATION — zero qualification rows, zero TIME-04 rows, no matrix contribution, and no network mutation.' -ForegroundColor Cyan
+        Write-Host 'Raw PNG samples stay only under this owner-local run directory. They are never written to the repository, uploaded, or emitted through tool output.' -ForegroundColor Cyan
+        Open-Fixture;$null=Wait-FixtureFocus -Focused $true
+        Start-VisualCapture
+        Assert-VisualCapturePreflight
+        Start-VisualPhase 'ORDINARY_BEFORE'
+        $captureState=Get-VisualCaptureWorkerState;$ordinaryBefore=Get-FixtureState
+        $ordinaryAfter=Assert-FixturePositiveControl -Before $ordinaryBefore -FailureCode 'INVALID:VISUAL_ORDINARY_INPUT_CONTROL_FAILED'
+        if($ordinaryAfter.taps -ne $ordinaryBefore.taps+1){throw 'INVALID:VISUAL_ORDINARY_INPUT_CONTROL_FAILED'}
+        $null=Wait-VisualSamples -StartingCount ([int]$captureState.FrameCount)
+        $ordinaryCandidate=Get-LabState;Assert-KRHealth $ordinaryCandidate;Assert-QualificationPermissionState $ordinaryCandidate
+        Complete-VisualPhase 'FIXTURE_FOCUSED_RESUMED_INPUT_VERIFIED'
+
+        Start-VisualPhase 'EXPIRY_TRANSITION'
+        $script:VisualRestriction=Invoke-ExcludedDiagnosticRestriction -Phase 'EXCLUDED_VISUAL_CALIBRATION' -EvidenceFile 'visual-restriction.json'
+        Complete-VisualPhase 'FRESH_EXPIRY_ATTACHED'
+        Start-VisualPhase 'RESTRICTED'
+        $visualOracle=Invoke-VisualRestrictedHold
+        Complete-VisualPhase 'RESTRICTION_AND_INDEPENDENT_BLOCKED_INPUT_HELD'
+        if($visualOracle.Status -ne 'PASS'){throw 'INVALID:VISUAL_ORACLE_NOT_VERIFIED'}
+
+        Invoke-VisualCalibrationCleanup
+        Stop-VisualCapture
+        $script:VisualAnalysis=Invoke-KRVisualAnalysis -RunDirectory $runDirectory
+        Write-JsonFile 'visual-analysis.json' $script:VisualAnalysis
+        if($script:VisualAnalysis.Status -eq 'FAIL'){throw ('FAIL:'+$script:VisualAnalysis.Reason)}
+        if($script:VisualAnalysis.Status -ne 'PASS'){throw ('INVALID:'+$script:VisualAnalysis.Reason)}
+        Restore-StayAwake
+        $visualFinal=Get-KRVisualFinalResult -PrimaryStatus $script:VisualAnalysis.Status -PrimaryReason $script:VisualAnalysis.Reason -CleanupStatus $script:VisualCleanup.Status -StayAwakeRestoration $script:StayAwakeRestoreStatus -CaptureStatus $script:VisualCaptureStatus
+        if($visualFinal.Status -ne 'PASS'){throw ($visualFinal.Status+':'+$visualFinal.Reason)}
+        $script:SafetyPassed=$true;$script:Terminal='PASSED_VISUAL_CHANNEL_CALIBRATION_THIS_CONFIGURATION_ONLY';$script:Reason=$visualFinal.Reason
+    }elseif($script:IsDualHomeDiagnostic){
         Write-Host 'EXCLUDED DUAL-HOME DIAGNOSTIC — zero qualification rows, zero TIME-04 rows, and no network mutation.' -ForegroundColor Cyan
         Write-Host 'Verifying shell input transport against the independent ordinary fixture.' -ForegroundColor Cyan
         $null=Invoke-DualHomeShellInputPrecondition
@@ -1828,6 +2072,11 @@ if($script:IsDualHomeDiagnostic -and $script:Terminal -eq 'PASSED_DUAL_HOME_DIAG
     $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and $script:RadioRestoreStatus -eq 'NOT_CHANGED' -and
     $script:FinalizationErrors.Count -eq 0 -and $null -ne $script:DiagnosticBailout -and
     $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
+if($script:IsVisualCalibration -and $script:Terminal -eq 'PASSED_VISUAL_CHANNEL_CALIBRATION_THIS_CONFIGURATION_ONLY' -and
+    $script:SafetyPassed -and $script:VisualCaptureStatus -eq 'COMPLETED' -and $null -ne $script:VisualAnalysis -and
+    $script:VisualAnalysis.Status -eq 'PASS' -and $null -ne $script:VisualCleanup -and $script:VisualCleanup.Status -eq 'VERIFIED' -and
+    $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and $script:RadioRestoreStatus -eq 'NOT_CHANGED' -and
+    $script:FinalizationErrors.Count -eq 0 -and $null -ne $script:DiagnosticBailout -and $script:DiagnosticBailout.Status -eq 'VERIFIED') { exit 0 }
 if ($script:Terminal -eq 'PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY' -and $script:Offline -and $script:SafetyPassed -and
     $script:RadioRestoreStatus -eq 'RESTORED_AND_FLAGS_VERIFIED' -and $script:FinalizationErrors.Count -eq 0 -and
     $script:StayAwakeRestoreStatus -eq 'RESTORED_AND_SETTING_VERIFIED' -and

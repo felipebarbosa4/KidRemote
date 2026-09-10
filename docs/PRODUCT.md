@@ -101,6 +101,7 @@ GPS/location; geofencing; browsing history; URLs/web activity; VPN/web filtering
 microphone or camera monitoring; screenshots/recording; typed text; content inspection; AI monitoring; uploaded detailed app history;
 ads; per-app limits; bedtime/schedules; rewards/chores; subscriptions/payments; iOS, Fire OS and Windows implementation.
 Do not add analytics SDKs merely for convenience. OpenAI is a development aid, not part of the product runtime.
+OD-41's explicitly authorized local KR-003 lab evidence exception does not change this production/release scope.
 
 ## Delivery gates
 

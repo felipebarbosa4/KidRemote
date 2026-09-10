@@ -54,6 +54,17 @@ $diagnosticBundle | Add-Member NoteProperty time04Rows 0
 Assert-KRDualHomeDiagnosticBundle $diagnosticBundle
 $wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.qualificationCycles=1
 Assert-Reject { Assert-KRDualHomeDiagnosticBundle $wrongDiagnostic } 'INVALID:BUNDLE_SCHEMA'
+$visualBundle=$diagnosticBundle.PSObject.Copy()
+$visualBundle.protocol='KR003-VISUAL-CHANNEL-CALIBRATION';$visualBundle.runnerVersion=1;$visualBundle.diagnosticScope='VISUAL_CHANNEL_ONLY'
+$visualBundle.humanCheckpointMaximum=0
+$visualBundle|Add-Member captureModel 'ADB_EXEC_OUT_SCREENCAP_PNG_WITH_HOST_MONOTONIC_INTERVALS'
+$visualBundle|Add-Member classifierModel 'DETERMINISTIC_FULL_FRAME_RGB_GRID_NEAREST_PROTOTYPE'
+$visualBundle|Add-Member rawMediaPolicy 'OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT'
+Assert-KRVisualCalibrationBundle $visualBundle
+$wrongVisual=$visualBundle.PSObject.Copy();$wrongVisual.qualificationCycles=1
+Assert-Reject { Assert-KRVisualCalibrationBundle $wrongVisual } 'INVALID:BUNDLE_SCHEMA'
+$wrongVisual=$visualBundle.PSObject.Copy();$wrongVisual.rawMediaPolicy='UPLOAD_ALLOWED'
+Assert-Reject { Assert-KRVisualCalibrationBundle $wrongVisual } 'INVALID:BUNDLE_SCHEMA'
 $wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.time04Rows=1
 Assert-Reject { Assert-KRDualHomeDiagnosticBundle $wrongDiagnostic } 'INVALID:BUNDLE_SCHEMA'
 $wrongDiagnostic=$diagnosticBundle.PSObject.Copy();$wrongDiagnostic.requiresOffline=$true

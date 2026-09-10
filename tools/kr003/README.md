@@ -118,6 +118,18 @@ node tools/kr003/ingest.mjs qualification /mnt/c/platform-tools/kr003-qualificat
 
 Exit zero means only `PASSED_AUTOMATED_ORACLE_WITH_THREE_PHYSICAL_CHECKPOINTS_THIS_CONFIGURATION_ONLY` for the exact manifest-bound offline configuration with verified bailout/restoration and clean finalization. It is not 100 human-visible passes and does not close KR-003, establish other devices, complete remaining matrix rows or prove Play acceptance.
 
+## Excluded local-only visual calibration
+
+OD-41 permits one separate zero-row mechanism calibration. Its immutable bundle invokes `Start-KR003.ps1 -VisualCalibration`, continuously streams bounded PNG samples through official `adb exec-out screencap -p`, and analyzes them locally with `VisualCalibration.psm1`. Raw frames remain only under `C:\platform-tools\kr003-visual-calibration\visual-*\raw-frames`; repository ingestion reads minimized JSON only. The runner does not change network, candidate/fixture APKs, navigation mode, credentials or capture permissions, and it never deletes raw media automatically.
+
+After owner execution, strict minimized ingestion is:
+
+```sh
+node tools/kr003/ingest.mjs visual-calibration /mnt/c/platform-tools/kr003-visual-calibration/ACTUAL_VISUAL_DIRECTORY
+```
+
+This command intentionally does not open raw PNG files. A PASS is configuration-specific channel calibration only, with zero qualification rows, zero TIME-04 rows, no matrix contribution and no human observation.
+
 ## Local checks
 
 ```sh
@@ -133,6 +145,9 @@ pwsh -NoProfile -File tools/kr003/PowerShellSafety.Tests.ps1
 pwsh -NoProfile -File tools/kr003/OracleCalibrationEntrypoint.Tests.ps1
 pwsh -NoProfile -File tools/kr003/QualificationEntrypoint.Tests.ps1
 pwsh -NoProfile -File tools/kr003/DualHomeDiagnosticEntrypoint.Tests.ps1
+pwsh -NoProfile -File tools/kr003/VisualCalibration.Tests.ps1
+pwsh -NoProfile -File tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
+pwsh -NoProfile -File tools/kr003/VisualCaptureWorker.Tests.ps1
 cd spikes/android-enforcement && ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 node tools/kr003/audit-build.mjs
 node tools/validate.mjs

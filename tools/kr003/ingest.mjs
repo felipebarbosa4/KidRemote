@@ -464,6 +464,85 @@ export function ingestDualHomeDiagnostic(directory) {
   return {sourceCommit:bundle.sourceCommit,status:summary.Status,reason:summary.Reason,homePath:safety?.HomeEvidencePath??'UNSPECIFIED',homeResult:safety?.HomeActionResult??'UNSPECIFIED',qualificationRows:0,time04Rows:0,matrixContribution:'NONE',kr003Complete:false};
 }
 
+export function ingestVisualCalibration(directory) {
+  // Deliberately read only minimized JSON. Raw PNGs are never decoded, opened or emitted by repository ingestion.
+  const read=name=>JSON.parse(decode(resolve(directory,name)));
+  const manifest=read('manifest.json'),summary=read('summary.json'),bundle=manifest.Bundle;
+  assert.equal(bundle.protocol,'KR003-VISUAL-CHANNEL-CALIBRATION');assert.equal(bundle.runnerVersion,1);
+  assert.match(bundle.sourceCommit,/^[a-f0-9]{40}$/);assert.equal(bundle.diagnosticOnly,true);assert.equal(bundle.diagnosticScope,'VISUAL_CHANNEL_ONLY');
+  assert.equal(bundle.requiresOffline,false);assert.equal(bundle.networkIsolation,'NOT_REQUIRED_AND_NOT_PERFORMED');assert.equal(bundle.physicalExecution,'NOT_RUN');
+  assert.equal(bundle.oracleModel,'ADB_INPUT_PLUS_INDEPENDENT_FIXTURE_COUNTER_AND_FOCUS');
+  assert.equal(bundle.awakeStateModel,'ANDROID_STAY_ON_WHILE_PLUGGED_IN_PLUS_POWER_SOURCE');
+  assert.equal(bundle.captureModel,'ADB_EXEC_OUT_SCREENCAP_PNG_WITH_HOST_MONOTONIC_INTERVALS');
+  assert.equal(bundle.classifierModel,'DETERMINISTIC_FULL_FRAME_RGB_GRID_NEAREST_PROTOTYPE');
+  assert.equal(bundle.rawMediaPolicy,'OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT');
+  assert.equal(bundle.qualificationCycles,0);assert.equal(bundle.time04Rows,0);assert.equal(bundle.matrixContribution,'NONE');
+  assert.equal(bundle.humanCheckpointMaximum,0);assert.equal(bundle.resumeAllowed,false);assert.equal(bundle.poolingAllowed,false);
+  const expected={schema:1,manufacturer:'samsung',model:'SM-X400',androidVersion:'16',apiLevel:'36',securityPatch:'2026-07-05',buildId:'BP4A.251205.006'};
+  assert.deepEqual(bundle.approvedConfiguration,expected);assert.equal(bundle.calibratedBy.status,'PASSED_ORACLE_CALIBRATION_THIS_CONFIGURATION_ONLY');
+  assert.equal(bundle.calibratedBy.qualificationSamples,0);assert.equal(bundle.calibratedBy.physicalAgreement,'PASS');
+  assert.equal(manifest.VisualCalibration,true);assert.equal(manifest.OfflineNetworkRequested,false);assert.equal(manifest.NetworkMutationAllowed,false);
+  assert.equal(manifest.EvidenceModel,'EXCLUDED_LOCAL_ONLY_VISUAL_CHANNEL_CALIBRATION');assert.equal(manifest.QualificationRows,0);assert.equal(manifest.Time04Rows,0);assert.equal(manifest.MatrixContribution,'NONE');
+  const rows=read('attempts.json'),humans=read('human-checkpoints.json');assert.deepEqual(rows,[]);assert.deepEqual(humans,[]);
+  assert.equal(summary.QualificationRequested,false);assert.equal(summary.VisualCalibrationRequested,true);assert.equal(summary.DualHomeDiagnosticRequested,false);
+  assert.equal(summary.QualificationRows,0);assert.equal(summary.Time04Rows,0);assert.equal(summary.MatrixContribution,'NONE');
+  assert.equal(summary.EvidenceModel,'EXCLUDED_LOCAL_ONLY_VISUAL_CHANNEL_CALIBRATION');assert.equal(summary.HumanCheckpointSessions,0);assert.equal(summary.PhysicalExpiryObservations,0);
+  assert.equal(summary.Kr003Complete,false);assert.equal(summary.ProductionApproved,false);assert.equal(summary.Offline,false);
+  for(const forbidden of ['network-capabilities.json','network-operations.json','network-original.json','network-touched.json','navigation-mode.json']) {
+    assert.equal(existsSync(resolve(directory,forbidden)),false,`Visual-only calibration must not retain ${forbidden}`);
+  }
+  assert.deepEqual(read('network-restoration.json'),{Status:'NOT_CHANGED',Settings:[]});
+  const observedKeys={manufacturer:'Manufacturer',model:'Model',androidVersion:'Android',apiLevel:'Api',securityPatch:'Patch',buildId:'BuildId'};
+  for(const device of [manifest.InitialDevice,manifest.Device,read('end-device.json')]){
+    for(const [expectedKey,observedKey] of Object.entries(observedKeys))assert.equal(device[observedKey],expected[expectedKey]);
+    assert.equal(Object.hasOwn(device,'BuildFingerprint'),false);assert.equal(Object.hasOwn(device,'User'),false);
+  }
+  const permission=read('permission-verification.json');assert.equal(permission.UsageAccessRunner,'ENABLED');assert.equal(permission.AccessibilityRunner,'ENABLED');
+  assert.equal(permission.ServiceHeartbeat,'FRESH');assert.equal(permission.CandidateHealth,'HEALTHY');assert.equal(permission.CandidateEligible,'ELIGIBLE');
+  const worker=read('capture-worker.json');assert.equal(worker.Schema,1);assert(['COMPLETED','INVALID','RUNNING'].includes(worker.Status));
+  assert(Number.isInteger(worker.FrameCount)&&worker.FrameCount>=0);assert(Number.isInteger(worker.Frequency)&&worker.Frequency>0);
+  const capturePreflight=read('visual-capture-preflight.json');assert.equal(capturePreflight.Schema,1);assert.equal(capturePreflight.Capability,'SUPPORTED_THIS_CONFIGURATION_ONLY');
+  assert.equal(capturePreflight.Mechanism,'ADB_EXEC_OUT_SCREENCAP_PNG');assert.equal(capturePreflight.AcceptedFrames,2);assert.match(capturePreflight.Dimensions,/^[0-9]{2,5}x[0-9]{2,5}$/);
+  assert.equal(capturePreflight.BlankOrProtected,false);assert.equal(capturePreflight.SecureContentBypassRequested,false);assert.equal(capturePreflight.RawContentEmitted,false);
+  const journal=decode(resolve(directory,'frame-journal.jsonl')).trim().split(/\r?\n/).filter(Boolean).map(JSON.parse);
+  assert.equal(journal.length,worker.FrameCount);
+  journal.forEach((frame,index)=>{
+    assert.deepEqual(Object.keys(frame),['Schema','Index','FileName','StartTicks','EndTicks','Sha256','Bytes','ExitCode','StderrClass']);
+    assert.equal(frame.Schema,1);assert.equal(frame.Index,index+1);assert.match(frame.FileName,/^frame-[0-9]{6}\.png$/);assert.match(frame.Sha256,/^[a-f0-9]{64}$/);
+    assert(Number.isInteger(frame.StartTicks)&&Number.isInteger(frame.EndTicks)&&frame.EndTicks>=frame.StartTicks);assert(Number.isInteger(frame.Bytes)&&frame.Bytes>=128);
+    assert(Number.isInteger(frame.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(frame.StderrClass));
+  });
+  const phases=read('visual-phases.json');assert.equal(phases.Schema,1);assert.equal(phases.Frequency,worker.Frequency);
+  assert.deepEqual(phases.Phases.map(phase=>phase.Name),['ORDINARY_BEFORE','EXPIRY_TRANSITION','RESTRICTED','CLEAR_TRANSITION','ORDINARY_AFTER']);
+  assert.equal(phases.QualificationRows,0);assert.equal(phases.Time04Rows,0);assert.equal(phases.MatrixContribution,'NONE');
+  phases.Phases.forEach((phase,index)=>{assert(Number.isInteger(phase.StartTicks)&&Number.isInteger(phase.EndTicks)&&phase.EndTicks>phase.StartTicks);if(index)assert(phase.StartTicks>=phases.Phases[index-1].EndTicks);});
+  const restriction=read('visual-restriction.json');assert.equal(restriction.Phase,'EXCLUDED_VISUAL_CALIBRATION');assert.equal(restriction.QualificationRows,0);assert.equal(restriction.Time04Rows,0);
+  const oracle=read('visual-independent-oracle.json');assert.equal(oracle.Schema,1);assert(['STARTED','PASS','FAIL','INVALID'].includes(oracle.Status));
+  const cleanup=read('visual-cleanup.json'),analysis=read('visual-analysis.json'),retention=read('visual-retention.json');
+  assert.equal(analysis.Schema,1);assert.equal(analysis.ClassifierModel,bundle.classifierModel);assert.equal(analysis.TimestampModel,'HOST_MONOTONIC_CAPTURE_REQUEST_INTERVALS');
+  assert.equal(analysis.QualificationRows,0);assert.equal(analysis.Time04Rows,0);assert.equal(analysis.MatrixContribution,'NONE');assert.equal(analysis.HumanObservationSerialized,false);
+  assert.equal(analysis.RawMediaIncluded,false);assert.equal(analysis.RawMediaLocation,'OWNER_LOCAL_RUN_DIRECTORY_ONLY');
+  assert.equal(analysis.FrameCount,journal.length);assert(Array.isArray(analysis.Classifications));
+  assert.equal(retention.RepositoryUploadAllowed,false);assert.equal(retention.CloudUploadAllowed,false);assert.equal(retention.ToolContentOutputAllowed,false);assert.equal(retention.AutomaticDeletion,false);
+  assert.equal(retention.FailedOrInvalidRetention,'PRESERVE_UNTIL_ROOT_CAUSE_DISPOSITION');assert.equal(retention.Deletion,'EXPLICIT_OWNER_ACTION_ONLY');
+  const completed=summary.Status==='PASSED_VISUAL_CHANNEL_CALIBRATION_THIS_CONFIGURATION_ONLY';
+  if(completed){
+    assert.equal(summary.Reason,'ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED');assert.equal(summary.VisualCaptureStatus,'COMPLETED');assert.equal(worker.Status,'COMPLETED');
+    assert.equal(summary.VisualAnalysisStatus,'PASS');assert.equal(summary.VisualAnalysisReason,'ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED');
+    assert.equal(summary.VisualCleanupStatus,'VERIFIED');assert.deepEqual(summary.FinalizationErrors,[]);assert.equal(summary.SafetyChecksPassed,true);
+    assert.equal(restriction.Status,'RESTRICTION_ESTABLISHED');assert.equal(restriction.Restriction,true);assert.equal(restriction.Attached,true);assert.equal(restriction.Disposition,'ORDINARY_APP');
+    assert.equal(oracle.Status,'PASS');assert.equal(oracle.InjectedBlockedTaps,20);assert(oracle.HoldMillis>=10000);assert.equal(oracle.CandidateContinuity,'RESTRICTION_ATTACHED_HEALTHY_ELIGIBLE');
+    assert.equal(oracle.FixtureFocusRegain,'NONE');assert.equal(oracle.FixtureInputLeak,'NONE');assert.equal(oracle.ServiceContinuity,'VERIFIED');
+    assert.equal(cleanup.Status,'VERIFIED');assert.equal(cleanup.ClearAttempted,true);assert.equal(cleanup.CandidateState,'UNARMED_UNRESTRICTED_UNATTACHED');assert.equal(cleanup.CandidateHealth,'HEALTHY_ELIGIBLE');assert.equal(cleanup.FixtureOrdinaryUse,'FOCUSED_RESUMED_TAP_VERIFIED');
+    assert.equal(analysis.Status,'PASS');assert.equal(analysis.Reason,'ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED');assert(analysis.RestrictedTemporalCoverage.WindowMillis>=10000);
+    assert(analysis.RestrictedTemporalCoverage.SpanCoverageRatio>=0.90);assert(analysis.RestrictedTemporalCoverage.WorstCaseSamplingGapMillis<=1500);
+    assert.equal(analysis.CaptureLiveness,'CONTROLLED_ORDINARY_RESTRICTED_ORDINARY_TRANSITIONS_VERIFIED');
+    validateQ10StayAwakeEvidence(directory,read,true,true);
+    const bailout=read('diagnostic-bailout.json');assert.equal(bailout.Status,'VERIFIED');assert.equal(bailout.RestrictionReleased,true);
+  }else{assert(['FAIL','INVALID','INTERRUPTED'].includes(summary.Status));}
+  return {sourceCommit:bundle.sourceCommit,status:summary.Status,reason:summary.Reason,qualificationRows:0,time04Rows:0,matrixContribution:'NONE',humanObservations:0,rawMediaRead:false,kr003Complete:false};
+}
+
 export function ingestCheckpoint(csvPath, tracePath) {
   const lines = decode(csvPath).trim().split(/\r?\n/);
   const rows = lines.map(l=>l.split(",").map(cell=>{
@@ -892,6 +971,6 @@ function ingestAlternateTransport(directory,monkey) {
 
 if (process.argv[1] && resolve(process.argv[1])===resolve(import.meta.filename)) {
   const [kind,first,second]=process.argv.slice(2);
-  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="home-diagnostic" ? ingestDualHomeDiagnostic(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="device" ? ingestDeviceTransport(first) : kind==="calibration" ? ingestOracleCalibration(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
+  const result = kind==="checkpoint" ? ingestCheckpoint(first,second) : kind==="diagnostic" ? ingestRecoveryDiagnostic(first) : kind==="home-diagnostic" ? ingestDualHomeDiagnostic(first) : kind==="visual-calibration" ? ingestVisualCalibration(first) : kind==="transport" ? ingestOracleTransport(first) : kind==="device" ? ingestDeviceTransport(first) : kind==="calibration" ? ingestOracleCalibration(first) : kind==="uiautomation" ? ingestUiAutomationTransport(first) : kind==="monkey" ? ingestMonkeyTransport(first) : ingestQualification(first);
   process.stdout.write(JSON.stringify(result,null,2)+"\n");
 }

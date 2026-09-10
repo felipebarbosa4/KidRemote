@@ -169,7 +169,7 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
   assert.doesNotMatch(runner,/RawBattery|RawSetting|BatteryDump|StackTrace/);
   assert.match(bailout,/Get-BailoutState 'CLEAR'/);
   assert.match(bailout,/Latency samples preserved|latency samples preserved/i);
-  assert.doesNotMatch(runner,/uiautomator|screencap|dumpsys\s+window|input','text|pm','clear|uninstall','/i);
+  assert.doesNotMatch(runner,/uiautomator|dumpsys\s+window|input','text|pm','clear|uninstall','/i);
   assert.equal((runner.match(/'shell','input','tap'/g)??[]).length,1,'Only the reviewed fixture-owned input operation is allowed');
   assert.equal((runner.match(/'shell','input','keyevent','KEYCODE_HOME'/g)??[]).length,1,'Only the reviewed fixed Home-key operation is allowed');
   assert.doesNotMatch(runner,/KEYCODE_(?:BACK|APP_SWITCH|POWER)|input','keyevent',(?!'KEYCODE_HOME')/);
