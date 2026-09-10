@@ -35,6 +35,8 @@ Do not retain Android package identifiers incidentally returned in usage queries
 If an ephemeral package identifier becomes essential for emergency/system handling, document the local-only rationale and get explicit approval before retention.
 No Google Analytics, Crashlytics, advertising SDK or detailed session replay by default.
 
+OD-41 creates one narrow prospective exception to this product inventory: authorized KR-003 lab-only visual evidence may be retained locally on the owner's test host, outside repository and cloud-synced paths, solely to calibrate a deterministic known-surface classifier. It is not product collection, is never uploaded, and adds no production capture permission, OCR, node/text capture or content pipeline. Successful raw media is kept until evidence ingestion and owner review complete; FAIL/INVALID media is kept until its root-cause disposition is recorded. Deletion is explicit owner action only and never an automatic consequence of a later successful attempt. The production and release prohibition above remains intact.
+
 ## Retention concept — approved alpha technical baseline
 
 The application-controlled live-data targets below were approved on 2026-09-05. Provider backup purge duration, hosting region,

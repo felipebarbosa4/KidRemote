@@ -1,0 +1,8 @@
+# KR-003 reference enrollment and video characterization
+
+- **Goal:** Prepare one excluded owner-local session enrolling two independently confirmed references before a separate held-out video sequence.
+- **Context:** Published `b1c4a1b` preserves the circular-reference and temporal-limit findings. Its CI run 34521866149 passed, including native Windows PowerShell 5.1/7 and required Android isolation. Windows FFmpeg/ffprobe 8.1.2 are available without host changes.
+- **Constraints:** No agent ADB/device/private-media operation; no new full qualification; at most two owner confirmations; references frozen before held-out evaluation; unknown remains invalid. The owner's continuation explicitly permits a measured, negatively tested recognition comparator, not an interruption tolerance. No network/navigation mutation, production capture, historical pooling or KR-004 work.
+- **Done when:** The executable reference viewer, bounded recorder, held-out streaming analysis and standalone cleanup pass focused native/fake-tool and codec tests plus required CI; one immutable excluded diagnostic is published. `CheckpointReplacementAuthorized=false` in all cases. Missing clock alignment yields characterization, never a phase-specific visual PASS.
+
+Implementation/publication completed at source `760597e855326393e72bffb242e91d795006b7e9`; [immutable handoff and executed checks](../test-plans/evidence/KR-003-REFERENCE-VIDEO-BUNDLE-2026-09-10.md). Physical execution remains NOT RUN. Reference-counter variation and missing host alignment are explicit characterization limitations, not passing visual evidence.

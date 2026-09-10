@@ -92,6 +92,8 @@ class LabTimerStore(context: Context) {
         .mapNotNull(String::toLongOrNull)
         .filter { it >= 0 }
 
+    fun recordedLatencyRevision(): Long = preferences.getLong(KEY_RECORDED_REVISION, -1)
+
     fun clearLatencySamples() {
         preferences.edit()
             .remove(KEY_RECORDED_REVISION)

@@ -8,6 +8,54 @@ Implementation evidence status: the isolated least-privilege harness and physica
 [`spikes/android-enforcement`](../../spikes/android-enforcement/README.md). A build is not physical evidence; no support boundary or
 production decision changes until [KR-003's protocol](../test-plans/KR-003-PHYSICAL.md) is completed.
 
+Current Mi 8 candidate: Q2 and Q3 **physically failed designated Settings/recovery**, and Q4 physically rejected `NEW_TASK | CLEAR_TOP`.
+The final bounded Q5 `NEW_TASK | CLEAR_TASK` candidate then [passed one focused recovery calibration](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md)
+on the exact Mi 8/APK hash. It may enter a separately packaged fresh qualification preflight, but has zero qualification samples. No safe-surface
+requirement, broader device/lifecycle gate, support boundary, production acceptance or Play approval is waived.
+[Q6](../test-plans/KR-003-Q6-QUALIFICATION.md) was packaged but never run. OD-29 supersedes it with
+[Q7](../test-plans/KR-003-Q7-AUTOMATED-QUALIFICATION.md): the exact Q5 candidate plus a new independent fixture oracle, 100 unattended cycles and
+at most three human checkpoint sessions. Three Q7 preflight attempts stopped INVALID before ARM/sample 1. Shell input and the separate
+[UiAutomation transport](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) were denied. Q7 qualification has zero samples;
+the bounded [Monkey transport also returned DOWN SECURITY_EXCEPTION](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md).
+Q7 is blocked on the unchanged Mi 8 configuration. Under OD-31, shell transport passed on the exact Samsung SM-X400 / Android 16 API 36 / build
+`BP4A.251205.006` configuration. Three v1 calibration attempts remain INVALID: runner AppOps verification passed, but its secure-settings
+Accessibility check disagreed with healthy candidate/service telemetry. The fresh [runner-v2 calibration](../test-plans/evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md)
+then passed semantic permission verification and the independent positive fixture control, but stopped `INVALID:HOST_EXCEPTION` in the ARM
+host stage before any blocked hold. Its discarded exception class/cause remains **UNSPECIFIED**. The runner-v3 host was then invoked once but
+failed on its `$script:Host` automatic-variable collision before output creation or any device command. The immutable
+[runner-v4 replacement](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) renamed that state and was subsequently invoked
+four times. Every [typed v4 record](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) passed permission/positive controls,
+issued ARM and then stopped before attachment/hold because `$script:Armed` overwrote the same-scope `$armed` reply. Verified cleanup succeeded.
+Runner v5 removes that unused alias and validates the scalar ARM reply without changing candidate or gate semantics. The fresh
+[runner-v5 calibration](../test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) then passed one excluded active-oracle expiry:
+revision 23 attached in 127 ms, the independent fixture received none of 20 blocked taps and did not regain focus across 22,371 ms, the owner
+explicitly agreed with the continuous visible restriction, and CLEAR was verified. This establishes only the calibration prerequisite on that
+exact configuration. It is not the required 100-cycle offline p95 result, safety/lifecycle support or a transferable device guarantee.
+The first [configuration-bound qualification attempt](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) then
+stopped `INVALID:ADB_REJECTED` in mobile-data isolation after the Wi-Fi disable/readback boundary and before ARM or cycle 1. The v8 runner had
+mistaken a parseable global `mobile_data` setting for proof of telephony capability and discarded the exact operation exit/stderr. Runner-v9
+instead probes Android's declared Wi-Fi and telephony-data system features, skips absent paths as `NOT_APPLICABLE`, and preserves the disable,
+readback, restoration and fail-closed requirements for every present path. Its physical [runner-v9 execution](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md)
+then retained 100 automated active-oracle PASS rows with p95 317 ms and checkpoints 1/2 PASS, but stopped `INVALID:SCREEN_OR_KEYGUARD` before
+any checkpoint-3 owner response. The approximately five-minute prompt interval and combined eligibility loss do not distinguish display timeout
+from keyguard, so the whole run remains non-resumable INVALID. Runner-v10 adds only reversible, verified Android Stay awake while plugged in lab
+orchestration and exact-setting restoration. Its subsequent [runner-v10 execution](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md)
+retained another 100 automated PASS rows at p95 318 ms, checkpoints 1/2 and final visibility PASS, then emitted automated
+`FAIL:RESTRICTION_LOST` before a Home response. The trace establishes an out-of-sequence overlay Settings-button action followed by the intended
+allowed-safe-surface detach: `restriction=true`, `SAFE_SYSTEM`, no fixture focus/input leak. No system Home action or ordinary-app escape is
+established. Runner-v11 adds only read-only coarse current navigation-mode capture, mode-specific Home instructions and typed action/result/source
+evidence; unknown or an out-of-sequence action stops INVALID. It does not change navigation mode, candidate enforcement or safe-surface semantics.
+Two later [runner-v11 attempts](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) each retained 100 automated PASS
+rows but stopped INVALID in checkpoint 3: one on a candidate snapshot rejection before the Home prompt, and one after final-visible PASS because
+no Home control/action was exercisable despite coarse `THREE_BUTTON` mode. OD-39 prospectively approves runner-v12's dual-path gate. If Home is
+exercisable, the owner performs one real system action and independent state must show no ordinary-use escape. If Home is genuinely unavailable,
+the owner confirms that physical observation and the host may inject exactly one `KEYCODE_HOME` only after a separate ordinary-fixture positive
+control proved that one host event displaced fixture foreground/focus and the fixture returned to known state. Under restriction, restriction,
+attachment and health must remain continuous, the fixture must not regain focus or receive input, and the owner must observe no ordinary-use
+return. This second result is `HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`, never physical Home resistance. Unknowns remain INVALID,
+escapes remain FAIL, navigation mode remains contextual, and historical runs remain unchanged and non-poolable.
+No formal matrix row, enforcement support boundary or production result advances.
+
 - **Goal:** Identify an honest, testable consumer enforcement mechanism and its unsupported boundary.
 - **Context:** Native child must restrict permitted use at zero offline, with p95 ≤ 2 s on supported healthy devices.
 - **Constraints:** No stealth, content inspection, security-control circumvention, managed provisioning disguised as normal QR pairing, or unbreakable claims.
@@ -43,7 +91,7 @@ Never auto-enable, mislabel, or suppress platform warnings. Sideloading/restrict
 **Versions:** candidate API 28+ for screen/keyguard usage events; current target/compile SDK **UNSPECIFIED**.
 Test oldest candidate, Android 15/16, and current Android 17 where available; use published platform changes, not stale SDK assumptions.
 [Usage events](https://developer.android.com/reference/android/app/usage/UsageEvents.Event),
-[Android 17 changes](https://developer.android.com/about/versions/17/summary).
+[Android 17 changes](https://developer.android.com/about/versions/17/), reviewed 2026-09-08.
 **Play:** declaration, dedicated disclosure and demo video, listing explanation, least-privilege rationale; approval **UNSPECIFIED**.
 **Disable/uninstall resistance:** no guaranteed resistance; user/system can remove privileges or stop the app.
 Do not build uninstall interception in MVP; the policy exception does not supply an OS capability or approve circumvention.

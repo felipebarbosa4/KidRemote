@@ -15,13 +15,30 @@ class SurfacePolicyTest {
     }
 
     @Test
+    fun ownAndKnownSystemIdentitiesRemainDistinctForSanitizedTracing() {
+        assertEquals(
+            SurfaceObservation(SurfaceIdentityClass.OWN_PACKAGE, SurfaceDisposition.SAFE_SYSTEM),
+            SurfacePolicy.observe(ownPackage, ownPackage),
+        )
+        assertEquals(
+            SurfaceObservation(SurfaceIdentityClass.KNOWN_SAFE_SYSTEM, SurfaceDisposition.SAFE_SYSTEM),
+            SurfacePolicy.observe("com.android.settings", ownPackage),
+        )
+    }
+
+    @Test
     fun ordinaryAppIsCandidateForOverlay() {
         assertEquals(SurfaceDisposition.ORDINARY_APP, SurfacePolicy.classify("example.ordinary.app", ownPackage))
+        assertEquals(SurfaceDisposition.ORDINARY_APP, SurfacePolicy.classify("dev.kidremote.spike.ordinary", ownPackage))
     }
 
     @Test
     fun missingPackageIdentityFailsOpen() {
         assertEquals(SurfaceDisposition.UNKNOWN_FAIL_OPEN, SurfacePolicy.classify(null, ownPackage))
         assertEquals(SurfaceDisposition.UNKNOWN_FAIL_OPEN, SurfacePolicy.classify("", ownPackage))
+        assertEquals(
+            SurfaceObservation(SurfaceIdentityClass.MISSING, SurfaceDisposition.UNKNOWN_FAIL_OPEN),
+            SurfacePolicy.observe(null, ownPackage),
+        )
     }
 }

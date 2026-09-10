@@ -1,5 +1,11 @@
 # Planning publication status
 
+## KR-003 review/prototype publication and reference/video prerequisite work — 2026-09-10
+
+The owner requested publication of `b1c4a1b262d595feaba1d068db7500d5b7eca9f5`; it was pushed over verified remote `630eaad4cfa84d40aedf8ead6f93c593f1c212c3`. [CI 34521866149](https://github.com/felipebarbosa4/KidRemote/actions/runs/34521866149) passed all jobs, including Windows PowerShell 5.1/7 and required Android isolation. No physical media was published. Earlier statements that the review/prototype is only local are historical.
+
+[Reference/video preparation](../test-plans/KR-003-REFERENCE-VIDEO-PREPARATION.md) records a synthetic codec/reference mismatch and preserves unknown host alignment/sensitivity. No new physical bundle is ready or published; no ADB or Samsung operation was performed. Existing `0596173` remains unchanged and exploratory-only. Zero qualification/TIME-04/matrix contribution; KR-004 untouched.
+
 - **Goal:** Record the GitHub planning state that was actually observed and changed.
 - **Context:** Reconciled against the repository manifests and GitHub on 2026-09-05.
 - **Constraints:** Planning evidence is not implementation, policy approval, database-test or physical-device evidence.
@@ -59,4 +65,502 @@ GitHub's available API does not expose mutation inputs for view grouping/sorting
 `node tools/validate.mjs` and `git diff --check` passed during reconciliation. PR #13 later added an isolated KR-003 harness whose
 compile, 12 JVM tests, lint, debug APK assembly and merged-manifest audit passed in
 [run 33996873306](https://github.com/felipebarbosa4/KidRemote/actions/runs/33996873306).
-No Android runtime/physical-device test, Play approval, Supabase/RLS integration test, load test, production backend or store submission exists.
+That 2026-09-05 checkpoint contained no Android runtime evidence. It is superseded for physical status by the
+[Mi 8 evidence](../test-plans/evidence/KR-003-MI8-2026-09-06.md): one initial successful post-fix expiry and ten successful independent checkpoint
+cycles. This does not provide the 100-sample qualification, other-device/lifecycle/safety evidence, Play approval, Supabase/RLS integration tests,
+load tests, a production backend or store submission. KR-003 remains open/In Progress; KR-004 remains Backlog.
+
+## KR-003 publication — 2026-09-06
+
+[Draft PR #16](https://github.com/felipebarbosa4/KidRemote/pull/16) holds the bounded Mi 8 fix/evidence and qualification automation branch.
+Only stale context/status/results paragraphs of issue #3 were updated; existing acceptance checkboxes and other content were preserved.
+[The evidence progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5557545359) was posted and read back.
+Project #3 was re-read: KR-003 In Progress, KR-004 Backlog. No duplicate issue/Project, new sub-issue, closure, merge or KR-004 work occurred.
+
+Both CI jobs passed at source/build `d81f19a` in [run 34017273906](https://github.com/felipebarbosa4/KidRemote/actions/runs/34017273906).
+The [owner-run bundle](../test-plans/evidence/KR-003-BUNDLE-2026-09-06.md) was copied and hash-verified in mounted Windows storage; physical
+preflight/calibration/100-sample qualification remain **Not run**. This is a tooling/evidence handoff, not a completed feasibility gate.
+
+## Subsequent calibration incident — 2026-09-06
+
+The historical d81f19a handoff above was executed by the owner. [Mounted evidence](../test-plans/evidence/KR-003-CALIBRATION-2026-09-06.md)
+records one successful physical expiry plus same-session Home/Settings PASS, but an uncorroborated recovery oracle and zero-row reporting defect.
+No qualification row began. Android-side disagreement and final radio state remain **UNSPECIFIED**. Q2 tooling repairs require a new immutable
+calibration-only handoff; no issue closure, PR readiness, KR-004 implementation or policy acceptance follows from those repairs.
+
+Q2 source `37ad70b177d84d21250887c4b75e33c1b6d328af` passed all three jobs in
+[CI run 34048490604](https://github.com/felipebarbosa4/KidRemote/actions/runs/34048490604), including 65 Windows PowerShell 5.1 assertions with
+stubbed device calls. The [new immutable bundle/hashes/operator command](../test-plans/evidence/KR-003-Q2-BUNDLE-2026-09-06.md) was independently
+verified after packaging. Its new physical calibration is **Not run**; the old bundle/run were not overwritten.
+
+Issue #3's Context/Results/Next paragraphs and
+[progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5560924249) were published and read back; all acceptance
+checkboxes were preserved. KR-003 is Open/In Progress and KR-004 Open/Backlog. PR #16 remains draft/Open; no closure, merge or KR-004 change occurred.
+
+## Q2 physical Settings/recovery failure — 2026-09-06
+
+The earlier Q2 NOT_RUN handoff is now historical. The owner executed the immutable `37ad70b` bundle; the finalized run is a
+**physical Settings/recovery FAIL:OBSERVER_4**, not an oracle-only INVALID. Expiry and Home PASS remain separate; no 100-sample qualification
+began. Sixteen original artefacts were read directly and hash/size verified; both zero-row summaries exist, finalization errors are empty and
+Wi-Fi/mobile flags were restored/read back 1/0. This does not establish connectivity or retroactively verify Q1 restoration.
+
+The [preserved Q2 evidence and proposed diagnostic](../test-plans/evidence/KR-003-Q2-SETTINGS-2026-09-06.md) was committed/pushed as
+`bd5aa37b032ee6ae683e9f7f6eb6f7ce43cc73d3`. Issue #3's Context/Results/Incident/Next paragraphs, PR #16's incident/handoff paragraphs and
+[the new evidence comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561492498) were updated and read back exactly.
+All issue acceptance checkboxes and unrelated content were preserved. Project status was verified: KR-003 Open/In Progress, KR-004 Open/Backlog;
+PR #16 Open/draft. No closure, merge, new issue/Project, KR-004 work or production policy change occurred.
+
+The current candidate cannot qualify. Labelled per-destination/per-button diagnostics with existing coarse telemetry and a verified lab-only
+CLEAR bailout are **proposed**, not implemented or run. Any new identity collection requires narrow review; no guessed OEM allowlist or
+lowered SAFE requirement is authorized. The existing APKs, runner, bundle and original physical artefacts remain unchanged.
+
+Evidence commit `bd5aa37` passed all three jobs in [CI run 34053924704](https://github.com/felipebarbosa4/KidRemote/actions/runs/34053924704):
+repository/Node/synthetic runner checks, Windows PowerShell runner checks with device calls stubbed, and Android JVM tests/debug-release
+lint/build/manifest/DEX audit. These automated results do not change the physical Settings FAIL or provide Play acceptance.
+
+## Q3 focused recovery diagnostic handoff — 2026-09-06
+
+Source `53327c50afb97c66620dd15780114b6f1a13ec33` implements the diagnostic-only, four-phase Settings/Digital Wellbeing/recovery checkpoint and
+lab-only CLEAR bailout without changing Android enforcement policy. It passed all three jobs in
+[CI run 34056094159](https://github.com/felipebarbosa4/KidRemote/actions/runs/34056094159), including native Windows PowerShell 5.1 synthetic tests,
+Android debug/release isolation checks and repository validation. Device calls were stubbed; this is not physical evidence.
+
+The [immutable Q3 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q3-DIAGNOSTIC-BUNDLE-2026-09-06.md) were independently
+verified in mounted Windows storage. Issue #3's stale Next paragraph, PR #16's handoff and
+[the Q3 progress comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561778844) were published and read back while preserving
+all seven acceptance checkboxes. Physical execution is **Not run**. KR-003 remains Open/In Progress, PR #16 remains Open/draft and KR-004 remains
+Open/Backlog. No qualification, enforcement-policy change, OEM allowlist or Play acceptance is claimed.
+
+## Q3 physical recovery result — 2026-09-06
+
+The owner executed the immutable Q3 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q3-RECOVERY-2026-09-06.md) records one expiry PASS,
+top-level Settings PASS, Digital Wellbeing FAIL with phase-local ORDINARY_APP reattachment, and recovery-button physical FAIL. Two handler
+activations make the single-attempt software oracle invalid; they do not erase the physical failure. The automatic lab CLEAR released the
+restriction and preserved both latency samples. Zero qualification rows began, and no Home result was added.
+
+Existing coarse telemetry answered the disposition question, so no equality/identity diagnostic or package allowlist was added. Exact task and
+component behaviour remains **UNSPECIFIED**. KR-003 remains Open/In Progress, PR #16 remains draft and KR-004 remains untouched.
+
+## Q4 bounded recovery-repair handoff — 2026-09-06
+
+Exact source `768aaa039ac4c774896f708591ac30d218405e39` adds only `FLAG_ACTIVITY_CLEAR_TOP` to the existing top-level Settings launch after Q3
+established transient NEW_TASK-only recovery. It does not change surface classification, allowlists, permissions or Accessibility collection.
+[CI run 34057645951](https://github.com/felipebarbosa4/KidRemote/actions/runs/34057645951) passed all three jobs, including native Windows
+PowerShell 5.1 and Android debug/release isolation checks; device calls were stubbed.
+
+The [immutable Q4 bundle, hashes, protocol and exact command](../test-plans/evidence/KR-003-Q4-BUNDLE-2026-09-06.md) were independently verified
+in mounted Windows storage. Physical execution is **Not run**. The repair remains unproven, 100 samples remain blocked, KR-003 remains Open/In
+Progress, PR #16 remains draft and KR-004 remains untouched. Issue #3 and PR #16 were read back after publication; all seven issue acceptance
+checkboxes remain present. The [Q3 ingestion/Q4 handoff comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5561946765)
+records the same evidence boundary. Current-head [CI run 34057870919](https://github.com/felipebarbosa4/KidRemote/actions/runs/34057870919)
+passed all three jobs; its device calls were stubbed and do not constitute physical Q4 evidence.
+
+## Q4 physical recovery failure — 2026-09-06
+
+The owner executed the immutable Q4 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q4-RECOVERY-2026-09-06.md) records expiry/root PASS,
+expected Digital Wellbeing blocking and a single recovery-button physical FAIL. The safe transition lasted only 681 ms before `ORDINARY_APP`
+returned and the overlay reattached, matching the observed approximately one-second Settings flash. Zero qualification rows began; lab CLEAR
+passed and network state was not changed. `NEW_TASK | CLEAR_TOP` is rejected for this Mi 8 route.
+
+Q5 source `97173d207c8076219c6c4c8d780db43d8f9fc566` uses the same `ACTION_SETTINGS` with only `NEW_TASK | CLEAR_TASK` as the final flag-only
+candidate and hardens the software oracle against transient recovery. It passed [exact-source CI run 34059150290](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059150290).
+The [new immutable bundle, hashes and command](../test-plans/evidence/KR-003-Q5-BUNDLE-2026-09-06.md) are verified; physical Q5 execution is
+**Not run**. Issue #3 and draft PR #16 were updated and read back: all seven acceptance checkboxes remain present, issue #3 remains Open/In
+Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog. The [issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562113931)
+and [PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562114041) preserve the same boundary. The bundle-handoff commit's
+[CI run 34059402758](https://github.com/felipebarbosa4/KidRemote/actions/runs/34059402758) passed all three jobs; device calls were stubbed and
+do not constitute physical Q5 evidence.
+
+## Q5 physical recovery pass — 2026-09-06
+
+The owner executed the immutable Q5 bundle. [Preserved evidence](../test-plans/evidence/KR-003-Q5-RECOVERY-2026-09-06.md) records one expiry PASS,
+root Settings PASS, expected Digital Wellbeing blocking and one persistent recovery-button PASS. Exactly one dispatch became safe after 180 ms;
+no ordinary transition or overlay reattachment followed through more than 30 seconds of software sampling. Lab CLEAR passed, retained all four
+historical internal samples, and the run made no network change. Zero qualification rows began.
+
+This clears only the focused prerequisite to prepare a new immutable qualification runner using the exact APK hash. The 100 fresh samples,
+remaining physical/safety/lifecycle/device gates and Play evidence remain open. Publication to issue #3/PR #16 is pending; KR-004 is untouched.
+
+## Q6 offline qualification handoff — 2026-09-06
+
+Exact source `c9edbe5460fff8603a6ff4887114a572d297c89e` prepares the [Q6 offline contract](../test-plans/KR-003-Q6-QUALIFICATION.md) without changing
+the Q5-calibrated Android APK bytes. [CI run 34062263290](https://github.com/felipebarbosa4/KidRemote/actions/runs/34062263290) passed all three jobs,
+including native Windows PowerShell 5.1, synthetic failure/finalization/safety paths, Android debug/release isolation and repository validation.
+No CI device call was real.
+
+The [immutable Q6 bundle, hashes and exact owner command](../test-plans/evidence/KR-003-Q6-BUNDLE-2026-09-06.md) were independently verified in
+`C:\platform-tools\kr003-qualification-bundles\c9edbe5`. Its candidate and fixture APK hashes exactly match physical Q5. Physical Q6 execution
+is **Not run**; zero new qualification samples exist. Issue #3 and PR #16 were updated and read back with that exact boundary; all seven issue
+acceptance boxes remain open. [Issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5562449024) and
+[PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5562449104) link the same bundle/CI evidence. Project #3 was
+verified with KR-003 Open/In Progress and KR-004 Open/Backlog; PR #16 remains draft/Open. KR-004 was not changed.
+
+## Q7 active-oracle qualification handoff — 2026-09-06
+
+Q6 was never executed and is superseded by OD-29/Q7 because the owner permits at most three human checkpoint sessions. Exact source
+`4b886e494355ab7ec8625a8432a74ee3011e9dab` adds a separate ordinary fixture and active ADB-input/focus oracle; it does not change the physically
+calibrated Q5 enforcement APK. [CI run 34075139362](https://github.com/felipebarbosa4/KidRemote/actions/runs/34075139362) passed repository/Node,
+Linux and native Windows PowerShell, and Android debug/release jobs. All CI device calls were synthetic or stubbed.
+
+The [immutable Q7 bundle, complete hashes, evidence contract and one-command handoff](../test-plans/evidence/KR-003-Q7-BUNDLE-2026-09-06.md) are
+verified in `C:\platform-tools\kr003-qualification-bundles\4b886e4`. Physical Q7 execution is **Not run**. The per-sample human requirement is only
+conditionally replaceable: the real Mi 8 preflight must prove the independent fixture's positive and blocked controls before sample 1. A failed
+preflight stops rather than weakening the gate. A future Q7 success means 100 active-oracle rows plus three human checkpoints, never 100 human-visible
+passes. KR-003 remains Open/In Progress, PR #16 remains draft/Open, and KR-004 remains Open/Backlog.
+
+Issue #3 and PR #16 were updated and read back with the Q7 boundary; the issue retains all seven open acceptance boxes. The
+[issue publication](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564034383) and
+[PR publication](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564034552) link the same immutable handoff. Project #3 was
+re-read after publication: KR-003 is Open/In Progress and KR-004 is Open/Backlog. No issue/PR was closed or merged and no KR-004 work began.
+
+## Q7 ADB input-transport halt — 2026-09-06
+
+Three owner-run Q7 attempts stopped before ARM/sample 1 with `INVALID:ADB_REJECTED`. The [preserved evidence](../test-plans/evidence/KR-003-Q7-PREFLIGHT-INVALID-2026-09-06.md)
+establishes that the rejected fixed operation was the ordinary fixture's unblocked `adb shell input tap`; every run retained zero samples/checkpoints,
+verified lab bailout and restored/read back the recorded Wi-Fi/mobile flags. Exit code and stderr class were not retained by the historical wrapper,
+so the exact rejection mechanism and MIUI setting requirement remain **UNSPECIFIED**.
+
+Source `95937b95d585b93f9878f55503f224c61c590a26` adds a fixture-only diagnostic that stores only operation enum, exit code and coarse stderr class.
+[CI run 34076876172](https://github.com/felipebarbosa4/KidRemote/actions/runs/34076876172) passed all three jobs. The
+[immutable transport bundle and one-command handoff](../test-plans/evidence/KR-003-Q7-ORACLE-TRANSPORT-BUNDLE-2026-09-06.md) were hash-verified in
+mounted Windows storage; physical execution is **Not run**. Q7 must not be rerun and no MIUI setting should be changed until this tiny diagnostic
+is ingested. KR-003 remains Open/In Progress, PR #16 remains draft/Open and KR-004 remains Open/Backlog.
+
+Issue #3 and PR #16 were read back after their stale Q7 handoffs were replaced; all seven issue acceptance boxes remain open. The
+[issue evidence comment](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5564307268) and
+[PR evidence comment](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5564307393) preserve the same halt. Project #3 was re-read:
+KR-003 is Open/In Progress and KR-004 is Open/Backlog; PR #16 remains Open/draft. No Q7 rerun, setting change, closure, merge or KR-004 work occurred.
+
+## UiAutomation input-transport experiment — 2026-09-06
+
+The [mounted tiny transport result and owner configuration](../test-plans/evidence/KR-003-MI8-INPUT-DENIAL-2026-09-06.md) now confirm INPUT_TAP
+exit 1 / SECURITY_EXCEPTION and the disabled SIM-gated input-security switch. This strongly supports the configuration explanation; the private
+MIUI implementation remains **UNSPECIFIED**. Source `8b16c1b53e5c76c5303492d49f1ddba63a3bfbbd` adds separate self-targeted debug UiAutomation
+instrumentation and a one-touch fixture-counter preflight. It changes no candidate/fixture APK bytes, developer settings or Q7 acceptance criteria.
+
+[CI run 34078820754](https://github.com/felipebarbosa4/KidRemote/actions/runs/34078820754) passed all three jobs, including native Windows PowerShell
+and Android debug/release isolation. The [new immutable bundle and hashes](../test-plans/evidence/KR-003-UIAUTOMATION-BUNDLE-2026-09-06.md) were verified
+in mounted Windows storage. Physical execution is **Not run**. Monkey remains conditional on UiAutomation failure; no SIM-free setting bypass is claimed.
+
+Issue #3's stale Next paragraph and PR #16's transport paragraph were updated and read back. All seven issue acceptance boxes remain open;
+KR-003 is Open/In Progress, PR #16 Open/draft, and KR-004 Open/Backlog. No new issue, closure, merge or KR-004 work occurred.
+
+## UiAutomation denial and bounded Monkey transport — 2026-09-06
+
+The [owner-run UiAutomation evidence](../test-plans/evidence/KR-003-UIAUTOMATION-DENIAL-2026-09-06.md) was read directly from mounted storage:
+DOWN SECURITY_EXCEPTION, framework finish returned, fixture focused/resumed with counter 0→0. The original generic INVALID status is retained;
+cleanup failure and candidate enforcement failure are not inferred. Five original files remain unchanged; zero Q7 samples.
+
+Source `a10fd34043c0dac20c69a0558104e294a7dba243` adds only a debug Monkey touch-class helper, fixed-enum runner/parser and rejection tests.
+It avoids the full Monkey driver, uses no new permission or candidate command and preserves candidate/fixture APK bytes. The [new immutable bundle](../test-plans/evidence/KR-003-MONKEY-BUNDLE-2026-09-06.md)
+was independently hash-verified under `C:\platform-tools\kr003-monkey-bundles\a10fd34`. Physical execution is **Not run**.
+[CI run 34080865388](https://github.com/felipebarbosa4/KidRemote/actions/runs/34080865388) passed all three jobs, including native Windows PowerShell
+and Android debug/release isolation. No setting/SIM requirement or Q7 gate has been changed.
+
+Issue #3's Next paragraph and PR #16's transport paragraph now reflect the measured denial and bounded next experiment, preserving existing
+acceptance boxes and other content. KR-003 remains Open/In Progress, PR #16 Open/draft and KR-004 Open/Backlog. No Q7 execution, new issue,
+closure, merge, production change or KR-004 work occurred. If the bounded fallback fails, stop for a configuration/device/product decision.
+
+## Monkey denied; Q7 qualification blocked — 2026-09-07
+
+[The owner-run result](../test-plans/evidence/KR-003-MONKEY-DENIAL-2026-09-07.md) was ingested directly from mounted Windows storage and committed
+in `9bcc2e9`: DOWN SECURITY_EXCEPTION, independent counter 0→0, verified temporary-helper removal. All five original files and previous bundles
+remain unchanged. No candidate control, radio/permission/setting changes or Q7 samples occurred. The push operation's OTHER stderr class is
+preserved without guessing its raw meaning; input denial is established by the correlated helper result, not a nonzero ADB exit.
+
+Issue #3 and PR #16 were updated and read back: qualification is explicitly BLOCKED pending an owner device/configuration/product decision.
+No tested transport satisfies the independent positive control; the per-cycle human fallback conflicts with the maximum-three-checkpoint constraint.
+All seven issue acceptance boxes remain open. Project #3 was re-read: KR-003 In Progress and KR-004 Backlog; issue #3 Open and PR #16 Open/draft.
+Those administrative states are retained, not evidence that the qualification gate is satisfied. No unchanged-configuration rerun is requested.
+
+This update changes documentation/evidence only. Mounted ingestion, all 16 Node evidence/security tests, repository validation and whitespace checks
+passed. Android/PowerShell suites were not rerun locally for this documentation-only update; their earlier results are recorded with the source bundle.
+No new APK, runner, physical result or Play approval is claimed. KR-004 remains untouched.
+
+## Generic next-device readiness — 2026-09-08
+
+OD-31 records the owner's authorized next-device path: an expected Samsung tablet, with exact manufacturer/model/Android/API/build/power state
+and shell-input capability **UNSPECIFIED** until sanitized discovery. Final source `5a46f75e3dad68ccbf520bce327a6d1f1c03c77c` adds a fixture-only
+transport preflight and a separate calibration workflow that cannot run without transport PASS. The first workflow attempts exactly one shell tap
+and stops before candidate installation. The second performs one positive control, one blocked hold, service continuity and one physical agreement
+check, then stops with zero qualification samples.
+
+The [immutable mounted-Windows bundles, complete hashes and exact commands](../test-plans/evidence/KR-003-NEXT-DEVICE-BUNDLES-2026-09-08.md)
+were independently rehashed and matched the clean source/build bytes. Their physical execution is **Not run**. The initial `bbdaefc` handoff was
+never run and is superseded by `5a46f75`, which fixes a synthetic `FAIL`/`FAILED` ingestion mismatch. Earlier exact-source
+[CI run 34189822315](https://github.com/felipebarbosa4/KidRemote/actions/runs/34189822315), handoff
+[CI run 34190208397](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190208397), and final corrected-source
+[CI run 34190844982](https://github.com/felipebarbosa4/KidRemote/actions/runs/34190844982) cover all three jobs. Automated device calls were
+synthetic or stubbed and do not establish Samsung evidence.
+
+Issue #3 was updated and read back with all seven acceptance boxes open and the stale owner-selection paragraph removed. The
+[issue checkpoint](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5579705603) records the same boundary. PR #16 was retitled
+“KR-003: physical evidence and qualification automation,” its final scope/isolation summary was updated, and the
+[PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5579705819) was read back. The PR remains draft/Open and mergeable.
+Project #3 was re-read: KR-003 is Open/In Progress and KR-004 is Open/Backlog. No physical command, Mi 8 change, gate reduction, merge, closure,
+production move, store action or KR-004 work occurred.
+
+The superseding bundle correction was then published and read back on
+[issue #3](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5579816839) and
+[PR #16](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5579817014); the PR body now links only the current `5a46f75` handoff.
+Final handoff commit `7bf5383e8b8c3826d81cbdd926540b5daa9b5fba` passed all three jobs in
+[CI run 34191036816](https://github.com/felipebarbosa4/KidRemote/actions/runs/34191036816).
+
+## Samsung transport, calibration INVALIDs and verifier-v2 handoff — 2026-09-08
+
+The [mounted Samsung evidence](../test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md) records one configuration-specific
+fixture-only transport PASS on SM-X400 / Android 16 / API 36 / build `BP4A.251205.006`, followed by three source-`5a46f75` calibrations that
+remain `INVALID:REQUIRED_PERMISSION_STATE_NOT_VERIFIED`. Every calibration stopped before positive control, ARM and sample 1. Runner Usage
+Access verification passed; runner Accessibility enabled-state verification was the exact failed sub-check while retained candidate telemetry
+reported Usage Access, Accessibility, fresh service heartbeat, healthy state and eligibility. The evidence retains no raw secure-setting output,
+so the exact Samsung representation and whether it is Android-16- or Samsung-specific remain **UNSPECIFIED**.
+
+Source `c74d6569ea4e4d179922c389790a4a96d1a9c2fe` replaces short-form-only lexical service matching with semantic component parsing, explicit
+current-user reads and typed fail-closed verification. It adds pre-ARM and post-blocked-hold revocation checks; it does not grant permissions,
+bypass consent or add a Samsung exception. All three historical INVALID classifications pass strict reingestion. The
+[immutable verifier-v2 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V2-BUNDLE-2026-09-08.md) is published from that exact source;
+physical execution is **Not run**, and no 100-sample qualification began.
+
+Publication source `a8ecc3826a4c16f65347ce801f6e13f9f47565cf` passed all three jobs in
+[CI run 34251608096](https://github.com/felipebarbosa4/KidRemote/actions/runs/34251608096). Issue #3 and PR #16 were updated and read back;
+the [issue handoff](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5588553857) and
+[PR handoff](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5588554114) preserve the established/inferred/UNSPECIFIED boundary.
+All seven issue acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open, and KR-004 is Open/Backlog. No merge, closure,
+physical rerun, 100-sample run, production move or KR-004 work occurred.
+
+## Samsung runner-v2 host exception and runner-v3 handoff — 2026-09-08
+
+The [mounted runner-v2 evidence](../test-plans/evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) remains
+`INVALID:HOST_EXCEPTION`. Strict reconstruction places the failure in `ARM`: the ARM operation succeeded and telemetry captured the armed
+state, but the summary never committed the returned revision. Permission verification v2 passed Usage Access, Accessibility enabled state,
+fresh service heartbeat and healthy/eligible candidate state. No attachment check, blocked hold, denial-oracle query or owner prompt started,
+so this run establishes neither physical enforcement success nor failure. Runner v2 discarded the original exception class/message; the exact
+immediate cause is therefore **UNSPECIFIED**.
+
+Source `cf7b2e97fa12bd3397ea8ba7a40174456df27ba0` adds a bounded runner-v3 `HostDiagnostic` containing only whitelisted stage, exception class,
+primary reason, finalization status and cleanup status. It preserves the first primary result across cleanup failures, still attempts cleanup,
+fails closed on unknown/unparseable state, and adds no permission grant, consent bypass, Samsung exception or enforcement-semantic change.
+The [immutable mounted-Windows runner-v3 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V3-BUNDLE-2026-09-08.md) was independently
+hash-verified at `C:\platform-tools\kr003-oracle-calibration-bundles\cf7b2e9`; physical execution is **Not run**.
+
+Publication commit `fba7dd3e5b9ddc1ec55070cb57a4b199b6699654` passed all three jobs in
+[CI run 34282753641](https://github.com/felipebarbosa4/KidRemote/actions/runs/34282753641). Issue #3 and PR #16 were updated and read back; the
+[issue checkpoint](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5592353046) and
+[PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5592353261) preserve the same stopped handoff. All seven issue
+acceptance boxes remain open; KR-003 is Open/In Progress, PR #16 is Draft/Open and mergeable, and KR-004 is Open/Backlog. No rerun, 100-sample
+qualification, merge, closure, production move or KR-004 work occurred.
+
+## Samsung runner-v3 startup failure and runner-v4 handoff — 2026-09-08
+
+The owner invoked the `cf7b2e9` runner-v3 bundle once. PowerShell returned `VariableNotWritable` / `WriteError` because line 30 assigned
+`$script:Host`, which collides case-insensitively with automatic read-only `$Host`. The error occurred before the protected runner block,
+output-directory creation or any ADB operation. The [startup record](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md)
+therefore preserves zero physical execution, zero calibration samples and zero qualification samples; it is not a Samsung enforcement result.
+
+Source `af723c5a7af530a2c694e2749c533de1e18f4cab` renames the internal state to `$script:HostState` and the separately discovered `$Home` helper
+parameter to `$HomeResult`, while retaining external `HostDiagnostic` / `HostStage` names and every permission, enforcement and oracle gate.
+Static collision inspection covers source, modules, tests and the generated bundle. Real bundle-shaped entrypoint tests passed before output/ADB
+under PowerShell `7.6.5` and native Windows PowerShell `5.1.26100.33296` in
+[CI run 34301619476](https://github.com/felipebarbosa4/KidRemote/actions/runs/34301619476).
+
+The [immutable runner-v4 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V4-BUNDLE-2026-09-08.md) is published at
+`C:\platform-tools\kr003-oracle-calibration-bundles\af723c5`, with `bundle.json` SHA-256
+`4d98e4e40c7b2eec77e59b8fb672cc89a5356356742ae2ae3f50f6be6f7b8320`. All eight payload hashes were re-read, source payloads matched `af723c5`,
+and the actual mounted entrypoint passed native Windows PowerShell 5.1 initialization with no device command. At publication, physical execution was **Not run**.
+Issue #3 and PR #16 were updated and read back; the
+[issue checkpoint](https://github.com/felipebarbosa4/KidRemote/issues/3#issuecomment-5594716442) and
+[PR checkpoint](https://github.com/felipebarbosa4/KidRemote/pull/16#issuecomment-5594716474) preserve the same boundary. Publication head
+`0ae3768d0edd186a801c456c2a6b68a80dc12090` passed all three jobs in
+[CI run 34301950737](https://github.com/felipebarbosa4/KidRemote/actions/runs/34301950737). All earlier Samsung evidence remains unchanged;
+KR-003 remains Open/In Progress, PR #16 Draft/Open, and KR-004 Open/Backlog. No rerun, qualification, gate change, merge, closure, production move
+or KR-004 work occurred.
+
+## Samsung runner-v4 ARM exceptions and runner-v5 handoff — 2026-09-08
+
+The owner invoked runner-v4 source `af723c5a7af530a2c694e2749c533de1e18f4cab` four times. Every independent mounted directory passed strict
+ingestion as `INVALID:HOST_EXCEPTION`, `HostStage=ARM`, `ExceptionClass=PROPERTY_NOT_FOUND_EXCEPTION`, finalization `COMPLETED`, cleanup
+`VERIFIED`, zero calibration/qualification samples. Permission verification and the positive fixture control passed, and ARM returned an armed
+10,000 ms scalar response; no attachment verification, blocked hold, fixture-denial oracle or owner prompt started.
+
+The [preserved four-run evidence](../test-plans/evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md) establishes the deterministic
+host defect: top-level `$armed` held the ARM reply, then case-insensitive same-scope `$script:Armed=$true` overwrote it before strict `.revision`
+access. Source `4690d3951d0952fefe43eab9de0799599c6ea903` removes the unused flag, uses `$armReply`, and adds a fail-closed scalar/revision validator.
+Candidate, permission, enforcement, oracle, cleanup and evidence-gate behavior are unchanged.
+
+Exact-source [CI run 34305581473](https://github.com/felipebarbosa4/KidRemote/actions/runs/34305581473) passed all three jobs, including PowerShell
+`7.6.5` and native Windows PowerShell `5.1.26100.33296`. The immutable [runner-v5 bundle](../test-plans/evidence/KR-003-SAMSUNG-CALIBRATION-V5-BUNDLE-2026-09-08.md)
+is published at `C:\platform-tools\kr003-oracle-calibration-bundles\4690d39`; its `bundle.json` SHA-256 is
+`8599225eb453ceaa391f9aa2aea30cc6f04e1a2e450b98a39ec7a03c6ae216fd`. Physical execution is Not run. The four v4 INVALID records remain
+separate, historical evidence is unchanged, no matrix row advanced, no 100 samples began and KR-004 was untouched.
+
+## Samsung calibration PASS and qualification-v8 handoff — 2026-09-08
+
+The fresh [runner-v5 physical calibration](../test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md) passed on exactly
+`samsung` / `SM-X400` / Android 16 / API 36 / build `BP4A.251205.006` / security patch `2026-07-05`. It retained runner permission/health
+verification, an independent fixture positive control, ARM revision 23, attachment at 127 ms, a 22,371 ms blocked hold with 20 denied taps and
+no focus regain, explicit owner physical agreement, verified CLEAR and a final unarmed/unrestricted state. It contributes one excluded calibration
+sample and zero qualification samples. Owner labels Galaxy Tab S10 Lite / One UI 8.5 remain distinct from captured system metadata.
+
+Source `33c2b36564d4d164d1992e41a9327a7968e44787` adds only a configuration/calibration-bound runner-v8 qualification path around the unchanged
+candidate behavior and approved active-oracle gates. The [immutable qualification bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V8-BUNDLE-2026-09-08.md)
+is published at `C:\platform-tools\kr003-qualification-bundles\33c2b36`; its `bundle.json` SHA-256 is
+`a828d4689bfc552411f016262df1bd44f6b606c37efe1be66b73858bced4e4a0`. It is bound to the passed calibration, exact captured configuration and
+APK hashes. Physical execution was **Not run at publication**; the later single invocation is recorded below.
+
+Exact pushed head `5719a0983ccdd0f6b4fd30ea3817f08d3ffc73cc` passed all three jobs in
+[CI run 34309000050](https://github.com/felipebarbosa4/KidRemote/actions/runs/34309000050), including PowerShell 7, native Windows PowerShell 5.1,
+Node evidence/security, repository validation and Android debug/release isolation. The actual mounted bundle also passed native Windows PowerShell
+5.1 reserved-variable and redirected-input entrypoint checks with no device command.
+
+The calibration prerequisite advances only for this exact configuration. Formal TIME-04 remains open with no offline 100-cycle p95, and no
+lifecycle, revocation, tamper, safety, Play or production gate advances. All earlier Samsung INVALID records remain unchanged; the Mi 8 is not
+reinterpreted; KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
+
+## Samsung qualification network-preflight INVALID and runner-v9 handoff — 2026-09-09
+
+The owner invoked the immutable runner-v8 Samsung qualification bundle once. Strict ingestion of
+`run-20260909-003140-758ee7f6` preserves `INVALID:ADB_REJECTED`, zero qualification rows and zero checkpoint sessions. The
+[retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) establishes that Wi-Fi disable/readback
+completed, the runner entered mobile-data isolation, and finalization restored Wi-Fi to its original on state. It cannot distinguish rejection
+of `svc data disable` from rejection of the following `settings get global mobile_data`; the exit code/stderr and resulting mobile setting are
+**UNSPECIFIED**. Diagnostic CLEAR was verified. No ARM, blocked hold, denial oracle or enforcement outcome occurred.
+
+OD-36 records the runner defect: v8 treated the global mobile-data setting as a capability bit. Runner-v9 probes only Android's declared Wi-Fi
+and telephony-data features, treats absent transports as `NOT_APPLICABLE`, retains safe typed network operation/exit/error-class diagnostics,
+and keeps unknown/present-path disable/readback/restoration failures closed. It adds no Samsung special case, permission change, airplane-mode
+substitution or enforcement-semantic change. The new [immutable runner-v9 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V9-BUNDLE-2026-09-09.md)
+is published from source `532bc22df0084b62e202a0cda0158dc61331f180` at `C:\platform-tools\kr003-qualification-bundles\532bc22`;
+`bundle.json` SHA-256 is `1689917375f274e28e82b0ae23e12dba6c1454acb81773217e78adb67507eab7`. It has not been physically executed.
+[CI run 34313431060](https://github.com/felipebarbosa4/KidRemote/actions/runs/34313431060) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+
+## Samsung 100-cycle checkpoint-3 INVALID and runner-v10 handoff — 2026-09-09
+
+Strict ingestion of `run-20260909-012601-0d666cb9` preserves the complete run as `INVALID:SCREEN_OR_KEYGUARD`; it is not resumable or
+poolable. The [retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md) contains exactly 100 distinct
+qualification rows. Every automated row passed its active oracle: the independent fixture positive control reached the fixture, all 2,000
+blocked taps were denied, no focus regain occurred, and permission, heartbeat and health checks remained good through the completed cycles.
+Attachment latency was p50 221 ms, p95 317 ms and max 334 ms. Human checkpoints 1 and 2 passed. Checkpoint 3 retained about 298 seconds of
+healthy restriction monitoring before combined screen/keyguard eligibility became false; its physical substeps were not recorded. Screen off,
+keyguard or both cannot be distinguished, and USB/charging changes and the precise trigger remain **UNSPECIFIED**. Finalizer CLEAR released the
+restriction at revision 231, Wi-Fi restoration was verified, and mobile data was correctly not applicable. No formal matrix row passed.
+
+OD-37 records the bounded runner defect: v9 did not establish a powered lab stay-awake state while the owner was absent. Runner-v10 requires an
+initially unlocked/eligible device and a recognized power source; journals only the original integer stay-awake setting and coarse power-source
+class; enables Android's supported stay-awake-while-plugged-in setting when needed; verifies it at cycle and safety boundaries; and restores and
+readbacks the exact original setting during finalization. Unknown state, unplugging, enable/readback failure or restoration failure remains
+INVALID. It does not remove or weaken lock security and does not change candidate, permission, enforcement or oracle semantics.
+
+The [immutable runner-v10 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V10-BUNDLE-2026-09-09.md) is published from source
+`fd9824943c35f70d393f7b0e0b252c2a8253a2d9` at `C:\platform-tools\kr003-qualification-bundles\fd98249`; its `bundle.json` SHA-256 is
+`f4bf6e52b6cc7e61fa335ac1f93a6828085779f3a988bd217bb31443b1f294b2`. Physical execution is **Not run**. Exact-source
+[CI run 34357242810](https://github.com/felipebarbosa4/KidRemote/actions/runs/34357242810) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android build/lint/release-isolation jobs. KR-003 remains Open/In Progress, PR #16 remains Draft/Open and KR-004 remains untouched.
+
+## Samsung 100-cycle Home-phase FAIL and runner-v11 handoff — 2026-09-09
+
+Strict ingestion of `run-20260909-101646-69c0fb84` preserves `FAIL:RESTRICTION_LOST`, exactly 100 automated active-oracle PASS rows, p50 227 ms,
+p95 318 ms, max 341 ms, checkpoints 1/2 PASS and final visibility PASS. `HomePhysical=UNRECORDED`: no Home response or actual Home action is
+established. The [retained evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-HOME-FAIL-2026-09-09.md) shows the automated hold poll
+fired after `recovery_open_requested trigger=settings_button` led to the intended allowed-safe-system detach. The restriction flag remained true,
+the disposition was `SAFE_SYSTEM`, and the fixture gained no focus/input. The emitted top-level FAIL remains unchanged and non-poolable; neither
+ordinary-app restriction loss nor Home escape/resistance is established. Diagnostic CLEAR, Wi-Fi and exact stay-awake restoration were verified.
+
+Source `6cf04ab8a9455689783ef97d8babb8cc07d81485` adds only read-only coarse navigation-mode capture, current-mode Home instructions and typed
+Home action/result/source evidence. Unknown or changed mode and no/out-of-sequence Home action stop INVALID; a genuine automated ordinary-surface
+hold loss or owner-observed exercised Home escape remains FAIL. Candidate, permission, enforcement, safe-surface, active-oracle and cleanup
+semantics are unchanged. The [immutable runner-v11 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-BUNDLE-2026-09-09.md) is
+published at `C:\platform-tools\kr003-qualification-bundles\6cf04ab`; `bundle.json` SHA-256 is
+`fb653fb42b7ea6334a5118e59dce609ad80520f14f76985545d3dc95f445f1c8`. Physical execution is **Not run**.
+
+Exact-source [CI run 34374977856](https://github.com/felipebarbosa4/KidRemote/actions/runs/34374977856) passed repository/Node/PowerShell 7,
+native Windows PowerShell 5.1 and Android build/lint/release-isolation jobs. The actual mounted bundle also passed native Windows PowerShell 5.1
+entrypoint/reserved-variable checks without a device command. No formal matrix row advanced. KR-003 remains Open/In Progress, PR #16 remains
+Draft/Open, and KR-004 remains untouched.
+
+## Samsung runner-v11 qualification attempts and Home-exercisability handoff — 2026-09-09
+
+The owner invoked immutable runner-v11 twice. Strict ingestion preserves both independent results and their 100-row sub-evidence; neither may be
+resumed or pooled. [RUN A and RUN B evidence](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) records:
+
+- RUN A `run-20260909-122154-609630e9`: `INVALID:ADB_REJECTED`, 100/100 automated active-oracle PASS rows, p50 218 ms / p95 299 ms / max 316 ms,
+  checkpoints 1/2 PASS, then a candidate `SNAPSHOT` rejection during final-visible polling before a physical final-visible or Home response.
+  The exact process exit/stderr cause was not retained. Diagnostic CLEAR, Wi-Fi restoration and stay-awake restoration were attempted but remain
+  unverified; the historical INVALID is unchanged.
+- RUN B `run-20260909-132619-dc9c6864`: `INVALID:SAFETY_FINAL_HOME`, 100/100 automated PASS rows, p50 160 ms / p95 304 ms / max 333 ms,
+  checkpoints 1/2 and final-visible PASS. Runner-v11 captured coarse `THREE_BUTTON`, but `HomePhysical=INVALID` and
+  `HOME_ACTION_NOT_EXERCISABLE_OR_UNKNOWN`. The owner observed the restriction and **Open device settings** control but no navigation bar/Home
+  control; no Home action, system transition, escape or resistance is established. Restriction stayed active/attached until verified finalizer
+  CLEAR; network and stay-awake restoration passed.
+
+OD-39 clarifies the existing requirement rather than selecting a weaker alternative: KR-003-PHYSICAL requires one actually exercised physical
+Android system Home action which does not restore ordinary use. Control absence alone cannot pass. Prepared runner-v12 asks about control
+availability before issuing any action instruction and retains separate `NAV_MODE_*`, control-exercisability, action-exercise and action-outcome
+fields. Unavailable/unknown remains INVALID. A control-absence path or host-injected `KEYCODE_HOME` substitute would require an explicit new
+owner/product evidence decision. No runner-v12 physical bundle has been published or executed.
+
+Source `b16c4536c05db51c8df945197e146c30e0a46c9e` passed all three jobs in
+[CI run 34393768118](https://github.com/felipebarbosa4/KidRemote/actions/runs/34393768118): repository/Node/PowerShell 7 validation, native
+Windows PowerShell 5.1 execution, and Android debug/release test/lint/build/isolation. No formal matrix row advanced; TIME-04 and all remaining
+lifecycle/tamper/safety/Play/production gates remain open. KR-003 remains Open/In Progress, PR #16 remains Draft/Open, and KR-004 remains untouched.
+
+## Samsung runner-v12 dual-path Home decision and immutable handoff — 2026-09-09
+
+OD-39 records the owner's prospective dual-path decision. Path A requires one real, physically exercisable owner Home action plus independent
+no-escape corroboration. Path B applies only after the owner confirms that Home is unavailable as presented: one fixed host `KEYCODE_HOME` must
+first displace the unblocked focused independent fixture and the fixture must be returned to verified test state; one later restricted stimulus
+must preserve restriction/attachment/health, cause no fixture focus/input return, and agree with the owner's visible observation. Path B records
+`HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`, never physical Home resistance. Unknown remains INVALID and escape remains FAIL. Historical
+runs are unchanged and non-poolable.
+
+The [immutable runner-v12 bundle](../test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md) is published from source
+`80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd` at `C:\platform-tools\kr003-qualification-bundles\80dcdf4`; its `bundle.json` SHA-256 is
+`9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28`. Physical execution is **Not run**. Exact-source
+[CI run 34406041885](https://github.com/felipebarbosa4/KidRemote/actions/runs/34406041885) passed repository/Node/PowerShell 7, native Windows
+PowerShell 5.1 and Android test/lint/build/release-isolation jobs. The mounted bundle is byte-identical to source and passed native Windows
+PowerShell 5.1 startup and reserved-variable checks without any device command. No matrix row advanced; KR-003 and draft PR #16 remain open,
+and KR-004 remains untouched.
+
+## Samsung excluded dual-Home diagnostic handoff — 2026-09-09
+
+OD-40 authorizes one short, non-qualifying exercise of the exact runner-v12/OD-39 Home implementation before any further full qualification.
+The diagnostic independently verifies shell-tap transport, calibrates exactly one fixed host `KEYCODE_HOME` against the focused ordinary fixture,
+arms one excluded ten-second restriction, performs one Path A or Path B check, then verifies CLEAR, ordinary fixture input and exact stay-awake
+restoration. Network and navigation state are not changed. Its manifest and strict ingester require zero qualification rows, zero TIME-04 rows,
+no matrix contribution, no resume/pooling and the distinct Path B result.
+
+The [immutable diagnostic bundle](../test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-BUNDLE-2026-09-09.md) is published from source
+`4288c798bdf959857a2e0729e529d63910f9480c` at `C:\platform-tools\kr003-dual-home-diagnostic-bundles\4288c79`; its `bundle.json` SHA-256 is
+`041ce2546f6e8dd374674ce0c031ed26fed2c91293b63bdc176edc9148ef4999`. Physical execution is **Not run**. Exact-source
+[CI run 34415929533](https://github.com/felipebarbosa4/KidRemote/actions/runs/34415929533) passed repository/Node checks, native Windows PowerShell
+5.1, PowerShell 7 and Android test/lint/build/release-isolation. Mounted payload hashes and source identity passed, and the actual bundle entrypoint
+passed native PowerShell 5.1 startup without a device command. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 is untouched.
+
+## Samsung excluded dual-Home Path-B diagnostic PASS — 2026-09-10
+
+The owner ran the OD-40 diagnostic once on the exact Samsung SM-X400 configuration. The unchanged physical directory strictly ingests as
+`PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY:HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`: shell input and the separate host
+Home positive control passed; the owner recorded Home unavailable; one restricted host Home stimulus was accepted; 475 paired candidate/fixture
+observations retained restriction/attachment/health with no fixture focus/input return; owner agreement, CLEAR, ordinary fixture use and
+stay-awake restoration all passed.
+
+The first ingestion exposed only an order-sensitive nested JSON key comparison. The exact minimized field set was correct, so the ingester now
+treats JSON object order as irrelevant while continuing to reject missing or added fields. The [strict evidence record](../test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md)
+retains manifest/summary/control/cleanup hashes and separates observed, inferred and unspecified conclusions. It contributes zero qualification
+rows, zero TIME-04 rows and no matrix PASS; historical runs remain unchanged and non-poolable.
+
+The existing full runner-v12 bundle remains unchanged at `C:\platform-tools\kr003-qualification-bundles\80dcdf4`, source
+`80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd`, `bundle.json` SHA-256
+`9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28`. Every payload hash passes, its manifest is still **Not run**, and direct
+function comparison proves its approved Path-A/Path-B flow is byte-identical to the flow exercised by the diagnostic. No repackage is justified.
+Full qualification was not started. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 is untouched.
+
+## Samsung excluded visual-channel calibration handoff — 2026-09-10
+
+**Subsequent validity review:** [synthetic counterexamples](../test-plans/KR-003-VISUAL-VALIDITY-REVIEW.md) limit unchanged `0596173` to exploratory sampled-channel measurements; no human-checkpoint substitution follows from its PASS and no execution is requested. Completed visual-task HEAD was `630eaad4cfa84d40aedf8ead6f93c593f1c212c3`, not the stale conversational `8416583` recap. The live PR's obsolete bundle directory `03f4bc2` was corrected to `0596173`; no artifact changes were made. Review additions remain local, not a new published source.
+
+OD-41 records the owner's prospective local-lab capture exception while preserving the production/release prohibition. The short visual-channel calibration foregrounds the disposable fixture, records local PNG samples with actual host-monotonic request intervals, establishes one fresh ten-second restriction with the independent blocked-input/focus oracle, verifies CLEAR and ordinary input return, and classifies the full-frame ordinary → restricted → ordinary sequence locally. Raw/image-bearing media is never uploaded or read by repository ingestion. The diagnostic always contributes zero qualification rows, zero TIME-04 rows, zero human observations and no matrix PASS.
+
+The [immutable visual-calibration bundle](../test-plans/evidence/KR-003-SAMSUNG-VISUAL-CALIBRATION-BUNDLE-2026-09-10.md) is published from source `0596173c0086fcf76fcf46c7f98dabbc6ba8a874` at `C:\platform-tools\kr003-visual-calibration-bundles\0596173`; its `bundle.json` SHA-256 is `c69c2d0aa76574afee874fa0b01e89b4f4a92588816f99a20b8178573e357af7`. Physical execution is **Not run**. The exact mounted payload hashes pass, the actual entrypoint and standalone bailout were exercised with redirected/fake input under native Windows PowerShell 5.1 without a device command, and local Node, repository, Android build/lint and release-isolation checks passed. [CI run 34482702876](https://github.com/felipebarbosa4/KidRemote/actions/runs/34482702876) passed Linux/PowerShell validation, native Windows PowerShell 5.1 and 7, and Android build/lint/release isolation with the exact runner source.
+
+Pre-publication artifacts `d303082`, `03f4bc2` and `5150e72` were successively rejected or superseded while the standalone bailout and PowerShell 7 test harness were tightened; all remain unmodified and only `0596173` is recommended. No Samsung command was run. Immutable full runner-v12 `80dcdf4` is unchanged and not requested for execution. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 remains untouched.

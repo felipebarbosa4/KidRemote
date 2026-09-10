@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "kidremote-android-enforcement-spike"
 include(":app")
+include(":ordinary-fixture")
+include(":input-probe")

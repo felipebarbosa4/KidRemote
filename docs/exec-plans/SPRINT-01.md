@@ -5,7 +5,27 @@
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.
 - **Done when:** Product gates reviewed, repository checks pass, feasibility evidence has a go/no-go, RLS and pairing designs are testable.
 
-## Scope and capacity
+## Critical-path reset — 2026-09-10
+
+This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
+
+- **Goal:** reach one usable owner-only private-alpha vertical slice through existing issues, after explicit bounded approvals.
+- **Context:** clean reset baseline `2b35b5a`; exact Samsung excluded Home Path B passed, full qualification/safety/lifecycle/support go remains open.
+- **Constraints:** proposed private distribution/support is not approved. KR-004 remains held until the owner explicitly authorizes it; production enforcement remains held under KR-003/ADR-0002. No new framework/provider selection, deployment, bundle or device action in this documentation task.
+- **Done when:** next approval and first bounded implementation issue are clear, historical evidence is unchanged, appropriate validation/CI passes, and work stops at that approval.
+
+Recommended sequence, conditional on the limited owner go (not an automatic Ready/status change):
+
+1. **KR-004 first:** local-only migrations and real-client-role two-household allow/deny fixtures, starting AC-1–4; then finish gateway/atomic transaction AC-5–7. Verify local tooling versions when authorized; no remote exposure or provisioning. These are the existing issue's boundaries, not a new backend project.
+2. **KR-005 and KR-006 after their dependencies:** pairing threat model/atomic single-use/race/replay/response-loss tests (005 depends on 004); authenticated parent signup/login/recovery, sole-owner household and own empty list (006 depends on 004). OD-08 Kotlin/Compose, OD-09/10 device/QR semantics, OD-11 email/password and OD-12 sole owner are already accepted; stale issue “UNSPECIFIED” boilerplate does not reopen them. Exact versions, provider environment/region/SMTP and real-data facts remain unchosen and need verification/authorization, not an opportunistic replacement provider.
+3. **Before KR-007/008 product enforcement:** record KR-003 technical/support/policy go under the retained contract or an explicitly amended private-alpha gate. Resolve Samsung recovery readiness before a long run; retain fresh 100-cycle/three-session qualification and required lifecycle/safety evidence. No capture automation prerequisite. Local database work does not grant this separate approval.
+4. **KR-007** after 003/005/006: authenticated parent enrolls one consenting child with its own scoped identity, separate permission health, revocation and safe recovery. Pairing success is not enforcement readiness. **KR-008** after 001/002/003: persistent monotonic accounting, independent offline expiry of downloaded policy, uncertainty/reboot/update recovery, no uploaded app history. Complete both dependencies before 009.
+5. **KR-009** after 004/007/008: authenticated +10/+30, Lock/Unlock and explicit daily limit; ordered idempotent snapshots/receipts, pending versus applied status, reconnect convergence and non-authoritative push hints. Lost Internet never cancels the latest valid downloaded policy; a new remote command remains pending offline. Unlock clears only manual lock, and +time does not clear manual lock.
+6. **KR-010** after 003/006/009: the single existing parent/child experience—device remaining-time report with timestamp and current reported health, +10/+30/Lock/Unlock, setup/pending/degraded states, child restriction/help. No parallel shell app or extra features. Validate the product binaries, offline recovery, identity isolation and deletion before a separate owner acceptance for real private-alpha use; public distribution remains another milestone with its full evidence/declarations.
+
+First unlocked task **after the proposed limited approval is recorded**: KR-004 local schema/RLS AC-1–4. First parent-facing slice after KR-004: KR-006, not premature child enforcement. Other issue statuses and acceptance criteria remain unchanged. All work proceeds one bounded task at a time.
+
+## Historical scope and capacity
 
 The full recommended candidate set remains KR-001 (3), KR-002 (2), KR-003 (8), KR-004 (5), KR-005 (3): **21 relative points**.
 Points express uncertainty/relative effort, not hours or known team velocity.

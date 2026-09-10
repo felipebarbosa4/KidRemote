@@ -1,0 +1,362 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Get-KRVisualVectorDistance {
+    param([double[]]$Left, [double[]]$Right)
+    if ($null -eq $Left -or $null -eq $Right -or $Left.Count -ne $Right.Count -or $Left.Count -eq 0) {
+        throw 'INVALID:VISUAL_FEATURE_SCHEMA'
+    }
+    $sum=0.0
+    for($position=0;$position -lt $Left.Count;$position++){$sum += [Math]::Abs($Left[$position]-$Right[$position])}
+    return $sum/$Left.Count
+}
+
+function Get-KRVisualCentroid {
+    param([object[]]$Frames)
+    if($null -eq $Frames -or $Frames.Count -eq 0){throw 'INVALID:VISUAL_PHASE_EMPTY'}
+    $length=[int]$Frames[0].Feature.Count
+    if($length -eq 0){throw 'INVALID:VISUAL_FEATURE_SCHEMA'}
+    $centroid=New-Object 'double[]' $length
+    foreach($frame in $Frames){
+        if($frame.Feature.Count -ne $length){throw 'INVALID:VISUAL_FEATURE_SCHEMA'}
+        for($position=0;$position -lt $length;$position++){$centroid[$position]+=[double]$frame.Feature[$position]}
+    }
+    for($position=0;$position -lt $length;$position++){$centroid[$position]/=$Frames.Count}
+    return $centroid
+}
+
+function Get-KRVisualTemporalMetrics {
+    param([object[]]$Frames,$Window,[long]$Frequency)
+    if($Frequency -le 0 -or $null -eq $Window -or $Window.EndTicks -le $Window.StartTicks){throw 'INVALID:VISUAL_TIMESTAMP_SCHEMA'}
+    $ordered=@($Frames|Sort-Object StartTicks,EndTicks)
+    if($ordered.Count -eq 0){throw 'INVALID:VISUAL_PHASE_EMPTY'}
+    $toMillis=1000.0/[double]$Frequency
+    $durations=@($ordered|ForEach-Object{([long]$_.EndTicks-[long]$_.StartTicks)*$toMillis})
+    $worstBlind=([long]$ordered[0].EndTicks-[long]$Window.StartTicks)*$toMillis
+    for($index=1;$index -lt $ordered.Count;$index++){
+        $possibleGap=([long]$ordered[$index].EndTicks-[long]$ordered[$index-1].StartTicks)*$toMillis
+        if($possibleGap -gt $worstBlind){$worstBlind=$possibleGap}
+    }
+    $tail=([long]$Window.EndTicks-[long]$ordered[-1].StartTicks)*$toMillis
+    if($tail -gt $worstBlind){$worstBlind=$tail}
+    $windowMillis=([long]$Window.EndTicks-[long]$Window.StartTicks)*$toMillis
+    $spanMillis=([long]$ordered[-1].EndTicks-[long]$ordered[0].StartTicks)*$toMillis
+    $maximumDuration=($durations|Measure-Object -Maximum).Maximum
+    return [PSCustomObject]@{
+        FrameCount=$ordered.Count;WindowMillis=[Math]::Round($windowMillis,3);ObservedSpanMillis=[Math]::Round($spanMillis,3)
+        SpanCoverageRatio=[Math]::Round([Math]::Min(1.0,$spanMillis/$windowMillis),6)
+        MaximumCaptureDurationMillis=[Math]::Round([double]$maximumDuration,3)
+        TimestampAlignmentUncertaintyMillis=[Math]::Round([double]$maximumDuration,3)
+        WorstCaseSamplingGapMillis=[Math]::Round([Math]::Max(0.0,$worstBlind),3)
+        DefensibleInterruptionDetectionBoundMillis=[Math]::Round([Math]::Max(0.0,$worstBlind),3)
+    }
+}
+
+function Get-KRVisualSpatialSeparation {
+    param([double[]]$Ordinary,[double[]]$Restricted,[int]$GridWidth,[int]$GridHeight)
+    if($GridWidth -lt 4 -or $GridHeight -lt 4 -or $Ordinary.Count -ne $GridWidth*$GridHeight*3 -or $Restricted.Count -ne $Ordinary.Count){
+        throw 'INVALID:VISUAL_FEATURE_SCHEMA'
+    }
+    $tileDistances=@()
+    for($tile=0;$tile -lt $GridWidth*$GridHeight;$tile++){
+        $base=$tile*3
+        $tileDistances+=([Math]::Abs($Ordinary[$base]-$Restricted[$base])+[Math]::Abs($Ordinary[$base+1]-$Restricted[$base+1])+[Math]::Abs($Ordinary[$base+2]-$Restricted[$base+2]))/3.0
+    }
+    $mean=($tileDistances|Measure-Object -Average).Average
+    $threshold=[Math]::Max(0.025,[double]$mean*0.50)
+    $changed=@()
+    for($tile=0;$tile -lt $tileDistances.Count;$tile++){if($tileDistances[$tile] -ge $threshold){$changed+=$tile}}
+    if($changed.Count -eq 0){return [PSCustomObject]@{ChangedTileFraction=0.0;HorizontalSpan=0.0;VerticalSpan=0.0}}
+    $xs=@($changed|ForEach-Object{$_%$GridWidth});$ys=@($changed|ForEach-Object{[Math]::Floor($_/$GridWidth)})
+    return [PSCustomObject]@{
+        ChangedTileFraction=[Math]::Round($changed.Count/[double]$tileDistances.Count,6)
+        HorizontalSpan=[Math]::Round((($xs|Measure-Object -Maximum).Maximum-($xs|Measure-Object -Minimum).Minimum+1)/[double]$GridWidth,6)
+        VerticalSpan=[Math]::Round((($ys|Measure-Object -Maximum).Maximum-($ys|Measure-Object -Minimum).Minimum+1)/[double]$GridHeight,6)
+    }
+}
+
+function New-KRVisualResult {
+    param([string]$Status,[string]$Reason,[object[]]$Frames,$Temporal,$Spatial,[object[]]$Classifications,[double]$BetweenDistance,[double]$OrdinaryRoundTripDistance,[int]$RepeatedHashes)
+    [PSCustomObject]@{
+        Schema=1;Status=$Status;Reason=$Reason;ClassifierModel='DETERMINISTIC_FULL_FRAME_RGB_GRID_NEAREST_PROTOTYPE'
+        TimestampModel='HOST_MONOTONIC_CAPTURE_REQUEST_INTERVALS';GridWidth=24;GridHeight=24
+        FrameCount=$Frames.Count;OrdinaryBeforeFrames=@($Frames|Where-Object{$_.Phase -eq 'ORDINARY_BEFORE'}).Count
+        RestrictedFrames=@($Frames|Where-Object{$_.Phase -eq 'RESTRICTED'}).Count
+        OrdinaryAfterFrames=@($Frames|Where-Object{$_.Phase -eq 'ORDINARY_AFTER'}).Count
+        BlankFrames=@($Frames|Where-Object{$_.Blank}).Count;RepeatedImageHashes=$RepeatedHashes
+        BetweenClassDistance=[Math]::Round($BetweenDistance,6);OrdinaryRoundTripDistance=[Math]::Round($OrdinaryRoundTripDistance,6)
+        ChangedTileFraction=$(if($null -eq $Spatial){$null}else{$Spatial.ChangedTileFraction})
+        ChangedHorizontalSpan=$(if($null -eq $Spatial){$null}else{$Spatial.HorizontalSpan})
+        ChangedVerticalSpan=$(if($null -eq $Spatial){$null}else{$Spatial.VerticalSpan})
+        RestrictedTemporalCoverage=$Temporal;Classifications=@($Classifications)
+        CaptureLiveness=$(if($Status -eq 'PASS'){'CONTROLLED_ORDINARY_RESTRICTED_ORDINARY_TRANSITIONS_VERIFIED'}else{'NOT_VERIFIED'})
+        QualificationRows=0;Time04Rows=0;MatrixContribution='NONE';HumanObservationSerialized=$false
+        RawMediaIncluded=$false;RawMediaLocation='OWNER_LOCAL_RUN_DIRECTORY_ONLY'
+    }
+}
+
+function Get-KRVisualClassification {
+    param([object[]]$Frames,[object[]]$PhaseWindows,[long]$Frequency,[int]$GridWidth=24,[int]$GridHeight=24)
+    $orderedFrames=@($Frames|Sort-Object Index)
+    for($index=0;$index -lt $orderedFrames.Count;$index++){
+        if([long]$orderedFrames[$index].EndTicks -le [long]$orderedFrames[$index].StartTicks -or
+            ($index -gt 0 -and [long]$orderedFrames[$index].StartTicks -lt [long]$orderedFrames[$index-1].EndTicks)){
+            return New-KRVisualResult 'INVALID' 'CAPTURE_TIMESTAMP_SEQUENCE_UNVERIFIED' $Frames $null $null @() 0 0 0
+        }
+    }
+    $required=@('ORDINARY_BEFORE','RESTRICTED','ORDINARY_AFTER')
+    foreach($name in $required){
+        if(@($PhaseWindows|Where-Object{$_.Name -eq $name}).Count -ne 1){throw 'INVALID:VISUAL_PHASE_SCHEMA'}
+        if(@($Frames|Where-Object{$_.Phase -eq $name}).Count -lt 3){
+            return New-KRVisualResult 'INVALID' 'TEMPORAL_COVERAGE_INSUFFICIENT' $Frames $null $null @() 0 0 0
+        }
+    }
+    if(@($Frames|Where-Object{$_.Blank}).Count){return New-KRVisualResult 'INVALID' 'CAPTURE_BLANK_OR_PROTECTED' $Frames $null $null @() 0 0 0}
+    $ordinaryBefore=@($Frames|Where-Object{$_.Phase -eq 'ORDINARY_BEFORE'})
+    $restricted=@($Frames|Where-Object{$_.Phase -eq 'RESTRICTED'})
+    $ordinaryAfter=@($Frames|Where-Object{$_.Phase -eq 'ORDINARY_AFTER'})
+    $ordinary=@($ordinaryBefore)+@($ordinaryAfter)
+    $ordinaryPrototype=Get-KRVisualCentroid $ordinary
+    $restrictedPrototype=Get-KRVisualCentroid $restricted
+    $beforePrototype=Get-KRVisualCentroid $ordinaryBefore
+    $afterPrototype=Get-KRVisualCentroid $ordinaryAfter
+    $between=Get-KRVisualVectorDistance $ordinaryPrototype $restrictedPrototype
+    $roundTrip=Get-KRVisualVectorDistance $beforePrototype $afterPrototype
+    $spatial=Get-KRVisualSpatialSeparation $ordinaryPrototype $restrictedPrototype $GridWidth $GridHeight
+    $restrictedWindow=@($PhaseWindows|Where-Object{$_.Name -eq 'RESTRICTED'})[0]
+    $temporal=Get-KRVisualTemporalMetrics $restricted $restrictedWindow $Frequency
+    $hashGroups=@($Frames|Group-Object Sha256)
+    $repeated=@($hashGroups|Where-Object{$_.Count -gt 1}|ForEach-Object{$_.Count-1}|Measure-Object -Sum).Sum
+    if($null -eq $repeated){$repeated=0}
+    if($between -lt 0.025 -or $spatial.ChangedTileFraction -lt 0.05 -or $spatial.HorizontalSpan -lt 0.50 -or $spatial.VerticalSpan -lt 0.30){
+        return New-KRVisualResult 'INVALID' 'SURFACE_SEPARATION_INSUFFICIENT' $Frames $temporal $spatial @() $between $roundTrip $repeated
+    }
+    if($roundTrip -gt [Math]::Max(0.08,$between*0.65)){
+        return New-KRVisualResult 'INVALID' 'ORDINARY_REFERENCE_NOT_REPEATABLE' $Frames $temporal $spatial @() $between $roundTrip $repeated
+    }
+    if($temporal.WindowMillis -lt 10000 -or $temporal.SpanCoverageRatio -lt 0.90 -or $temporal.WorstCaseSamplingGapMillis -gt 1500){
+        return New-KRVisualResult 'INVALID' 'TEMPORAL_COVERAGE_INSUFFICIENT' $Frames $temporal $spatial @() $between $roundTrip $repeated
+    }
+    $minimumMargin=[Math]::Max(0.008,$between*0.15)
+    $classifications=@();$ambiguous=$false;$contradiction=$null
+    foreach($frame in @($Frames|Where-Object{$_.Phase -in $required}|Sort-Object Index)){
+        $ordinaryDistance=Get-KRVisualVectorDistance $frame.Feature $ordinaryPrototype
+        $restrictedDistance=Get-KRVisualVectorDistance $frame.Feature $restrictedPrototype
+        $margin=[Math]::Abs($ordinaryDistance-$restrictedDistance)
+        $classification=if($margin -lt $minimumMargin){'AMBIGUOUS'}elseif($ordinaryDistance -lt $restrictedDistance){'ORDINARY'}else{'RESTRICTED'}
+        $classifications+=[PSCustomObject]@{Index=[int]$frame.Index;Phase=[string]$frame.Phase;Classification=$classification;Margin=[Math]::Round($margin,6);Sha256=[string]$frame.Sha256}
+        if($classification -eq 'AMBIGUOUS'){$ambiguous=$true;continue}
+        $expected=if($frame.Phase -eq 'RESTRICTED'){'RESTRICTED'}else{'ORDINARY'}
+        if($classification -ne $expected -and $null -eq $contradiction){$contradiction=$frame}
+    }
+    if($ambiguous){return New-KRVisualResult 'INVALID' 'VISUAL_CLASSIFICATION_UNCERTAIN' $Frames $temporal $spatial $classifications $between $roundTrip $repeated}
+    if($null -ne $contradiction){
+        $reason=if($contradiction.Phase -eq 'RESTRICTED'){'VISUAL_RESTRICTION_DISAPPEARANCE_DECODED'}elseif($contradiction.Phase -eq 'ORDINARY_AFTER'){'VISUAL_RESTRICTION_REMAINS_AFTER_CLEAR'}else{'VISUAL_FIXTURE_DISAGREEMENT'}
+        return New-KRVisualResult 'FAIL' $reason $Frames $temporal $spatial $classifications $between $roundTrip $repeated
+    }
+    return New-KRVisualResult 'PASS' 'ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED' $Frames $temporal $spatial $classifications $between $roundTrip $repeated
+}
+
+function Get-KRVisualPngFeature {
+    param([string]$Path,[int]$GridWidth=24,[int]$GridHeight=24)
+    Add-Type -AssemblyName System.Drawing
+    $source=$null;$scaled=$null;$graphics=$null
+    try{
+        $source=[Drawing.Bitmap]::FromFile($Path)
+        if($source.Width -lt 64 -or $source.Height -lt 64){throw 'INVALID:VISUAL_FRAME_DIMENSIONS'}
+        $scaled=New-Object Drawing.Bitmap -ArgumentList $GridWidth,$GridHeight
+        $graphics=[Drawing.Graphics]::FromImage($scaled)
+        $graphics.InterpolationMode=[Drawing.Drawing2D.InterpolationMode]::HighQualityBilinear
+        $graphics.DrawImage($source,0,0,$GridWidth,$GridHeight)
+        $feature=New-Object Collections.Generic.List[double]
+        $luma=New-Object Collections.Generic.List[double]
+        for($y=0;$y -lt $GridHeight;$y++){
+            for($x=0;$x -lt $GridWidth;$x++){
+                $pixel=$scaled.GetPixel($x,$y)
+                $feature.Add($pixel.R/255.0);$feature.Add($pixel.G/255.0);$feature.Add($pixel.B/255.0)
+                $luma.Add((0.2126*$pixel.R+0.7152*$pixel.G+0.0722*$pixel.B)/255.0)
+            }
+        }
+        $mean=($luma|Measure-Object -Average).Average;$variance=0.0
+        foreach($value in $luma){$variance+=($value-$mean)*($value-$mean)}
+        $standardDeviation=[Math]::Sqrt($variance/$luma.Count)
+        $blank=($standardDeviation -lt 0.004 -and ($mean -lt 0.02 -or $mean -gt 0.98))
+        return [PSCustomObject]@{Width=[int]$source.Width;Height=[int]$source.Height;Feature=[double[]]$feature.ToArray();Blank=[bool]$blank}
+    }catch{
+        if($_.Exception.Message -like 'INVALID:*'){throw}
+        throw 'INVALID:VISUAL_FRAME_DECODE'
+    }finally{
+        if($null -ne $graphics){$graphics.Dispose()};if($null -ne $scaled){$scaled.Dispose()};if($null -ne $source){$source.Dispose()}
+    }
+}
+
+function Invoke-KRVisualAnalysis {
+    param([string]$RunDirectory)
+    $journalPath=Join-Path $RunDirectory 'frame-journal.jsonl';$phasesPath=Join-Path $RunDirectory 'visual-phases.json'
+    if(-not (Test-Path -LiteralPath $journalPath) -or -not (Test-Path -LiteralPath $phasesPath)){throw 'INVALID:VISUAL_EVIDENCE_MISSING'}
+    $phaseRecord=Get-Content -LiteralPath $phasesPath -Raw|ConvertFrom-Json
+    if($phaseRecord.Schema -ne 1 -or $phaseRecord.Frequency -le 0){throw 'INVALID:VISUAL_PHASE_SCHEMA'}
+    $entries=@(Get-Content -LiteralPath $journalPath|Where-Object{-not [string]::IsNullOrWhiteSpace($_)}|ForEach-Object{$_|ConvertFrom-Json})
+    $frames=@();$lastIndex=0
+    foreach($entry in $entries){
+        if($entry.Index -ne $lastIndex+1 -or $entry.FileName -notmatch '^frame-[0-9]{6}\.png$' -or $entry.ExitCode -ne 0 -or $entry.StderrClass -ne 'NONE' -or $entry.Sha256 -notmatch '^[a-f0-9]{64}$' -or $entry.EndTicks -lt $entry.StartTicks){throw 'INVALID:VISUAL_CAPTURE_JOURNAL'}
+        $lastIndex=[int]$entry.Index;$path=Join-Path (Join-Path $RunDirectory 'raw-frames') $entry.FileName
+        if(-not (Test-Path -LiteralPath $path) -or (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant() -cne $entry.Sha256){throw 'INVALID:VISUAL_FRAME_HASH'}
+        $feature=Get-KRVisualPngFeature $path
+        $phase=@($phaseRecord.Phases|Where-Object{$entry.StartTicks -ge $_.StartTicks -and $entry.EndTicks -le $_.EndTicks})
+        $phaseName=if($phase.Count -eq 1){[string]$phase[0].Name}else{'TRANSITION_OR_UNASSIGNED'}
+        $frames+=[PSCustomObject]@{Index=[int]$entry.Index;StartTicks=[long]$entry.StartTicks;EndTicks=[long]$entry.EndTicks;Sha256=[string]$entry.Sha256;Phase=$phaseName;Width=$feature.Width;Height=$feature.Height;Feature=$feature.Feature;Blank=$feature.Blank}
+    }
+    $dimensions=@($frames|ForEach-Object{"$($_.Width)x$($_.Height)"}|Select-Object -Unique)
+    if($dimensions.Count -ne 1){throw 'INVALID:VISUAL_FRAME_DIMENSIONS_CHANGED'}
+    return Get-KRVisualClassification -Frames $frames -PhaseWindows @($phaseRecord.Phases) -Frequency ([long]$phaseRecord.Frequency)
+}
+
+function Get-KRVisualFinalResult {
+    param([string]$PrimaryStatus,[string]$PrimaryReason,[string]$CleanupStatus,[string]$StayAwakeRestoration,[string]$CaptureStatus)
+    if($PrimaryStatus -eq 'FAIL'){return [PSCustomObject]@{Status='FAIL';Reason=$PrimaryReason}}
+    if($PrimaryStatus -eq 'INVALID'){return [PSCustomObject]@{Status='INVALID';Reason=$PrimaryReason}}
+    if($PrimaryStatus -ne 'PASS'){return [PSCustomObject]@{Status='INVALID';Reason='VISUAL_PRIMARY_RESULT_UNKNOWN'}}
+    if($CaptureStatus -ne 'COMPLETED'){return [PSCustomObject]@{Status='INVALID';Reason='VISUAL_CAPTURE_INCOMPLETE'}}
+    if($CleanupStatus -ne 'VERIFIED'){return [PSCustomObject]@{Status='INVALID';Reason='VISUAL_CLEANUP_UNVERIFIED'}}
+    if($StayAwakeRestoration -ne 'RESTORED_AND_SETTING_VERIFIED'){return [PSCustomObject]@{Status='INVALID';Reason='STAY_AWAKE_RESTORE_FAILED'}}
+    return [PSCustomObject]@{Status='PASS';Reason='ORDINARY_RESTRICTED_ORDINARY_DISTINGUISHED'}
+}
+
+Export-ModuleMember -Function Get-KRVisualVectorDistance,Get-KRVisualTemporalMetrics,Get-KRVisualSpatialSeparation,Get-KRVisualClassification,Get-KRVisualPngFeature,Invoke-KRVisualAnalysis,Get-KRVisualFinalResult
+
+# Synthetic-only prototype. Not called by Invoke-KRVisualAnalysis or any runner.
+# Keep full pixels: no downsampling or similarity tolerance is validated here.
+function Test-KRVisualExactBytes {
+    param([byte[]]$Left,[byte[]]$Right)
+    if($null -eq $Left -or $null -eq $Right -or $Left.Length -ne $Right.Length){return $false}
+    for($offset=0;$offset -lt $Left.Length;$offset++){if($Left[$offset] -ne $Right[$offset]){return $false}}
+    return $true
+}
+
+function Get-KRVisualContentHash {
+    param([byte[]]$Bytes)
+    $algorithm=[Security.Cryptography.SHA256]::Create()
+    try{return ([BitConverter]::ToString($algorithm.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant()}
+    finally{$algorithm.Dispose()}
+}
+
+function ConvertFrom-KRVisualSyntheticPng {
+    param([byte[]]$Bytes,[int]$Width,[int]$Height)
+    Add-Type -AssemblyName System.Drawing
+    $stream=New-Object IO.MemoryStream
+    $bitmap=$null
+    try{
+        $stream.Write($Bytes,0,$Bytes.Length);$stream.Position=0
+        $bitmap=[Drawing.Bitmap]::FromStream($stream)
+        if($bitmap.Width -ne $Width -or $bitmap.Height -ne $Height){throw 'INVALID:VISUAL_DIMENSIONS'}
+        $pixels=New-Object 'byte[]' ($Width*$Height*4)
+        for($y=0;$y -lt $Height;$y++){
+            for($x=0;$x -lt $Width;$x++){
+                $pixel=$bitmap.GetPixel($x,$y);$offset=($y*$Width+$x)*4
+                $pixels[$offset]=$pixel.R;$pixels[$offset+1]=$pixel.G
+                $pixels[$offset+2]=$pixel.B;$pixels[$offset+3]=$pixel.A
+            }
+        }
+        return ,$pixels
+    }finally{if($null -ne $bitmap){$bitmap.Dispose()};$stream.Dispose()}
+}
+
+function Invoke-KRVisualDedupPrototype {
+    param(
+        [object[]]$Frames,[object[]]$PhaseWindows,[long]$Frequency,$References,
+        [ValidateSet('PNG','DECODED_RGBA8')][string]$Format,
+        [ValidateSet('VERIFIED_SYNTHETIC','STALE','UNKNOWN')][string]$CaptureLiveness='UNKNOWN',
+        [switch]$DisableCache,[switch]$SyntheticOnly,
+        # Collision injection tests lookup only; integrity always uses real SHA-256.
+        [switch]$SyntheticHashCollision
+    )
+    if(-not $SyntheticOnly){throw 'INVALID:SYNTHETIC_ONLY_PROTOTYPE'}
+    $watch=[Diagnostics.Stopwatch]::StartNew()
+    if($References.Provenance -cne 'INDEPENDENT_SYNTHETIC' -or [string]::IsNullOrWhiteSpace($References.Version) -or
+        $References.Width -lt 1 -or $References.Height -lt 1 -or $References.Width -gt 256 -or $References.Height -gt 256){
+        throw 'INVALID:SYNTHETIC_REFERENCE_SCHEMA'
+    }
+    $width=[int]$References.Width;$height=[int]$References.Height
+    # Snapshot references before evaluation; never mutate or derive them from Frames.
+    [byte[]]$ordinary=$References.Ordinary.Clone();[byte[]]$restricted=$References.Restricted.Clone()
+    if($ordinary.Length -ne $width*$height*4 -or $restricted.Length -ne $ordinary.Length -or
+        (Test-KRVisualExactBytes $ordinary $restricted)){throw 'INVALID:SYNTHETIC_REFERENCE_SCHEMA'}
+    $context='EXACT_RGBA_V1|'+$References.Version+'|'+$Format+'|RGBA8|'+$width+'x'+$height+'|'+
+        (Get-KRVisualContentHash $ordinary)+'|'+(Get-KRVisualContentHash $restricted)
+    $contextHash=Get-KRVisualContentHash ([Text.Encoding]::UTF8.GetBytes($context))
+    # Invocation-local cache cannot leak labels across reference/configuration versions.
+    $cache=@{};$uniquePixels=@{};$rows=New-Object Collections.Generic.List[object]
+    $recognitions=0;$hits=0;$decodes=0;$unique=0;$invalid=$false;$failed=$false;$previousEnd=-1L
+    $required=@('ORDINARY_BEFORE','RESTRICTED','ORDINARY_AFTER')
+    foreach($frame in $Frames){
+        $label='UNKNOWN';$reason='NONE';$reused=$false
+        # Timing, identity, phase and integrity are processed even for cache hits.
+        $phase=@($PhaseWindows|Where-Object{$frame.StartTicks -ge $_.StartTicks -and $frame.EndTicks -le $_.EndTicks})
+        $timingValid=($frame.Index -eq $rows.Count+1 -and $frame.EndTicks -gt $frame.StartTicks -and $frame.StartTicks -ge $previousEnd)
+        $previousEnd=[long]$frame.EndTicks
+        $phaseValid=($phase.Count -eq 1 -and $frame.Phase -cin $required -and $phase[0].Name -ceq $frame.Phase)
+        $hash=Get-KRVisualContentHash $frame.Bytes
+        $integrityValid=($frame.CaptureStatus -ceq 'ACCEPTED' -and $frame.Sha256 -ceq $hash -and
+            $frame.Width -eq $width -and $frame.Height -eq $height)
+        if(-not $integrityValid){$reason='FRAME_INTEGRITY_INVALID'}else{
+            $key=$contextHash+'|'+$(if($SyntheticHashCollision){'COLLISION'}else{$hash})
+            $match=$null
+            if(-not $DisableCache -and $cache.ContainsKey($key)){
+                foreach($entry in $cache[$key]){
+                    if(Test-KRVisualExactBytes $entry.Bytes $frame.Bytes){$match=$entry;break}
+                }
+            }
+            if(-not $DisableCache -and $null -ne $match){$label=$match.Label;$hits++;$reused=$true}else{
+                try{
+                    if($Format -eq 'PNG'){$decodes++;[byte[]]$pixels=ConvertFrom-KRVisualSyntheticPng $frame.Bytes $width $height}
+                    else{[byte[]]$pixels=$frame.Bytes}
+                    if($pixels.Length -ne $width*$height*4){throw 'INVALID:PIXEL_LAYOUT'}
+                    # Count distinct decoded images, including different PNG encodings.
+                    $pixelKey=Get-KRVisualContentHash $pixels;$pixelSeen=$false
+                    if($uniquePixels.ContainsKey($pixelKey)){
+                        foreach($prior in $uniquePixels[$pixelKey]){if(Test-KRVisualExactBytes $prior $pixels){$pixelSeen=$true;break}}
+                    }else{$uniquePixels[$pixelKey]=New-Object Collections.Generic.List[object]}
+                    if(-not $pixelSeen){$unique++;$uniquePixels[$pixelKey].Add($pixels.Clone())}
+                    $recognitions++
+                    $label=if(Test-KRVisualExactBytes $pixels $ordinary){'ORDINARY'}elseif(Test-KRVisualExactBytes $pixels $restricted){'RESTRICTED'}else{'UNKNOWN'}
+                    if(-not $DisableCache -and $null -eq $match){
+                        if(-not $cache.ContainsKey($key)){$cache[$key]=New-Object Collections.Generic.List[object]}
+                        $cache[$key].Add([PSCustomObject]@{Bytes=$frame.Bytes.Clone();Label=$label})
+                    }
+                }catch{$reason='FRAME_DECODE_INVALID'}
+            }
+        }
+        $verdict='PASS'
+        if(-not $timingValid){$reason='TIMESTAMP_SEQUENCE_INVALID'}
+        elseif(-not $phaseValid){$reason='PHASE_CONTEXT_INVALID'}
+        if($reason -ne 'NONE' -or $label -eq 'UNKNOWN'){
+            $verdict='INVALID';$invalid=$true;if($reason -eq 'NONE'){$reason='UNKNOWN_SURFACE'}
+        }elseif($label -cne $(if($frame.Phase -eq 'RESTRICTED'){'RESTRICTED'}else{'ORDINARY'})){
+            $verdict='FAIL';$failed=$true;$reason='VISUAL_PHASE_CONTRADICTION'
+        }
+        $rows.Add([PSCustomObject]@{Index=$frame.Index;StartTicks=$frame.StartTicks;EndTicks=$frame.EndTicks;
+            Phase=$frame.Phase;Sha256=$hash;Label=$label;Verdict=$verdict;Reason=$reason;CacheHit=$reused})
+    }
+    # Reuse the existing descriptive metrics, NOT their checkpoint-substitution claim.
+    $coverage='SUFFICIENT_SYNTHETIC_BENCHMARK';$temporal=$null
+    foreach($name in $required){
+        if(@($PhaseWindows|Where-Object{$_.Name -eq $name}).Count -ne 1 -or @($rows|Where-Object{$_.Phase -eq $name}).Count -lt 3){$coverage='INSUFFICIENT'}
+    }
+    if($coverage -ne 'INSUFFICIENT'){
+        try{
+            $window=@($PhaseWindows|Where-Object{$_.Name -eq 'RESTRICTED'})[0]
+            $temporal=Get-KRVisualTemporalMetrics @($rows|Where-Object{$_.Phase -eq 'RESTRICTED'}) $window $Frequency
+            if($temporal.WindowMillis -lt 10000 -or $temporal.SpanCoverageRatio -lt 0.90 -or $temporal.WorstCaseSamplingGapMillis -gt 1500){$coverage='INSUFFICIENT'}
+        }catch{$coverage='INSUFFICIENT'}
+    }
+    if($coverage -eq 'INSUFFICIENT' -or $CaptureLiveness -ne 'VERIFIED_SYNTHETIC'){$invalid=$true}
+    $watch.Stop()
+    [PSCustomObject]@{Scope='SYNTHETIC_DEDUP_BENCHMARK_ONLY';Status=$(if($failed){'FAIL'}elseif($invalid){'INVALID'}else{'PASS'});
+        FramesProcessed=$rows.Count;UniqueImages=$unique;RecognitionCalls=$recognitions;CacheHits=$hits;DecodeCalls=$decodes;
+        TotalMillis=$watch.Elapsed.TotalMilliseconds;ContextHash=$contextHash;Rows=$rows.ToArray();Coverage=$coverage;
+        CaptureLiveness=$CaptureLiveness;Temporal=$temporal;QualificationRows=0;Time04Rows=0;MatrixContribution='NONE';
+        HumanObservationSerialized=$false;CheckpointSubstitutionAllowed=$false}
+}
+
+Export-ModuleMember -Function Invoke-KRVisualDedupPrototype,Get-KRVisualContentHash,Test-KRVisualExactBytes

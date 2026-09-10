@@ -9,7 +9,12 @@ The child executes downloaded rules locally, including when offline.
 
 Architecture and planning scaffold, verified against official documentation on **2026-09-05**.
 KR-001/002 are complete and KR-003 now has an isolated, disposable Android enforcement test harness.
-No production application, backend deployment, database exposure, physical-device result or Play approval exists.
+Bounded [Mi 8 physical evidence](docs/test-plans/evidence/KR-003-MI8-2026-09-06.md) exists; that configuration's active-oracle transport is blocked.
+The authorized [Samsung SM-X400 / Android 16 transport passed](docs/test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md), followed by a configuration-specific [runner-v5 calibration PASS](docs/test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md). Later qualification attempts retained multiple 100-row automated PASS sets but stopped FAIL or INVALID at checkpoint 3; every run remains independently classified and non-poolable. OD-39 prospectively approves a dual-path Home safety gate. The short [excluded Path-B diagnostic passed](docs/test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) on this exact configuration with zero qualification/TIME-04 rows and no matrix contribution. The unchanged [immutable runner-v12 full bundle](docs/test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md) remains physically unexecuted. The KR-003 qualification gate remains open.
+OD-41 now permits one prospective owner-local visual-channel calibration to test whether known ordinary/restricted/ordinary surfaces can be classified with measured temporal bounds and independent fixture agreement. Its [immutable excluded bundle](docs/test-plans/evidence/KR-003-SAMSUNG-VISUAL-CALIBRATION-BUNDLE-2026-09-10.md) is published but physically **Not run**. This does not change the production capture prohibition or qualify any matrix row.
+No production application, backend deployment, database exposure or Play approval exists.
+
+The [visual validity review](docs/test-plans/KR-003-VISUAL-VALIDITY-REVIEW.md) limits unchanged visual bundle `0596173` to exploratory sampled-channel measurements: self-fitted group separation and sample span do not prove expected restriction identity or continuous visibility. No human checkpoint replacement or physical execution is requested.
 
 Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order, then:
 

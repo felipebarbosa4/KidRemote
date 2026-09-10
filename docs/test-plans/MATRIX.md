@@ -119,8 +119,39 @@ Do not mark a documentary test plan as executed. Owner-approved semantics must r
 
 ## Evidence and physical device set
 
-Inventory/availability **UNSPECIFIED**. Proposed minimum: one current Google reference device, one Samsung phone/tablet,
+Known inventory: authorized Xiaomi Mi 8 / MIUI Global 12.0.3 / Android 10 API 29 with [bounded evidence](evidence/KR-003-MI8-2026-09-06.md), and
+authorized Samsung SM-X400 / Android 16 API 36 / build `BP4A.251205.006` with [transport PASS and three calibration INVALID attempts](evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md).
+The subsequent [runner-v2 calibration](evidence/KR-003-SAMSUNG-HOST-EXCEPTION-2026-09-08.md) separately passed permission verification and the
+fixture positive control, then stopped INVALID in ARM before the blocked hold. The Samsung configuration establishes metadata, shell transport
+and current permission-verifier compatibility only. The [runner-v3 invocation](evidence/KR-003-SAMSUNG-RUNNER-V3-STARTUP-2026-09-08.md) failed
+inside PowerShell initialization before any device command. Four [runner-v4 attempts](evidence/KR-003-SAMSUNG-RUNNER-V4-HOST-EXCEPTIONS-2026-09-08.md)
+then independently passed permission/positive controls and issued ARM, but the same host variable alias stopped each before attachment or blocked
+hold; cleanup succeeded. Those attempts advance no device row. The fresh [runner-v5 calibration](evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md)
+subsequently passed one excluded configuration-specific active-oracle sample: 127 ms attachment, 22,371 ms hold, 20 denied fixture taps, no focus
+regain, explicit owner agreement and verified cleanup. This advances the Samsung calibration prerequisite only. Formal `TIME-04` remains open:
+the first [qualification attempt](evidence/KR-003-SAMSUNG-QUALIFICATION-NETWORK-INVALID-2026-09-09.md) stopped `INVALID:ADB_REJECTED` during
+mobile-data isolation after Wi-Fi disable/readback, before offline confirmation, ARM, checkpoints or cycle 1. There are zero qualification rows,
+no offline result and no 100-sample p95. The subsequent [runner-v9 attempt](evidence/KR-003-SAMSUNG-QUALIFICATION-SCREEN-INVALID-2026-09-09.md)
+did establish offline state and retain 100 automated active-oracle PASS rows (p50 221 ms, p95 317 ms, max 334 ms), plus checkpoints 1/2 PASS,
+but it stopped `INVALID:SCREEN_OR_KEYGUARD` before a checkpoint-3 owner response. It remains one non-resumable INVALID: formal `TIME-04` does
+not pass. Runner-v10 then retained a separate 100-row automated PASS set (p50 227 ms, p95 318 ms, max 341 ms), checkpoints 1/2 and final visibility
+PASS, but stopped `FAIL:RESTRICTION_LOST` before a Home response after the overlay Settings control opened an allowed safe surface. Restriction
+remained true, no Home action is established, and the run is neither poolable nor a Home escape result. Formal `TIME-04` still does not pass. The
+two later [runner-v11 attempts](evidence/KR-003-SAMSUNG-QUALIFICATION-V11-ATTEMPTS-2026-09-09.md) each retained 100 automated PASS rows: RUN A
+stopped INVALID during a final-visible candidate snapshot with unverified cleanup; RUN B retained final-visible PASS but no exercisable Home
+control/action despite coarse `THREE_BUTTON` mode. Neither is resumable or poolable, neither establishes Home resistance/escape, and neither
+advances a formal row. OD-39 now prospectively approves either an exercised physical Home action or owner-confirmed control unavailability plus
+a separately fixture-calibrated host Home stimulus and independent no-escape evidence. This does not alter either run. OD-40's prepared short
+dual-Home diagnostic subsequently [passed Path B](evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) on the exact Samsung
+configuration, but is definitionally excluded: zero qualification rows, zero `TIME-04` rows and no matrix PASS. The unchanged full runner-v12
+bundle has not been physically run. The combined earlier eligibility signal does not
+separately pass `TIME-02` or `TIME-03`. Permission-revocation, broader safety, lifecycle and production
+gates do not advance.
+Proposed minimum: one current Google reference device, one Samsung phone/tablet,
 one target tablet/OEM with restrictive battery behaviour, oldest approved API and current supported OS.
-Android 17 documentation exists; device availability/selected support version must be verified, not assumed.
+Android 17/API 37 is the current documented platform; whether to add it to the approved physical support gate remains **UNSPECIFIED** and it does
+not replace any existing API row. Device availability/selected support version must be verified, not assumed.
 Emulators support deterministic/API tests but cannot certify OEM killing, safe mode, emergency handling, battery or push delivery.
 No destructive wipe/root/bootloader tests on a personal device without its owner's authorization.
+Each evidence set maps only to the exact rows its read metadata establishes. Mi 8 evidence is not Samsung evidence; Samsung evidence is not Pixel,
+another OEM, another API/build or another battery/permission configuration.

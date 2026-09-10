@@ -33,7 +33,7 @@ Verified 2026-09-05:
 | Android Gradle Plugin | 9.4.0 | Current stable AGP; official compatibility table |
 | Gradle | 9.6.0 | AGP 9.4 default/minimum; wrapper distribution checksum pinned |
 | JDK toolchain | 17 | AGP 9.4 requirement and explicit Android build recommendation |
-| compile / target SDK | 36 | Current stable Android 16 platform and current Play submission floor |
+| compile / target SDK | 36 | Current mobile Play submission floor; Android 17/API 37 exists, but changing this disposable pin is **UNSPECIFIED** |
 | minimum SDK | 28 | Architecture candidate for the event set; support remains **UNSPECIFIED** pending tests |
 | Build Tools | 36.0.0 | AGP 9.4 default; supplied by an authorized Android SDK installation |
 
@@ -48,13 +48,14 @@ Prerequisites are JDK 17 plus an Android SDK installation whose licence was acce
 
 ```sh
 cd spikes/android-enforcement
-./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
 ```
 
 Repository-level least-privilege/static checks:
 
 ```sh
 node tools/validate.mjs
+node tools/kr003/audit-build.mjs
 git diff --check
 ```
 
@@ -68,6 +69,10 @@ Never install this spike on a child's or other personal device. Use an explicitl
 Follow [the KR-003 physical protocol](../../docs/test-plans/KR-003-PHYSICAL.md) and record results in
 [`docs/test-plans/evidence`](../../docs/test-plans/evidence/README.md).
 
+For a newly authorized device, use [generic fixture-only onboarding](../../docs/test-plans/KR-003-DEVICE-ONBOARDING.md) before installing this
+candidate. A transport PASS only permits the separate [bounded oracle calibration](../../docs/test-plans/KR-003-ACTIVE-ORACLE-CALIBRATION.md);
+it is not enforcement evidence or authorization for a 100-cycle run.
+
 Basic smoke path:
 
 1. Install the debug APK on the recorded lab configuration.
@@ -79,6 +84,16 @@ Basic smoke path:
 
 The on-device p50/p95/max counter measures theoretical monotonic expiry to successful overlay attachment. It records only non-negative
 latencies and a bounded maximum of 500 numbers. It does not prove the overlay was perceptible, safe or resistant; the observer records those separately.
+
+## Automated owner-operated qualification
+
+The [qualification runner guide](../../tools/kr003/README.md), [contract](../../docs/test-plans/KR-003-QUALIFICATION.md) and
+[ADR-0008](../../docs/adr/0008-qualification-automation.md) define the new debug-only control/metric export and zero-permission ordinary fixture.
+Neither the debug receivers nor trace/probe implementation ships in release. No production enforcement decision was changed for automation.
+Q7's fixture provides an independent active input/focus oracle: every cycle proves input delivery after CLEAR, then requires 20 equivalent ADB
+taps to be denied while restricted. This can produce an automated-oracle result but never a human-visible claim. Three physical checkpoint sessions
+calibrate/spot-check the oracle. The Mi 8's successful ten-cycle evidence applies to the previously recorded candidate; the new fixture requires
+on-device Q7 preflight before 100 unattended cycles.
 
 ## Current official sources
 

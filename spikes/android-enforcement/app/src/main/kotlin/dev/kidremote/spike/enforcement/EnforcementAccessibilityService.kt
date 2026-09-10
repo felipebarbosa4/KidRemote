@@ -20,6 +20,12 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
+internal object RecoverySettingsIntent {
+    val flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+    fun create(): Intent = Intent(Settings.ACTION_SETTINGS).addFlags(flags)
+}
+
 class EnforcementAccessibilityService : AccessibilityService() {
     private lateinit var store: LabTimerStore
     private lateinit var windowManager: WindowManager
@@ -30,6 +36,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
     private var overlay: View? = null
     private var pendingExpiryElapsed: Long? = null
     private var receiverRegistered = false
+    private var adapterOutcome = AdapterOutcome.NOT_REQUIRED
 
     private val tick = object : Runnable {
         override fun run() {
@@ -50,23 +57,57 @@ class EnforcementAccessibilityService : AccessibilityService() {
         windowManager = getSystemService(WindowManager::class.java)
         state = store.load()
         persistedAtElapsed = SystemClock.elapsedRealtime()
+        adapterOutcome = store.adapterOutcome()
         store.setServiceHeartbeat(persistedAtElapsed)
         registerScreenSignals()
+        trace(kind = "service_connected", trigger = "lifecycle")
         handler.post(tick)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         // Only the transient package identity is used to distinguish a known ordinary app from a safe/unknown surface.
         // No AccessibilityNodeInfo, text, content, history, screenshots, gestures, or package timeline is accessed.
-        surfaceDisposition = SurfacePolicy.classify(event?.packageName, packageName)
-        sampleAndApply()
+        val observation = SurfacePolicy.observe(event?.packageName, packageName)
+        val resolvedDisposition = SurfaceEventResolver.resolve(
+            currentDisposition = surfaceDisposition,
+            observation = observation,
+            restrictionRequired = state.restrictionRequired,
+            overlayAttached = overlay != null,
+        )
+        trace(
+            kind = "accessibility_event",
+            trigger = "event",
+            eventType = event?.eventType ?: NO_EVENT_TYPE,
+            identityClass = observation.identityClass,
+            nextDisposition = resolvedDisposition,
+        )
+        if (resolvedDisposition != observation.disposition) {
+            trace(
+                kind = "surface_preserved",
+                trigger = "overlay_own_event",
+                eventType = event?.eventType ?: NO_EVENT_TYPE,
+                identityClass = observation.identityClass,
+                nextDisposition = resolvedDisposition,
+            )
+        }
+        if (surfaceDisposition != resolvedDisposition) {
+            trace(
+                kind = "surface_transition",
+                trigger = "event",
+                eventType = event?.eventType ?: NO_EVENT_TYPE,
+                identityClass = observation.identityClass,
+                nextDisposition = resolvedDisposition,
+            )
+        }
+        surfaceDisposition = resolvedDisposition
+        sampleAndApply(trigger = "accessibility_event")
     }
 
     override fun onInterrupt() {
         hideOverlay()
         if (::store.isInitialized) {
             store.clearServiceHeartbeat()
-            store.setAdapterOutcome(AdapterOutcome.OVERLAY_FAILED)
+            setAdapterOutcome(AdapterOutcome.OVERLAY_FAILED, "service_interrupt")
         }
     }
 
@@ -78,7 +119,7 @@ class EnforcementAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    private fun sampleAndApply() {
+    private fun sampleAndApply(trigger: String = "timer_or_screen_signal") {
         if (!::store.isInitialized) return
         if (store.currentRevision() != state.revision) state = store.load()
         val now = SystemClock.elapsedRealtime()
@@ -86,7 +127,8 @@ class EnforcementAccessibilityService : AccessibilityService() {
         if (!previousRestriction && state.wasEligible && now - state.lastElapsedRealtimeMillis >= state.remainingMillis) {
             pendingExpiryElapsed = state.lastElapsedRealtimeMillis + state.remainingMillis
         }
-        state = LabTimerReducer.sample(state, now, DeviceSignals.eligibleForConsumption(this))
+        val eligible = DeviceSignals.eligibleForConsumption(this)
+        state = LabTimerReducer.sample(state, now, eligible)
         if (now - persistedAtElapsed >= PERSIST_MILLIS || previousRestriction != state.restrictionRequired) {
             if (!store.save(state)) {
                 state = state.copy(accountingUncertain = true, wasEligible = false)
@@ -94,33 +136,35 @@ class EnforcementAccessibilityService : AccessibilityService() {
             persistedAtElapsed = now
             store.setServiceHeartbeat(now)
         }
-        applyRestriction(state.restrictionRequired)
+        applyRestriction(state.restrictionRequired, trigger)
+        EnforcementTrace.sample(now, state, surfaceDisposition, overlay, eligible)
     }
 
-    private fun applyRestriction(required: Boolean) {
+    private fun applyRestriction(required: Boolean, trigger: String) {
         if (!required) {
-            hideOverlay()
-            store.setAdapterOutcome(AdapterOutcome.NOT_REQUIRED)
+            hideOverlay("restriction_not_required")
+            setAdapterOutcome(AdapterOutcome.NOT_REQUIRED, trigger)
             return
         }
         when (surfaceDisposition) {
             SurfaceDisposition.SAFE_SYSTEM -> {
-                hideOverlay()
-                store.setAdapterOutcome(AdapterOutcome.SAFE_SURFACE_AVAILABLE)
+                hideOverlay("safe_surface")
+                setAdapterOutcome(AdapterOutcome.SAFE_SURFACE_AVAILABLE, trigger)
             }
             SurfaceDisposition.UNKNOWN_FAIL_OPEN -> {
-                hideOverlay()
-                store.setAdapterOutcome(AdapterOutcome.UNKNOWN_SURFACE_FAIL_OPEN)
+                hideOverlay("unknown_surface")
+                setAdapterOutcome(AdapterOutcome.UNKNOWN_SURFACE_FAIL_OPEN, trigger)
             }
-            SurfaceDisposition.ORDINARY_APP -> showOverlay()
+            SurfaceDisposition.ORDINARY_APP -> showOverlay(trigger)
         }
     }
 
-    private fun showOverlay() {
+    private fun showOverlay(trigger: String) {
         if (overlay != null) {
-            store.setAdapterOutcome(AdapterOutcome.APPLIED)
+            setAdapterOutcome(AdapterOutcome.APPLIED, trigger)
             return
         }
+        trace(kind = "overlay_show_requested", trigger = trigger)
         val view = buildOverlay()
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -132,20 +176,62 @@ class EnforcementAccessibilityService : AccessibilityService() {
         try {
             windowManager.addView(view, params)
             overlay = view
-            store.setAdapterOutcome(AdapterOutcome.APPLIED)
+            trace(kind = "overlay_attached", trigger = trigger)
+            setAdapterOutcome(AdapterOutcome.APPLIED, trigger)
             pendingExpiryElapsed?.let { expiry ->
                 store.recordLatencyOnce(state.revision, SystemClock.elapsedRealtime() - expiry)
                 pendingExpiryElapsed = null
             }
         } catch (_: RuntimeException) {
             overlay = null
-            store.setAdapterOutcome(AdapterOutcome.OVERLAY_FAILED)
+            trace(kind = "overlay_attach_failed", trigger = trigger)
+            setAdapterOutcome(AdapterOutcome.OVERLAY_FAILED, trigger)
         }
     }
 
-    private fun hideOverlay() {
-        overlay?.let { view -> runCatching { windowManager.removeView(view) } }
+    private fun hideOverlay(reason: String = "lifecycle") {
+        overlay?.let { view ->
+            trace(kind = "overlay_hide_requested", trigger = reason)
+            val result = runCatching { windowManager.removeView(view) }
+            trace(
+                kind = if (result.isSuccess) "overlay_removed" else "overlay_remove_failed",
+                trigger = reason,
+            )
+        }
         overlay = null
+    }
+
+    private fun setAdapterOutcome(next: AdapterOutcome, trigger: String) {
+        if (adapterOutcome == next) return
+        trace(kind = "adapter_transition", trigger = trigger, nextAdapterOutcome = next)
+        adapterOutcome = next
+        store.setAdapterOutcome(next)
+    }
+
+    private fun trace(
+        kind: String,
+        trigger: String,
+        eventType: Int = NO_EVENT_TYPE,
+        identityClass: SurfaceIdentityClass? = null,
+        nextDisposition: SurfaceDisposition = surfaceDisposition,
+        nextAdapterOutcome: AdapterOutcome = adapterOutcome,
+    ) {
+        EnforcementTrace.record(
+            EnforcementTraceRecord(
+                elapsedRealtimeMillis = SystemClock.elapsedRealtime(),
+                revision = state.revision,
+                kind = kind,
+                trigger = trigger,
+                eventType = eventType,
+                identityClass = identityClass,
+                disposition = surfaceDisposition,
+                nextDisposition = nextDisposition,
+                restrictionRequired = state.restrictionRequired,
+                overlayAttached = overlay != null,
+                adapterOutcome = adapterOutcome,
+                nextAdapterOutcome = nextAdapterOutcome,
+            ),
+        )
     }
 
     private fun buildOverlay(): View = LinearLayout(this).apply {
@@ -172,7 +258,9 @@ class EnforcementAccessibilityService : AccessibilityService() {
             text = "Open device settings"
             isAllCaps = false
             setOnClickListener {
-                startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                trace(kind = "recovery_open_requested", trigger = "settings_button")
+                startActivity(RecoverySettingsIntent.create())
+                trace(kind = "recovery_open_dispatched", trigger = "settings_button")
             }
         })
     }
@@ -197,5 +285,6 @@ class EnforcementAccessibilityService : AccessibilityService() {
     private companion object {
         const val TICK_MILLIS = 250L
         const val PERSIST_MILLIS = 1_000L
+        const val NO_EVENT_TYPE = -1
     }
 }

@@ -1,7 +1,7 @@
 # Google Play and distribution feasibility assessment
 
 - **Goal:** Identify release constraints before building the production enforcement system.
-- **Context:** Current official documentation reviewed **2026-09-05**; two Android apps, future Apple note only.
+- **Context:** Official policy documentation initially reviewed **2026-09-05**; mobile target-API requirement rechecked **2026-09-08**; two Android apps, future Apple note only.
 - **Constraints:** No claim of review approval; audience and legal markets are **UNSPECIFIED**.
 - **Done when:** KR-003 produces a concrete least-privilege flow, safe physical evidence and an owner-reviewed submission assessment.
 
@@ -28,7 +28,7 @@ Official sources: [Android Accessibility](https://developer.android.com/guide/to
 [Play API policy](https://support.google.com/googleplay/android-developer/answer/16558241),
 [Accessibility declaration](https://support.google.com/googleplay/android-developer/answer/10964491),
 [FGS types](https://developer.android.com/develop/background-work/services/fgs/service-types),
-[target API](https://support.google.com/googleplay/android-developer/answer/11926878?hl=en),
+[target API](https://developer.android.com/google/play/requirements/target-sdk),
 [Families](https://support.google.com/googleplay/android-developer/answer/9893335?hl=en),
 [monitoring metadata](https://support.google.com/googleplay/android-developer/answer/12955211?hl=en),
 [Data safety](https://support.google.com/googleplay/android-developer/answer/10787469),
