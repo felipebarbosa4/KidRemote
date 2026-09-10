@@ -179,7 +179,9 @@ test("configuration-bound qualification uses an active fixture oracle, three hum
 test("excluded dual-Home diagnostic is zero-row, fail-closed and keeps Path B distinct",()=>temporary(dir=>{
   const save=(name,value)=>writeFileSync(join(dir,name),JSON.stringify(value));
   const device={Manufacturer:'samsung',Model:'SM-X400',Android:'16',Api:'36',Patch:'2026-07-05',BuildId:'BP4A.251205.006',wifi_on:'1',mobile_data:'0',airplane_mode_on:'0',auto_time:'1',auto_time_zone:'1',low_power:'0'};
-  const fixtureBaseline={schema:2,request:20,elapsed:20000,instance:7,taps:4,focusGains:3,focusLosses:3,lastFocusChange:19000,probeX:540,probeY:1900,focused:false,resumed:true,probeReady:true};
+  // Match the property order emitted by the physical Windows PowerShell record. Object order is
+  // irrelevant, but the minimized field set must remain exact.
+  const fixtureBaseline={schema:2,request:20,elapsed:20000,instance:7,focused:false,resumed:true,taps:4,focusGains:3,focusLosses:3,lastFocusChange:19000,probeReady:true,probeX:540,probeY:1900};
   const bundle={
     schema:1,protocol:'KR003-DUAL-HOME-CALIBRATION-DIAGNOSTIC',sourceCommit:'a'.repeat(40),runnerVersion:12,
     diagnosticOnly:true,diagnosticScope:'HOME_GATE_ONLY',requiresOffline:false,networkIsolation:'NOT_REQUIRED_AND_NOT_PERFORMED',physicalExecution:'NOT_RUN',
@@ -193,10 +195,11 @@ test("excluded dual-Home diagnostic is zero-row, fail-closed and keeps Path B di
     matrixContribution:'NONE',humanCheckpointMaximum:1,qualificationCycles:0,time04Rows:0,resumeAllowed:false,poolingAllowed:false,
   };
   save('manifest.json',{Bundle:bundle,InitialDevice:device,Device:device,OfflineNetworkRequested:false,OfflineOwnerConfirmed:false,NetworkMutationAllowed:false,DualHomeDiagnostic:true,EvidenceModel:'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC',QualificationRows:0,Time04Rows:0,MatrixContribution:'NONE'});
+  save('end-device.json',device);
   save('attempts.json',[]);
   save('summary.json',{Status:'PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY',Reason:'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE',QualificationRequested:false,DualHomeDiagnosticRequested:true,QualificationRows:0,Time04Rows:0,MatrixContribution:'NONE',ValidPairedObservations:0,EvidenceModel:'EXCLUDED_DUAL_HOME_PATH_DIAGNOSTIC',Kr003Complete:false,ProductionApproved:false,Offline:false,SafetyChecksPassed:true,FinalizationErrors:[],HomeGateResult:'PASS',DualHomeCleanupStatus:'VERIFIED'});
   save('network-restoration.json',{Status:'NOT_CHANGED',Settings:[]});
-  save('permission-verification.json',{UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY'});
+  save('permission-verification.json',{UsageAccessRunner:'ENABLED',AccessibilityRunner:'ENABLED',ServiceHeartbeat:'FRESH',CandidateHealth:'HEALTHY',CandidateEligible:'ELIGIBLE'});
   save('shell-input-precondition.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_TAP_FIXTURE_PROBE',FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Result:'FIXTURE_COUNTER_INCREMENTED_ONCE',SameFixture:true,BeforeFocused:true,AfterFocused:true,BeforeResumed:true,AfterResumed:true,TapDelta:1,VerifiedUtc:'2026-09-09T22:00:00Z'});
   save('home-key-transport.json',{Schema:1,Stimulus:'ADB_SHELL_INPUT_KEYEVENT_KEYCODE_HOME',StimulusSource:'HOST_ADB',CandidateGenerated:false,FixtureRole:'INDEPENDENT_ORDINARY_FIXTURE',Status:'CALIBRATED',Effect:'FIXTURE_DISPLACED_FROM_FOREGROUND_AND_FOCUS',InvocationCount:1,CommandResult:'ACCEPTED',ExitCode:0,StderrClass:'NONE',BeforeFocused:true,BeforeResumed:true,AfterFocused:false,AfterResumed:false,FocusLossDelta:1,TapDelta:0,ReturnToFixture:'VERIFIED',StartedUtc:'2026-09-09T22:00:00Z',EndedUtc:'2026-09-09T22:00:01Z'});
   save('home-key-operations.json',[
@@ -218,6 +221,8 @@ test("excluded dual-Home diagnostic is zero-row, fail-closed and keeps Path B di
   save('attempts.json',[{Phase:'QUALIFICATION'}]);assert.throws(()=>ingestDualHomeDiagnostic(dir),/must never contain attempt rows/);save('attempts.json',[]);
   save('safety-diagnostic.json',{...safety,HomeActionResult:'HOME_ACTION_EXERCISED_AND_RESISTED'});assert.throws(()=>ingestDualHomeDiagnostic(dir));save('safety-diagnostic.json',safety);
   save('network-operations.json',[]);assert.throws(()=>ingestDualHomeDiagnostic(dir),/must not retain network-operations/);unlinkSync(join(dir,'network-operations.json'));
+  save('home-key-restricted.json',{...JSON.parse(readFileSync(join(dir,'home-key-restricted.json'))),FixtureBaseline:{...fixtureBaseline,unexpected:'forbidden'}});
+  assert.throws(()=>ingestDualHomeDiagnostic(dir));
 }));
 
 test("UiAutomation injection result cannot replace independent fixture delivery or finish evidence",()=>temporary(dir=>{

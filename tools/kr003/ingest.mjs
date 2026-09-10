@@ -120,7 +120,9 @@ function validateQ12HomeKeyEvidence(directory,read,required,restrictedPhase='fin
     assert([0,1].includes(restricted.InvocationCount));assert(['UNRECORDED','ACCEPTED','REJECTED','TIMEOUT'].includes(restricted.CommandResult));
     assert(restricted.ExitCode===null||Number.isInteger(restricted.ExitCode));assert(['NONE','SECURITY_EXCEPTION','PERMISSION_DENIAL','OTHER','UNAVAILABLE'].includes(restricted.StderrClass));
     assert(Number.isInteger(restricted.FixtureTapsBefore));assert(Number.isInteger(restricted.FixtureFocusGainsBefore));
-    assert.deepEqual(Object.keys(restricted.FixtureBaseline),['schema','request','elapsed','instance','taps','focusGains','focusLosses','lastFocusChange','probeX','probeY','focused','resumed','probeReady']);
+    // JSON object member order is not semantic. Keep the minimized schema exact while accepting
+    // the property order emitted by either the synthetic writer or Windows PowerShell.
+    assert.deepEqual(Object.keys(restricted.FixtureBaseline).sort(),['schema','request','elapsed','instance','taps','focusGains','focusLosses','lastFocusChange','probeX','probeY','focused','resumed','probeReady'].sort());
     assert.equal(restricted.FixtureBaseline.schema,2);assert.equal(restricted.FixtureBaseline.probeReady,true);
     assert(Number.isInteger(restricted.ObservationCount)&&restricted.ObservationCount>=0);
     assert(['UNRECORDED','VERIFIED'].includes(restricted.CandidateContinuity));assert(['UNKNOWN','NONE'].includes(restricted.FixtureFocusRegain));
@@ -381,8 +383,9 @@ export function ingestDualHomeDiagnostic(directory) {
     }
   }
   const permissionPath=resolve(directory,'permission-verification.json');
+  let permission=null;
   if(existsSync(permissionPath)) {
-    const permission=read('permission-verification.json');
+    permission=read('permission-verification.json');
     assert(['ENABLED','DISABLED','UNKNOWN'].includes(permission.UsageAccessRunner));
     assert(['ENABLED','DISABLED','UNKNOWN'].includes(permission.AccessibilityRunner));
     assert(['FRESH','STALE','UNKNOWN'].includes(permission.ServiceHeartbeat));
@@ -422,6 +425,11 @@ export function ingestDualHomeDiagnostic(directory) {
     assert.equal(summary.SafetyChecksPassed,true);assert.deepEqual(summary.FinalizationErrors,[]);
     assert.equal(summary.HomeGateResult,'PASS');assert(safety);assert.equal(safety.Result,'HOME_DIAGNOSTIC_PASS_RECORDED');
     assert.equal(safety.FinalVisibilityPhysical,'PASS');assert.equal(safety.HoldOracle,'RESTRICTION_HELD');
+    assert(permission);assert.equal(permission.UsageAccessRunner,'ENABLED');assert.equal(permission.AccessibilityRunner,'ENABLED');
+    assert.equal(permission.ServiceHeartbeat,'FRESH');assert.equal(permission.CandidateHealth,'HEALTHY');assert.equal(permission.CandidateEligible,'ELIGIBLE');
+    const endDevice=read('end-device.json');
+    for(const [expectedKey,observedKey] of Object.entries(observedKeys)) assert.equal(endDevice[observedKey],expected[expectedKey]);
+    assert.equal(Object.hasOwn(endDevice,'BuildFingerprint'),false);assert.equal(Object.hasOwn(endDevice,'User'),false);
     assert(existsSync(shellPath));assert(homeKey);assert.equal(homeKey.transport.Status,'CALIBRATED');assert.equal(homeKey.transport.ReturnToFixture,'VERIFIED');
     const restriction=read('dual-home-restriction.json');assert.equal(restriction.Status,'RESTRICTION_ESTABLISHED');
     assert.equal(restriction.Restriction,true);assert.equal(restriction.Attached,true);assert.equal(restriction.Disposition,'ORDINARY_APP');
@@ -437,6 +445,10 @@ export function ingestDualHomeDiagnostic(directory) {
       assert.equal(safety.HomePhysical,'CONTROL_UNAVAILABLE');assert.equal(safety.HomeActionState,'HOME_ACTION_NOT_EXERCISABLE');
       assert.equal(safety.HomeActionOutcome,'UNRECORDED');assert.equal(safety.HomeActionResult,'HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE');
       assert(homeKey.restricted);assert.equal(homeKey.restricted.Phase,'diagnostic');assert.equal(homeKey.restricted.InvocationCount,1);
+      assert.equal(homeKey.restricted.CommandResult,'ACCEPTED');assert.equal(homeKey.restricted.ExitCode,0);assert.equal(homeKey.restricted.StderrClass,'NONE');
+      assert(homeKey.restricted.ObservationCount>0);assert.equal(homeKey.restricted.FixtureBaseline.focused,false);
+      assert.equal(homeKey.restricted.FixtureBaseline.probeReady,true);assert.equal(homeKey.restricted.FixtureBaseline.taps,homeKey.restricted.FixtureTapsBefore);
+      assert.equal(homeKey.restricted.FixtureBaseline.focusGains,homeKey.restricted.FixtureFocusGainsBefore);
       assert.equal(homeKey.restricted.CandidateContinuity,'VERIFIED');assert.equal(homeKey.restricted.FixtureFocusRegain,'NONE');
       assert.equal(homeKey.restricted.FixtureInputLeak,'NONE');assert.equal(homeKey.restricted.OwnerObservation,'PASS');assert.equal(homeKey.restricted.Status,'HELD_WITH_OWNER_AGREEMENT');
     }

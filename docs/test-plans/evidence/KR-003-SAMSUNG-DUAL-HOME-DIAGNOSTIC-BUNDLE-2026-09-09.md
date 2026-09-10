@@ -58,3 +58,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003
 ```
 
 Start with the tablet unlocked, interactive and on stable external power/ADB, with Usage Access and the disposable Accessibility service enabled. Watch the visible restriction for ten seconds. At `HOME CONTROL CHECK`, answer `A` if Home is currently exercisable, `U` if unavailable as presented, `I` if uncertain, or `Q` to stop. For `A`, perform exactly one instructed physical Home action and answer the result prompt. For `U`, do not change navigation mode or seek a hidden control; allow the runner's one calibrated host stimulus and answer whether the restriction remained visibly effective. No Settings/recovery checkpoint is part of this diagnostic.
+
+## Subsequent execution
+
+The owner later ran this immutable diagnostic once. Its [strictly ingested configuration-specific Path-B PASS](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) is separate physical evidence. The publication-time **Not run** field above remains the immutable handoff state; do not rerun or reinterpret it as qualification.

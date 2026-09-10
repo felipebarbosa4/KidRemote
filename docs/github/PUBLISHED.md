@@ -529,3 +529,22 @@ The [immutable diagnostic bundle](../test-plans/evidence/KR-003-SAMSUNG-DUAL-HOM
 [CI run 34415929533](https://github.com/felipebarbosa4/KidRemote/actions/runs/34415929533) passed repository/Node checks, native Windows PowerShell
 5.1, PowerShell 7 and Android test/lint/build/release-isolation. Mounted payload hashes and source identity passed, and the actual bundle entrypoint
 passed native PowerShell 5.1 startup without a device command. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 is untouched.
+
+## Samsung excluded dual-Home Path-B diagnostic PASS — 2026-09-10
+
+The owner ran the OD-40 diagnostic once on the exact Samsung SM-X400 configuration. The unchanged physical directory strictly ingests as
+`PASSED_DUAL_HOME_DIAGNOSTIC_THIS_CONFIGURATION_ONLY:HOME_ESCAPE_PATH_BLOCKED_WITH_CONTROL_UNAVAILABLE`: shell input and the separate host
+Home positive control passed; the owner recorded Home unavailable; one restricted host Home stimulus was accepted; 475 paired candidate/fixture
+observations retained restriction/attachment/health with no fixture focus/input return; owner agreement, CLEAR, ordinary fixture use and
+stay-awake restoration all passed.
+
+The first ingestion exposed only an order-sensitive nested JSON key comparison. The exact minimized field set was correct, so the ingester now
+treats JSON object order as irrelevant while continuing to reject missing or added fields. The [strict evidence record](../test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md)
+retains manifest/summary/control/cleanup hashes and separates observed, inferred and unspecified conclusions. It contributes zero qualification
+rows, zero TIME-04 rows and no matrix PASS; historical runs remain unchanged and non-poolable.
+
+The existing full runner-v12 bundle remains unchanged at `C:\platform-tools\kr003-qualification-bundles\80dcdf4`, source
+`80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd`, `bundle.json` SHA-256
+`9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28`. Every payload hash passes, its manifest is still **Not run**, and direct
+function comparison proves its approved Path-A/Path-B flow is byte-identical to the flow exercised by the diagnostic. No repackage is justified.
+Full qualification was not started. KR-003 remains Open/In Progress, draft PR #16 remains Open, and KR-004 is untouched.

@@ -29,7 +29,8 @@ during final-visible polling with failed cleanup/restoration; RUN B retained fin
 runner-v12 separates navigation mode from control availability and action outcome. The owner-approved dual path is now available in an
 [immutable runner-v12 bundle](KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md); it has not been physically executed.
 OD-40's [immutable excluded dual-Home diagnostic bundle](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-BUNDLE-2026-09-09.md) reuses that Home logic for one
-short exact-configuration check. It is also physically unexecuted and definitionally contributes zero qualification/TIME-04 rows and no matrix PASS.
+short exact-configuration check. Its one [physical Path-B diagnostic](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) subsequently
+passed with verified cleanup. It remains definitionally excluded with zero qualification/TIME-04 rows and no matrix PASS; full runner-v12 remains unexecuted.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
