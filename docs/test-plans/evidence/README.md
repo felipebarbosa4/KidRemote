@@ -31,6 +31,7 @@ runner-v12 separates navigation mode from control availability and action outcom
 OD-40's [immutable excluded dual-Home diagnostic bundle](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-BUNDLE-2026-09-09.md) reuses that Home logic for one
 short exact-configuration check. Its one [physical Path-B diagnostic](KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) subsequently
 passed with verified cleanup. It remains definitionally excluded with zero qualification/TIME-04 rows and no matrix PASS; full runner-v12 remains unexecuted.
+OD-41's [immutable excluded visual-channel calibration bundle](KR-003-SAMSUNG-VISUAL-CALIBRATION-BUNDLE-2026-09-10.md) is published for one short owner-local mechanism test. It remains physically **Not run**, uses no network mutation, contributes zero qualification/TIME-04 rows and no matrix PASS, and keeps all raw/image-bearing media outside the repository, cloud, CI and assistant tools.
 
 Use a dated file with Goal, Context, Constraints, Done when, commit, environment/version/model, test IDs,
 synthetic fixture identifiers, steps, observations, samples, failures and conclusions.
