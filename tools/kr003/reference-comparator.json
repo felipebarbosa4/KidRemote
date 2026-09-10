@@ -1,0 +1,10 @@
+{
+  "Version": "LOCAL_TILE_MAE_RGB24_V1",
+  "TilePixels": 16,
+  "StridePixels": 8,
+  "MaximumTileMae": 2,
+  "Normalization": "NATIVE_SIZE_NO_AUTOROTATE_BT709_LIMITED_TO_FULL_RGB24",
+  "ReferenceSource": "SEPARATE_OWNER_CONFIRMED_VIDEO_ENROLLMENT",
+  "ThresholdSource": "SEPARATE_SYNTHETIC_DEVELOPMENT_ENCODINGS",
+  "CheckpointReplacementAuthorized": false
+}

@@ -13,8 +13,22 @@ const approvedDesignMedia=new Set([
 ]);
 
 test("raw visual media is absent from tracked repository paths",()=>{
-  const raw=tracked.filter(path=>/\.(?:png|jpe?g|webp|mp4|mkv|h264)$/i.test(path)&&!approvedDesignMedia.has(path));
+  const raw=tracked.filter(path=>/\.(?:png|jpe?g|webp|mp4|mkv|h264|rgb|rgba|yuv)$/i.test(path)&&!approvedDesignMedia.has(path));
   assert.deepEqual(raw,[]);
+});
+
+test("reference video remains local, excluded, and independent of phase learning",()=>{
+  const files=["Start-KR003-ReferenceVideo.ps1","Clear-KR003-ReferenceVideo.ps1","ReferenceVideo.Runner.ps1","ReferenceVideo.psm1","ReferenceVideoCore.cs"];
+  const source=files.map(name=>readFileSync(resolve(root,"tools/kr003",name),"utf8")).join("\n");
+  assert.doesNotMatch(source,/Invoke-WebRequest|Invoke-RestMethod|api\.openai|base64|AccessibilityNodeInfo|performGlobalAction|killall|pkill|taskkill/i);
+  assert.match(source,/CheckpointReplacementAuthorized=\$false/);
+  assert.match(source,/Phase='UNASSIGNED'/);
+  assert.match(source,/FrozenTicks/);
+  assert.match(source,/prior.Hash==row.Hash&&Equal\(prior.Pixels,pixels\)/);
+  assert.match(source,/OwnerConfirmation='UNVERIFIED'/);
+  assert.doesNotMatch(source,/Get-KRVisualCentroid|NearestPrototype|svc','wifi|svc','data/);
+  const result=source.slice(source.indexOf('$analysis=[PSCustomObject]'));
+  assert.doesNotMatch(result.slice(0,result.indexOf("Write-JsonFile 'video-analysis.json'")),/ReferencePixels|WriteAllBytes|ToBase64/);
 });
 
 test("visual runner has local-only capture and no upload or OCR path",()=>{

@@ -108,6 +108,18 @@ function Convert-KRStayAwakeSetting {
     return $setting
 }
 
+function Assert-KRReferenceVideoBundle {
+    param($Bundle)
+    Assert-KRConfigurationBoundIdentity $Bundle
+    if($Bundle.protocol -cne 'KR003-REFERENCE-VIDEO-CHARACTERIZATION' -or $Bundle.runnerVersion -ne 1 -or
+        -not $Bundle.diagnosticOnly -or $Bundle.requiresOffline -or $Bundle.qualificationCycles -ne 0 -or
+        $Bundle.time04Rows -ne 0 -or $Bundle.matrixContribution -cne 'NONE' -or $Bundle.humanCheckpointMaximum -ne 2 -or
+        $Bundle.checkpointReplacementAuthorized -or $Bundle.resumeAllowed -or $Bundle.poolingAllowed -or
+        $Bundle.classifierModel -cne 'LOCAL_TILE_MAE_RGB24_V1' -or $Bundle.captureModel -cne 'BOUNDED_SCREENRECORD_MP4' -or
+        $Bundle.rawMediaPolicy -cne 'OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT') {throw 'INVALID:BUNDLE_SCHEMA'}
+}
+Export-ModuleMember -Function Assert-KRReferenceVideoBundle
+
 function Convert-KRNavigationMode {
     param([AllowNull()][string]$Raw)
     switch (([string]$Raw).Trim()) {

@@ -11,7 +11,8 @@ param(
     [switch]$CalibrationOnly,
     [switch]$RecoveryDiagnostic,
     [switch]$DualHomeDiagnostic,
-    [switch]$VisualCalibration
+    [switch]$VisualCalibration,
+    [switch]$FunctionsOnly
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -1689,6 +1690,7 @@ function Verify-InstalledApk {
 }
 
 function Read-DeviceConfiguration {
+    param([switch]$IdentityOnly)
     $properties = [ordered]@{
         Manufacturer = 'ro.product.manufacturer'; Model = 'ro.product.model'
         Android = 'ro.build.version.release'; Api = 'ro.build.version.sdk'; Patch = 'ro.build.version.security_patch'
@@ -1700,6 +1702,7 @@ function Read-DeviceConfiguration {
         if ($value -notmatch '^[A-Za-z0-9_./:; +,-]{1,250}$') { $value = 'UNSPECIFIED' }
         $record[$key] = $value
     }
+    if($IdentityOnly){return [PSCustomObject]$record}
     foreach ($key in @('wifi_on','mobile_data','airplane_mode_on','auto_time','auto_time_zone','low_power')) {
         $value = (Invoke-LabAdb @('shell','settings','get','global',$key)).Trim()
         $record[$key] = if ($value -match '^[0-9]+$') { $value } else { 'UNSPECIFIED' }
@@ -1882,6 +1885,7 @@ function Complete-LabRun {
     Write-Host 'The agent reads this directory directly. If network or stay-awake restoration is unverified, preserve the original-state journals for owner-assisted recovery.'
 }
 
+if($FunctionsOnly){return}
 try {
     if ([Console]::IsInputRedirected) { throw 'INVALID:INTERACTIVE_OPERATOR_REQUIRED' }
     if (-not (Test-Path -LiteralPath $Adb)) { throw 'INVALID:ADB_MISSING' }

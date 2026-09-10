@@ -14,7 +14,8 @@ const readJson=path=>JSON.parse(readFileSync(path,"utf8").replace(/^\uFEFF/,""))
 assert.equal(git("status","--porcelain"),"","Commit all changes before making a qualification bundle");
 const commit=git("rev-parse","HEAD"),destination=process.argv[2],calibrationArgument=process.argv[3];
 const selectedMode=process.argv[4]??"",diagnosticMode=selectedMode==="--dual-home-diagnostic",visualMode=selectedMode==="--visual-calibration";
-assert(["","--dual-home-diagnostic","--visual-calibration"].includes(selectedMode),"Unknown package mode");
+const referenceVideoMode=selectedMode==="--reference-video";
+assert(["","--dual-home-diagnostic","--visual-calibration","--reference-video"].includes(selectedMode),"Unknown package mode");
 assert(process.argv.length<=5,"Unexpected package argument");
 assert(destination,"Provide a new output directory (no overwrite)");
 assert(calibrationArgument,"Provide the approved calibration evidence directory");
@@ -37,21 +38,26 @@ assert.equal(sha256(resolve(calibrationDirectory,"device.json")),"5e1c89c0cddcc8
 
 const output=resolve(destination);mkdirSync(output,{recursive:false});
 const spike=resolve(root,"spikes/android-enforcement");
-execFileSync(resolve(spike,"gradlew"),["--no-daemon",":app:testDebugUnitTest","lintDebug","assembleDebug","lintRelease","assembleRelease"],{cwd:spike,stdio:"inherit"});
+if(!referenceVideoMode)execFileSync(resolve(spike,"gradlew"),["--no-daemon",":app:testDebugUnitTest","lintDebug","assembleDebug","lintRelease","assembleRelease"],{cwd:spike,stdio:"inherit"});
 execFileSync(process.execPath,[resolve(root,"tools/validate.mjs")],{cwd:root,stdio:"inherit"});
-execFileSync(process.execPath,[resolve(root,"tools/kr003/audit-build.mjs")],{cwd:root,stdio:"inherit"});
+if(!referenceVideoMode)execFileSync(process.execPath,[resolve(root,"tools/kr003/audit-build.mjs")],{cwd:root,stdio:"inherit"});
+// Host-only diagnostic reuses the already calibrated immutable APKs. Required
+// source CI still performs Android/release isolation; never rebuild for packaging.
+const reusedBundle="/mnt/c/platform-tools/kr003-qualification-bundles/80dcdf4";
+if(referenceVideoMode)assert.equal(sha256(resolve(reusedBundle,"bundle.json")),"9d68d18a4e71f6d524a7fae77a0f5eedf4949d7d739bfedafd67054f08f30a28");
 const mapping={
   "Start-KR003.ps1":"tools/kr003/Start-KR003.ps1",
   "Clear-KR003-Lab.ps1":"tools/kr003/Clear-KR003-Lab.ps1",
   "Qualification.psm1":"tools/kr003/Qualification.psm1",
   "DevicePreflight.psm1":"tools/kr003/DevicePreflight.psm1",
-  ...(visualMode?{
+  ...(visualMode||referenceVideoMode?{
     "Capture-KR003-Frames.ps1":"tools/kr003/Capture-KR003-Frames.ps1",
     "VisualCalibration.psm1":"tools/kr003/VisualCalibration.psm1",
   }:{}),
-  "protocol.md":visualMode?"docs/test-plans/KR-003-VISUAL-CHANNEL-CALIBRATION.md":diagnosticMode?"docs/test-plans/KR-003-DUAL-HOME-DIAGNOSTIC.md":"docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md",
-  "candidate.apk":"spikes/android-enforcement/app/build/outputs/apk/debug/app-debug.apk",
-  "ordinary-fixture.apk":"spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk",
+  ...(referenceVideoMode?Object.fromEntries(["Start-KR003-ReferenceVideo.ps1","Clear-KR003-ReferenceVideo.ps1","ReferenceVideo.Runner.ps1","ReferenceVideo.psm1","ReferenceVideoCore.cs","reference-comparator.json"].map(name=>[name,`tools/kr003/${name}`])):{}),
+  "protocol.md":referenceVideoMode?"docs/test-plans/KR-003-REFERENCE-VIDEO-PREPARATION.md":visualMode?"docs/test-plans/KR-003-VISUAL-CHANNEL-CALIBRATION.md":diagnosticMode?"docs/test-plans/KR-003-DUAL-HOME-DIAGNOSTIC.md":"docs/test-plans/KR-003-CONFIGURATION-ACTIVE-ORACLE-QUALIFICATION.md",
+  "candidate.apk":referenceVideoMode?resolve(reusedBundle,"candidate.apk"):"spikes/android-enforcement/app/build/outputs/apk/debug/app-debug.apk",
+  "ordinary-fixture.apk":referenceVideoMode?resolve(reusedBundle,"ordinary-fixture.apk"):"spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk",
 };
 const files=Object.entries(mapping).map(([name,source])=>{
   copyFileSync(resolve(root,source),resolve(output,name));
@@ -105,7 +111,10 @@ const visualManifest={
   rawMediaPolicy:"OWNER_LOCAL_ONLY_EXCLUDED_FROM_REPOSITORY_CLOUD_AND_TOOL_OUTPUT",
   matrixContribution:"NONE",humanCheckpointMaximum:0,qualificationCycles:0,time04Rows:0,resumeAllowed:false,poolingAllowed:false,
 };
-const manifest=visualMode?visualManifest:diagnosticMode?diagnosticManifest:qualificationManifest;
+const referenceVideoManifest={...visualManifest,protocol:"KR003-REFERENCE-VIDEO-CHARACTERIZATION",diagnosticScope:"REFERENCE_ENROLLMENT_VIDEO_CHARACTERIZATION",
+  captureModel:"BOUNDED_SCREENRECORD_MP4",classifierModel:"LOCAL_TILE_MAE_RGB24_V1",humanCheckpointMaximum:2,checkpointReplacementAuthorized:false,
+  apkReuseSource:"80dcdf4846ccbe4fbb0eabb7c226ecf88c58bafd"};
+const manifest=referenceVideoMode?referenceVideoManifest:visualMode?visualManifest:diagnosticMode?diagnosticManifest:qualificationManifest;
 assert.equal(git("status","--porcelain"),"","Build unexpectedly changed tracked source");
 writeFileSync(resolve(output,"bundle.json"),JSON.stringify(manifest,null,2)+"\n",{flag:"wx"});
 process.stdout.write(JSON.stringify({output,bundle:basename(output),...manifest},null,2)+"\n");
