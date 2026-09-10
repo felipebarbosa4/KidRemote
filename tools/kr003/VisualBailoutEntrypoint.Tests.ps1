@@ -23,7 +23,8 @@ try{
     if([string]::IsNullOrWhiteSpace($compiler)){throw 'Windows C# compiler unavailable for fake-ADB test'}
     & $compiler /nologo /target:exe (('/out:')+$fakeAdb) $sourcePath
     if($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $fakeAdb)){throw 'Fake-ADB compilation failed'}
-    $engine=Join-Path $PSHOME 'powershell.exe';$entrypoint=Join-Path $temporaryRoot 'Clear-KR003-Lab.ps1'
+    $engineName=$(if($PSVersionTable.PSEdition -eq 'Core'){'pwsh.exe'}else{'powershell.exe'})
+    $engine=Join-Path $PSHOME $engineName;$entrypoint=Join-Path $temporaryRoot 'Clear-KR003-Lab.ps1'
     $start=New-Object Diagnostics.ProcessStartInfo;$start.FileName=$engine;$start.UseShellExecute=$false;$start.RedirectStandardOutput=$true;$start.RedirectStandardError=$true;$start.CreateNoWindow=$true
     $start.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$entrypoint+'" -Adb "'+$fakeAdb+'"'
     $process=New-Object Diagnostics.Process;$process.StartInfo=$start;Assert-Equal $process.Start() $true
