@@ -9,11 +9,11 @@
 
 | Field | Value |
 | --- | --- |
-| Source commit | `5150e720b99a6db1f87607eed8e42ee483c17b2c` |
-| Windows path | `C:\platform-tools\kr003-visual-calibration-bundles\5150e72` |
-| Mounted path | `/mnt/c/platform-tools/kr003-visual-calibration-bundles/5150e72` |
+| Source commit | `0596173c0086fcf76fcf46c7f98dabbc6ba8a874` |
+| Windows path | `C:\platform-tools\kr003-visual-calibration-bundles\0596173` |
+| Mounted path | `/mnt/c/platform-tools/kr003-visual-calibration-bundles/0596173` |
 | Protocol / runner | `KR003-VISUAL-CHANNEL-CALIBRATION` / v1 |
-| `bundle.json` SHA-256 | `c602106ec2335860742ba88fd1d9f96274f666ce37b3931f14516ba73b9a4c89` |
+| `bundle.json` SHA-256 | `c69c2d0aa76574afee874fa0b01e89b4f4a92588816f99a20b8178573e357af7` |
 | Physical execution | **Not run** |
 | Qualification / TIME-04 rows | `0` / `0` |
 | Human observations | `0` |
@@ -51,14 +51,14 @@ Raw media is never auto-deleted. PASS media is retained until strict minimized i
 
 Local checks passed 27 Node evidence/security tests, native Windows PowerShell 5.1 classifier/runner/entrypoint/capture-worker/bailout suites, repository validation, `git diff --check`, isolated Gradle debug/release unit tests, lint and assemblies, 24/24 audited JVM executions, merged-manifest checks and release DEX isolation. All nine mounted payloads match `bundle.json`. The actual mounted main entrypoint stopped before ADB/capture, and the mounted standalone CLEAR helper accepted this protocol then stopped at fake ADB; neither test contacted a device. PowerShell 7 and the native Windows matrix remain subject to exact-source CI.
 
-No ADB or Samsung operation was performed during preparation, testing, packaging or mounted verification. The pre-publication `d303082` packaging artifact was rejected after its included CLEAR helper was found not to allowlist the new protocol. The subsequent `03f4bc2` artifact was superseded before handoff after CI found two test-harness portability assumptions; its runner payload is byte-identical to the final one, but it is not the recommended artifact. Both remain unmodified and must not be used. Only `5150e72` is published.
+No ADB or Samsung operation was performed during preparation, testing, packaging or mounted verification. Pre-publication artifacts `d303082`, `03f4bc2` and `5150e72` were successively rejected or superseded while the standalone bailout and PowerShell 7 test harness were tightened. Their runner payloads after `03f4bc2` are byte-identical to the final one, but none is recommended. All remain unmodified and must not be used. Only `0596173` is published.
 
 ## One future owner command
 
 Do not run automatically. To perform this one short calibration once:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-visual-calibration-bundles\5150e72\Start-KR003.ps1" -VisualCalibration
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr003-visual-calibration-bundles\0596173\Start-KR003.ps1" -VisualCalibration
 ```
 
 Before starting, keep the authorized tablet unlocked, interactive and on stable external power/ADB; leave Usage Access and the disposable Accessibility service enabled; close personal/sensitive surfaces; and ensure `C:\platform-tools` is owner-controlled and not cloud-synced. Then run the command and do not touch the tablet during the automatic ordinary → restricted → ordinary sequence. No network change or owner response is requested. Expected duration is approximately 2–4 minutes, depending on install/hash checks and screenshot cadence.
