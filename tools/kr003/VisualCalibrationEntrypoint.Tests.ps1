@@ -23,8 +23,10 @@ try{
     $start.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$entrypoint+'" -VisualCalibration -Adb "'+$adb+'"'
     $process=New-Object Diagnostics.Process;$process.StartInfo=$start;Assert-Equal $process.Start() $true;$process.StandardInput.Close()
     $stdout=$process.StandardOutput.ReadToEnd();$stderr=$process.StandardError.ReadToEnd();$process.WaitForExit()
-    Assert-Equal $process.ExitCode 2
+    $expectedExit=$(if([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT){2}else{1})
+    Assert-Equal $process.ExitCode $expectedExit
     $combined=$stdout+"`n"+$stderr;Assert-Equal ([bool]($combined -match 'VariableNotWritable|read-only or constant|Cannot overwrite variable')) $false
     Assert-Equal ([bool]($combined -match 'exec-out|screencap')) $false
+    if([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT){Assert-Equal ([bool]($combined -match 'INVALID:VISUAL_OUTPUT_ROOT_NOT_OWNER_LOCAL')) $true}
     Write-Host ($script:Checks.ToString()+' visual-calibration entrypoint assertions passed under PowerShell '+$PSVersionTable.PSVersion.ToString()+'; no device or capture command was executed.')
 }finally{if(Test-Path -LiteralPath $temporaryRoot){Remove-Item -LiteralPath $temporaryRoot -Recurse -Force}}

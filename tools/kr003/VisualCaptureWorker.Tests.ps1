@@ -28,7 +28,11 @@ public static class FakeAdb {
   }
 }
 '@
-    Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $fakePath -OutputType ConsoleApplication
+    $sourcePath=Join-Path $temporaryRoot 'fake-adb.cs';[IO.File]::WriteAllText($sourcePath,$source,(New-Object Text.UTF8Encoding($false)))
+    $compiler=@((Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'),(Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'))|Where-Object{Test-Path -LiteralPath $_}|Select-Object -First 1
+    if([string]::IsNullOrWhiteSpace($compiler)){throw 'Windows C# compiler unavailable for fake-ADB test'}
+    & $compiler /nologo /target:exe (('/out:')+$fakePath) $sourcePath
+    if($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $fakePath)){throw 'Fake-ADB compilation failed'}
     $enginePath=(Get-Process -Id $PID).Path;$worker=Join-Path $PSScriptRoot 'Capture-KR003-Frames.ps1'
     $env:KR003_TEST_CAPTURE_FRAME=$framePath;$env:KR003_TEST_CAPTURE_REJECT='0'
     $runDirectory=Join-Path $temporaryRoot 'pass';New-Item -ItemType Directory -Path $runDirectory|Out-Null

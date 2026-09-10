@@ -17,8 +17,12 @@ try{
     $files=@('Clear-KR003-Lab.ps1','Qualification.psm1')|ForEach-Object{[PSCustomObject]@{name=$_;sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $temporaryRoot $_)).Hash.ToLowerInvariant()}}
     $bundle=[PSCustomObject]@{protocol='KR003-VISUAL-CHANNEL-CALIBRATION';runnerVersion=1;diagnosticOnly=$true;diagnosticScope='VISUAL_CHANNEL_ONLY';files=$files}
     [IO.File]::WriteAllText((Join-Path $temporaryRoot 'bundle.json'),($bundle|ConvertTo-Json -Depth 5),(New-Object Text.UTF8Encoding($false)))
-    $fakeAdb=Join-Path $temporaryRoot 'fake-adb.exe'
-    Add-Type -TypeDefinition 'public static class FakeAdb { public static int Main(string[] arguments) { return 2; } }' -Language CSharp -OutputAssembly $fakeAdb -OutputType ConsoleApplication
+    $fakeAdb=Join-Path $temporaryRoot 'fake-adb.exe';$sourcePath=Join-Path $temporaryRoot 'fake-adb.cs'
+    [IO.File]::WriteAllText($sourcePath,'public static class FakeAdb { public static int Main(string[] arguments) { return 2; } }',(New-Object Text.UTF8Encoding($false)))
+    $compiler=@((Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'),(Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'))|Where-Object{Test-Path -LiteralPath $_}|Select-Object -First 1
+    if([string]::IsNullOrWhiteSpace($compiler)){throw 'Windows C# compiler unavailable for fake-ADB test'}
+    & $compiler /nologo /target:exe (('/out:')+$fakeAdb) $sourcePath
+    if($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $fakeAdb)){throw 'Fake-ADB compilation failed'}
     $engine=Join-Path $PSHOME 'powershell.exe';$entrypoint=Join-Path $temporaryRoot 'Clear-KR003-Lab.ps1'
     $start=New-Object Diagnostics.ProcessStartInfo;$start.FileName=$engine;$start.UseShellExecute=$false;$start.RedirectStandardOutput=$true;$start.RedirectStandardError=$true;$start.CreateNoWindow=$true
     $start.Arguments='-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "'+$entrypoint+'" -Adb "'+$fakeAdb+'"'
