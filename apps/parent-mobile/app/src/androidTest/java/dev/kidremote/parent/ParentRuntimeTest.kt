@@ -108,7 +108,7 @@ class ParentRuntimeTest {
     }
     @Test fun httpFailureIsRetryable() = safe("HTTP_RETRY_CLASSIFICATION_FAILED") {
         var rejected=false
-        try{get("57362/kr007_absent_test_resource")}catch(_:java.io.IOException){rejected=true}
+        try{get("57362/kr007_absent_test_resource")}catch(e:java.io.IOException){rejected=e.message=="LOCAL_HTTP_UNAVAILABLE"}
         checkThat(rejected,"NON_SUCCESS_HTTP_NOT_REJECTED")
         result("HTTP_NON_SUCCESS_IS_RETRYABLE_PASS")
     }
