@@ -9,6 +9,56 @@
 - **Done when:** executable slice/build evidence or exact blockers recorded, with
   UI/unit, HTTP/Auth/SQL and emulator/physical evidence separated.
 
+## Native Windows runtime follow-up — blocked before Android execution
+
+Verified clean HEAD `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, branch
+`kr-006-local-parent-auth`, open draft PR #19 base `kr-005-local-pairing`. OD-44's
+prospective one-AVD/download authorization is recorded without changing earlier evidence.
+
+**OBSERVED**, through existing native `powershell.exe -NoProfile -NonInteractive`:
+
+- `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `ANDROID_AVD_HOME`: UNSET.
+- `Get-Command emulator.exe`, `sdkmanager.bat`, `avdmanager.bat`: NOT_ON_PATH.
+- `Test-Path` false: `C:\Users\3feli\AppData\Local\Android\Sdk`,
+  `C:\Android\Sdk`, `C:\Android`, `C:\Program Files\Android`,
+  `C:\Users\3feli\.android\avd`. Additional targeted developer-tool directory checks
+  found no Android/SDK/emulator/Studio/toolchain/AVD directory candidate.
+- SDK registry entries absent: `HKLM:\SOFTWARE\Android Studio`,
+  `HKLM:\SOFTWARE\WOW6432Node\Android SDK Tools`, `HKCU:\SOFTWARE\Android SDK Tools`.
+- Native `Get-CimInstance Win32_ComputerSystem`: `HypervisorPresent=true`;
+  `Win32_Processor`: `VirtualizationFirmwareEnabled=true`,
+  `SecondLevelAddressTranslationExtensions=false`;
+  `Test-Path` Windows System32 `WinHvPlatform.dll`: true.
+- `Get-PSDrive C`: 287869734912 bytes free at the retained check (~268 GiB).
+- Existing debug APK independently rehashed unchanged:
+  `31abee2f6d1fecedbc4989f8d61f9003c6ee5b54d9b43aca8f85d77bc641bed4`.
+
+**INFERRED:** Windows has virtualization-related facilities, but their presence does
+not establish emulator acceleration. The processor report is not used to diagnose
+an incompatible CPU or prescribe host changes.
+
+**UNSPECIFIED:** SDK installations outside the bounded paths/registry/PATH inspected,
+previous personal licence acceptance outside those installations, emulator version,
+system image, usable acceleration, emulator-to-loopback connectivity and every requested
+Android UI/session outcome. No exhaustive personal-file scan was performed.
+
+**Exact boundary:** no SDK/emulator executable or accepted licence installation was
+established. Official [SDK package documentation](https://developer.android.com/tools/sdkmanager#accept-licenses)
+requires package licences; the owner prohibits agent acceptance. The official
+[acceleration check](https://developer.android.com/studio/run/emulator-acceleration#accel-check)
+requires the emulator binary. No download, licence acceptance, AVD creation, ADB command,
+backend start, authentication attempt, device operation or cleanup was performed.
+There are no failed Android test attempts to reinterpret: all runtime tests are UNRUN.
+Existing backend/JVM/build PASS results remain distinct, AC-2/5 remain partial.
+
+One owner action: initialize the official Windows Android SDK at the conventional
+user-owned path above and personally review/accept prompted licences. No host feature
+changes or owner-created AVD are requested. After that, repeat the native prerequisite
+check and continue the authorized task; do not assume future package licences accepted.
+Only documentation changed here; repository validation/whitespace are run locally and
+required CI remains enabled. Prior APK and startup instructions remain unchanged in
+[parent README](../../../apps/parent-mobile/README.md).
+
 ## OBSERVED — local execution
 
 The existing native Windows Docker client returned `linux` at the explicit

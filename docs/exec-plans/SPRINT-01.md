@@ -70,8 +70,30 @@ KR-004/005 regressions. Parent debug/release build, four JVM tests and lint exec
 CI after correcting compile SDK to 37; final release audit/CI status is tracked on
 draft PR #19. Provisional app ID is not a distribution identity. AC-1/3/4/6/7 have local
 evidence; AC-2/5 remain partial pending APK runtime/session/secure-storage evidence.
-No local SDK/emulator is available. Next bounded work remains KR-006 runtime validation
-on a task-owned emulator when prerequisites are available, not KR-007 or a physical install.
+Initial execution did not establish a local SDK/emulator. The native Windows follow-up
+below refines that prerequisite evidence; no Linux/CI result proves Windows unavailable.
+
+## KR-006 native Windows runtime follow-up — 2026-09-11
+
+- **Goal:** execute the real parent UI against existing local services, including verification/recovery, activity versus process restoration, logout storage clearing and network recovery; no new features.
+- **Context:** clean `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, same branch/draft PR #19 stacked on #18; OD-44 now explicitly permits one dedicated Windows AVD and licensed user-owned tooling downloads.
+- **Constraints:** no physical target, global ADB reset, new licence acceptance, host configuration/privilege changes, deployment or KR-007. Synthetic emails/credentials stay local and out of command arguments/logs. Existing backend loopback/release isolation remains intact.
+- **Done when:** actual app runtime tests pass with sanitized results, or a demonstrated prerequisite requiring owner action stops execution without substituting backend/unit/build evidence.
+
+**Observed stop:** native PowerShell executes successfully. SDK environment variables and
+tool PATH entries are absent; standard Windows SDK/Studio/AVD paths and SDK registry
+entries checked are absent. Windows reports a present hypervisor and firmware virtualization,
+but usable emulator acceleration is **UNSPECIFIED** without the emulator executable.
+About 268 GiB is free on C:. No existing accepted SDK licence installation was established;
+downloads are conditional on that acceptance and the agent may not accept terms.
+See the [retained diagnostics](../test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md#native-windows-runtime-follow-up--blocked-before-android-execution).
+
+**One owner action:** complete the official Android SDK's initial Windows setup in
+`C:\Users\3feli\AppData\Local\Android\Sdk`, personally reviewing/accepting its licence
+prompts. Do not enable Windows features or create an AVD for this step. Then resume
+native acceleration verification and the single task-owned AVD within OD-44; any new
+package licence remains an owner boundary. No app/device/services were operated in
+this follow-up; all requested Android runtime flows and AC-2/5 remain unrun/partial.
 
 ## Critical-path reset — 2026-09-10
 
