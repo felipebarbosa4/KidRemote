@@ -24,3 +24,13 @@ test('fresh runtime reinstall is restricted to task packages after emulator guar
  assert.match(s,/async function command\(args\)\{await guard\(\)/);
  assert.doesNotMatch(s,/uninstall.*\*|kill-server|wipe-data/);
 });
+test('camera continuation uses native virtual scene and platform permission UI, never decoder injection as camera evidence',()=>{
+ const testSource=read('apps/child-android/src/androidTest/java/dev/kidremote/child/CameraStorageRuntimeTest.kt');
+ assert.match(testSource,/CameraManager/);assert.match(testSource,/permission_deny_button/);
+ assert.doesNotMatch(testSource,/model\.decoded|decodePixels|decodeLuma|takeScreenshot|dumpWindowHierarchy/);
+ const runtime=read('tools/kr007/camera-storage-runtime.mjs');
+ assert.match(runtime,/virtualscene-image/);assert.match(runtime,/camera-storage-/);assert.match(runtime,/writeFileSync\(path,bytes\)/);
+ assert.doesNotMatch(runtime,/webcam|image_url|base64|console\.log.*(?:bytes|cipher|qr)/);
+ assert.match(read('.gitignore'),/synthetic-identity\.ciphertext/);
+ const start=read('tools/kr006/windows-emulator.ps1');assert.match(start,/'-camera-back','virtualscene','-camera-front','none'/);
+});

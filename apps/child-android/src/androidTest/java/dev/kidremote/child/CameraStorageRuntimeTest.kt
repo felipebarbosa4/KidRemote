@@ -26,7 +26,7 @@ class CameraStorageRuntimeTest {
     private val context get()=InstrumentationRegistry.getInstrumentation().targetContext
     private val model get()=ViewModelProvider(ui.activity)[EnrollmentModel::class.java]
     private fun expect(value:Boolean){if(!value)throw AssertionError("CAMERA_STORAGE_ASSERTION_FAILED")}
-    private fun safe(code:String,body:()->Unit){try{body()}catch(_:Throwable){throw AssertionError(code)}}
+    private fun safe(code:String,body:()->Unit){try{body()}catch(e:Throwable){result(when(e){is AssertionError->"FAILURE_ASSERTION";is IllegalStateException->"FAILURE_ILLEGAL_STATE";is java.util.concurrent.TimeoutException->"FAILURE_TIMEOUT";else->"FAILURE_OTHER"});throw AssertionError(code)}}
     private fun result(code:String){InstrumentationRegistry.getInstrumentation().sendStatus(0,android.os.Bundle().apply{putString("kr007",code)})}
     private fun settled(){ui.waitUntil(30000){!model.state.loading}}
     private fun paired(){ui.waitUntil(30000){model.state.paired&&model.state.message.contains("Leitura autenticada concluída")}}
@@ -46,7 +46,7 @@ class CameraStorageRuntimeTest {
         settled();expect(!model.state.paired);expect(context.checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_DENIED)
         CameraProbe().use{camera->
             camera.waitFor(true);Thread.sleep(800);expect(camera.available==true);result("NO_CAMERA_BEFORE_EXPLICIT_SCAN_PASS")
-            scan();permissionButton("permission_deny_button")
+            scan();result("SCAN_PERMISSION_REQUEST_CLICKED");permissionButton("permission_deny_button");result("SYSTEM_PERMISSION_DENY_CLICKED")
             ui.waitUntil(10000){ui.onAllNodes(hasText("Câmera recusada. Pareamento não concluído; tente novamente quando desejar.")).fetchSemanticsNodes().isNotEmpty()}
             expect(!IdentityStore(context).file.exists()&&!IdentityStore(context).pending.exists());camera.waitFor(true);result("ACTUAL_CAMERA_PERMISSION_DENIAL_NO_REDEMPTION_PASS")
             scan();permissionButton("permission_allow_foreground_only_button");camera.waitFor(false);result("ACTUAL_PERMISSION_GRANT_CAMERA_OPEN_PASS")
@@ -111,11 +111,12 @@ class CameraStorageRuntimeTest {
     @Test fun missingKeyDiagnostic()=safe("MISSING_KEY_DIAGNOSTIC_FAILED") {
         paired();keys().deleteEntry("device-identity-v1");expect(!keys().containsAlias("device-identity-v1"))
         ui.runOnIdle{model.restore()};ui.waitUntil(10000){!model.state.loading&&model.state.recovery};expect(!model.state.paired)
-        result(if(keys().containsAlias("device-identity-v1"))"MISSING_KEY_FAIL_CLOSED_BUT_READ_RECREATED_KEY_OBSERVED" else "MISSING_KEY_FAIL_CLOSED_NO_KEY_CREATION_PASS")
+        expect(!keys().containsAlias("device-identity-v1"));result("MISSING_KEY_FAIL_CLOSED_NO_KEY_CREATION_PASS")
     }
     @Test fun isolatedCiphertextWithoutKey()=safe("ISOLATED_CIPHERTEXT_RESTORE_FAILED") {
         settled();expect(model.state.recovery&&!model.state.paired)
         var rejected=false;try{IdentityStore(context).read()}catch(_:Exception){rejected=true};expect(rejected)
+        expect(!keys().containsAlias("device-identity-v1"))
         result("CLEAN_INSTALL_CIPHERTEXT_WITHOUT_ORIGINAL_KEY_REJECTED_PASS")
     }
 }

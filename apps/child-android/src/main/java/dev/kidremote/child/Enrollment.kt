@@ -36,15 +36,16 @@ internal class IdentityStore(context: Context) {
     val file=File(context.noBackupFilesDir,"device-identity")
     val pending=File(context.noBackupFilesDir,"pairing-pending")
     private val alias="device-identity-v1"
-    private fun key():SecretKey {
+    private fun key(create:Boolean):SecretKey {
         val ks=KeyStore.getInstance("AndroidKeyStore").apply{load(null)}
         (ks.getKey(alias,null) as? SecretKey)?.let{return it}
+        check(create){"IDENTITY_KEY_UNAVAILABLE"}
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore").apply {
             init(KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
         }.generateKey()
     }
     fun save(value:JSONObject) {
-        val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.ENCRYPT_MODE,key())}
+        val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.ENCRYPT_MODE,key(true))}
         val a=android.util.AtomicFile(file);val s=a.startWrite()
         try{s.write(c.iv+c.doFinal(value.toString().toByteArray(Charsets.UTF_8)));a.finishWrite(s)}catch(e:Exception){a.failWrite(s);throw e}
         pending.delete()
@@ -52,7 +53,7 @@ internal class IdentityStore(context: Context) {
     fun read():JSONObject? {
         if(!file.exists())return null
         check(file.length() in 29..8192)
-        val bytes=file.readBytes();val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,bytes.copyOfRange(0,12)))}
+        val bytes=file.readBytes();val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.DECRYPT_MODE,key(false),GCMParameterSpec(128,bytes.copyOfRange(0,12)))}
         val v=JSONObject(String(c.doFinal(bytes.copyOfRange(12,bytes.size)),Charsets.UTF_8))
         check(v.getString("credential").matches(Regex("[A-Za-z0-9_-]{43}")));java.util.UUID.fromString(v.getString("device_id"));java.util.UUID.fromString(v.getString("policy_epoch"))
         return v
