@@ -7,7 +7,7 @@ const images={
  mail:'axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365',
 };
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep}) {
+export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep,runtime=false}) {
  const resources=[];let primary;
  const secrets=new Set();
  const jwt=randomBytes(48).toString('hex'), password=randomBytes(32).toString('hex');
@@ -83,6 +83,10 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    const restResource=resources.find(r=>r.image===images.rest);
    const restAvailable=enabled=>{verify(restResource);call([enabled?'start':'stop',restResource.id]);};
    const {testParentAuth}=await import('./real-auth-tests.mjs');await testParentAuth({http,sql,mailAvailable,restAvailable});
+   if(runtime) {
+    const {testAndroidRuntime}=await import('./android-runtime.mjs');
+    await testAndroidRuntime({restAvailable,sql});
+   }
    for(const r of resources) {
     const output=call(['logs',r.id]);
     check([...secrets].filter(s=>s.length>=16).every(s=>!output.includes(s)),'RAW_AUTH_SECRET_IN_SERVICE_LOG');

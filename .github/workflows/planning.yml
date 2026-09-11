@@ -32,13 +32,20 @@ jobs:
           if test -x "$ANDROID_HOME/emulator/emulator"; then echo EMULATOR_BINARY=AVAILABLE; else echo EMULATOR_BINARY=ABSENT; fi
           if test -d "$ANDROID_HOME/system-images" && find "$ANDROID_HOME/system-images" -name system.img -print -quit | grep -q .; then echo EMULATOR_SYSTEM_IMAGE=AVAILABLE; else echo EMULATOR_SYSTEM_IMAGE=ABSENT; fi
           if test -r /dev/kvm && test -w /dev/kvm; then echo KVM_ACCESS=AVAILABLE; else echo KVM_ACCESS=UNAVAILABLE; fi
-          spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
+          spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
       - name: Retain debug APK only (no accounts, mail or local-service data)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kr006-parent-debug
           path: apps/parent-mobile/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain test APK only (compilation is not runtime evidence)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kr006-parent-instrumentation
+          path: apps/parent-mobile/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           if-no-files-found: error
           retention-days: 7
   database-isolation:

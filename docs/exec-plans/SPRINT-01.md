@@ -75,6 +75,14 @@ below refines that prerequisite evidence; no Linux/CI result proves Windows unav
 
 ## KR-006 native Windows runtime follow-up — 2026-09-11
 
+**Resumed after owner SDK setup:** clean baseline `a5811617a08f4103d3650d5a3872c3f005ccb7cd`.
+Native Emulator 37.1.11 `-accel-check` now returns exit 0, WHPX 10.0.26200 usable.
+Platform Tools 37.0.1 and command-line tools 23.0 are installed; initially no image/AVD.
+Proceed within existing OD-44 with one dedicated API 36 AOSP x86_64 AVD, actual Compose
+instrumentation and unchanged local Auth/mail. Required package licence text is compared
+with the installed/accepted SDK licence before download; never answer a new licence prompt.
+The earlier prerequisite failure below remains historical, not the current acceleration verdict.
+
 - **Goal:** execute the real parent UI against existing local services, including verification/recovery, activity versus process restoration, logout storage clearing and network recovery; no new features.
 - **Context:** clean `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, same branch/draft PR #19 stacked on #18; OD-44 now explicitly permits one dedicated Windows AVD and licensed user-owned tooling downloads.
 - **Constraints:** no physical target, global ADB reset, new licence acceptance, host configuration/privilege changes, deployment or KR-007. Synthetic emails/credentials stay local and out of command arguments/logs. Existing backend loopback/release isolation remains intact.
