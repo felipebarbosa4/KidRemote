@@ -6,6 +6,10 @@ execute the actual handler on loopback with explicitly stubbed storage dependenc
 No remote endpoint, production credentials, real Auth account, HTTP signup, deployment,
 published database port or host privilege change is used.
 
+OD-43 separately authorizes KR-005 local pairing, stacked on unmerged KR-004.
+The same checker now also runs suites 05/06 and real loopback HTTP-to-pairing-SQL
+integration. This does not widen OD-42 or authorize downstream issues.
+
 ## Run
 
 Prerequisites: Node.js and an already-running **local Linux Docker engine**.
@@ -42,7 +46,7 @@ migration user `supabase_admin`, zero application tables and the real `auth.uid(
 The database name is only shared spelling: the instance/container and data are newly allocated.
 
 Migrations execute in filename order. Suites 01–03 roll back their synthetic fixtures,
-temporary privilege changes and pgTAP setup. Suite 04 deliberately commits synthetic fixtures
+temporary privilege changes and pgTAP setup. Suite 05 also rolls back. Suites 04/06 deliberately commit synthetic fixtures
 so independent database sessions can exercise real concurrency; the disposable DB is removed
 afterward. dblink connects only to the same exclusive container's Unix socket, never another
 database instance. The runner rejects missing required migrations/suites and empty/skipped tests
@@ -68,7 +72,7 @@ the disposable synthetic database is intentionally not an evidence archive.
 - `02_constraints.test.sql`: privileged synthetic setup deliberately attempts malformed
   rows to prove relational/numeric constraints independently of client-grant denials.
 - Node lifecycle tests use fake Docker only to test orchestration guardrails and cleanup.
-  Their PASS is **not** database evidence; CI separately executes both actual SQL suites.
+  Their PASS is **not** database evidence; CI separately executes all actual SQL suites.
 
 Suites 01/02 remain byte-for-byte unchanged as AC-1–4 regressions. Suite 03 proves
 the [actual atomic control function](../functions/CONTROL-TRANSACTION.md), rollback,
@@ -80,7 +84,7 @@ and authorization boundary is tested separately, not inferred from an absent fun
 runner, and worktree/staged/commit whitespace checks, failing on the first error.
 The same command runs in required CI alongside the unchanged Windows/Android jobs.
 The **local reset procedure is another fresh invocation**: allocate and verify a new
-task container, replay both migrations, run all suites, verify exact-target removal.
+task container, replay all versioned migrations, run all suites, verify exact-target removal.
 There is no in-place DROP/reset option accepting arbitrary database/container targets.
 
 Claims represent trusted post-authentication SQL context. No JWT signatures, Auth HTTP
@@ -88,7 +92,11 @@ login, PostgREST role switching or deployed Deno/Edge runtime is validated. Devi
 credential hashing/verification and HTTP authorization run in the actual handler, with
 synthetic storage dependency callbacks: this is AC-5's explicitly permitted HTTP/stub
 evidence, not database-backed gateway storage integration. Device sync/ack persistence,
-push-provider delivery, pairing and credential rotation remain later integration work.
+push-provider delivery and credential rotation remain later integration work.
+KR-005 pairing transactions are real SQL, including 20 concurrent sessions and
+commit-response-loss recovery. The checker passes `--pairing` to the same runner
+for the real pairing HTTP/SQL bridge; the gateway's business-operation storage
+callbacks remain stubs even when credential/device records come from that database.
 AC-7 is the reproducible **local** pre-exposure check, not authorization to expose services
 or a statement that every production security/lifecycle requirement is complete.
 

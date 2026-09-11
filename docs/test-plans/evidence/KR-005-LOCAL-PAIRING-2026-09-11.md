@@ -85,6 +85,11 @@ work. Production rate quotas remain UNSPECIFIED; fixed-window recommended local
 values are not a new owner product decision. Physical enforcement remains KR-003's
 open gate. No pooling/reclassification or immutable-bundle changes.
 
-Required CI: pending publication of this commit; exact final status will be recorded
-in the existing issue and new stacked draft PR. No unchanged manual Android build
-was repeated; inherited CI requirements are unchanged.
+Implementation commit: `57ed9e9ea808f1a9bb03549a532d7f68820f1b09`.
+Required [implementation CI](https://github.com/felipebarbosa4/KidRemote/actions/runs/34628882029)
+has independently passed its real database and repository jobs. The final head's
+complete CI status (including inherited Windows/Android jobs and explicit skips)
+is synchronized on [draft PR #18](https://github.com/felipebarbosa4/KidRemote/pull/18)
+and [Issue #5](https://github.com/felipebarbosa4/KidRemote/issues/5); pending jobs are
+not called PASS. No unchanged manual Android build was repeated. Inherited CI
+requirements are unchanged, and PR #17/#16 remain unmerged.
