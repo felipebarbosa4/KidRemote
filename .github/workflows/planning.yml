@@ -27,8 +27,8 @@ jobs:
           node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --parent-test
       - name: Build parent with preinstalled SDK only
         run: |
-          test -d "$ANDROID_HOME/platforms/android-36"
-          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"
+          test -d "$ANDROID_HOME/build-tools/37.0.0"
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
       - name: Retain debug APK only (no accounts, mail or local-service data)

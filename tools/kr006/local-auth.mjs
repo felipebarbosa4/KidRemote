@@ -9,11 +9,14 @@ const images={
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep}) {
  const resources=[];let primary;
+ const secrets=new Set();
  const jwt=randomBytes(48).toString('hex'), password=randomBytes(32).toString('hex');
  const check=(b,c)=>{if(!b) throw Error(c);};
  // Windows-owned loopback is contacted with the existing native Node process.
  // Request bodies/tokens travel through stdin, never argv/files/tool output.
  const http=async(url,method='GET',body,headers={})=>{
+  for(const key of ['password','refresh_token','token_hash']) if(typeof body?.[key]==='string') secrets.add(body[key]);
+  if(headers.authorization?.startsWith('Bearer ')) secrets.add(headers.authorization.slice(7));
   const request={url,options:{method,headers:{'content-type':'application/json',...headers},...(body===undefined?{}:{body:JSON.stringify(body)})}};
   if(!windows) {
    try {const r=await fetch(url,{...request.options,signal:AbortSignal.timeout(10000)});return {status:r.status,body:await r.text()};}
@@ -75,7 +78,16 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    console.log('PARENT_DEV_READY:Auth=127.0.0.1:57361:REST=127.0.0.1:57362:Mail=127.0.0.1:57365:CtrlC=scopedCleanup');
    await new Promise(r=>{process.once('SIGINT',r);process.once('SIGTERM',r);});
   } else {
-   const {testParentAuth}=await import('./real-auth-tests.mjs');await testParentAuth({http,sql});
+   const mailResource=resources.find(r=>r.image===images.mail);
+   const mailAvailable=enabled=>{verify(mailResource);call([enabled?'start':'stop',mailResource.id]);};
+   const restResource=resources.find(r=>r.image===images.rest);
+   const restAvailable=enabled=>{verify(restResource);call([enabled?'start':'stop',restResource.id]);};
+   const {testParentAuth}=await import('./real-auth-tests.mjs');await testParentAuth({http,sql,mailAvailable,restAvailable});
+   for(const r of resources) {
+    const output=call(['logs',r.id]);
+    check([...secrets].filter(s=>s.length>=16).every(s=>!output.includes(s)),'RAW_AUTH_SECRET_IN_SERVICE_LOG');
+   }
+   console.log('AUTH_SERVICE_LOG_SECRET_SCAN_PASS');
   }
  } catch(e) {primary=e;}
  finally {

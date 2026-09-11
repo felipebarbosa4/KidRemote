@@ -68,7 +68,11 @@ INTERNET, never child/Accessibility/device-admin/camera permissions. No backend 
 
 ## Build/test
 
-Requires an already licensed SDK with API 36 / Build Tools 36.0.0 and JDK 17:
+Requires an already licensed compile SDK API 37 / Build Tools 37.0.0 and JDK 17.
+Target API remains 36 and minimum API 28; this bootstrap is not a device-support claim.
+The first CI build correctly rejected compile SDK 36 because the current stable Compose
+BOM requires 37. Only the parent compile SDK changed; KR-003 is untouched. See
+[Android SDK setup](https://developer.android.com/about/versions/17/setup-sdk).
 
 ```sh
 spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease

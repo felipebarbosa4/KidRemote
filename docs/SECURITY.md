@@ -109,6 +109,48 @@ Auth has its own documented limits; configure SMTP/abuse controls separately.
 
 ## Revocation, logout, deletion and recovery
 
+### KR-006 account deletion design (OD-44; not an implemented endpoint)
+
+The parent account screen must eventually offer an in-app request and the published
+privacy listing must link a web request path. Neither a public domain nor deployment
+is approved; this local app deliberately has no pretend-working deletion button.
+The web path requires account authentication/reauthentication, not an emailed account
+identifier as authority. Both paths share the same server operation, with an operation
+ID for retries and server-derived subject/household; no caller-selected actor/tenant.
+
+Flow: explain consequences → explicit confirmation → Auth-supported reauthentication
+→ server verifies identity and sufficiently recent proof → lock account/household
+and recheck active sole-owner authorization → revoke devices/all credentials, invalidate
+push/outbox and pairing → mark deletion pending → perform idempotent application-row
+and Auth-account deletion. The Auth deletion boundary is separate from the database
+transaction: a provider failure leaves revocation and deletion-pending durable, retries
+do not restore authorization, and completion is not shown before all required steps
+are verified. Retain only approved minimal tombstones during the bounded cleanup.
+
+Before committing revocation, network/provider failure permits safe retry without a
+false completion. After revocation commits, response loss returns the existing pending
+operation on retry. Recheck authorization at commit; reject cross-household requests,
+stale reauthentication and membership removed after initial request. Production proof
+freshness policy/provider configuration remain **UNSPECIFIED**, not an invented local
+password mechanism. Client cache cleanup must run even when logout/deletion contact fails.
+
+Offline children cannot receive immediate revocation/removal. They continue enforcing
+the last downloaded valid policy until the specified next-contact/removal or visible
+local recovery path; account deletion is not a remote unlock guarantee. Live application
+deletion target remains OD-14's seven days; provider backup purge is not promised.
+After credential digest/tombstone purge, unknown credentials get generic unauthorized,
+not fabricated signed removal instructions. KR-007 must implement/test the child UX
+and safe recovery before real use. Tests still required for the deletion implementation:
+reauth expiry, cross-tenant attempts, races, provider failure, response loss, retry,
+offline child, retained-data cleanup and both request pathways.
+
+KR-006's implemented local logout requests Auth **local-session** scope and deletes
+the app's refresh-token file/key and in-memory presentation. Existing signed access
+JWTs can remain accepted by PostgREST until expiry; actual local tests retain this
+limitation. Removed membership nevertheless denies tenant access immediately through
+RLS. Keystore/OEM backup, process recreation and physical link/TalkBack tests remain
+unrun; source/unit tests are not physical storage evidence.
+
 Logout clears parent session/cache and ends the chosen session scope; it does not cancel child policy.
 Supabase access tokens can remain valid until expiry after signout; membership revocation must be checked server-side.
 [Supabase sessions](https://supabase.com/docs/guides/auth/sessions).

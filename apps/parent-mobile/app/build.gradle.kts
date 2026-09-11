@@ -1,7 +1,8 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose") }
 android {
     namespace = "dev.kidremote.parent"
-    compileSdk = 36
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
     defaultConfig {
         applicationId = "dev.kidremote.parent.unassigned"
         minSdk = 28

@@ -1,5 +1,5 @@
 import {randomBytes,randomUUID} from 'node:crypto';
-export async function testParentAuth({http,sql}) {
+export async function testParentAuth({http,sql,mailAvailable,restAvailable}) {
  let count=0;const check=(ok,label)=>{if(!ok) throw Error('AUTH_TEST_FAILED:'+label);count++;};
  const auth='http://127.0.0.1:57361',rest='http://127.0.0.1:57362',mail='http://127.0.0.1:57365';
  const json=r=>{try{return JSON.parse(r.body);}catch{return {};}};
@@ -77,5 +77,14 @@ export async function testParentAuth({http,sql}) {
  sql(`delete from public.household_members where user_id='${a.session.user.id}';`);
  check(json(await http(rest+'/households?select=id','GET',undefined,bearer(a.session))).length===0,'DELETED_MEMBERSHIP_STALE_JWT_DENIED');
  check((await http(rest+'/rpc/bootstrap_household','POST',{p_timezone:'Etc/UTC'},bearer(a.session))).status===403,'NO_REENROLL_AFTER_MEMBERSHIP_REMOVAL');
+ await new Promise(r=>setTimeout(r,1100));
+ mailAvailable(false);
+ try { check((await http(auth+'/recover','POST',{email:b.email})).status>=500,'ACTUAL_SMTP_FAILURE_REPORTED'); }
+ finally { mailAvailable(true); }
+ restAvailable(false);
+ try {check((await http(rest+'/')).status===0,'UNAVAILABLE_OWNED_REST_ENDPOINT');}
+ finally {restAvailable(true);}
+ await new Promise(r=>setTimeout(r,1200));
+ check((await http(rest+'/')).status===200,'OWNED_REST_RECOVERED');
  console.log('REAL_AUTH_POSTGREST_TESTS_PASS:assertions='+count+':autoConfirm=false:externalSMTP=false');
 }
