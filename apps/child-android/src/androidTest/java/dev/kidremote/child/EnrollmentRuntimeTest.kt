@@ -49,4 +49,28 @@ class EnrollmentRuntimeTest {
         ui.runOnIdle{model.restore()};ui.waitUntil(10000){model.state.recovery&&!model.state.loading}
         expect(!model.state.paired);result("CORRUPT_IDENTITY_NO_FALSE_PAIRED_PASS")
     }
+    private fun decodedHandoff():String {
+        val q=File(context.noBackupFilesDir,"qr-handoff").readText();val m=QRCodeWriter().encode(q,BarcodeFormat.QR_CODE,512,512)
+        return decodePixels(IntArray(512*512){if(m[it%512,it/512])0xff000000.toInt() else -1},512,512)?:throw AssertionError("DECODER_FAILED")
+    }
+    @Test fun interruptAfterCommit()=safe("CHILD_COMMITTED_INTERRUPTION_FAILED") {
+        val model=ViewModelProvider(ui.activity)[EnrollmentModel::class.java];ui.waitUntil(10000){!model.state.loading}
+        EnrollmentFaults.beforeIdentitySave={throw IllegalStateException("INJECTED_RESPONSE_LOSS")}
+        try {val q=decodedHandoff();ui.runOnIdle{model.decoded(q)};ui.waitUntil(30000){model.state.recovery&&!model.state.loading}}
+        finally{EnrollmentFaults.beforeIdentitySave={}}
+        expect(IdentityStore(context).pending.exists());expect(IdentityStore(context).read()==null);expect(!model.state.paired)
+        result("ACTUAL_HTTP_COMMIT_BEFORE_PERSISTENCE_LOSS_PASS")
+    }
+    @Test fun interruptedRestart()=safe("INTERRUPTED_RESTART_FAILED") {
+        val model=ViewModelProvider(ui.activity)[EnrollmentModel::class.java];ui.waitUntil(10000){model.state.recovery&&!model.state.loading}
+        expect(!model.state.paired&&IdentityStore(context).read()==null&&IdentityStore(context).pending.exists())
+        result("PENDING_RESTART_REQUIRES_PARENT_NO_AUTO_REPLAY_PASS")
+    }
+    @Test fun recoverWithFreshQr()=safe("CHILD_FRESH_QR_RECOVERY_FAILED") {
+        val model=ViewModelProvider(ui.activity)[EnrollmentModel::class.java];ui.waitUntil(10000){model.state.recovery&&!model.state.loading}
+        ui.onNodeWithText("Responsável revogou; usar novo QR").performClick()
+        val q=decodedHandoff();ui.runOnIdle{model.decoded(q)};waitPaired()
+        File(context.noBackupFilesDir,"runtime-pid").writeText(Process.myPid().toString())
+        result("FRESH_QR_NEW_INDEPENDENT_IDENTITY_AFTER_REVOKE_PASS")
+    }
 }

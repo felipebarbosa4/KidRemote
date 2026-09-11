@@ -2,11 +2,15 @@ import {randomUUID,randomBytes} from 'node:crypto';
 import {createPairing,secretDigest} from '../../supabase/functions/pairing/protocol.mjs';
 export async function testEnrollment({http,sql}) {
  let count=0;const ok=(b,c)=>{if(!b)throw Error('ENROLLMENT_HTTP_FAILED:'+c);count++;};
- const id=randomUUID(),house=randomUUID(),foreign=randomUUID(),sibling=randomUUID();
+ const id=randomUUID(),house=randomUUID(),foreign=randomUUID(),sibling=randomUUID(),foreignHouse=randomUUID();
  const literal=s=>"'"+String(s).replaceAll("'","''")+"'";
  sql(`insert into auth.users(id) values('${id}');insert into public.profiles(user_id) values('${id}');
  insert into public.households(id,timezone_name,timezone_revision,deletion_state) values('${house}','Etc/UTC',1,'active');
  insert into public.household_members values('${house}','${id}','owner',true);`);
+ sql(`insert into public.households(id,timezone_name,timezone_revision,deletion_state) values('${foreignHouse}','Etc/UTC',1,'active');
+ insert into public.devices(id,household_id,nickname,platform,os_major,agent_version,policy_epoch) values
+ ('${sibling}','${house}','synthetic sibling','android',16,'test',gen_random_uuid()),
+ ('${foreign}','${foreignHouse}','synthetic foreign','android',16,'test',gen_random_uuid());`);
  const parent=q=>sql(`set role authenticated;set "request.jwt.claim.sub"='${id}';${q}`);
  const create=()=>createPairing({create:async d=>JSON.parse(parent(`select public.create_pairing(decode('${d}','hex'));`))});
  const finish=(sid,revoke=false)=>JSON.parse(parent(`select public.finish_pairing('${sid}',${revoke});`));

@@ -32,7 +32,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
   if(q.code!==0||q.out.trim()!=='1')throw Error('NOT_VERIFIED_EMULATOR');
  }
  async function command(args){await guard();const r=await run(args);if(r.code!==0)throw Error('TARGETED_ANDROID_OPERATION_REJECTED');return r.out;}
- const evidence={scope:'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
+ const evidence={scope:enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
  let primary,networkRestored=true;
  try {

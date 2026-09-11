@@ -6,6 +6,7 @@ for(const variant of ['debug','release']){
  const manifest=readFileSync(root+`intermediates/merged_manifests/${variant}/process${variant==='debug'?'Debug':'Release'}Manifest/AndroidManifest.xml`,'utf8');
  const id='dev.kidremote.child.unassigned'+(variant==='debug'?'.debug':'');
  const permissions=[...manifest.matchAll(/<uses-permission\b[^>]*android:name="([^"]+)"/g)].map(m=>m[1]);
+ console.log('CHILD_MERGED_PERMISSION_METADATA='+JSON.stringify({variant,permissions,backupDisabled:manifest.includes('android:allowBackup="false"'),extractionRules:manifest.includes('android:dataExtractionRules=')}));
  if(permissions.some(p=>!['android.permission.INTERNET','android.permission.CAMERA',id+'.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'].includes(p))||!manifest.includes('android:allowBackup="false"')||!manifest.includes('android:dataExtractionRules='))throw Error('CHILD_PERMISSION_BACKUP_SCOPE');
  const apk=root+`outputs/apk/${variant}/child-${variant}${variant==='release'?'-unsigned':''}.apk`;
  const dex=execFileSync('unzip',['-p',apk,'classes*.dex'],{maxBuffer:64*1024*1024}).toString('latin1');

@@ -137,4 +137,18 @@ class ParentRuntimeTest {
         ui.runOnIdle {checkThat(model.state.devices.size==1,"NOT_EXACTLY_ONE_DEVICE")}
         result("PARENT_ACTUAL_ENROLLED_LIST_PASS")
     }
+    private fun openExistingList() {waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos");waitText("Controles e enforcement não estão disponíveis nesta etapa.")}
+    private fun exportNewQr() {
+        click("Criar QR de pareamento");waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        var q:String?=null;ui.runOnIdle{q=model.state.qr};checkThat(q!=null,"ACTUAL_QR_MISSING")
+        File(target.noBackupFilesDir,"qr-handoff").writeText(q!!)
+    }
+    @Test fun prepareInterruptedQr()=safe("PARENT_INTERRUPTION_QR_FAILED") {openExistingList();exportNewQr();result("PARENT_FRESH_INTERRUPTION_QR_PASS")}
+    @Test fun recoverInterruptedQr()=safe("PARENT_REVOKE_FRESH_QR_FAILED") {
+        openExistingList();click("Cancelar ou verificar QR")
+        waitText("QR consumido. Se a credencial não foi salva, revogue o pareamento incompleto e gere outro QR.")
+        click("Revogar pareamento incompleto");waitText("Pareamento incompleto revogado. Gere outro QR.")
+        exportNewQr();result("PARENT_REVOKED_LOST_RESPONSE_IDENTITY_FRESH_QR_PASS")
+    }
 }

@@ -19,10 +19,14 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
   if(!passed)throw Error('ENROLLMENT_ANDROID_FAILED:'+method);
  }
  await stage(app,'dev.kidremote.parent.ParentRuntimeTest','createEnrollmentQr');
- const qr=(await command(['exec-out','run-as',app,'cat','no_backup/qr-handoff'])).trim();
- if(!parseQR(qr))throw Error('HANDOFF_NOT_MINIMAL_QR');
- await guard();
- if((await run(['shell','run-as',child,'sh','-c','"mkdir -p no_backup && cat > no_backup/qr-handoff"'],10000,qr)).code!==0)throw Error('LOCAL_QR_HANDOFF_FAILED');
+ async function handoff(){
+  const qr=(await command(['exec-out','run-as',app,'cat','no_backup/qr-handoff'])).trim();
+  const parsed=parseQR(qr);if(!parsed)throw Error('HANDOFF_NOT_MINIMAL_QR');
+  await guard();
+  if((await run(['shell','run-as',child,'sh','-c','"mkdir -p no_backup && cat > no_backup/qr-handoff"'],10000,qr)).code!==0)throw Error('LOCAL_QR_HANDOFF_FAILED');
+  return parsed.session_id;
+ }
+ await handoff();
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','decodeRedeemAndRead');
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','restartAndNegatives');
  await stage(app,'dev.kidremote.parent.ParentRuntimeTest','parentSeesEnrollment');
@@ -30,4 +34,16 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
  if(count.trim()!=='1')throw Error('NOT_EXACTLY_ONE_RUNTIME_DEVICE');
  evidence.enrollmentDeviceCount=1;evidence.cameraEvidence='GENERATED_QR_DECODER_INPUT_NOT_CAMERA_CAPTURE';
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','corruptIdentityRecovery');
+ await command(['shell','pm','clear',child]);
+ await stage(app,'dev.kidremote.parent.ParentRuntimeTest','prepareInterruptedQr');
+ const interrupted=await handoff();
+ await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','interruptAfterCommit');
+ if(sql(`select count(*) from private.pairing_sessions where id='${interrupted}' and consumed_at is not null;`)!=='1')throw Error('INTERRUPTION_NOT_COMMITTED');
+ await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','interruptedRestart');
+ await stage(app,'dev.kidremote.parent.ParentRuntimeTest','recoverInterruptedQr');
+ if(sql(`select count(*) from private.pairing_sessions s join public.devices d on d.id=s.device_id where s.id='${interrupted}' and d.revoked_at is not null;`)!=='1')throw Error('LOST_IDENTITY_NOT_REVOKED');
+ const fresh=await handoff();if(fresh===interrupted)throw Error('NOT_FRESH_QR');
+ await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','recoverWithFreshQr');
+ await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','restartAndNegatives');
+ evidence.interruptedCommitRecovery='ACTUAL_COMMIT_TEST_FAULT_BEFORE_PERSIST_REVOKE_FRESH_QR';
 }

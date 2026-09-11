@@ -72,6 +72,7 @@ internal class EnrollmentApi {
             c.setRequestProperty("Content-Type","application/json");if(credential!=null)c.setRequestProperty("Authorization","Bearer $credential")
             c.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
             if(c.responseCode==403)throw SecurityException("DEVICE_REVOKED")
+            if(c.responseCode==401)throw SecurityException("CREDENTIAL_REJECTED")
             check(c.responseCode==200){"ENROLLMENT_UNAVAILABLE"}
             val bytes=c.inputStream.use{input->val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(4096)
                 while(true){val n=input.read(buffer);if(n<0)break;check(out.size()+n<=65536);out.write(buffer,0,n)};out.toByteArray()}
@@ -102,7 +103,11 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
     fun restore()=run {
         val saved=store.read()
         if(saved==null){if(store.pending.exists())throw IllegalStateException("INTERRUPTED_PAIRING");EnrollmentState()}
-        else {api.initial(saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
+        else {
+            try{api.initial(saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
+            catch(_:SecurityException){EnrollmentState(message="Credencial recusada ou revogada. Identidade local preservada; procure o responsável. Enforcement não ativo.",recovery=true)}
+            catch(_:Exception){EnrollmentState(paired=true,message="Identidade armazenada; contato não confirmado. Enforcement não ativo. Tente verificar novamente.")}
+        }
     }
     fun decoded(text:String)=run {
         check(store.read()==null&&!store.pending.exists())
@@ -110,6 +115,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         // Durable uncertainty boundary BEFORE HTTP. Never auto-replay on restart/response loss.
         val marker=android.util.AtomicFile(store.pending);val out=marker.startWrite();try{out.write(byteArrayOf(1));marker.finishWrite(out)}catch(e:Exception){marker.failWrite(out);throw e}
         val identity=api.redeem(qr);check(identity.getString("result")=="REDEEMED")
+        EnrollmentFaults.beforeIdentitySave()
         store.save(identity);api.initial(identity)
         EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")
     }
