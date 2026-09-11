@@ -58,7 +58,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
   }
   // Only this dedicated task AVD and these two synthetic packages; never another app/profile.
   for(const pkg of [app,test]) {if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('FRESH_RUNTIME_STATE_UNVERIFIED');}
-  for(const method of ['enrollAndPersist','restoreAndLogout','restartLoggedOutAndRecover','networkFailureAndRecovery']) {
+  for(const method of [...(cameraStorage?['httpFailureIsRetryable']:[]),'enrollAndPersist','restoreAndLogout','restartLoggedOutAndRecover','networkFailureAndRecovery']) {
    await command(['shell','am','force-stop',app]);
    if(method==='networkFailureAndRecovery'){restAvailable(false);networkRestored=false;}
    await guard();

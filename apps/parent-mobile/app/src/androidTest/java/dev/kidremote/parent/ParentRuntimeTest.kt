@@ -40,7 +40,7 @@ class ParentRuntimeTest {
     private fun get(path: String): String {
         val c=URL("http://10.0.2.2:$path").openConnection() as HttpURLConnection
         try { c.connectTimeout=2000;c.readTimeout=2000;c.instanceFollowRedirects=false
-            checkThat(c.responseCode==200,"LOCAL_HTTP_UNAVAILABLE")
+            if(c.responseCode!=200)throw java.io.IOException("LOCAL_HTTP_UNAVAILABLE")
             return c.inputStream.bufferedReader().use { it.readText() }
         } finally { c.disconnect() }
     }
@@ -106,13 +106,19 @@ class ParentRuntimeTest {
         login(f.getString("email"),f.getString("pass"));waitText("Não foi possível concluir. Verifique os dados ou tente novamente.")
         login(f.getString("email"),f.getString("next"));emptyList();result("REAL_EMAIL_RECOVERY_OLD_PASSWORD_DENIED_NEW_LOGIN_PASS")
     }
+    @Test fun httpFailureIsRetryable() = safe("HTTP_RETRY_CLASSIFICATION_FAILED") {
+        var rejected=false
+        try{get("57362/kr007_absent_test_resource")}catch(_:java.io.IOException){rejected=true}
+        checkThat(rejected,"NON_SUCCESS_HTTP_NOT_REJECTED")
+        result("HTTP_NON_SUCCESS_IS_RETRYABLE_PASS")
+    }
     @Test fun networkFailureAndRecovery() = safe("NETWORK_RECOVERY_RUNTIME_FAILED") {
         waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")
         waitText("Não foi possível concluir. Verifique os dados ou tente novamente.");result("ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS")
         File(target.filesDir,"kr006-restore-rest").writeText("RESTORE")
         var ready=false
         repeat(45) { if(!ready) { try { get("57362/");ready=true } catch(_:Exception){Thread.sleep(1000)} } }
-        checkThat(ready,"REST_NOT_RESTORED");emptyList();result("NETWORK_RECOVERY_SAME_PROCESS_PASS")
+        checkThat(ready,"REST_NOT_RESTORED");result("REST_HTTP_READY_AFTER_OUTAGE");emptyList();result("NETWORK_RECOVERY_SAME_PROCESS_PASS")
         click("Sair e limpar dados locais");waitText("Entrar");cleared()
         checkThat(fixture.delete(),"TEST_FIXTURE_CLEANUP_FAILED");File(target.filesDir,"kr006-restore-rest").delete()
         result("RUNTIME_FINAL_LOGOUT_CLEANUP_PASS")
