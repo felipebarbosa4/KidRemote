@@ -9,6 +9,18 @@ concurrency:
   group: planning-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  database-isolation:
+    name: KR-004 local migrations and client-role RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test local-only runner safety
+        run: node --test tools/kr004/*.test.mjs
+      - name: Migrate fresh disposable database and execute pgTAP
+        run: node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 5

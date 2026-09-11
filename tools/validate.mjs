@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { validateStateFixtures } from "./validate-state-fixtures.mjs";
 import { validateAndroidSpike } from "./validate-android-spike.mjs";
+import { countAcceptanceCriteria } from "./validate-acceptance.mjs";
 
 const root = resolve(import.meta.dirname ?? dirname(new URL(import.meta.url).pathname), "..");
 const errors = [];
@@ -40,7 +41,7 @@ for (const [n, issue] of issues.entries()) {
   check([1,2,3,5,8,13].includes(issue.story_points), issue.id + ": non-Fibonacci points");
   const body = read(issue.body_file);
   for (const section of required) check(body.includes("## " + section + "\n"), issue.id + ": missing " + section);
-  check((body.match(/- \[ \] AC-/g) ?? []).length >= 5, issue.id + ": insufficient acceptance criteria");
+  check(countAcceptanceCriteria(body) >= 5, issue.id + ": insufficient acceptance criteria");
   for (const dep of issue.dependencies) check(issues.some(i => i.id === dep) && dep !== issue.id, issue.id + ": invalid dependency");
   for (const field of ["priority", "risk", "area", "platform", "status", "decision_required", "work_type"]) {
     const name = {priority:"Priority", risk:"Risk", area:"Area", platform:"Platform", status:"Status", decision_required:"Decision Required", work_type:"Work Type"}[field];

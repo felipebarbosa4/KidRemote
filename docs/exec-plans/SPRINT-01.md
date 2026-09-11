@@ -18,6 +18,14 @@ Required unblock: owner makes the existing local Docker Desktop **Linux engine**
 
 The earlier reset's proposed hold-lifting language below is superseded **only for AC-1–4** by OD-42. Its private-alpha/support proposal and all later issue gates remain unapproved.
 
+### Execution resumed — 2026-09-11
+
+The owner started Docker Desktop. The agent independently executed the native Windows client with explicit `--host npipe:////./pipe/dockerDesktopLinuxEngine`: `info --format '{{.OSType}}'` returned `linux` (exit 0). This supersedes the runtime blocker above, not historical evidence. HEAD/worktree verified at `8fe80eb`, clean; existing draft PR #17 retains its KR-003 branch base.
+
+Continue OD-42 AC-1–4 now: pin the official Supabase PostgreSQL image, allocate a uniquely labelled disposable container with no network/host ports, verify its ID/label/image/database and empty application schema before migrations, and run SQL allow/deny tests as actual anon/authenticated roles with synthetic claims. No Auth HTTP server, gateway, control RPC or production exposure is introduced. Record actual results separately from this execution plan. Cleanup may remove only the newly allocated, verified task container and its own ephemeral data.
+
+**Executed result:** versioned schema/RLS migration passed on the pinned Supabase PostgreSQL 17.6 image, then 243 real-role RLS/grant and 45 structural assertions passed with no skips. Ten Node orchestration guard tests passed. Exact disposable identity and cleanup plus corrected development failures are in [KR-004 execution evidence](../test-plans/evidence/KR-004-LOCAL-DB-2026-09-11.md). This supersedes the historical runtime-blocker statements above. AC-1–4 are locally complete; KR-004 stays In Progress with AC-5–7 open. Required CI includes a new actual DB job and unchanged existing jobs. Stop at the OD-42 boundary: the next bounded proposal is KR-004 AC-5 gateway authorization tests/implementation, only after owner approval; do not start KR-005/006 or production enforcement.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
