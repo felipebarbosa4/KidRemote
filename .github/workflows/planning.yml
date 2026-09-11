@@ -9,6 +9,35 @@ concurrency:
   group: planning-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  parent-foundation:
+    name: KR-006 local Auth and parent APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Local Auth, email, PostgREST and regression tests
+        run: |
+          node --test tools/kr006/*.test.mjs
+          node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --parent-test
+      - name: Build parent with preinstalled SDK only
+        run: |
+          test -d "$ANDROID_HOME/platforms/android-36"
+          test -d "$ANDROID_HOME/build-tools/36.0.0"
+          spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
+          node tools/kr006/audit-parent.mjs
+      - name: Retain debug APK only (no accounts, mail or local-service data)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kr006-parent-debug
+          path: apps/parent-mobile/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
   database-isolation:
     name: KR-004 local migrations and client-role RLS
     runs-on: ubuntu-latest

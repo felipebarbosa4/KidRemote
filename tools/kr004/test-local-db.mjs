@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const options = process.argv.slice(2);
 const docker = options[0] ?? 'docker';
 const host = options[1] ?? 'unix:///var/run/docker.sock';
-if (options.length > 3 || (options.length===3 && options[2]!=='--pairing') || !localEndpoints.includes(host))
+if (options.length > 3 || (options.length===3 && !['--pairing','--parent-test','--parent-dev'].includes(options[2])) || !localEndpoints.includes(host))
   throw new Error('Only the explicit local Unix socket or Docker Desktop Linux named pipe is allowed');
 const image = 'supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00';
 const token = randomUUID();
@@ -24,7 +24,16 @@ for (const key of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CE
 // Process-scoped WSL-to-Windows environment forwarding, not a host/integration change.
 // Native docker.exe reads the value for '-e POSTGRES_PASSWORD'; never put it in argv.
 if (docker.endsWith('.exe')) env.WSLENV = [process.env.WSLENV, 'POSTGRES_PASSWORD/w'].filter(Boolean).join(':');
-let id, verified = false, primary;
+let id, verified = false, primary, networkId;
+const parentMode=options[2]?.startsWith('--parent-');
+const network=parentMode ? name+'-network' : 'none';
+function inspectNetwork() {
+  const n=JSON.parse(call(['network','inspect',networkId]))[0];
+  if(n.Id!==networkId || n.Name!==network || n.Labels[label]!==token || n.Driver!=='bridge' ||
+      n.Options['com.docker.network.bridge.host_binding_ipv4']!=='127.0.0.1' ||
+      n.Options['com.docker.network.bridge.enable_ip_masquerade']!=='false')
+    throw Error('TASK_NETWORK_NOT_VERIFIED');
+}
 function call(args, input, allowFailure = false) {
   const r = spawnSync(docker, ['--host', host, ...args], {
     input, encoding: 'utf8', env, timeout: 180000, maxBuffer: 8 * 1024 * 1024,
@@ -38,13 +47,13 @@ function call(args, input, allowFailure = false) {
     if (completed.length) console.error('LAST_DATABASE_ASSERTION=' + completed.at(-1));
     throw new Error('LOCAL_DB_COMMAND_FAILED:' + args[0] + ':exit=' + r.status + ':sqlstate=' + state + ':line=' + line);
   }
-  return r.stdout.trim();
+  return (args[0]==='logs' ? r.stdout+r.stderr : r.stdout).trim();
 }
 function inspect() {
   const record = JSON.parse(call(['inspect', id]))[0];
   if (record.Id !== id || record.Name !== '/' + name ||
       record.Config.Labels[label] !== token || record.Config.Image !== image ||
-      record.HostConfig.NetworkMode !== 'none' ||
+      record.HostConfig.NetworkMode !== network ||
       Object.keys(record.HostConfig.PortBindings ?? {}).length !== 0 ||
       (record.Mounts ?? []).some(m => m.Type !== 'tmpfs'))
     throw new Error('DISPOSABLE_IDENTITY_NOT_VERIFIED');
@@ -59,16 +68,22 @@ try {
   const suites = readdirSync(resolve(root, 'supabase/tests')).filter(f => f.endsWith('.test.sql')).sort();
   requireInventory(migrations, suites);
   if (call(['info', '--format', '{{.OSType}}']) !== 'linux') throw new Error('LOCAL_LINUX_REQUIRED');
+  if(parentMode) {
+    networkId=call(['network','create','--driver','bridge',
+      '--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1',
+      '--opt','com.docker.network.bridge.enable_ip_masquerade=false','--label',label+'='+token,network]);
+    inspectNetwork();
+  }
   // create never reuses a name; tmpfs and network=none bound all task data.
   id = call(['create', '--name', name, '--label', label + '=' + token,
-    '--network', 'none', '--restart', 'no', '--tmpfs', '/var/lib/postgresql/data:rw',
+    '--network', network, '--restart', 'no', '--tmpfs', '/var/lib/postgresql/data:rw',
     '-e', 'POSTGRES_PASSWORD', image]);
   if (!/^[0-9a-f]{64}$/.test(id)) throw new Error('INVALID_ALLOCATED_ID');
   const record = inspect();
   verified = true;
   console.log(JSON.stringify({ stage: 'ALLOCATED_AND_VERIFIED', container: id, name,
     database: 'postgres', endpoint: host, image: record.Config.Image,
-    network: 'none', publishedPorts: 0, data: 'task-owned tmpfs' }));
+    network, publishedPorts: 0, data: 'task-owned tmpfs' }));
   call(['start', id]);
   let ready = false;
   for (let i = 0; i < 90; i++) {
@@ -107,9 +122,14 @@ try {
     }
     console.log('DATABASE_TEST_PASS=' + f + ':assertions=' + tests.length);
   }
-  if (options[2]==='--pairing') {
+  if (options[2]==='--pairing' || parentMode) {
     const { runPairingIntegration } = await import('../kr005/database-protocol.mjs');
     await runPairingIntegration(sql,()=>call(['logs',id]));
+  }
+  if(parentMode) {
+    const {runParentAuth}=await import('../kr006/local-auth.mjs');
+    await runParentAuth({sql,call,env,name,label,token,network,databaseHost:name,
+      windows:docker.endsWith('.exe'),keep:options[2]==='--parent-dev'});
   }
 } catch (error) {
   primary = error;
@@ -128,6 +148,10 @@ try {
     }
   } else if (id) {
     console.error('CLEANUP_NOT_AUTHORIZED:unverified-allocated-container=' + id);
+  }
+  if(networkId) {
+    try { inspectNetwork(); call(['network','rm',networkId]); console.log('TASK_NETWORK_REMOVED'); }
+    catch(error) { primary??=error; console.error('TASK_NETWORK_CLEANUP_FAILED'); }
   }
 }
 if (primary) process.exitCode = 1;

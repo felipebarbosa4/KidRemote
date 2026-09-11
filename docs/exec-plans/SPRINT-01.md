@@ -55,6 +55,15 @@ scheduled retention integration remain unrun; gateway operation storage remains
 stubbed. The next product-facing issue is KR-006 after separate authorization and
 dependency review; do not start it automatically. KR-003 remains open.
 
+## KR-006 local parent foundation — 2026-09-11
+
+- **Goal:** executable native signup/verification/login/recovery/logout and idempotent own household/empty list against actual local Auth and PostgreSQL.
+- **Context:** OD-44 is a new prospective authorization. Clean verified baseline `6de53806d68ac151c57d2667e09c351272ea0b83`; new branch `kr-006-local-parent-auth` stacked on unmerged KR-005 PR #18. Native Windows Docker explicitly returned `linux`; no Android SDK/emulator has yet been established locally.
+- **Constraints:** only synthetic task-owned local services, local email capture and loopback development endpoints. No physical device, deployment, child enforcement, real users, distribution, KR-007 or visual work. No privileged key in APK; release denies local cleartext/callback exceptions. Preserve all prior migrations/evidence and unmerged PRs.
+- **Done when:** debug APK builds and actual Auth/HTTP/database boundaries, household races/RLS and targeted UI/session tests execute, or a precise unavailable prerequisite blocks them; remaining emulator/physical checks and deletion design-only scope remain explicit.
+
+First verify/pin existing compatible Android and official Auth/PostgREST/local-mail tools. Reuse the disposable DB runner and established architecture. Do not disable confirmation or forge authentication to claim success. Production identifiers, deployment/SMTP/region and distribution remain unapproved. Stop after this slice.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
