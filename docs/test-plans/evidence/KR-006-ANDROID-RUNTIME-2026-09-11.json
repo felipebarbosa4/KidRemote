@@ -1,0 +1,40 @@
+{
+  "scope": "KR006_EMULATOR_ONLY",
+  "source": "f017474366d68e8b5ac15e28efe8abff3fc5ee91",
+  "result": "PASS_THIS_EMULATOR_ONLY",
+  "configuration": {
+    "emulator": "37.1.11",
+    "acceleration": "WHPX 10.0.26200 usable; accel-check exit 0",
+    "platformTools": "37.0.1",
+    "image": "system-images;android-36;default;x86_64 revision 2",
+    "android": "16",
+    "api": 36,
+    "fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys"
+  },
+  "apkSha256": "8a967d044196a082f4a7e6515843f605dcd4298fd6498ac40b493c06c80ebf7d",
+  "instrumentationApkSha256": "00d49a7a3f3ba12bf8e6a0167a66ee149063eaf3e7378b9dc732052059adf058",
+  "instrumentationMethods": 4,
+  "passedChecks": [
+    "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+    "SIGNUP_VERIFICATION_PENDING_PASS",
+    "UNVERIFIED_APP_LOGIN_DENIED",
+    "REAL_EMAIL_CONFIRMATION_PASS",
+    "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+    "ACTIVITY_RECREATION_PASS",
+    "PROCESS_RESTART_VAULT_SESSION_RESTORED_PASS",
+    "LOGOUT_STORAGE_KEY_UI_CLEAR_PASS",
+    "RESTART_AFTER_LOGOUT_UNAUTHENTICATED_PASS",
+    "REAL_EMAIL_RECOVERY_OLD_PASSWORD_DENIED_NEW_LOGIN_PASS",
+    "ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS",
+    "NETWORK_RECOVERY_SAME_PROCESS_PASS",
+    "RUNTIME_FINAL_LOGOUT_CLEANUP_PASS"
+  ],
+  "runtimeHouseholdMemberships": 1,
+  "sqlRegressionAssertions": 496,
+  "pairingRegressionAssertions": 28,
+  "realAuthHttpRegressionAssertions": 44,
+  "appAndTestDataCleanup": "VERIFIED",
+  "backendCleanup": "VERIFIED",
+  "emulatorStop": "VERIFIED_PORTS_CLOSED",
+  "physicalEvidence": "NONE"
+}

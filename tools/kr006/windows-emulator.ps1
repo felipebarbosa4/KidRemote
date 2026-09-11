@@ -36,6 +36,7 @@ if($Mode -eq 'Start') {
  Write-Output ('TASK_EMULATOR_PROCESS_STARTED='+$p.Id)
 } else {
  $name=(& "$Sdk\platform-tools\adb.exe" -s $serial emu avd name 2>$null | Select-Object -First 1)
+ if($null -ne $name){$name=$name.Trim()}
  if($LASTEXITCODE -ne 0 -or $name -cne $state.AvdName){throw 'TASK_EMULATOR_IDENTITY_UNVERIFIED'}
  & "$Sdk\platform-tools\adb.exe" -s $serial emu kill
  if($LASTEXITCODE -ne 0){throw 'TASK_EMULATOR_STOP_FAILED'}

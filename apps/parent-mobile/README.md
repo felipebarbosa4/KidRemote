@@ -33,7 +33,50 @@ do not prune Docker or delete unverified resources. Never print container enviro
 Use `--parent-test` instead for executed HTTP fixtures and automatic cleanup. The native
 Windows Node client contacts Windows loopback using secret-bearing stdin, never argv/logs.
 The current debug APK expects an Android emulator's `10.0.2.2`, not a physical tablet.
-No emulator is provisioned or physical APK installation authorized by these instructions.
+The OD-44 runtime continuation provisioned one dedicated Windows AVD; instructions below
+reuse only that owned target. Physical installation remains unauthorized.
+
+## Verified Windows emulator integration
+
+Source `f017474` passed four actual Compose instrumentation methods (13 checkpoints)
+against real local Auth/PostgREST/mail, including Activity versus process restoration,
+Keystore file/key logout clearing and actual REST outage/retry. See
+[runtime evidence](../../docs/test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md#native-windows-emulator-runtime--actual-pass-exact-configuration-only).
+This is AOSP API 36 x86_64 revision 2 / Emulator 37.1.11 / WHPX evidence only.
+It does not establish physical Samsung behavior, verified production links or accessibility.
+
+The existing owned AVD and APKs are retained, stopped and cleared, under
+`C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe`.
+To repeat this **synthetic emulator-only** integration, start that AVD in Windows PowerShell:
+
+```powershell
+& '\\wsl.localhost\Ubuntu-24.04\home\felby\projects\KidRemote\tools\kr006\windows-emulator.ps1' -Mode Start -TaskDirectory 'C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe'
+```
+
+Wait for the dedicated AVD to boot, then from this repository in WSL:
+
+```sh
+KR006_RUNTIME_DIRECTORY=/mnt/c/Users/3feli/AppData/Local/KidRemote/kr006-runtime/e03b4820-193b-4132-b1fc-f7950eeed7fe node tools/kr004/test-local-db.mjs '/mnt/c/Users/3feli/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe' 'npipe:////./pipe/dockerDesktopLinuxEngine' --parent-runtime
+```
+
+The runner allocates its own backend, runs existing regressions and actual instrumented
+UI flows, then removes verified services and clears only the two synthetic packages.
+Credentials are generated inside instrumentation, never supplied in arguments. JSON
+results are separate timestamped files in the task directory; no screenshots or logcat
+are captured/uploaded. Test APK contains test code only, not account fixtures/secrets.
+CI builds both APKs but **does not** execute this Windows runtime step automatically.
+
+Stop or bail out of the **verified task emulator only**, in Windows PowerShell:
+
+```powershell
+& '\\wsl.localhost\Ubuntu-24.04\home\felby\projects\KidRemote\tools\kr006\windows-emulator.ps1' -Mode Stop -TaskDirectory 'C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe'
+```
+
+This retains the AVD and reports uncertainty rather than operating another target.
+If stopped during instrumentation, the bounded host test detects failure and finalizes
+backend cleanup; app-data cleanup may be UNVERIFIED until the same owned AVD can be
+accessed again. Do not force-kill the DB runner or prune Docker globally. For manual
+local backend startup, use `--parent-dev` above; Ctrl+C performs scoped backend cleanup.
 
 ## Implemented screens and limits
 
@@ -52,9 +95,10 @@ manual local email-action input is a bounded lab flow, not a final public callba
 Only the refresh token is persisted: platform AES-GCM key in AndroidKeyStore and
 encrypted AtomicFile under noBackupFilesDir. Access tokens/forms remain in memory;
 passwords/links are not saved into instance state. Refresh revalidates against Auth;
-network failures show retry, never manufacture a session. Runtime Keystore/OEM transfer,
-process recreation, TalkBack and large-font behavior remain unverified without emulator/
-physical evidence. Source/unit checks do not prove those platform behaviors.
+network failures show retry, never manufacture a session. The dedicated emulator now
+exercised actual vault encryption/decryption, process restoration and logout erasure.
+Physical/OEM transfer, backup, TalkBack and large-font behavior remain unverified.
+Source/unit or emulator checks do not prove physical-device behavior.
 
 Logout clears memory, encrypted file/key and UI cache, and requests Auth `scope=local`.
 Offline/server failure is reported as unverified server revocation. Already issued JWTs

@@ -83,12 +83,23 @@ instrumentation and unchanged local Auth/mail. Required package licence text is 
 with the installed/accepted SDK licence before download; never answer a new licence prompt.
 The earlier prerequisite failure below remains historical, not the current acceleration verdict.
 
+**Executed runtime result:** four real Compose instrumentation methods / 13 checkpoint
+codes passed on the dedicated API 36 AOSP Windows emulator using source `f017474`.
+Actual signup/email verification/login/household/empty list, same-process Activity
+recreation, different-process session restoration, logout file/key clearing, recovery
+and same-process recovery from a real task-owned REST outage passed. Exactly one runtime
+household membership persisted; all task backend/app data cleanup and emulator stop
+verified. [Sanitized result](../test-plans/evidence/KR-006-ANDROID-RUNTIME-2026-09-11.json).
+No additional owner action is required for this completed emulator slice. Remaining
+KR-006 work is physical/OEM storage, deployed link UX and accessibility acceptance,
+subject to appropriate authorization; AC-2/5 remain partial, not an invitation to KR-007.
+
 - **Goal:** execute the real parent UI against existing local services, including verification/recovery, activity versus process restoration, logout storage clearing and network recovery; no new features.
 - **Context:** clean `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, same branch/draft PR #19 stacked on #18; OD-44 now explicitly permits one dedicated Windows AVD and licensed user-owned tooling downloads.
 - **Constraints:** no physical target, global ADB reset, new licence acceptance, host configuration/privilege changes, deployment or KR-007. Synthetic emails/credentials stay local and out of command arguments/logs. Existing backend loopback/release isolation remains intact.
 - **Done when:** actual app runtime tests pass with sanitized results, or a demonstrated prerequisite requiring owner action stops execution without substituting backend/unit/build evidence.
 
-**Observed stop:** native PowerShell executes successfully. SDK environment variables and
+**Historical observed stop (resolved by owner SDK setup):** native PowerShell executes successfully. SDK environment variables and
 tool PATH entries are absent; standard Windows SDK/Studio/AVD paths and SDK registry
 entries checked are absent. Windows reports a present hypervisor and firmware virtualization,
 but usable emulator acceleration is **UNSPECIFIED** without the emulator executable.
@@ -96,7 +107,7 @@ About 268 GiB is free on C:. No existing accepted SDK licence installation was e
 downloads are conditional on that acceptance and the agent may not accept terms.
 See the [retained diagnostics](../test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md#native-windows-runtime-follow-up--blocked-before-android-execution).
 
-**One owner action:** complete the official Android SDK's initial Windows setup in
+**Historical owner action (completed before the resumed run):** complete the official Android SDK's initial Windows setup in
 `C:\Users\3feli\AppData\Local\Android\Sdk`, personally reviewing/accepting its licence
 prompts. Do not enable Windows features or create an AVD for this step. Then resume
 native acceleration verification and the single task-owned AVD within OD-44; any new

@@ -11,6 +11,9 @@
 
 ## Native Windows runtime follow-up — blocked before Android execution
 
+Historical prerequisite result. The owner subsequently installed the SDK; the successful
+runtime continuation below supersedes this *blocker*, not the recorded unrun attempt.
+
 Verified clean HEAD `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, branch
 `kr-006-local-parent-auth`, open draft PR #19 base `kr-005-local-pairing`. OD-44's
 prospective one-AVD/download authorization is recorded without changing earlier evidence.
@@ -58,6 +61,73 @@ check and continue the authorized task; do not assume future package licences ac
 Only documentation changed here; repository validation/whitespace are run locally and
 required CI remains enabled. Prior APK and startup instructions remain unchanged in
 [parent README](../../../apps/parent-mobile/README.md).
+
+## Native Windows emulator runtime — actual PASS, exact configuration only
+
+**OBSERVED:** [sanitized machine-readable result](KR-006-ANDROID-RUNTIME-2026-09-11.json).
+Source `f017474366d68e8b5ac15e28efe8abff3fc5ee91`; APKs from successful
+[CI 34640496055](https://github.com/felipebarbosa4/KidRemote/actions/runs/34640496055).
+Native `emulator.exe -accel-check` returned exit 0 and WHPX 10.0.26200 usable.
+Emulator 37.1.11, Platform Tools 37.0.1, AOSP API 36 x86_64 image revision 2.
+The explicitly selected, manifest-owned AVD was
+`kr006_e03b4820193b4132b1fcf7950eeed7fe`, `emulator-5584`; name and
+`ro.kernel.qemu=1` were checked before targeted application operations.
+No physical target or global ADB reset was used. Linux/CI KVM was not the prerequisite.
+
+The existing `--parent-runtime` DB-runner mode allocated verified DB
+`4a45ed38fccb140cd7ec45608d7d172390bbac2b0d38fca523be01dc884b2bae`, owner
+`ce2ac59e-82f4-40c4-8fce-90339be7edbc`, synthetic data only, no DB port.
+All four migrations, 496 SQL assertions, 28 existing pairing SQL/HTTP assertions and
+44 actual Auth/PostgREST checks passed before app execution. Gateway storage remains
+stubbed in its separate regression suite, not in this parent Auth/PostgREST boundary.
+
+Four actual `AndroidJUnitRunner`/Compose methods passed with 13 retained checkpoint codes:
+
+| Runtime method | Actual boundary and result |
+| --- | --- |
+| `enrollAndPersist` | Emulator reached Windows loopback Auth/REST/mail; real UI signup, verification pending, unverified login denied, actual SMTP email action entered through UI, confirmed login/setup, actual empty list; Activity recreation retained list in the **same PID**. PASS |
+| `restoreAndLogout` | Host force-stopped only the task app; test required a **different PID**. Real vault decrypt/refresh restored session; setup re-read the household. UI logout removed session file and actual AndroidKeyStore alias and cleared the email field. PASS |
+| `restartLoggedOutAndRecover` | Another different PID remained unauthenticated; recovery email was obtained locally and entered through UI; reset accepted, old password denied, new password login/list passed. Recovery refresh was not persisted. PASS |
+| `networkFailureAndRecovery` | Host stopped only its verified PostgREST container; actual setup request failed with recoverable UI. A coarse nonsecret marker requested service restoration; same app process retried successfully, then logged out and cleared the vault. PASS |
+
+The final actual SQL count was exactly one runtime household membership despite repeated
+setup. UI tests never call model actions directly, set fake content/state, forge tokens,
+auto-confirm accounts or replace AuthApi. Test-generated credentials stay in a temporary
+target-UID no-backup fixture between process tests, separate from production session
+storage; this test-only fixture is explicitly deleted, then both synthetic package data
+directories are cleared. No credential/email link is in adb arguments, logs or artifacts.
+Only stable checkpoint codes/results/metadata/hashes are retained. The service log-canary
+scan covers host regression credentials; it is **not** a claim of exhaustive Android/IME
+or provider-log proof for every runtime secret.
+
+Cleanup: actual app/test data clear returned Success; Auth/mail/REST/DB/network removal
+was ownership-verified. Emulator received only a name-verified targeted `emu kill`;
+ports 5584/5585 subsequently closed. AVD files remain outside the repository for reuse;
+no unrelated AVD/resources removed. The sanitized original local record is
+`C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe\results-2026-09-11T19-52-24-006Z.json`.
+
+**Preserved tooling failures/corrections:** SDK command-line tools 23.0 redirected the
+initial `sdkmanager` listing to official Android CLI; subsequent calls used `--no-metrics`.
+A guessed `android.bat` path was rejected; the installed binary is `android.exe`.
+Package download/extraction ended with abnormal Windows exit `-1073740791` (observed for
+Build Tools), so extraction alone was not treated as success. The image's package metadata,
+AVD creation, boot and actual runtime independently passed afterward. The official image
+licence text matched the installed accepted `android-sdk-license` modulo whitespace
+(installed accepted hash `24333f8a63b6825ea9c5514f83c2829b004d1fee`); no new terms were
+accepted. The initial CI 34640377591 was cancelled by PR concurrency after a test-fixture
+UID correction; it is not reported as PASS. Windows console carriage returns were
+normalized at the scoped AVD identity boundary. No app behavior defect was found in
+the executed flows and no production app semantics were changed.
+
+**Limits:** this closes APK-to-local-services evidence for this emulator only. Keystore
+execution is not physical/OEM security proof. Headless Compose instrumentation is not
+human-visible physical evidence. Deployed verified-link handling, physical storage/
+backup/OEM behavior, TalkBack/large-font checks and production Auth/SMTP remain UNRUN.
+AC-2/5 gain actual runtime evidence but remain partial against the full physical test
+plan. Logout verifies local erasure here, not immediate global access-JWT invalidation.
+No account-deletion implementation, real users, distribution, KR-007 or child enforcement.
+Official references: [Compose instrumentation](https://developer.android.com/develop/ui/compose/testing#setup),
+[emulator command line](https://developer.android.com/studio/run/emulator-commandline).
 
 ## OBSERVED — local execution
 
