@@ -13,6 +13,8 @@ and existing membership-scoped RPCs. Device adapter holds credential/device/poli
 through handler authorization/read in one actual PostgreSQL transaction. Reuse local
 debug endpoints and capture only sanitized results. Stop after this connected slice.
 
+**Executed result:** [KR-007 local enrollment evidence](../test-plans/evidence/KR-007-LOCAL-ENROLLMENT-2026-09-11.md): real parent UI -> QR -> child decoder/redemption -> Keystore identity -> initial scoped read -> real parent list passed, then committed interruption/revoke/fresh-QR recovery. Fifteen instrumentation invocations passed on one owned Windows API-36 emulator, sequential app identities; 496 SQL, 44 Auth and 28 new enrollment HTTP/DB assertions passed alongside existing pairing regressions. The initial install failure and two manifest-audit CI failures are preserved separately. Actual APK source is `fb52936`, host source `b6087c3`; prior KR-006 APKs unchanged. Cleanup verified, AVD stopped. AC-1/5 demonstrated locally; remaining camera/physical, transfer, permission/removal and rotation criteria stay open. PR #20 stays draft/stacked on PR #19. Next bounded step: review this slice, then plan the remaining KR-007 camera/identity lifecycle acceptance within explicit authorization; no automatic KR-008/009/010 or enforcement.
+
 - **Goal:** Establish an approved product contract and evidence-based Android/backend/pairing path.
 - **Context:** Architecture baseline merged in PR #11; owner directed execution to start on 2026-09-05; production enforcement is unproven.
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.
