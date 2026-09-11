@@ -54,9 +54,8 @@ class ChildActivity:ComponentActivity() {
                 analysis.setAnalyzer(analyzer){image->
                     try {
                         val w=image.width;val h=image.height
-                        if(w<=1920&&h<=1920){val p=image.planes[0];val b=p.buffer;val start=b.position()
-                            val rgb=IntArray(w*h){i->val y=b.get(start+(i/w)*p.rowStride+(i%w)*p.pixelStride).toInt() and 255;android.graphics.Color.rgb(y,y,y)}
-                            val decoded=decodePixels(rgb,w,h)
+                        if(w<=1920&&h<=1920){val p=image.planes[0]
+                            val decoded=decodeLuma(p.buffer,w,h,p.rowStride,p.pixelStride)
                             if(decoded!=null)runOnUiThread {if(scanning){stopCamera();model.decoded(decoded)}}
                         }
                     }catch(_:Exception){/* discard unrecognized frame, never persist it */}finally{image.close()}

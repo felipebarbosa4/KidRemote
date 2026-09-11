@@ -1,7 +1,7 @@
 import {readFileSync,readdirSync} from 'node:fs';import{execFileSync}from'node:child_process';import{createHash}from'node:crypto';
 const root='apps/child-android/build/';
 let count=0;for(const f of readdirSync(root+'test-results/testDebugUnitTest'))if(f.endsWith('.xml')){const s=readFileSync(root+'test-results/testDebugUnitTest/'+f,'utf8');if(/<(?:failure|error|skipped)\b/.test(s))throw Error('CHILD_TEST_FAILURE');count+=(s.match(/<testcase\b/g)||[]).length;}
-if(count!==3)throw Error('CHILD_TEST_COUNT');
+if(count!==5)throw Error('CHILD_TEST_COUNT');
 for(const variant of ['debug','release']){
  const manifest=readFileSync(root+`intermediates/merged_manifests/${variant}/process${variant==='debug'?'Debug':'Release'}Manifest/AndroidManifest.xml`,'utf8');
  const id='dev.kidremote.child.unassigned'+(variant==='debug'?'.debug':'');

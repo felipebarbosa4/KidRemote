@@ -1,5 +1,12 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-007 camera and identity-storage continuation — OD-45
+
+- **Goal:** execute actual virtual-camera/permission and Keystore failure tests; fix reproduced defects only.
+- **Context:** clean `c9843000e8ec0586a20a532e3c9e70a972a1b64e`, existing draft PR #20 stacked on #19; preserve exercised `fb52936` APKs and all prior results. Initial-read gateway uses real DB storage.
+- **Constraints:** same owned Windows AVD and synthetic local services; no webcam/physical target, frame retention/upload, general camera simulator, enforcement, rotation/removal expansion or next issue. Generated scene images remain local. Original APKs untouched.
+- **Done when:** available camera path and permission/storage failures have executed evidence, focused regressions/build/lint/isolation/CI pass, resources cleaned, and camera/OEM/physical gaps remain explicit. If virtual camera is unavailable, retain the precise limitation and finish independent permission/storage tests.
+
 ## KR-007 first local enrollment — OD-45, 2026-09-11
 
 - **Goal:** authenticated parent QR -> real child redemption -> persisted independent identity -> own initial read -> actual parent list.

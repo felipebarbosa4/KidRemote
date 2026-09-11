@@ -3,10 +3,10 @@ import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {parseQR} from '../../supabase/functions/pairing/protocol.mjs';
 export async function testEnrollmentRuntime(args){const {testAndroidRuntime}=await import('../kr006/android-runtime.mjs');await testAndroidRuntime({...args,enrollment:true});}
-export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh}) {
+export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh,apkDirectory='apks-kr007',cameraStorage=false,gatewayAvailable}) {
  const child='dev.kidremote.child.unassigned.debug';
  for(const [pkg,file] of [[child,'child-debug.apk'],[child+'.test','child-debug-androidTest.apk']]) {
-  const path=join(dir,'apks-kr007',file);evidence.apkHashes[pkg]=createHash('sha256').update(readFileSync(path)).digest('hex');
+  const path=join(dir,apkDirectory,file);evidence.apkHashes[pkg]=createHash('sha256').update(readFileSync(path)).digest('hex');
   await installFresh(pkg,path);
   if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CHILD_FRESH_STATE_FAILED');
  }
@@ -46,4 +46,5 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','recoverWithFreshQr');
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','restartAndNegatives');
  evidence.interruptedCommitRecovery='ACTUAL_COMMIT_TEST_FAULT_BEFORE_PERSIST_REVOKE_FRESH_QR';
+ if(cameraStorage){const {exerciseCameraStorage}=await import('./camera-storage-runtime.mjs');await exerciseCameraStorage({command,run,guard,dir,windowsPath,app,child,evidence,sql,installFresh,stage,apkDirectory,gatewayAvailable});}
 }

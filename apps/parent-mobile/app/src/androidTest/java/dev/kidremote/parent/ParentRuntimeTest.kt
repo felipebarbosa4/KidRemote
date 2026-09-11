@@ -145,6 +145,16 @@ class ParentRuntimeTest {
         File(target.noBackupFilesDir,"qr-handoff").writeText(q!!)
     }
     @Test fun prepareInterruptedQr()=safe("PARENT_INTERRUPTION_QR_FAILED") {openExistingList();exportNewQr();result("PARENT_FRESH_INTERRUPTION_QR_PASS")}
+    @Test fun prepareCameraQr()=safe("PARENT_CAMERA_QR_FAILED") {
+        openExistingList();exportNewQr()
+        val text=File(target.noBackupFilesDir,"qr-handoff").readText()
+        for((name,value) in listOf("valid" to text,"invalid" to "{}")) {
+            val bitmap=pairingBitmap(value)
+            File(target.noBackupFilesDir,"scene-$name.png").outputStream().use{checkThat(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it),"SYNTHETIC_SCENE_WRITE_FAILED")}
+            bitmap.recycle()
+        }
+        result("LOCAL_SYNTHETIC_SCENE_QR_PREPARED")
+    }
     @Test fun recoverInterruptedQr()=safe("PARENT_REVOKE_FRESH_QR_FAILED") {
         openExistingList();click("Cancelar ou verificar QR")
         waitText("QR consumido. Se a credencial não foi salva, revogue o pareamento incompleto e gere outro QR.")

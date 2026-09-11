@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const app='dev.kidremote.parent.unassigned.debug';
 const test=app+'.test';
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
+export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gatewayAvailable}) {
  const dir=process.env.KR006_RUNTIME_DIRECTORY;
  if(!dir || !/^\/mnt\/c\/Users\/3feli\/AppData\/Local\/KidRemote\/kr006-runtime\/[a-f0-9-]{36}$/.test(dir))throw Error('RUNTIME_DIRECTORY_REQUIRED');
  const state=JSON.parse(readFileSync(join(dir,'owner.json'),'utf8').replace(/^\uFEFF/,''));
@@ -15,12 +15,12 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
     state.Sdk!=='C:\\Users\\3feli\\AppData\\Local\\Android\\Sdk')throw Error('RUNTIME_OWNER_UNVERIFIED');
  const adb='/mnt/c/Users/3feli/AppData/Local/Android/Sdk/platform-tools/adb.exe';
  const serial='emulator-5584';
- function run(args,timeout=180000,input) {
+ function run(args,timeout=180000,input,binary=false) {
   return new Promise(resolve=>{
    const p=spawn(adb,['-s',serial,...args],{stdio:[input===undefined?'ignore':'pipe','pipe','pipe']});
    if(input!==undefined)p.stdin.end(input);
-   let out='',timer;const finish=(code)=>{clearTimeout(timer);resolve({code,out});};
-   p.stdout.on('data',x=>{if(out.length<1000000)out+=x});p.stderr.on('data',x=>{if(out.length<1000000)out+=x});
+   let out='',timer;const chunks=[];let bytes=0;const finish=(code)=>{clearTimeout(timer);resolve({code,out:binary?Buffer.concat(chunks):out});};
+   p.stdout.on('data',x=>{if(binary){bytes+=x.length;if(bytes<=1000000)chunks.push(x);else p.kill();}else if(out.length<1000000)out+=x});p.stderr.on('data',x=>{if(!binary&&out.length<1000000)out+=x});
    p.on('error',()=>finish(-1));p.on('close',finish);
    timer=setTimeout(()=>{p.kill();},timeout);
   });
@@ -45,13 +45,15 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
  }
  const evidence={scope:enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
+ const cameraStorage=enrollment&&process.env.KR007_CAMERA_STORAGE==='1';
+ const apkDirectory=cameraStorage?'apks-kr007-camera':enrollment?'apks-kr007':'apks';
  let primary,networkRestored=true;
  try {
   await guard();
   for(const key of ['ro.build.version.sdk','ro.build.version.release','ro.build.fingerprint']) evidence[key]=(await command(['shell','getprop',key])).trim();
   if(evidence['ro.build.version.sdk']!=='36')throw Error('EMULATOR_API_MISMATCH');
   for(const [name,file] of [['app','app-debug.apk'],['test','app-debug-androidTest.apk']]) {
-   const path=join(dir,enrollment?'apks-kr007':'apks',file);evidence.apkHashes[name]=createHash('sha256').update(readFileSync(path)).digest('hex');
+   const path=join(dir,apkDirectory,file);evidence.apkHashes[name]=createHash('sha256').update(readFileSync(path)).digest('hex');
    await installFresh(name==='app'?app:test,path);
   }
   // Only this dedicated task AVD and these two synthetic packages; never another app/profile.
@@ -80,7 +82,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
   if(count.trim()!=='1')throw Error('RUNTIME_SOLE_HOUSEHOLD_COUNT_FAILED');
   if(enrollment) {
    const {exerciseEnrollment}=await import('../kr007/android-runtime.mjs');
-   await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh});
+   await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh,apkDirectory,cameraStorage,gatewayAvailable});
   }
   evidence.primary='PASS_THIS_EMULATOR_ONLY';
  } catch(e) {primary=e;evidence.primary=e.message;}

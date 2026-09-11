@@ -44,6 +44,22 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    ...Object.keys(vars).flatMap(k=>['-e',k]),r.image]);
   resources.push(r);verify(r);call(['start',r.id]);return r;
  }
+ async function gatewayAvailable(enabled) {
+  if(!enrollment)throw Error('GATEWAY_NOT_IN_SCOPE');
+  if(!enabled){
+   if(!gateway)throw Error('OWN_GATEWAY_MISSING');gateway.kill();
+   for(let i=0;i<20&&(await http('http://127.0.0.1:57366/health')).status!==0;i++)await sleep(250);
+   check((await http('http://127.0.0.1:57366/health')).status===0,'GATEWAY_STOP_UNVERIFIED');gateway=null;return;
+  }
+  check(!gateway,'GATEWAY_ALREADY_RUNNING');
+  const path=fileURLToPath(new URL('../kr007/local-gateway.mjs',import.meta.url));
+  const win=p=>execFileSync('wslpath',['-w',p],{encoding:'utf8'}).trim();
+  gateway=spawn(windows?'/mnt/c/Program Files/nodejs/node.exe':process.execPath,[windows?win(path):path],{stdio:['pipe','pipe','pipe']});
+  let ready=false;gateway.stdout.on('data',b=>{if(b.toString().includes('LOCAL_ENROLLMENT_GATEWAY_READY'))ready=true;});gateway.stderr.resume();
+  gateway.stdin.end(JSON.stringify({...gatewayConfig,docker:windows?win(gatewayConfig.docker):gatewayConfig.docker}));
+  for(let i=0;i<30&&!ready;i++)await sleep(1000);
+  check(ready&&(await http('http://127.0.0.1:57366/health')).status===200,'ENROLLMENT_GATEWAY_UNAVAILABLE');
+ }
  try {
   // Credentials generated for this isolated DB only; statement body not emitted.
   sql(`set log_statement='none'; alter role supabase_auth_admin password '${password}'; alter role authenticator password '${password}';`);
@@ -76,13 +92,7 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
   }
   console.log('LOCAL_AUTH_REST_MAIL_READY:confirmationRequired=true:loopbackOnly=true');
   if(enrollment) {
-   const path=fileURLToPath(new URL('../kr007/local-gateway.mjs',import.meta.url));
-   const win=p=>execFileSync('wslpath',['-w',p],{encoding:'utf8'}).trim();
-   gateway=spawn(windows?'/mnt/c/Program Files/nodejs/node.exe':process.execPath,[windows?win(path):path],{stdio:['pipe','pipe','pipe']});
-   let ready=false;gateway.stdout.on('data',b=>{if(b.toString().includes('LOCAL_ENROLLMENT_GATEWAY_READY'))ready=true;});gateway.stderr.resume();
-   gateway.stdin.end(JSON.stringify({...gatewayConfig,docker:windows?win(gatewayConfig.docker):gatewayConfig.docker}));
-   for(let i=0;i<30&&!ready;i++)await sleep(1000);
-   check(ready && (await http('http://127.0.0.1:57366/health')).status===200,'ENROLLMENT_GATEWAY_UNAVAILABLE');
+   await gatewayAvailable(true);
    console.log('LOCAL_ENROLLMENT_GATEWAY_VERIFIED_LOOPBACK');
   }
   if(keep) {
@@ -98,7 +108,7 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
     const {testEnrollment}=await import('../kr007/backend-tests.mjs');await testEnrollment({http,sql});
    }
    if(enrollmentRuntime) {
-    const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql});
+    const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql,gatewayAvailable});
    }
    if(runtime) {
     const {testAndroidRuntime}=await import('./android-runtime.mjs');
