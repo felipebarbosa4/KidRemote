@@ -55,6 +55,65 @@ scheduled retention integration remain unrun; gateway operation storage remains
 stubbed. The next product-facing issue is KR-006 after separate authorization and
 dependency review; do not start it automatically. KR-003 remains open.
 
+## KR-006 local parent foundation — 2026-09-11
+
+- **Goal:** executable native signup/verification/login/recovery/logout and idempotent own household/empty list against actual local Auth and PostgreSQL.
+- **Context:** OD-44 is a new prospective authorization. Clean verified baseline `6de53806d68ac151c57d2667e09c351272ea0b83`; new branch `kr-006-local-parent-auth` stacked on unmerged KR-005 PR #18. Native Windows Docker explicitly returned `linux`; no Android SDK/emulator has yet been established locally.
+- **Constraints:** only synthetic task-owned local services, local email capture and loopback development endpoints. No physical device, deployment, child enforcement, real users, distribution, KR-007 or visual work. No privileged key in APK; release denies local cleartext/callback exceptions. Preserve all prior migrations/evidence and unmerged PRs.
+- **Done when:** debug APK builds and actual Auth/HTTP/database boundaries, household races/RLS and targeted UI/session tests execute, or a precise unavailable prerequisite blocks them; remaining emulator/physical checks and deletion design-only scope remain explicit.
+
+First verify/pin existing compatible Android and official Auth/PostgREST/local-mail tools. Reuse the disposable DB runner and established architecture. Do not disable confirmation or forge authentication to claim success. Production identifiers, deployment/SMTP/region and distribution remain unapproved. Stop after this slice.
+
+**Executed progress:** [KR-006 evidence](../test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md)
+records real Auth/mail/PostgREST bootstrap/isolation/recovery/logout tests and unchanged
+KR-004/005 regressions. Parent debug/release build, four JVM tests and lint executed in
+CI after correcting compile SDK to 37; final release audit/CI status is tracked on
+draft PR #19. Provisional app ID is not a distribution identity. AC-1/3/4/6/7 have local
+evidence; AC-2/5 remain partial pending APK runtime/session/secure-storage evidence.
+Initial execution did not establish a local SDK/emulator. The native Windows follow-up
+below refines that prerequisite evidence; no Linux/CI result proves Windows unavailable.
+
+## KR-006 native Windows runtime follow-up — 2026-09-11
+
+**Resumed after owner SDK setup:** clean baseline `a5811617a08f4103d3650d5a3872c3f005ccb7cd`.
+Native Emulator 37.1.11 `-accel-check` now returns exit 0, WHPX 10.0.26200 usable.
+Platform Tools 37.0.1 and command-line tools 23.0 are installed; initially no image/AVD.
+Proceed within existing OD-44 with one dedicated API 36 AOSP x86_64 AVD, actual Compose
+instrumentation and unchanged local Auth/mail. Required package licence text is compared
+with the installed/accepted SDK licence before download; never answer a new licence prompt.
+The earlier prerequisite failure below remains historical, not the current acceleration verdict.
+
+**Executed runtime result:** four real Compose instrumentation methods / 13 checkpoint
+codes passed on the dedicated API 36 AOSP Windows emulator using source `f017474`.
+Actual signup/email verification/login/household/empty list, same-process Activity
+recreation, different-process session restoration, logout file/key clearing, recovery
+and same-process recovery from a real task-owned REST outage passed. Exactly one runtime
+household membership persisted; all task backend/app data cleanup and emulator stop
+verified. [Sanitized result](../test-plans/evidence/KR-006-ANDROID-RUNTIME-2026-09-11.json).
+No additional owner action is required for this completed emulator slice. Remaining
+KR-006 work is physical/OEM storage, deployed link UX and accessibility acceptance,
+subject to appropriate authorization; AC-2/5 remain partial, not an invitation to KR-007.
+
+- **Goal:** execute the real parent UI against existing local services, including verification/recovery, activity versus process restoration, logout storage clearing and network recovery; no new features.
+- **Context:** clean `4b0a218ed6b38fcb31c76c47b16af71841b2c4b7`, same branch/draft PR #19 stacked on #18; OD-44 now explicitly permits one dedicated Windows AVD and licensed user-owned tooling downloads.
+- **Constraints:** no physical target, global ADB reset, new licence acceptance, host configuration/privilege changes, deployment or KR-007. Synthetic emails/credentials stay local and out of command arguments/logs. Existing backend loopback/release isolation remains intact.
+- **Done when:** actual app runtime tests pass with sanitized results, or a demonstrated prerequisite requiring owner action stops execution without substituting backend/unit/build evidence.
+
+**Historical observed stop (resolved by owner SDK setup):** native PowerShell executes successfully. SDK environment variables and
+tool PATH entries are absent; standard Windows SDK/Studio/AVD paths and SDK registry
+entries checked are absent. Windows reports a present hypervisor and firmware virtualization,
+but usable emulator acceleration is **UNSPECIFIED** without the emulator executable.
+About 268 GiB is free on C:. No existing accepted SDK licence installation was established;
+downloads are conditional on that acceptance and the agent may not accept terms.
+See the [retained diagnostics](../test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md#native-windows-runtime-follow-up--blocked-before-android-execution).
+
+**Historical owner action (completed before the resumed run):** complete the official Android SDK's initial Windows setup in
+`C:\Users\3feli\AppData\Local\Android\Sdk`, personally reviewing/accepting its licence
+prompts. Do not enable Windows features or create an AVD for this step. Then resume
+native acceleration verification and the single task-owned AVD within OD-44; any new
+package licence remains an owner boundary. No app/device/services were operated in
+this follow-up; all requested Android runtime flows and AC-2/5 remain unrun/partial.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
