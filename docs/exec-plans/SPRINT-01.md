@@ -26,6 +26,15 @@ Continue OD-42 AC-1–4 now: pin the official Supabase PostgreSQL image, allocat
 
 **Executed result:** versioned schema/RLS migration passed on the pinned Supabase PostgreSQL 17.6 image, then 243 real-role RLS/grant and 45 structural assertions passed with no skips. Ten Node orchestration guard tests passed. Exact disposable identity and cleanup plus corrected development failures are in [KR-004 execution evidence](../test-plans/evidence/KR-004-LOCAL-DB-2026-09-11.md). This supersedes the historical runtime-blocker statements above. AC-1–4 are locally complete; KR-004 stays In Progress with AC-5–7 open. Required CI includes a new actual DB job and unchanged existing jobs. Stop at the OD-42 boundary: the next bounded proposal is KR-004 AC-5 gateway authorization tests/implementation, only after owner approval; do not start KR-005/006 or production enforcement.
 
+### KR-004 AC-5–7 authorized continuation — 2026-09-11
+
+- **Goal:** finish local AC-5 gateway authorization, AC-6 atomic control and AC-7 reproducible validation, in that order.
+- **Context:** OD-42 extension is explicit and prospective. Clean HEAD `80c68faa3df07b9977ed423845037bd1e886a52e`, existing stacked draft PR #17 verified; native Windows client independently returned `linux` from the explicit local named pipe. AC-1–4 migrations/tests/evidence are retained.
+- **Constraints:** task-owned local DB and synthetic identities only; no remote DB, real accounts, deployment, paid/host privilege changes, shared reset, device/capture work, KR-005/006 or production enforcement. HTTP test listeners bind loopback only. Label repository/transport stubs separately from actual handler decisions and SQL evidence.
+- **Done when:** own-device and sibling/foreign/credential/privilege HTTP cases pass through the actual handler; real SQL proves authorization, rollback, idempotency and concurrency; original RLS regressions pass; guarded fresh-db/reset instructions and required CI pass, with executed/unrun boundaries explicit.
+
+Implement bounded commits for gateway, transaction and final validation/publication. Earlier stop-at-AC-4 wording is historical and superseded only by this extension. No new roadmap or approval between AC-5/6/7 is needed; stop after KR-004 local acceptance, without merge or real-use claim.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
