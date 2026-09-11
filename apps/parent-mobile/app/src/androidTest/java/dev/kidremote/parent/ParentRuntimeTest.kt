@@ -18,9 +18,9 @@ import java.util.UUID
  * Assertions emit stable codes, never semantics trees, URLs, passwords or provider bodies. */
 class ParentRuntimeTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
-    private val testContext get() = InstrumentationRegistry.getInstrumentation().context
     private val target get() = InstrumentationRegistry.getInstrumentation().targetContext
-    private val fixture get() = File(testContext.noBackupFilesDir,"runtime-fixture")
+    // Instrumentation executes as the target UID; never write another package's data directory.
+    private val fixture get() = File(target.noBackupFilesDir,"runtime-fixture")
     private fun checkThat(ok: Boolean, code: String) { if (!ok) throw AssertionError(code) }
     private fun safe(code: String, action: () -> Unit) {
         try { action() } catch (_: Throwable) { throw AssertionError(code) }

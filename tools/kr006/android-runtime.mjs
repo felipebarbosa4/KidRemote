@@ -75,6 +75,7 @@ export async function testAndroidRuntime({restAvailable,sql}) {
    for(const pkg of [app,test]) {if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CLEAR_FAILED');}
    evidence.cleanup='VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED';
   } catch {evidence.cleanup='UNVERIFIED';primary??=Error('RUNTIME_CLEANUP_UNVERIFIED');}
+  evidence.overall=primary?'NOT_PASSED':'PASS_THIS_EMULATOR_ONLY';
   mkdirSync(dir,{recursive:true});writeFileSync(report,JSON.stringify(evidence,null,2)+'\n');
   console.log(JSON.stringify({runtimeResult:evidence.primary,cleanup:evidence.cleanup,report}));
  }
