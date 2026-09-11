@@ -83,6 +83,35 @@ and cleanup removes only verified IDs. No global prune or unrelated resource mut
 
 ## IMPLEMENTED versus unrun
 
+[CI 34633168769](https://github.com/felipebarbosa4/KidRemote/actions/runs/34633168769)
+on `2de80751879cb5be56cae7521aed96a9f34e7529` passed all five jobs: repository,
+Windows PowerShell 5.1/7, existing spike, DB regression and parent. Parent evidence:
+44 actual Auth/HTTP assertions, four JVM tests, four Node security tests, debug/release
+build and lint, merged-manifest/DEX isolation audit. The debug-only artifact was
+downloaded and independently hashed:
+`9fa72d9c1de1551891ab0dd4ecddc53dd808b57c99edff4a70af52e4ddb6cd55`.
+CI read-only prerequisite checks returned `EMULATOR_BINARY=ABSENT`,
+`EMULATOR_SYSTEM_IMAGE=ABSENT`, `KVM_ACCESS=UNAVAILABLE`. Emulator execution is UNRUN,
+not skipped evidence counted as PASS. Existing visual-codec CI skips are unrelated;
+no visual work or new manual Android build was performed.
+
+An additional direct SQL security test initially failed with SQLSTATE 42703 because
+the base image's minimal pre-GoTrue Auth fixture lacks confirmation/deletion columns.
+The failed task DB `4356bf7563fef2933d8104b665ee8723bfbd9aeed227a2c2e97da18c126d37e3`
+and task network were verified removed. Test-only columns now exist only inside its
+rolled-back fixture transaction; real Auth tests still use the provider's migrations
+and email verification. Nine assertions additionally cover missing/unconfirmed subject,
+trusted catalog lookup despite a temporary shadow relation, own idempotent setup,
+and denied anon/service execution. The function explicitly qualifies
+`pg_catalog.pg_timezone_names`; no caller-controlled reference supplies timezone authority.
+The corrected local run passed all 496 SQL assertions, 28 KR-005 SQL/HTTP assertions
+and 44 real Auth/HTTP assertions in verified task DB
+`721f3650ebabd88340a4974269249b95f238270b6733aa92106746771d613597`, owner label
+`ac580fe4-e136-45d9-8eca-556e87ca18c8`. Secret-canary scan and removal of all owned
+Auth/REST/mail/DB/network resources passed. Four Node security tests, repository
+validation and whitespace check passed. Final-head CI is linked in PR #19 without
+representing earlier CI as execution of a later commit.
+
 Native screens: signup, verification pending, login, local-email recovery/password reset,
 loading/error/retry, confirmed timezone setup, actual empty device-list projection and
 logout. The local email action form rejects foreign URLs, fragments and ambiguous/type

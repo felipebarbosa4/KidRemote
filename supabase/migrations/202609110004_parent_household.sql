@@ -8,7 +8,7 @@ begin
  -- Also serializes retries from separate HTTP sessions. Never trust editable metadata.
  perform 1 from auth.users where id=actor and email_confirmed_at is not null and deleted_at is null for update;
  if not found then raise exception using errcode='42501',message='CONFIRMED_ACCOUNT_REQUIRED'; end if;
- if p_timezone is null or length(p_timezone)>80 or not exists(select 1 from pg_timezone_names where name=p_timezone) then
+ if p_timezone is null or length(p_timezone)>80 or not exists(select 1 from pg_catalog.pg_timezone_names where name=p_timezone) then
   raise exception using errcode='22023',message='INVALID_TIMEZONE'; end if;
  select * into member from public.household_members where user_id=actor;
  if found then
