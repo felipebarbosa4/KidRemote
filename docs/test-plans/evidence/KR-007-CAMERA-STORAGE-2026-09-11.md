@@ -51,9 +51,86 @@ The full `e60e72a` runtime attempt `results-2026-09-11T22-48-02-207Z.json` remai
 
 Code inspection establishes a test-helper defect: `get()` used AssertionError for a non-200 HTTP response, but the existing bounded readiness retry catches Exception. A transient non-200 would bypass retries. The retained failure does not establish its exact HTTP status, so that specific causal attribution remains INFERRED. Change only the instrumentation helper to IOException on non-200, retaining the same deadline and final assertion. Add an actual HTTP non-success regression (absent synthetic test resource) and a safe readiness milestone. No production parent/network behavior or assertion gate is weakened.
 
+Independent permission execution on `e60e72a` child APK passed without backend/identity: `permissionAndLifecycle` (including actual deny/grant), then `revocationVictim` reached its camera-open marker. Targeted `pm revoke` caused the test app process to disappear and instrumentation **not** to complete, the expected OS termination, not a passing test invocation. `afterPermissionRevocation` passed in a different PID with denied permission, no paired/pending state, explicit system-dialog regrant and camera release. Scoped app-data cleanup passed. Child SHA-256 `cc2754d0779b78bf98fa82f7ce2682ae00bf973b7a89ea4b9b0ef44df563164f`, test `643e2f81c82546486841cdbeeff9febcd86e818d7f4ec948027e92810d60acf2`. The interrupted invocation is recorded separately from the two passing tests. No virtual QR decode claim follows from permission/camera opening alone.
+
 Native emulator console accepts `virtualscene-image <wall|table> [path]`; omitting path restores default. Synthetic PNG/ciphertext artifacts stay in unique owner-local task directories; no upload/logging/image viewing. Preserve failed/partial artifacts for owner review, no automatic replacement/deletion.
 [Official camera documentation](https://developer.android.com/studio/run/emulator-use-camera) describes importing PNG/JPEG, including QR, into the virtual scene. This tests CameraX/decoder acquisition only when actually observed; it does not certify physical camera quality.
 
 Native AAPT2 37 inspected packaged `backup_rules.xml` and `extraction_rules.xml`: root/device_root exclusions, both cloud-backup and device-transfer. The CI audit now verifies packaged resources as well as merged `allowBackup=false` and identity storage in `noBackupFilesDir`. [Android backup documentation](https://developer.android.com/identity/data/autobackup) and [AAPT2](https://developer.android.com/tools/aapt2) are the configuration basis. Configuration inspection/clean-install ciphertext rejection are not OEM backup/transfer tests.
 
 AC-2/3 and camera/incomplete-setup AC-4 remain partial until their evidence is obtained; physical/OEM requirements and AC-6/7 remain pending. No enforcement readiness, rotation, broader removal or KR-008 work.
+
+## Final available-configuration execution
+
+APK/host source `01c6264096d773670dbc0846413ceb00e54c2c05`, CI
+[34655855796](https://github.com/felipebarbosa4/KidRemote/actions/runs/34655855796):
+all five required jobs passed. The superseded in-progress `45dfcf2` CI was cancelled,
+not passed; the final HTTP regression requires an actual non-200 response, not merely
+a failed connection. No assertion deadline or acceptance gate was relaxed.
+
+[Sanitized actual runtime record](KR-007-CAMERA-STORAGE-RUNTIME-2026-09-11.json),
+original `results-2026-09-11T23-00-06-316Z.json`: **NOT_PASSED** overall,
+`ENROLLMENT_ANDROID_FAILED:invalidCameraQr`. **23 PASS invocations, one failed**,
+plus one deliberately interrupted camera-open invocation for OS revocation (not counted as PASS).
+
+| Boundary | Observed result |
+| --- | --- |
+| Parent Auth/UI/recovery, enrollment/initial read/list, interrupted commit/revoke/fresh QR | PASS again through actual apps/HTTP/database; initial QR was decoder input, not camera |
+| Retry helper HTTP non-success and actual REST outage/recovery | PASS; readiness milestone retained |
+| Gateway outage | PASS, same valid local identity and exact ciphertext retained; real authenticated read recovered |
+| Same-length authenticated ciphertext tamper | PASS rejection/no paired state; original encrypted control recovered |
+| Missing Keystore key | PASS rejection, **no replacement key created** |
+| Copy ciphertext into clean installation without original key | PASS rejection, no key creation and no new database identity |
+| Camera before explicit Scan | PASS, not opened |
+| Actual permission denial/grant | PASS, truthful denial/no pending identity, foreground camera opens only after grant |
+| Cancel/background/recreation/return | PASS release, no automatic resume, explicit reacquisition |
+| Camera permission revoked while open | Expected OS process termination; separate restarted test PASS, permission denied and no paired/pending state, explicit regrant/release |
+| Native virtual-scene poster control | Console accepted local synthetic invalid PNG for wall/table; hash retained; no webcam |
+| Invalid QR via actual camera/analyzer | **FAILED test**, expected `QR inválido` state not established; safe exception enum OTHER |
+| Valid camera QR/redemption, repeated frames, camera-enrolled identity restart | **UNRUN**, blocked by failed preceding control |
+| Camera/app/service cleanup | PASS; default posters restored, synthetic app/test data cleared, owned gateway/Auth/mail/REST/database/network removed |
+
+The invalid-camera test includes a 45-second state wait, but its retained OTHER enum does
+not independently identify the exception class. **UNSPECIFIED:** whether the boundary
+is frame delivery, virtual-scene framing, decoder recognition or another test error.
+Camera opening and console acceptance do not prove QR acquisition. Post-attempt read-only
+check found no focused System UI ANR; native console help exposes `virtualscene-image`
+but no pose-control command. Do not claim that the virtual camera is universally
+unsupported, that the application has a reproduced decoder defect, or that invalid
+camera input successfully reached validation. No replacement camera simulator, webcam,
+image viewer or retained camera frame was used. This is the bounded remaining emulator
+limitation; independent permission/storage work completed despite it. No owner action
+or physical operation was requested to bypass it.
+
+Same attempt: disposable PostgreSQL 17.6 container
+`564ce131de2a1bee621fd75589c1e5e5a4d3a3981ad107f37dbd5227679f28c9`,
+owner `f566734e-d8bf-4413-90ab-77606075319d`, zero database ports, task tmpfs.
+Four migrations, **496 SQL + 28 existing protocol + 44 Auth + 29 enrollment HTTP/DB**
+assertions passed. The old gateway-operation STUB boundary remains explicitly separate.
+Local Node source/security/resource-lookup tests: **13 passed**, no skips.
+CI executed parent/child JVM (4/5), debug/release build/lint/isolation, actual local
+backend tests and native Windows PowerShell 5.1/7. CI does not run emulator integration;
+the Windows runtime above is the executed evidence. No extra manual unchanged Android build.
+
+| Exercised APK (`apks-kr007-camera`, owner-local task directory) | SHA-256 |
+| --- | --- |
+| app-debug.apk | `cd6b0e911a0547003a949268cb39bd78a2179d07228370158fd4c8dc7ea248b7` |
+| app-debug-androidTest.apk | `81518c1db3ad6160cab1f60f60cc3067042d5cede715a57237dc706fd36fe2b4` |
+| child-debug.apk | `77850d6c4317095f03fe41294ca7dc8afb114f47206393164097327ee2837bd9` |
+| child-debug-androidTest.apk | `459ede363ea433b35233110a8d5cc80d50e73ebf8715325ccc94ab8af6482326` |
+
+Full local root: `C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe`.
+Downloaded APKs remain additionally in `artifacts-kr007-01c6264`; prior versions remain
+in their separate directories. The four original `apks-kr007` hashes still match the
+published `fb52936` evidence. AVD stop was explicitly targeted and acknowledged; no
+AVD deletion/wipe or host configuration change. Retain local failed synthetic artifacts
+and reports for owner review; no upload or silent replacement. No real account was used.
+Post-stop native Windows listener check found zero listeners on the task emulator/service
+ports 5584/5585/57361/57362/57364/57365/57366.
+
+The only reproduced production-code hardening change is save-only key creation;
+camera conversion was extracted unchanged for synthetic stride/orientation tests.
+The release resource audit and HTTP readiness fixes are test/validation changes.
+AC-2/3/4 remain unchecked overall: camera QR acquisition and physical/OEM acceptance
+are open; AC-4 evidence covers camera only, not enforcement permissions. AC-6/7 remain
+out of scope. KR-003 evidence, visual work and immutable bundles are unchanged.
