@@ -9,6 +9,10 @@ Status: Accepted 2026-09-05 by owner directive; implementation and threat-model 
 
 ## Alternatives evaluated
 
+OD-43 local implementation and focused threat model:
+[pairing contract/tests](../../supabase/functions/pairing/README.md). This does not
+reopen accepted OD-09/10/20 or imply Auth/Edge/mobile integration or production GO.
+
 Long-lived enrollment code: simpler sharing but excessive exposure.
 Short numeric code: accessible fallback, but brute-force resistance/rate limits require more work; not MVP.
 Opaque random QR capability: adequate entropy, small protocol and no parent identity disclosure. Recommended.

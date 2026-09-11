@@ -37,6 +37,24 @@ Implement bounded commits for gateway, transaction and final validation/publicat
 
 **Executed local completion:** [AC-5–7 evidence](../test-plans/evidence/KR-004-GATEWAY-CONTROL-2026-09-11.md) records 60 Node entries including 42 actual HTTP scenarios with explicit storage stubs, plus 389 real SQL assertions across unchanged RLS/constraints and new atomic/concurrent control suites. Full checker and exact-target cleanup passed. AC-1–7 are locally complete/In Review, not merged or deployed; required CI status is synchronized in PR #17. No production/real-family gate is implied. Stop here; propose the existing KR-005 pairing threat-model/local redemption slice only as a separately directed next issue. KR-003 and visual tooling remain untouched/paused.
 
+## KR-005 local pairing — 2026-09-11
+
+- **Goal:** executable local single-use pairing, focused threat model, persistence/race/protocol security evidence.
+- **Context:** OD-43 independently authorizes this slice. Clean verified baseline `bc6e36508b27b39b8805f10f048be97a990947ff`; branch `kr-005-local-pairing` stacked on unmerged `kr-004-local-schema-rls` / draft PR #17. Native Windows Docker client returned `linux` on the explicit local named pipe.
+- **Constraints:** synthetic task-owned DB only; preserve KR-004 migrations/evidence, KR-003 and all bundles. No deployment, real users, UI/scanner, Auth stack, Android secure storage, KR-006/007 or visual work. Protocol/HTTP dependency stubs are not database-backed API evidence.
+- **Done when:** real SQL proves expiry/cancel/replay, twenty concurrent claims, atomic rollback and response-loss recovery; actual protocol/gateway authorization and secret-minimization tests pass; required regression/CI results and remaining integration boundaries are recorded.
+
+Use the existing disposable runner. The existing recommended rate limits are explicit local test parameters (5 creates/10 minutes, 10 redemptions/source-minute, 5 failed tokens/session), not newly approved production quotas. OD-09/10/20 are already accepted and will not be reopened. Stop after this issue; no merge or downstream implementation is authorized.
+
+**Executed local result:** [KR-005 evidence](../test-plans/evidence/KR-005-LOCAL-PAIRING-2026-09-11.md)
+records 68 Node entries, 487 real SQL assertions and 28 pairing/database/HTTP assertions.
+Twenty simultaneously blocked sessions produced exactly one device/credential.
+AC-1–7 are locally complete/In Review; required CI is tracked on the stacked PR.
+Auth/PostgREST/Edge, trusted ingress/TLS, mobile storage, credential rotation and
+scheduled retention integration remain unrun; gateway operation storage remains
+stubbed. The next product-facing issue is KR-006 after separate authorization and
+dependency review; do not start it automatically. KR-003 remains open.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
