@@ -1,8 +1,10 @@
 # KR-004 disposable local database tests
 
-OD-42 authorizes AC-1–4 only. These are real SQL/pgTAP tests in Supabase PostgreSQL,
-not a mocked database. No remote endpoint, production credentials, real Auth account,
-HTTP signup, gateway, deployment, host port or host privilege change is used.
+OD-42's prospective extension authorizes local AC-5–7 after the retained AC-1–4 evidence.
+SQL/pgTAP executes on real Supabase PostgreSQL, not a mocked database. Gateway HTTP tests
+execute the actual handler on loopback with explicitly stubbed storage dependencies.
+No remote endpoint, production credentials, real Auth account, HTTP signup, deployment,
+published database port or host privilege change is used.
 
 ## Run
 
@@ -16,16 +18,13 @@ not a hosting, production support or Supabase project decision.
 Linux / CI:
 
 ```sh
-node --test tools/kr004/*.test.mjs
-node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock
-node tools/validate.mjs
-git diff --check
+node tools/kr004/check-local.mjs docker unix:///var/run/docker.sock
 ```
 
 Existing WSL environment with native Windows Docker Desktop client:
 
 ```sh
-node tools/kr004/test-local-db.mjs "/mnt/c/Users/3feli/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe" "npipe:////./pipe/dockerDesktopLinuxEngine"
+node tools/kr004/check-local.mjs "/mnt/c/Users/3feli/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe" "npipe:////./pipe/dockerDesktopLinuxEngine"
 ```
 
 This uses the explicit named pipe, not the WSL Docker shim. The temporary password is
@@ -42,8 +41,11 @@ mounts and records sanitized identity. After image bootstrap it requires databas
 migration user `supabase_admin`, zero application tables and the real `auth.uid()` prerequisite.
 The database name is only shared spelling: the instance/container and data are newly allocated.
 
-Migrations execute in filename order. Each SQL suite rolls back its own synthetic fixtures,
-temporary privilege changes and pgTAP setup. The runner rejects missing/empty/skipped tests
+Migrations execute in filename order. Suites 01–03 roll back their synthetic fixtures,
+temporary privilege changes and pgTAP setup. Suite 04 deliberately commits synthetic fixtures
+so independent database sessions can exercise real concurrency; the disposable DB is removed
+afterward. dblink connects only to the same exclusive container's Unix socket, never another
+database instance. The runner rejects missing required migrations/suites and empty/skipped tests
 and TAP failures. Finally it revalidates exact ownership, removes only that container,
 and verifies absence with a successful filtered local listing. The original error is not
 overwritten by cleanup failure. No prune or arbitrary existing-target reset is provided.
@@ -68,11 +70,27 @@ the disposable synthetic database is intentionally not an evidence archive.
 - Node lifecycle tests use fake Docker only to test orchestration guardrails and cleanup.
   Their PASS is **not** database evidence; CI separately executes both actual SQL suites.
 
-Claims represent the trusted post-authentication SQL context. No JWT signatures, Auth
-HTTP login, PostgREST role switching, device credentials or Edge gateway are validated.
-No application RPC exists yet: tests reject an absent control RPC and exercise private
-function EXECUTE boundaries with a test-only invoker function rolled back at the end.
-These results do not fulfill gateway AC-5, transaction AC-6 or the full before-exposure AC-7.
+Suites 01/02 remain byte-for-byte unchanged as AC-1–4 regressions. Suite 03 proves
+the [actual atomic control function](../functions/CONTROL-TRANSACTION.md), rollback,
+idempotency and privileged actor checks. Suite 04 adds observed two-session locking races.
+The original absent-RPC assertion is retained; the new actual `accept_control` privilege
+and authorization boundary is tested separately, not inferred from an absent function.
+
+`check-local.mjs` runs repository validation, all Node HTTP/guard tests, the actual DB
+runner, and worktree/staged/commit whitespace checks, failing on the first error.
+The same command runs in required CI alongside the unchanged Windows/Android jobs.
+The **local reset procedure is another fresh invocation**: allocate and verify a new
+task container, replay both migrations, run all suites, verify exact-target removal.
+There is no in-place DROP/reset option accepting arbitrary database/container targets.
+
+Claims represent trusted post-authentication SQL context. No JWT signatures, Auth HTTP
+login, PostgREST role switching or deployed Deno/Edge runtime is validated. Device
+credential hashing/verification and HTTP authorization run in the actual handler, with
+synthetic storage dependency callbacks: this is AC-5's explicitly permitted HTTP/stub
+evidence, not database-backed gateway storage integration. Device sync/ack persistence,
+push-provider delivery, pairing and credential rotation remain later integration work.
+AC-7 is the reproducible **local** pre-exposure check, not authorization to expose services
+or a statement that every production security/lifecycle requirement is complete.
 
 [Supabase database tests](https://supabase.com/docs/guides/database/testing),
 [official image selection](https://github.com/supabase/supabase/blob/master/docker/docker-compose.yml),

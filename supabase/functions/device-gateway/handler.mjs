@@ -47,13 +47,14 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
       const body = await boundedJson(request);
       if (!object(body) || body.protocol_version !== 1) return reply(400,'INVALID_PAYLOAD');
 
-      return await repository.withCredential(digest, async records => {
+      const response = await repository.withCredential(digest, async records => {
         const c = records?.credential, d = records?.device;
         // Credential verification precedes scope authorization and revocation response.
         if (!c || !/^[0-9a-f]{64}$/.test(c.secret_digest ?? '') ||
             !timingSafeEqual(Buffer.from(digest,'hex'),Buffer.from(c.secret_digest,'hex')))
           return reply(401,'UNAUTHORIZED');
-        if (!d || !UUID.test(c.credential_id) || !UUID.test(c.device_id) ||
+        if (!d || !Object.hasOwn(c,'revoked_at') || !Object.hasOwn(d,'revoked_at') ||
+            !UUID.test(c.credential_id) || !UUID.test(c.device_id) ||
             c.device_id !== d.id || !UUID.test(d.id) || !UUID.test(d.household_id) ||
             !UUID.test(d.policy_epoch)) return reply(401,'UNAUTHORIZED');
         if (c.revoked_at != null || d.revoked_at != null) return reply(403,'DEVICE_REVOKED');
@@ -93,6 +94,7 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
         return reply(200,null,await records.registerPush(scope,{provider:body.provider,
           address_kind:body.address_kind,address:body.address}));
       });
+      return response instanceof Response ? response : reply(503,'TEMPORARILY_UNAVAILABLE');
     } catch {
       // Never log raw request, bearer, SQL error, dependency exception or provider address.
       return reply(503,'TEMPORARILY_UNAVAILABLE');

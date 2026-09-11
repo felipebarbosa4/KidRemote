@@ -72,6 +72,15 @@ test('actual gateway HTTP authorization on loopback with synthetic storage stub'
   await denied('revoked device',sync,'/device/sync',403);device.revoked_at=null;
   credential.expires_at='invalid';await denied('unknown expiry fails closed',sync,'/device/sync',401);
   credential.expires_at=new Date(now+60000).toISOString();
+  delete credential.revoked_at;
+  await denied('missing credential revocation state fails closed',sync,'/device/sync',401);
+  credential.revoked_at=null;
+  delete device.revoked_at;
+  await denied('missing device revocation state fails closed',sync,'/device/sync',401);
+  device.revoked_at=null;
+  credential.device_id=u.foreign;
+  await denied('inconsistent server credential/device join fails closed',sync,'/device/sync',401);
+  credential.device_id=u.a;
   for(const [name,value] of [['own',u.a],['sibling',u.sibling],['foreign',u.foreign]])
     await denied(name+' caller device override rejected',{...sync,device_id:value},'/device/sync');
   for(const key of ['household_id','actor_user_id','role','rpc','operation','manual_lock'])

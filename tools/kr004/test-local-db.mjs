@@ -6,18 +6,21 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
+import { localEndpoints, requireInventory } from './validation-contract.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const options = process.argv.slice(2);
 const docker = options[0] ?? 'docker';
 const host = options[1] ?? 'unix:///var/run/docker.sock';
-if (options.length > 2 || !['unix:///var/run/docker.sock', 'npipe:////./pipe/dockerDesktopLinuxEngine'].includes(host))
+if (options.length > 2 || !localEndpoints.includes(host))
   throw new Error('Only the explicit local Unix socket or Docker Desktop Linux named pipe is allowed');
 const image = 'supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00';
 const token = randomUUID();
 const name = 'kr004-ac14-' + token;
 const label = 'org.kidremote.kr004.disposable';
 const env = { ...process.env, POSTGRES_PASSWORD: randomBytes(32).toString('hex') };
+// The explicit local endpoint must not inherit a remote context/TLS override.
+for (const key of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH']) delete env[key];
 // Process-scoped WSL-to-Windows environment forwarding, not a host/integration change.
 // Native docker.exe reads the value for '-e POSTGRES_PASSWORD'; never put it in argv.
 if (docker.endsWith('.exe')) env.WSLENV = [process.env.WSLENV, 'POSTGRES_PASSWORD/w'].filter(Boolean).join(':');
@@ -52,6 +55,9 @@ function sql(input) {
     '-U', 'supabase_admin', '-d', 'postgres'], input);
 }
 try {
+  const migrations = readdirSync(resolve(root, 'supabase/migrations')).filter(f => /^\d+.*\.sql$/.test(f)).sort();
+  const suites = readdirSync(resolve(root, 'supabase/tests')).filter(f => f.endsWith('.test.sql')).sort();
+  requireInventory(migrations, suites);
   if (call(['info', '--format', '{{.OSType}}']) !== 'linux') throw new Error('LOCAL_LINUX_REQUIRED');
   // create never reuses a name; tmpfs and network=none bound all task data.
   id = call(['create', '--name', name, '--label', label + '=' + token,
@@ -81,12 +87,11 @@ try {
   console.log('EMPTY_APPLICATION_DATABASE_VERIFIED');
   console.log('POSTGRES_VERSION=' + sql('show server_version;'));
   console.log('PGTAP_AVAILABLE=' + sql("select exists(select 1 from pg_available_extensions where name='pgtap');"));
-  for (const f of readdirSync(resolve(root, 'supabase/migrations')).filter(f => /^\d+.*\.sql$/.test(f)).sort()) {
+  for (const f of migrations) {
     console.log('MIGRATION_START=' + f);
     sql(readFileSync(resolve(root, 'supabase/migrations', f), 'utf8'));
     console.log('MIGRATION_PASS=' + f);
   }
-  const suites = readdirSync(resolve(root, 'supabase/tests')).filter(f => f.endsWith('.test.sql')).sort();
   if (suites.length === 0) throw new Error('DATABASE_TEST_SUITE_MISSING');
   for (const f of suites) {
     console.log('DATABASE_TEST_START=' + f);

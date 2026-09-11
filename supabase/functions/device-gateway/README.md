@@ -21,7 +21,7 @@ as a substitute for device identity. Only the handler authorizes the returned re
 
 **Explicit AC-5 test dependency stub:** the Node HTTP suite supplies those records and
 storage callbacks synthetically. It does not mock credential verification or authorization.
-39 HTTP scenarios (40 Node test entries including the parent test) passed on loopback;
+42 HTTP scenarios (43 Node test entries including the parent test) passed on loopback;
 responses from allowed operations are labelled `STUB_*`, not claimed persisted sync/ack.
 No complete sync engine, Auth/PostgREST/Edge runtime integration, rate-limit service,
 credential rotation or production-ready storage adapter is claimed by this slice.

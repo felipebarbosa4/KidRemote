@@ -35,6 +35,8 @@ Continue OD-42 AC-1–4 now: pin the official Supabase PostgreSQL image, allocat
 
 Implement bounded commits for gateway, transaction and final validation/publication. Earlier stop-at-AC-4 wording is historical and superseded only by this extension. No new roadmap or approval between AC-5/6/7 is needed; stop after KR-004 local acceptance, without merge or real-use claim.
 
+**Executed local completion:** [AC-5–7 evidence](../test-plans/evidence/KR-004-GATEWAY-CONTROL-2026-09-11.md) records 60 Node entries including 42 actual HTTP scenarios with explicit storage stubs, plus 389 real SQL assertions across unchanged RLS/constraints and new atomic/concurrent control suites. Full checker and exact-target cleanup passed. AC-1–7 are locally complete/In Review, not merged or deployed; required CI status is synchronized in PR #17. No production/real-family gate is implied. Stop here; propose the existing KR-005 pairing threat-model/local redemption slice only as a separately directed next issue. KR-003 and visual tooling remain untouched/paused.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.

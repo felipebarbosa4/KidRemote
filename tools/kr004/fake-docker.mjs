@@ -26,7 +26,7 @@ else if(cmd==='exec') {
     else if(sql.includes("to_regprocedure('auth.uid()')")) output('t');
     else if(sql.includes('show server_version')) output('17.6');
     else if(sql.includes('pg_available_extensions')) output('t');
-    else if(sql.includes('begin;') && sql.includes('no_plan()')) {
+    else if(sql.includes('no_plan()')) {
       if(mode==='test-failure' || mode==='cleanup-primary') output('not ok 1 - synthetic lifecycle failure\n1..1');
       else if(mode==='empty-plan') output('1..0');
       else if(mode==='skip') output('ok 1 - not executed # SKIP\n1..1');

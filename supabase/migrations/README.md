@@ -1,8 +1,8 @@
 # KR-004 local schema migrations
 
-- **Goal:** executable AC-1–4 model/RLS under OD-42, not deployment.
+- **Goal:** executable local model/RLS/control under extended OD-42, not deployment.
 - **Context:** [backend model](../../docs/product-specs/BACKEND.md), ADR-0003/0006.
-- **Constraints:** synthetic task-owned database only; client reads only. No new control/gateway RPCs.
+- **Constraints:** synthetic task-owned database only; no direct client table writes or deployment.
 - **Done when:** migration + real-role pgTAP pass; see [execution evidence](../../docs/test-plans/evidence/KR-004-LOCAL-DB-2026-09-11.md).
 
 `202609110001_schema_rls.sql` creates nine public and six private application tables.
@@ -16,21 +16,28 @@ there is no reset/resume mode and no remote connection string option. The applic
 starts empty, while the pinned Supabase image supplies its own Auth/database initialization.
 This does not claim a full Auth/PostgREST/Edge integration environment.
 
+`202609110002_atomic_control.sql` is the forward-only AC-6 extension: nullable legacy
+request-digest/expected-version fields and one explicitly authorized parent transaction.
+See [control semantics and tests](../functions/CONTROL-TRANSACTION.md). Migration 001
+and its recorded 01/02 test files are unchanged; all run again after the extension.
+
 ## Deliberate remaining boundaries
 
-- No product RPC/view is introduced; normal client roles cannot write or create objects.
+- No view is introduced; normal client roles cannot write tables or create objects.
+  Authenticated parents alone can invoke the narrowly scoped `accept_control` function.
 - Future private/definer functions require explicit EXECUTE revocation and review.
   Global PostgreSQL PUBLIC EXECUTE defaults cannot be subtracted by per-schema revokes.
   The migration locks that default for its owner only; a different migration owner needs
   its own explicit defaults/revokes and tests.
-- Tenant relationships are structural; verified actor membership at privileged writes,
-  monotonic updates, future receipt/version rejection, total daily grant cap under concurrency,
-  timezone-name validation against IANA, typed payload allowlists and atomic control/outbox
-  transactions remain server-route/transaction work. No schema PASS certifies those paths.
+- Actor membership/revocation, serialized control versions, typed control payloads and
+  atomic grant/command/audit/outbox writes are now executed transaction tests, not merely
+  structural claims. HTTP gateway storage integration, receipt/report persistence and
+  a confirmed-parent Auth API remain outside this local SQL proof.
 - Existing logical text fields without accepted enum vocabularies (e.g. deletion/outbox
   state and health) stay nonempty text; no new product state machine is invented here.
-- Deletion, retention workers, gateway HTTP predicates, pairing and production exposure
-  are not implemented by this migration.
+- Deletion/retention workers, pairing and production exposure are not implemented.
+  Gateway HTTP predicates are separately tested with explicit storage stubs; SQL RLS
+  does not prove privileged gateway authorization.
 
 Official references verified 2026-09-11:
 [Supabase RLS and grants](https://supabase.com/docs/guides/database/postgres/row-level-security),
