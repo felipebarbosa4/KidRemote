@@ -155,3 +155,16 @@ release audits. Eleven focused Node source/security tests and repository validat
 `git diff --check` passed locally. CI does not execute the Windows emulator flow;
 the separately retained native runtime above does. No unchanged manual Android build
 or KR-003 physical/visual run was repeated for the reporting update.
+
+Final contract check found that the generic handler accepted a noninitial sync cursor
+even though this adapter only implements enrollment bootstrap. The adapter now rejects
+`after_version != 0` fail-closed (503 unsupported availability; no full sync engine).
+A fresh `--enrollment-test` run passed **29** enrollment HTTP/DB assertions, including
+cursor-zero success and cursor-one rejection, plus all 496 SQL/28 old pairing/44 Auth
+regressions and secret-canary/cleanup checks. Owned database
+`f2a23e0e4a5cafc4ea8256752055298abf8dacb41c6b124c34b4071457b4f4bc`, owner
+`f955a4ae-6ee2-4d71-8e40-fc96f1d1762c`; resources removed. This is a later backend-only
+guard; it does not change or re-label the already exercised APKs/runtime report.
+CI [34648942546](https://github.com/felipebarbosa4/KidRemote/actions/runs/34648942546)
+on reporting commit `b0b3129` passed all five jobs; the final cursor-guard commit has
+its own required PR checks. Do not infer new Android runtime execution from that CI.

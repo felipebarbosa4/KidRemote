@@ -22,6 +22,7 @@ export async function testEnrollment({http,sql}) {
  const read=()=>send('/device/sync',{protocol_version:1,after_version:0},credential);
  const own=await read();ok(own.status===200 && own.json.device_id===device,'REAL_DB_OWN_READ');
  ok(own.json.policy_configured===false&&own.json.daily_limit_seconds===null&&own.json.enforcement_available===false,'NO_DEFAULT_POLICY_OR_PROTECTION');
+ ok((await send('/device/sync',{protocol_version:1,after_version:1},credential)).status===503,'NONINITIAL_CURSOR_UNSUPPORTED_FAIL_CLOSED');
  ok(sql(`select household_id from public.devices where id='${device}';`)===house,'SESSION_DERIVED_HOUSEHOLD');
  for(const target of [sibling,foreign])ok((await send('/device/sync',{protocol_version:1,after_version:0,device_id:target},credential)).status===400,'TARGET_OVERRIDE_DENIED');
  for(const path of ['/parent/pairing-sessions','/parent/devices/'+sibling+'/operations','/rpc/accept_control','/device/ack'])

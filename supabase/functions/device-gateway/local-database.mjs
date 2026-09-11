@@ -12,7 +12,8 @@ export function databaseRepository(session) {
    // ID came from the credential join, not from request target fields.
    if(!/^[0-9a-f-]{36}$/.test(row.device.id))throw Error('INVALID_RECORD');
    const policy=JSON.parse(await query(`select row_to_json(p) from public.device_policies p where device_id='${row.device.id}'::uuid for share;`));
-   const out=await callback({...row,sync:async scope=>{
+   const out=await callback({...row,sync:async(scope,{after_version})=>{
+    if(after_version!==0)throw Error('ONLY_INITIAL_CURSOR_IMPLEMENTED');
     if(policy.household_id!==scope.household_id || policy.policy_configured!==false || policy.daily_limit_seconds!==null || policy.version!==0)
      throw Error('ONLY_UNCONFIGURED_BOOTSTRAP_IMPLEMENTED');
     return {protocol_version:1,kind:'ENROLLMENT_BOOTSTRAP',device_id:scope.device_id,policy_epoch:scope.policy_epoch,
