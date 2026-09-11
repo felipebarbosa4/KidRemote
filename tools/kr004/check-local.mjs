@@ -11,10 +11,11 @@ if(args.length!==2 || !localEndpoints.includes(args[1])) {
   process.exit(1);
 }
 const tests=readdirSync(new URL('./',import.meta.url)).filter(f=>f.endsWith('.test.mjs')).sort().map(f=>'tools/kr004/'+f);
+tests.push(...readdirSync(new URL('../kr005/',import.meta.url)).filter(f=>f.endsWith('.test.mjs')).sort().map(f=>'tools/kr005/'+f));
 const checks=[
   ['repository',process.execPath,['tools/validate.mjs']],
   ['HTTP_and_runner_tests',process.execPath,['--test',...tests]],
-  ['actual_disposable_database',process.execPath,['tools/kr004/test-local-db.mjs',...args]],
+  ['actual_disposable_database',process.execPath,['tools/kr004/test-local-db.mjs',...args,'--pairing']],
   ['worktree_whitespace','git',['diff','--check']],
   ['staged_whitespace','git',['diff','--cached','--check']],
   ['commit_whitespace','git',['show','--format=','--check','HEAD']],

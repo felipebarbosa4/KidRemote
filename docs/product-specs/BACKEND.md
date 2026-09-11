@@ -78,6 +78,11 @@ Views are avoided initially. A future view must preserve caller RLS (security_in
 
 ## Critical transactions
 
+OD-43's [local pairing implementation](../../supabase/functions/pairing/README.md)
+now exercises creation/redemption/cancel/incomplete recovery with actual SQL and
+concurrent sessions. It does not complete deployed Auth/Edge/device storage or
+scheduled lifecycle integration; no exposure or real-family authorization follows.
+
 **Household creation:** verify confirmed parent → lock/unique creator identity → create household, owner membership and profile idempotently. App metadata cannot create a second owner.
 **Command:** validate parent + payload/period/version → serialize device policy row → check operation-id replay/digest → increment version → mutate desired state or insert dated grant → insert command/audit/outbox → commit → return accepted.
 Do not send FCM inside the database transaction. Provider failure cannot roll back accepted policy.

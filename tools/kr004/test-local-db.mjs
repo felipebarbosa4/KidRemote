@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const options = process.argv.slice(2);
 const docker = options[0] ?? 'docker';
 const host = options[1] ?? 'unix:///var/run/docker.sock';
-if (options.length > 2 || !localEndpoints.includes(host))
+if (options.length > 3 || (options.length===3 && options[2]!=='--pairing') || !localEndpoints.includes(host))
   throw new Error('Only the explicit local Unix socket or Docker Desktop Linux named pipe is allowed');
 const image = 'supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00';
 const token = randomUUID();
@@ -106,6 +106,10 @@ try {
       throw new Error('DATABASE_TEST_FAILURE:' + f);
     }
     console.log('DATABASE_TEST_PASS=' + f + ':assertions=' + tests.length);
+  }
+  if (options[2]==='--pairing') {
+    const { runPairingIntegration } = await import('../kr005/database-protocol.mjs');
+    await runPairingIntegration(sql,()=>call(['logs',id]));
   }
 } catch (error) {
   primary = error;

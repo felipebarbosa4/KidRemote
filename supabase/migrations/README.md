@@ -23,6 +23,12 @@ and its recorded 01/02 test files are unchanged; all run again after the extensi
 
 ## Deliberate remaining boundaries
 
+OD-43 adds `202609110003_pairing.sql` on the unmerged KR-004 dependency:
+scoped creation/cancel/recovery and service-only atomic redemption. See the
+[pairing threat model and contract](../functions/pairing/README.md). The existing
+combined checker now includes pairing SQL, twenty-worker concurrency and real
+loopback HTTP-to-pairing-SQL tests with `--pairing`; no new database framework/reset.
+
 - No view is introduced; normal client roles cannot write tables or create objects.
   Authenticated parents alone can invoke the narrowly scoped `accept_control` function.
 - Future private/definer functions require explicit EXECUTE revocation and review.
@@ -35,7 +41,7 @@ and its recorded 01/02 test files are unchanged; all run again after the extensi
   a confirmed-parent Auth API remain outside this local SQL proof.
 - Existing logical text fields without accepted enum vocabularies (e.g. deletion/outbox
   state and health) stay nonempty text; no new product state machine is invented here.
-- Deletion/retention workers, pairing and production exposure are not implemented.
+- Deletion/retention workers and production exposure are not implemented.
   Gateway HTTP predicates are separately tested with explicit storage stubs; SQL RLS
   does not prove privileged gateway authorization.
 

@@ -27,6 +27,10 @@ Supabase custom credential endpoints need handler authentication with the platfo
 
 ## Operation envelope
 
+The [KR-005 pairing contract](../../supabase/functions/pairing/README.md) defines the
+accepted local QR version/session/token envelope and atomic transaction fixtures;
+Auth/Edge deployment and the full device-storage adapter remain unrun.
+
 ```json
 {
   "protocol_version": 1,
