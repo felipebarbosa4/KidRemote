@@ -1,5 +1,6 @@
 import {readFileSync,readdirSync} from 'node:fs';import{execFileSync}from'node:child_process';import{createHash}from'node:crypto';
 import {join} from 'node:path';
+import {backupResourcePath} from './backup-resource.mjs';
 const root='apps/child-android/build/';
 let count=0;for(const f of readdirSync(root+'test-results/testDebugUnitTest'))if(f.endsWith('.xml')){const s=readFileSync(root+'test-results/testDebugUnitTest/'+f,'utf8');if(/<(?:failure|error|skipped)\b/.test(s))throw Error('CHILD_TEST_FAILURE');count+=(s.match(/<testcase\b/g)||[]).length;}
 if(count!==5)throw Error('CHILD_TEST_COUNT');
@@ -13,8 +14,9 @@ for(const variant of ['debug','release']){
  if(!permissions.includes('android.permission.CAMERA')||!permissions.includes('android.permission.INTERNET')||new Set(permissions).size!==permissions.length||!guard?.includes('android:protectionLevel="signature"'))throw Error('CHILD_PERMISSION_GUARD');
  const apk=root+`outputs/apk/${variant}/child-${variant}${variant==='release'?'-unsigned':''}.apk`;
  const aapt=join(process.env.ANDROID_HOME??process.env.ANDROID_SDK_ROOT??'', 'build-tools/37.0.0/aapt2');
+ const resources=execFileSync(aapt,['dump','resources',apk],{encoding:'utf8',maxBuffer:16*1024*1024});
  for(const [file,domains] of [['backup_rules.xml',1],['extraction_rules.xml',2]]){
-  const tree=execFileSync(aapt,['dump','xmltree',apk,'--file','res/xml/'+file],{encoding:'utf8'});
+  const tree=execFileSync(aapt,['dump','xmltree',apk,'--file',backupResourcePath(resources,file.replace('.xml',''))],{encoding:'utf8'});
   if((tree.match(/domain="root"/g)||[]).length!==domains||(tree.match(/domain="device_root"/g)||[]).length!==domains||
    (tree.match(/path="\."/g)||[]).length!==domains*2||/E: include\b/.test(tree))throw Error('PACKAGED_BACKUP_RULES_UNVERIFIED');
   if(file==='extraction_rules.xml'&&(!/E: cloud-backup\b/.test(tree)||!/E: device-transfer\b/.test(tree)))throw Error('PACKAGED_TRANSFER_RULES_MISSING');

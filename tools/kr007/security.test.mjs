@@ -34,3 +34,10 @@ test('camera continuation uses native virtual scene and platform permission UI, 
  assert.match(read('.gitignore'),/synthetic-identity\.ciphertext/);
  const start=read('tools/kr006/windows-emulator.ps1');assert.match(start,/'-camera-back','virtualscene','-camera-front','none'/);
 });
+import {backupResourcePath} from './backup-resource.mjs';
+test('packaged backup audit resolves optimized release paths and rejects missing or ambiguous resources',()=>{
+ for(const path of ['res/xml/backup_rules.xml','res/a1.xml'])assert.equal(backupResourcePath(`    resource 0x7f0e0000 xml/backup_rules\n      () (file) ${path} type=XML\n`,'backup_rules'),path);
+ assert.throws(()=>backupResourcePath('','backup_rules'));
+ assert.throws(()=>backupResourcePath('resource 0x7f0e0000 xml/backup_rules\n () (file) res/../secret.xml type=XML','backup_rules'));
+ const entry='resource 0x7f0e0000 xml/backup_rules\n () (file) res/a.xml type=XML\n';assert.throws(()=>backupResourcePath(entry+entry,'backup_rules'));
+});

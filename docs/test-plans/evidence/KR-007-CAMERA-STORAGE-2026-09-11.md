@@ -39,6 +39,8 @@ KR007_CAMERA_STORAGE=1 KR006_RUNTIME_DIRECTORY=/mnt/c/Users/3feli/AppData/Local/
 
 ## Scope and references
 
+Follow-up CI [34654590996](https://github.com/felipebarbosa4/KidRemote/actions/runs/34654590996), `cf32000`: builds/JVM/lint and debug packaged-resource audit passed, but release audit failed because it assumed the unoptimized ZIP resource path. APK upload was skipped. Resolve each named backup resource through the packaged AAPT2 resource table, then perform the same strict XML checks; do not remove the release check. Added synthetic lookup tests for ordinary/shortened paths, absent, unsafe and ambiguous resources. This CI failure is separate from Android runtime evidence. An isolated repeat of the original permission test also reproduced the same pre-denial failure without opening another backend or enrolling any identity.
+
 Native emulator console accepts `virtualscene-image <wall|table> [path]`; omitting path restores default. Synthetic PNG/ciphertext artifacts stay in unique owner-local task directories; no upload/logging/image viewing. Preserve failed/partial artifacts for owner review, no automatic replacement/deletion.
 [Official camera documentation](https://developer.android.com/studio/run/emulator-use-camera) describes importing PNG/JPEG, including QR, into the virtual scene. This tests CameraX/decoder acquisition only when actually observed; it does not certify physical camera quality.
 
