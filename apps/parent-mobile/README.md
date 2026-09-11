@@ -64,7 +64,8 @@ lifetime decision. Child downloaded policy is neither accessed nor changed.
 
 Release has no backend configured, no emulator endpoints, no callback origin and no
 cleartext exception. Debug alone allows the exact emulator host. Parent requests only
-INTERNET, never child/Accessibility/device-admin/camera permissions. No backend key in APK.
+INTERNET plus AndroidX's own signature-scoped receiver compatibility permission,
+never child/Accessibility/device-admin/camera permissions. No backend key in APK.
 
 ## Build/test
 

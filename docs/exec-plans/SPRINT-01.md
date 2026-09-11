@@ -64,6 +64,15 @@ dependency review; do not start it automatically. KR-003 remains open.
 
 First verify/pin existing compatible Android and official Auth/PostgREST/local-mail tools. Reuse the disposable DB runner and established architecture. Do not disable confirmation or forge authentication to claim success. Production identifiers, deployment/SMTP/region and distribution remain unapproved. Stop after this slice.
 
+**Executed progress:** [KR-006 evidence](../test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md)
+records real Auth/mail/PostgREST bootstrap/isolation/recovery/logout tests and unchanged
+KR-004/005 regressions. Parent debug/release build, four JVM tests and lint executed in
+CI after correcting compile SDK to 37; final release audit/CI status is tracked on
+draft PR #19. Provisional app ID is not a distribution identity. AC-1/3/4/6/7 have local
+evidence; AC-2/5 remain partial pending APK runtime/session/secure-storage evidence.
+No local SDK/emulator is available. Next bounded work remains KR-006 runtime validation
+on a task-owned emulator when prerequisites are available, not KR-007 or a physical install.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.

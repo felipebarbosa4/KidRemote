@@ -1,5 +1,26 @@
 # Tooling and scaffold status
 
+## KR-006 prospective local bootstrap (OD-44, 2026-09-11)
+
+The parent now has a separate build in `apps/parent-mobile`: AGP 9.4.0 / unchanged
+Gradle 9.6.0 wrapper / JDK 17 / built-in Kotlin and Compose compiler 2.2.10;
+Compose BOM 2026.09.00, Activity Compose 1.13.0, Lifecycle 2.10.0. Compile SDK 37,
+Build Tools 37.0.0, target 36/minimum 28. Current Compose AAR metadata rejected
+compile SDK 36; CI then compiled/tested/linted the parent with preinstalled API 37.
+These are local bootstrap pins, not production identity/support or a KR-003 migration.
+No local Android SDK or emulator is established; no licence/host privilege change.
+[Sources and commands](../apps/parent-mobile/README.md),
+[execution evidence](test-plans/evidence/KR-006-LOCAL-PARENT-2026-09-11.md).
+
+Digest-pinned local Auth v2.196.0, PostgREST v14.17 and Mailpit v1.31.1 extend the
+existing disposable database runner; no cloud project/deployment. Android CI debug
+APK upload uses official upload-artifact v7.0.1 at
+`043fb46d1a93c77aae656e7c1c64a875d1fc6a0a`; only the debug APK is retained, never mail,
+accounts, service environments or media. Remaining historical scaffold descriptions
+below are preserved and do not revoke OD-44's narrow local bootstrap permission.
+
+## Historical scaffold and KR-003 tooling
+
 - **Goal:** Make the architecture scaffold verifiable without prematurely selecting app SDKs.
 - **Context:** Initial pass on 2026-09-05 in an existing Git repository.
 - **Constraints:** Exact framework/SDK/library versions stay **UNSPECIFIED** unless required and verified.

@@ -2,6 +2,7 @@ import {readFileSync,readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {parentPermissionsAllowed} from './manifest-policy.mjs';
 const root=resolve('apps/parent-mobile/app');
 const check=(ok,why)=>{if(!ok) throw Error(why);};
 const files=p=>readdirSync(p,{withFileTypes:true}).flatMap(e=>e.isDirectory()?files(resolve(p,e.name)):[resolve(p,e.name)]);
@@ -11,8 +12,7 @@ check(expected>=4 && (results.match(/<testcase\b/g)??[]).length===expected && !/
 for(const variant of ['debug','release']) {
  const task='process'+(variant==='debug'?'Debug':'Release')+'Manifest';
  const manifest=readFileSync(`${root}/build/intermediates/merged_manifests/${variant}/${task}/AndroidManifest.xml`,'utf8');
- const permissions=[...manifest.matchAll(/<uses-permission\b[^>]*android:name="([^"]+)"/g)].map(m=>m[1]);
- check(permissions.length===1 && permissions[0]==='android.permission.INTERNET','PARENT_PERMISSION_SCOPE');
+ check(parentPermissionsAllowed(manifest),'PARENT_PERMISSION_SCOPE');
  check(manifest.includes('android:allowBackup="false"') && manifest.includes('android:usesCleartextTraffic="false"'),'PARENT_MANIFEST_SECURITY');
  check(!/android.intent.action.VIEW|BIND_ACCESSIBILITY_SERVICE|DEVICE_ADMIN/.test(manifest),'PARENT_EXPORTED_SCOPE');
  const apk=`${root}/build/outputs/apk/${variant}/app-${variant}${variant==='release'?'-unsigned':''}.apk`;

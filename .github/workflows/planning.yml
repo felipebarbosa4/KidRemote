@@ -29,6 +29,9 @@ jobs:
         run: |
           test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"
           test -d "$ANDROID_HOME/build-tools/37.0.0"
+          if test -x "$ANDROID_HOME/emulator/emulator"; then echo EMULATOR_BINARY=AVAILABLE; else echo EMULATOR_BINARY=ABSENT; fi
+          if test -d "$ANDROID_HOME/system-images" && find "$ANDROID_HOME/system-images" -name system.img -print -quit | grep -q .; then echo EMULATOR_SYSTEM_IMAGE=AVAILABLE; else echo EMULATOR_SYSTEM_IMAGE=ABSENT; fi
+          if test -r /dev/kvm && test -w /dev/kvm; then echo KVM_ACCESS=AVAILABLE; else echo KVM_ACCESS=UNAVAILABLE; fi
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
       - name: Retain debug APK only (no accounts, mail or local-service data)

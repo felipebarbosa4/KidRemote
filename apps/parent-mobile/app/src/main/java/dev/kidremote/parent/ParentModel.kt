@@ -34,7 +34,10 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
         check(api.confirmed(token))
         synchronized(lock) {
             check(epoch == generation)
-            vault.save(session.getString("refresh_token")); access=token
+            // Recovery privilege is memory-only: process restart returns to login,
+            // never converts an unfinished password reset into a normal restored session.
+            if (recovery) vault.clear() else vault.save(session.getString("refresh_token"))
+            access=token
         }
         return AuthState(if (recovery) Screen.RESET else Screen.SETUP)
     }
