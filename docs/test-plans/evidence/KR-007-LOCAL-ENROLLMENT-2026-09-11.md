@@ -54,3 +54,26 @@ Subsequent actual app attempts/results are recorded below when executed. Synthet
 decoder input is never camera capture/permission evidence. Physical Keystore/OEM,
 camera grant/refusal/scanning, transfer/restore, rotation and broader removal/permission
 acceptance remain unrun/outside this first slice. No child policy/enforcement is active.
+
+### First Android attempt — not passed
+
+CI [34647531872](https://github.com/felipebarbosa4/KidRemote/actions/runs/34647531872)
+on `fb52936` passed all five jobs, including both app build/lint/release audits and
+seven JVM tests (four parent, three child). Debug manifest now has only INTERNET,
+CAMERA and the exact same-app signature receiver guard; no network-state permission.
+
+Owned runtime report `results-2026-09-11T21-11-38-956Z.json` is preserved outside the
+repository in the existing task directory. It records `TARGETED_ANDROID_OPERATION_REJECTED`,
+zero instrumentation stages, cleanup `UNVERIFIED` and overall `NOT_PASSED`.
+The exact AVD and qemu flag were verified; a separate scoped installation diagnostic
+confirmed `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, exit 1, for the parent APK. No app flow
+passed in that attempt. This is a debug signing-key/reinstallation boundary, not an
+authentication or enrollment failure. Its parent APK SHA-256 was
+`3c285506d58e6070a096f52db9fd32f70b7537faa728cfef30c4703b68dc98b5`.
+
+Fix: fresh synthetic runtime reinstalls only the four explicit task app/test packages
+after exact AVD verification. It never uninstalls another app or touches physical
+devices. Cleanup skips verified-absent packages (the first attempt never installed
+the child). Prior APK files and historical evidence stay unchanged. Subsequent fresh
+attempts do not overwrite this failed report. Backend cleanup completed; its owned
+database was `0973f53dc34c37a97055932ce50ebfaae14e4a2ba3e4d17c6ab0e14ab57b1bc3`.

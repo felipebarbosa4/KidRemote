@@ -85,7 +85,14 @@ Only synthetic `@example.test` accounts are appropriate. Copy the confirmation l
 the app's verification form; it validates exact origin/path/type/parameters then exchanges
 the token in a POST body. Sign in after confirmation. Confirm the visible IANA household
 zone to bootstrap once, then read actual own profile/household/device rows via PostgREST.
-No fake devices, remaining-time values, pairing or control buttons are provided.
+No fake devices, remaining-time values or remote-control buttons are provided.
+OD-45 adds only real create/display/cancel pairing QR and a read-only enrolled list.
+The QR is memory-only and clears on background/expiry; a nonsecret session ID supports
+explicit revoke/fresh-QR recovery after a consumed response was not saved. Parent JWTs
+never enter the QR. Devices are labelled setup incomplete/protection unverified, not
+healthy or protected merely because registered. Use the child slice's
+[enrollment startup and test commands](../child-android/README.md#local-startup-and-bounded-test)
+for the additional local gateway. Earlier KR-006 APK evidence above stays unchanged.
 
 Recovery sends a local email; paste its link into the recovery form, verify with Auth,
 set a new password and sign in again. No exported implicit-token/custom-scheme callback

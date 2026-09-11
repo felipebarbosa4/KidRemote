@@ -32,6 +32,17 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
   if(q.code!==0||q.out.trim()!=='1')throw Error('NOT_VERIFIED_EMULATOR');
  }
  async function command(args){await guard();const r=await run(args);if(r.code!==0)throw Error('TARGETED_ANDROID_OPERATION_REJECTED');return r.out;}
+ const ownedPackages=[app,test,...(enrollment?['dev.kidremote.child.unassigned.debug','dev.kidremote.child.unassigned.debug.test']:[])];
+ async function installed(pkg) {
+  if(!ownedPackages.includes(pkg))throw Error('PACKAGE_NOT_TASK_OWNED');
+  return (await command(['shell','pm','list','packages',pkg])).replaceAll('\r','').trim().split('\n').includes('package:'+pkg);
+ }
+ async function installFresh(pkg,path) {
+  // Different CI jobs use different debug signing keys. This fresh synthetic test
+  // may replace only its exact packages on the already owner-verified task AVD.
+  if(await installed(pkg))if(!(await command(['uninstall',pkg])).includes('Success'))throw Error('OWN_PACKAGE_REINSTALL_FAILED');
+  if(!(await command(['install','-r','-t',windowsPath(path)])).includes('Success'))throw Error('APK_INSTALL_FAILED');
+ }
  const evidence={scope:enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
  let primary,networkRestored=true;
@@ -41,7 +52,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
   if(evidence['ro.build.version.sdk']!=='36')throw Error('EMULATOR_API_MISMATCH');
   for(const [name,file] of [['app','app-debug.apk'],['test','app-debug-androidTest.apk']]) {
    const path=join(dir,enrollment?'apks-kr007':'apks',file);evidence.apkHashes[name]=createHash('sha256').update(readFileSync(path)).digest('hex');
-   const out=await command(['install','-r','-t',windowsPath(path)]);if(!out.includes('Success'))throw Error('APK_INSTALL_FAILED');
+   await installFresh(name==='app'?app:test,path);
   }
   // Only this dedicated task AVD and these two synthetic packages; never another app/profile.
   for(const pkg of [app,test]) {if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('FRESH_RUNTIME_STATE_UNVERIFIED');}
@@ -69,7 +80,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
   if(count.trim()!=='1')throw Error('RUNTIME_SOLE_HOUSEHOLD_COUNT_FAILED');
   if(enrollment) {
    const {exerciseEnrollment}=await import('../kr007/android-runtime.mjs');
-   await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql});
+   await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh});
   }
   evidence.primary='PASS_THIS_EMULATOR_ONLY';
  } catch(e) {primary=e;evidence.primary=e.message;}
@@ -78,6 +89,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
    if(!networkRestored)restAvailable(true);
    await command(['shell','am','force-stop',app]);
    for(const pkg of [app,test,...(enrollment?['dev.kidremote.child.unassigned.debug','dev.kidremote.child.unassigned.debug.test']:[])]) {
+    if(!await installed(pkg))continue;
     await command(['shell','am','force-stop',pkg]);
     if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CLEAR_FAILED');}
    evidence.cleanup='VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED';

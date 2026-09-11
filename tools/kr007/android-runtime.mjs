@@ -3,11 +3,11 @@ import {createHash} from 'node:crypto';
 import {join} from 'node:path';
 import {parseQR} from '../../supabase/functions/pairing/protocol.mjs';
 export async function testEnrollmentRuntime(args){const {testAndroidRuntime}=await import('../kr006/android-runtime.mjs');await testAndroidRuntime({...args,enrollment:true});}
-export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql}) {
+export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh}) {
  const child='dev.kidremote.child.unassigned.debug';
  for(const [pkg,file] of [[child,'child-debug.apk'],[child+'.test','child-debug-androidTest.apk']]) {
   const path=join(dir,'apks-kr007',file);evidence.apkHashes[pkg]=createHash('sha256').update(readFileSync(path)).digest('hex');
-  if(!(await command(['install','-r','-t',windowsPath(path)])).includes('Success'))throw Error('CHILD_INSTALL_FAILED');
+  await installFresh(pkg,path);
   if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CHILD_FRESH_STATE_FAILED');
  }
  async function stage(pkg,clazz,method) {

@@ -31,7 +31,8 @@ async function boundedJson(request) {
 
 // withCredential must read current credential + device server-side, in the same
 // transaction/snapshot used by its scoped storage methods; credential/device revocation
-// must serialize with that transaction. HTTP tests label that DB adapter as a stub.
+// must serialize with that transaction. KR-004 HTTP unit fixtures label storage as
+// stubbed; KR-007 local-database.mjs supplies real transactions for initial reads only.
 export function createDeviceHandler(repository, clock = () => Date.now()) {
   return async request => {
     try {
