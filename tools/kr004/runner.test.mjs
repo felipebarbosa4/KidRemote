@@ -59,4 +59,3 @@ test('unavailable engine after removal is not verified cleanup',()=>{
   const r=execute('cleanup-unknown'); assert.notEqual(r.status,0);
   assert.match(r.text,/CLEANUP_FAILED/); assert.doesNotMatch(r.text,/CLEANUP=VERIFIED/);
 });
-

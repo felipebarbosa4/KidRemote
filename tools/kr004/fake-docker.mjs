@@ -42,4 +42,3 @@ else if(cmd==='exec') {
 } else if(cmd==='container') {
   if(mode==='cleanup-unknown') process.exitCode=1;
 } else process.exitCode=2;
-
