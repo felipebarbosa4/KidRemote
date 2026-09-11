@@ -5,6 +5,38 @@
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.
 - **Done when:** Product gates reviewed, repository checks pass, feasibility evidence has a go/no-go, RLS and pairing designs are testable.
 
+## KR-004 AC-1–4 limited GO — 2026-09-10
+
+- **Goal:** implement versioned local schema migrations and actual database isolation tests for KR-004 AC-1–4 only.
+- **Context:** OD-42 records the explicit prospective owner exception. Verified starting HEAD `2f5be2fb8d62eae3aeaf8a8662b0e976844db904`, clean worktree. No existing KR-004 branch/PR was found. Work is isolated on `kr-004-local-schema-rls`, stacked on `kr-003-mi8-overlay-stability` at that commit; its PR diff excludes inherited KR-003 changes. PR #16 is not merged or rewritten.
+- **Constraints:** task-owned disposable local DB and synthetic identities only; no remote DB, unrelated container/volume, host privilege/service change, cloud setup, deployment, real user data, ADB or capture. No new product semantics, control/gateway implementation, KR-005/006, private-use approval or production enforcement. AC-5–7 remain outside the approved slice.
+- **Done when:** empty-DB migrations enforce keys/tenant constraints/indexes, RLS/minimum grants/private isolation, and real local authenticated/anonymous-role tests cover own/foreign access, writes/joins/existing RPCs, self-promotion, null auth, missing policy and removed membership; executed evidence and CI are recorded. If no local DB runtime is available, report the precise prerequisite and leave AC-1–4 unchecked.
+
+**Historical result (2026-09-10): BLOCKED before migration implementation/execution.** WSL has no `psql`, `postgres`, `initdb` or Supabase CLI; its Docker shim reports missing WSL integration. The existing Windows Docker client is available (29.6.2), but `docker.exe version --format '{{.Client.Version}} {{.Server.Version}}'` fails: local `dockerDesktopLinuxEngine` named pipe is absent. Windows command discovery also finds no PostgreSQL server/client or Supabase CLI. No engine was started, integration enabled, privilege changed, container inspected/mutated, DB reset or mock database used. See [KR-004](../github/issues/KR-004.md#local-prerequisite-evidence--2026-09-10).
+
+Required unblock: owner makes the existing local Docker Desktop **Linux engine** available (or supplies an already available authorized local PostgreSQL toolchain). The native Windows Docker client can be checked without requiring WSL integration changes. Do not start shared infrastructure automatically, since it may resume unrelated containers. Once available, reverify local endpoint and allocate only a uniquely named task-owned disposable target; do not reset any pre-existing database/container. Continue this same slice, not another roadmap task. No database PASS or AC completion is recorded.
+
+The earlier reset's proposed hold-lifting language below is superseded **only for AC-1–4** by OD-42. Its private-alpha/support proposal and all later issue gates remain unapproved.
+
+### Execution resumed — 2026-09-11
+
+The owner started Docker Desktop. The agent independently executed the native Windows client with explicit `--host npipe:////./pipe/dockerDesktopLinuxEngine`: `info --format '{{.OSType}}'` returned `linux` (exit 0). This supersedes the runtime blocker above, not historical evidence. HEAD/worktree verified at `8fe80eb`, clean; existing draft PR #17 retains its KR-003 branch base.
+
+Continue OD-42 AC-1–4 now: pin the official Supabase PostgreSQL image, allocate a uniquely labelled disposable container with no network/host ports, verify its ID/label/image/database and empty application schema before migrations, and run SQL allow/deny tests as actual anon/authenticated roles with synthetic claims. No Auth HTTP server, gateway, control RPC or production exposure is introduced. Record actual results separately from this execution plan. Cleanup may remove only the newly allocated, verified task container and its own ephemeral data.
+
+**Executed result:** versioned schema/RLS migration passed on the pinned Supabase PostgreSQL 17.6 image, then 243 real-role RLS/grant and 45 structural assertions passed with no skips. Ten Node orchestration guard tests passed. Exact disposable identity and cleanup plus corrected development failures are in [KR-004 execution evidence](../test-plans/evidence/KR-004-LOCAL-DB-2026-09-11.md). This supersedes the historical runtime-blocker statements above. AC-1–4 are locally complete; KR-004 stays In Progress with AC-5–7 open. Required CI includes a new actual DB job and unchanged existing jobs. Stop at the OD-42 boundary: the next bounded proposal is KR-004 AC-5 gateway authorization tests/implementation, only after owner approval; do not start KR-005/006 or production enforcement.
+
+### KR-004 AC-5–7 authorized continuation — 2026-09-11
+
+- **Goal:** finish local AC-5 gateway authorization, AC-6 atomic control and AC-7 reproducible validation, in that order.
+- **Context:** OD-42 extension is explicit and prospective. Clean HEAD `80c68faa3df07b9977ed423845037bd1e886a52e`, existing stacked draft PR #17 verified; native Windows client independently returned `linux` from the explicit local named pipe. AC-1–4 migrations/tests/evidence are retained.
+- **Constraints:** task-owned local DB and synthetic identities only; no remote DB, real accounts, deployment, paid/host privilege changes, shared reset, device/capture work, KR-005/006 or production enforcement. HTTP test listeners bind loopback only. Label repository/transport stubs separately from actual handler decisions and SQL evidence.
+- **Done when:** own-device and sibling/foreign/credential/privilege HTTP cases pass through the actual handler; real SQL proves authorization, rollback, idempotency and concurrency; original RLS regressions pass; guarded fresh-db/reset instructions and required CI pass, with executed/unrun boundaries explicit.
+
+Implement bounded commits for gateway, transaction and final validation/publication. Earlier stop-at-AC-4 wording is historical and superseded only by this extension. No new roadmap or approval between AC-5/6/7 is needed; stop after KR-004 local acceptance, without merge or real-use claim.
+
+**Executed local completion:** [AC-5–7 evidence](../test-plans/evidence/KR-004-GATEWAY-CONTROL-2026-09-11.md) records 60 Node entries including 42 actual HTTP scenarios with explicit storage stubs, plus 389 real SQL assertions across unchanged RLS/constraints and new atomic/concurrent control suites. Full checker and exact-target cleanup passed. AC-1–7 are locally complete/In Review, not merged or deployed; required CI status is synchronized in PR #17. No production/real-family gate is implied. Stop here; propose the existing KR-005 pairing threat-model/local redemption slice only as a separately directed next issue. KR-003 and visual tooling remain untouched/paused.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.

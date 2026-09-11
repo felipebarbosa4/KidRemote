@@ -7,6 +7,12 @@
 
 ## Normalized entity model
 
+**Local implementation status, 2026-09-11:** OD-42's prospective extension permits
+KR-004 AC-5–7. [Versioned migrations](../../supabase/migrations/README.md) and actual
+SQL tests implement the model and atomic control boundary; the [gateway handler](../../supabase/functions/device-gateway/README.md)
+has explicit HTTP/storage-stub authorization tests. This does not imply deployed
+Auth/PostgREST/Edge integration or authorize client exposure/real family use.
+
 Proposed logical schema; exact SQL/types/functions are implementation work, not claimed deployed API.
 UUID IDs unless stated; timestamps are UTC. Indexed foreign keys and tenant predicates are required.
 

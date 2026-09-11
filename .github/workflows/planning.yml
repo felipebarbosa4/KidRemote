@@ -9,6 +9,16 @@ concurrency:
   group: planning-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  database-isolation:
+    name: KR-004 local migrations and client-role RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Execute complete KR-004 local pre-exposure checks
+        run: node tools/kr004/check-local.mjs docker unix:///var/run/docker.sock
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 5
