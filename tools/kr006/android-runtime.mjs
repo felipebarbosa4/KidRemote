@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const app='dev.kidremote.parent.unassigned.debug';
 const test=app+'.test';
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-export async function testAndroidRuntime({restAvailable,sql}) {
+export async function testAndroidRuntime({restAvailable,sql,enrollment=false}) {
  const dir=process.env.KR006_RUNTIME_DIRECTORY;
  if(!dir || !/^\/mnt\/c\/Users\/3feli\/AppData\/Local\/KidRemote\/kr006-runtime\/[a-f0-9-]{36}$/.test(dir))throw Error('RUNTIME_DIRECTORY_REQUIRED');
  const state=JSON.parse(readFileSync(join(dir,'owner.json'),'utf8').replace(/^\uFEFF/,''));
@@ -15,9 +15,10 @@ export async function testAndroidRuntime({restAvailable,sql}) {
     state.Sdk!=='C:\\Users\\3feli\\AppData\\Local\\Android\\Sdk')throw Error('RUNTIME_OWNER_UNVERIFIED');
  const adb='/mnt/c/Users/3feli/AppData/Local/Android/Sdk/platform-tools/adb.exe';
  const serial='emulator-5584';
- function run(args,timeout=180000) {
+ function run(args,timeout=180000,input) {
   return new Promise(resolve=>{
-   const p=spawn(adb,['-s',serial,...args],{stdio:['ignore','pipe','pipe']});
+   const p=spawn(adb,['-s',serial,...args],{stdio:[input===undefined?'ignore':'pipe','pipe','pipe']});
+   if(input!==undefined)p.stdin.end(input);
    let out='',timer;const finish=(code)=>{clearTimeout(timer);resolve({code,out});};
    p.stdout.on('data',x=>{if(out.length<1000000)out+=x});p.stderr.on('data',x=>{if(out.length<1000000)out+=x});
    p.on('error',()=>finish(-1));p.on('close',finish);
@@ -39,7 +40,7 @@ export async function testAndroidRuntime({restAvailable,sql}) {
   for(const key of ['ro.build.version.sdk','ro.build.version.release','ro.build.fingerprint']) evidence[key]=(await command(['shell','getprop',key])).trim();
   if(evidence['ro.build.version.sdk']!=='36')throw Error('EMULATOR_API_MISMATCH');
   for(const [name,file] of [['app','app-debug.apk'],['test','app-debug-androidTest.apk']]) {
-   const path=join(dir,'apks',file);evidence.apkHashes[name]=createHash('sha256').update(readFileSync(path)).digest('hex');
+   const path=join(dir,enrollment?'apks-kr007':'apks',file);evidence.apkHashes[name]=createHash('sha256').update(readFileSync(path)).digest('hex');
    const out=await command(['install','-r','-t',windowsPath(path)]);if(!out.includes('Success'))throw Error('APK_INSTALL_FAILED');
   }
   // Only this dedicated task AVD and these two synthetic packages; never another app/profile.
@@ -66,13 +67,19 @@ export async function testAndroidRuntime({restAvailable,sql}) {
   }
   const count=sql("select count(*) from public.household_members m join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");
   if(count.trim()!=='1')throw Error('RUNTIME_SOLE_HOUSEHOLD_COUNT_FAILED');
+  if(enrollment) {
+   const {exerciseEnrollment}=await import('../kr007/android-runtime.mjs');
+   await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql});
+  }
   evidence.primary='PASS_THIS_EMULATOR_ONLY';
  } catch(e) {primary=e;evidence.primary=e.message;}
  finally {
   try {
    if(!networkRestored)restAvailable(true);
    await command(['shell','am','force-stop',app]);
-   for(const pkg of [app,test]) {if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CLEAR_FAILED');}
+   for(const pkg of [app,test,...(enrollment?['dev.kidremote.child.unassigned.debug','dev.kidremote.child.unassigned.debug.test']:[])]) {
+    await command(['shell','am','force-stop',pkg]);
+    if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('CLEAR_FAILED');}
    evidence.cleanup='VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED';
   } catch {evidence.cleanup='UNVERIFIED';primary??=Error('RUNTIME_CLEANUP_UNVERIFIED');}
   evidence.overall=primary?'NOT_PASSED':'PASS_THIS_EMULATOR_ONLY';

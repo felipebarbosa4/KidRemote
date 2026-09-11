@@ -31,6 +31,15 @@ The [KR-005 pairing contract](../../supabase/functions/pairing/README.md) define
 accepted local QR version/session/token envelope and atomic transaction fixtures;
 Auth/Edge deployment and the full device-storage adapter remain unrun.
 
+OD-45's initial enrollment adapter implements only `POST /device/sync` with
+`{"protocol_version":1,"after_version":0}` for an unconfigured version-zero policy.
+Its fixed response is `kind=ENROLLMENT_BOOTSTRAP`, protocol_version, device_id,
+policy_epoch, version, policy_configured=false, daily_limit_seconds=null, manual_lock
+and enforcement_available=false. Values come from a single locked DB transaction;
+this is **not** the full synchronization contract below. Configured-policy reads,
+ack/push/rotation routes remain unsupported in the local enrollment gateway, not stubbed.
+No device-state report/online/healthy status is created from this initial read alone.
+
 ```json
 {
   "protocol_version": 1,

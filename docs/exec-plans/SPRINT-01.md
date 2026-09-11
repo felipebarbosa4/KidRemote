@@ -1,5 +1,18 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-007 first local enrollment — OD-45, 2026-09-11
+
+- **Goal:** authenticated parent QR -> real child redemption -> persisted independent identity -> own initial read -> actual parent list.
+- **Context:** clean `a4d6beb58368318ada2d3f9d505d9e404f789e85`; new `kr-007-local-enrollment` stacked on unmerged PR #19. Reuse KR-005 transactions/handler and KR-006 Auth/Windows AVD/runtime infrastructure. OD-45 is separate from OD-44.
+- **Constraints:** synthetic local resources only; explicit emulator target; no enforcement/privileges, physical install, deployment, real use, next issues or visual work. No raw secrets/media in logs/arguments/artifacts. Unknown/unconfigured is not zero allowance or healthy/protected. Camera decoding tests are distinct from camera scanning.
+- **Done when:** two actual apps sequentially exercise connected local enrollment with real gateway persistence and scoped read, regressions/build/lint/security/runtime evidence retained; or exact genuine blocker. Remaining camera/physical, rotation, removal/transfer acceptance stays partial.
+
+Implement only initial unconfigured-policy projection; configured/sync-engine operations
+remain unavailable rather than synthesized. Parent Auth routes use actual verified JWT
+and existing membership-scoped RPCs. Device adapter holds credential/device/policy locks
+through handler authorization/read in one actual PostgreSQL transaction. Reuse local
+debug endpoints and capture only sanitized results. Stop after this connected slice.
+
 - **Goal:** Establish an approved product contract and evidence-based Android/backend/pairing path.
 - **Context:** Architecture baseline merged in PR #11; owner directed execution to start on 2026-09-05; production enforcement is unproven.
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.

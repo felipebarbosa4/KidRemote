@@ -15,9 +15,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
+    override fun onStop(){ViewModelProvider(this)[ParentModel::class.java].clearPairingQr();super.onStop()}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE)
@@ -76,13 +80,27 @@ class MainActivity : ComponentActivity() {
                     Action("Confirmar e abrir dispositivos",!state.loading) {model.setup(timezone)}
                 }
                 Screen.DEVICES -> {
-                    Text(if(state.deviceCount==0) "Nenhum dispositivo cadastrado." else "Há dispositivos cadastrados. A visualização detalhada não faz parte desta etapa.")
-                    Text("Pareamento e controles ainda não estão disponíveis nesta etapa.")
+                    if(state.deviceCount==0) Text("Nenhum dispositivo cadastrado.")
+                    state.devices.forEach { Text(it.nickname);Text(if(it.revoked) "Revogado" else "Pareado · configuração incompleta · proteção não verificada") }
+                    Action("Atualizar dispositivos",!state.loading){model.refreshDevices()}
+                    Action("Criar QR de pareamento",!state.loading&&state.qr==null){model.createPairing()}
+                    state.qr?.let { payload ->
+                        val bitmap=remember(payload){pairingBitmap(payload)}
+                        Image(bitmap.asImageBitmap(),"QR de pareamento de uso único",Modifier.fillMaxWidth().height(280.dp))
+                    }
+                    if(state.pairingSession!=null) Action("Cancelar ou verificar QR",!state.loading){model.finishPairing()}
+                    if(state.incompleteRecovery) Action("Revogar pareamento incompleto",!state.loading){model.finishPairing(true)}
+                    Text("Controles e enforcement não estão disponíveis nesta etapa.")
                 }
             }
             if(state.screen!=Screen.LOGIN) TextButton({password="";email="";link="";model.logout()}) {Text("Sair e limpar dados locais")}
         }
     }
+}
+internal fun pairingBitmap(text: String): android.graphics.Bitmap {
+    val m=com.google.zxing.qrcode.QRCodeWriter().encode(text,com.google.zxing.BarcodeFormat.QR_CODE,512,512)
+    val pixels=IntArray(512*512){if(m[it%512,it/512]) android.graphics.Color.BLACK else android.graphics.Color.WHITE}
+    return android.graphics.Bitmap.createBitmap(pixels,512,512,android.graphics.Bitmap.Config.ARGB_8888)
 }
 @Composable private fun Action(label: String,enabled: Boolean,onClick:()->Unit) {
     Button(onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {Text(label)}

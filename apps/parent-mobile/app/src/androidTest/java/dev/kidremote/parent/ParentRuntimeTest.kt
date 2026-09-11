@@ -117,4 +117,24 @@ class ParentRuntimeTest {
         checkThat(fixture.delete(),"TEST_FIXTURE_CLEANUP_FAILED");File(target.filesDir,"kr006-restore-rest").delete()
         result("RUNTIME_FINAL_LOGOUT_CLEANUP_PASS")
     }
+    @Test fun createEnrollmentQr() = safe("PARENT_QR_RUNTIME_FAILED") {
+        enrollAndPersist()
+        click("Criar QR de pareamento")
+        waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        click("Cancelar ou verificar QR");waitText("QR cancelado.")
+        click("Criar QR de pareamento");waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        var qr:String?=null;ui.runOnIdle {qr=model.state.qr}
+        checkThat(qr!=null,"ACTUAL_PARENT_QR_MISSING")
+        // Test-only local capability handoff, never an image upload or parent session transfer.
+        File(target.noBackupFilesDir,"qr-handoff").writeText(qr!!)
+        result("PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS")
+    }
+    @Test fun parentSeesEnrollment() = safe("PARENT_ENROLLED_LIST_FAILED") {
+        waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")
+        waitText("Dispositivo Android");waitText("Pareado · configuração incompleta · proteção não verificada")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        ui.runOnIdle {checkThat(model.state.devices.size==1,"NOT_EXACTLY_ONE_DEVICE")}
+        result("PARENT_ACTUAL_ENROLLED_LIST_PASS")
+    }
 }
