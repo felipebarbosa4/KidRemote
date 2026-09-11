@@ -5,6 +5,19 @@
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.
 - **Done when:** Product gates reviewed, repository checks pass, feasibility evidence has a go/no-go, RLS and pairing designs are testable.
 
+## KR-004 AC-1–4 limited GO — 2026-09-10
+
+- **Goal:** implement versioned local schema migrations and actual database isolation tests for KR-004 AC-1–4 only.
+- **Context:** OD-42 records the explicit prospective owner exception. Verified starting HEAD `2f5be2fb8d62eae3aeaf8a8662b0e976844db904`, clean worktree. No existing KR-004 branch/PR was found. Work is isolated on `kr-004-local-schema-rls`, stacked on `kr-003-mi8-overlay-stability` at that commit; its PR diff excludes inherited KR-003 changes. PR #16 is not merged or rewritten.
+- **Constraints:** task-owned disposable local DB and synthetic identities only; no remote DB, unrelated container/volume, host privilege/service change, cloud setup, deployment, real user data, ADB or capture. No new product semantics, control/gateway implementation, KR-005/006, private-use approval or production enforcement. AC-5–7 remain outside the approved slice.
+- **Done when:** empty-DB migrations enforce keys/tenant constraints/indexes, RLS/minimum grants/private isolation, and real local authenticated/anonymous-role tests cover own/foreign access, writes/joins/existing RPCs, self-promotion, null auth, missing policy and removed membership; executed evidence and CI are recorded. If no local DB runtime is available, report the precise prerequisite and leave AC-1–4 unchecked.
+
+**Current result: BLOCKED before migration implementation/execution.** WSL has no `psql`, `postgres`, `initdb` or Supabase CLI; its Docker shim reports missing WSL integration. The existing Windows Docker client is available (29.6.2), but `docker.exe version --format '{{.Client.Version}} {{.Server.Version}}'` fails: local `dockerDesktopLinuxEngine` named pipe is absent. Windows command discovery also finds no PostgreSQL server/client or Supabase CLI. No engine was started, integration enabled, privilege changed, container inspected/mutated, DB reset or mock database used. See [KR-004](../github/issues/KR-004.md#local-prerequisite-evidence--2026-09-10).
+
+Required unblock: owner makes the existing local Docker Desktop **Linux engine** available (or supplies an already available authorized local PostgreSQL toolchain). The native Windows Docker client can be checked without requiring WSL integration changes. Do not start shared infrastructure automatically, since it may resume unrelated containers. Once available, reverify local endpoint and allocate only a uniquely named task-owned disposable target; do not reset any pre-existing database/container. Continue this same slice, not another roadmap task. No database PASS or AC completion is recorded.
+
+The earlier reset's proposed hold-lifting language below is superseded **only for AC-1–4** by OD-42. Its private-alpha/support proposal and all later issue gates remain unapproved.
+
 ## Critical-path reset — 2026-09-10
 
 This section supersedes the historical daily scheduling below, not its uncompleted acceptance gates. The owner now prioritizes a usable product; visual/capture/classifier/dedup/alignment work is paused and preserved. The [current blocker table and limited-go proposal](../test-plans/KR-003-REMAINING.md) is authoritative for the immediate stop boundary. No launch date or sprint completion is inferred from the old calendar.
