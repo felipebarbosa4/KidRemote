@@ -25,6 +25,10 @@ stderr with an exit-zero success path interrupts the exact former `& executable
 @Command 2>&1` wrapper under Windows PowerShell 5.1/Stop. This is a tested possible
 failure mechanism; the owner's historical stderr, completion and installer error
 remain **UNSPECIFIED**. No Samsung Auto Blocker inference is made.
+This version distinction is documented in Microsoft's
+[native stderr preference behavior](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables)
+and the use of concurrent stream reads follows
+[Process redirection guidance](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.redirectstandarderror).
 
 Use the existing repository's redirected .NET Process pattern: stdout/stderr captured
 as separate asynchronous memory-only streams, completed exit code inspected independently.
@@ -41,6 +45,8 @@ keep the original earlier check and uppercase -R. Require exit0, explicit standa
 `Success` and a subsequent exact read-only user0 package-list match before marking
 VERIFIED/opening the app. A missing success response or missing/unverified package
 does not become an installation PASS.
+Missing success is explicitly reported as `INSTALL_SUCCESS_RESPONSE`, separately
+from `INSTALL_NEW_ONLY` process rejection or `INSTALL_PACKAGE_VERIFICATION` failure.
 
 Executed locally on native Windows 5.1: old-wrapper interference reproduced; six
 real native-fixture cases passed (stderr/exit0, rejection exit7 with bounded code,

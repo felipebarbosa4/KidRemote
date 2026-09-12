@@ -73,6 +73,7 @@ foreach ($case in @('success','store-paint','existing','multiple','foreign','bad
     $expectedReason = @{ 'adb-missing'='ADB_PATH'; 'viewer-missing'='LOCAL_VIEWER'; 'bad-hash'='APK_READ_HASH'; 'unreadable'='APK_READ_HASH'; 'qr-hash'='QR_READ_HASH' }
     if ($expectedReason.ContainsKey($case) -and $output -notmatch "FAILED_CHECK=$($expectedReason[$case])") { throw 'WRONG_FAILED_CHECK' }
     if ($case -eq 'install-error' -and $output -notmatch 'INSTALLATION_STATUS=ATTEMPTED_UNVERIFIED') { throw 'LOST_INSTALL_ATTEMPT' }
+    if ($case -eq 'missing-success' -and $output -notmatch 'FAILED_CHECK=INSTALL_SUCCESS_RESPONSE') { throw 'MISSING_SUCCESS_REASON_LOST' }
     if ($case -in @('missing-success','verify-missing')) {
         if ($output -notmatch 'INSTALLATION_STATUS=ATTEMPTED_UNVERIFIED' -or @($script:calls | Where-Object { $_ -match ' am start ' }).Count -ne 0) { throw 'INSTALL_WITHOUT_VERIFICATION' }
     }

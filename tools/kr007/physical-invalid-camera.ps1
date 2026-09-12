@@ -120,6 +120,7 @@ function Invoke-KRInvalidCamera([switch]$HostOnly) {
         # -R explicitly disables replacement at the package-manager boundary; never -r or -g.
         $installationStatus = 'ATTEMPTED_UNVERIFIED'
         $installResult = Invoke-KRInvalidAdb ($target + @('install','--no-streaming','-R','--user','0',$apk))
+        $stage = 'INSTALL_SUCCESS_RESPONSE'
         if ($installResult -notmatch '(?m)^Success\s*$') { throw 'INSTALL_NOT_VERIFIED' }
         $stage = 'INSTALL_PACKAGE_VERIFICATION'
         $verifiedPackage=Invoke-KRInvalidAdb ($target + @('shell','pm','list','packages','--user','0',$package))
