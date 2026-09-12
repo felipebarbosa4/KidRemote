@@ -4,6 +4,44 @@ OD-45 narrow physical extension. **Historical preparation status: prepared, phys
 virtual-scene investigation or historical NOT_PASSED runs. No real enrollment,
 backend, endpoint change, enforcement, KR-003 operation or AC closure.
 
+## Completed later owner-operated readback
+
+The owner supplied the following exact sanitized output from the previously published
+read-only block. This is verified **owner-operated readback evidence at the stated
+readback time**, not an agent device operation or a scan timestamp:
+
+```text
+TARGET=samsung/SM-X400/Android16/API36
+PACKAGE_INSTALLED_USER0=YES
+INSTALLED_APK_SHA256=3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9
+CURRENT_APK_PROVENANCE=MATCHES_VERIFIED_14d82db
+IDENTITY=ABSENT
+PENDING=ABSENT
+READBACK_UTC=2026-09-12T05:41:42.0288136Z
+SCOPE=LATER_STATE_ONLY_NOT_SCAN_BEFORE_AFTER
+```
+
+**Established at readback:** the selected Samsung SM-X400 / Android16 / API36 had
+the child package installed for user0; installed APK SHA256 matches the verified
+`14d82dbbf764c5a78c2c80393756d5302842958f` artifact. The two known app-owned paths
+`no_backup/device-identity` and `no_backup/pairing-pending` were absent at that time.
+No credential contents or unrelated package data are part of this evidence.
+
+**Limits unchanged:** the earlier camera-triggered invalid message remains
+OWNER_REPORTED; the exact scan time and contemporaneous pre/post state are
+UNSPECIFIED. Current installed-artifact provenance is now verified, but does not
+retroactively prove the bytes running during the scan. Absent files alone do not
+prove network inactivity, no earlier redemption or camera release. Release remains
+unmeasured; valid physical pairing remains NOT_TESTED. The original scripted
+post-check remains NOT_COMPLETED; this later query does not complete/replay that
+script or authorize `OWNER_OBSERVED_INVALID_QR_WITH_EMPTY_LOCAL_IDENTITY` as its
+verdict. Historical failed/inconclusive attempts and emulator NOT_PASSED remain intact.
+
+**Handoff finished:** no further query, scan or installation is requested. The old
+command below is retained only for provenance, not for re-execution. AC-2/3/4 remain
+partial; AC-6/7 and physical/OEM requirements remain open. This is neither full
+scripted-diagnostic PASS nor completion of KR-007.
+
 ## Subsequent owner observation — recorded 2026-09-12
 
 This section records subsequent chat evidence, without rewriting preparation-time
@@ -17,7 +55,7 @@ on the Samsung SM-X400. The scanner closed and the owner transcribed:
 This supports an **OWNER_REPORTED camera-triggered invalid-QR acquisition/rejection
 observation**. It is not an instrumented full diagnostic PASS.
 
-| Fact / boundary | Retained classification |
+| Fact / boundary | Historical classification before the later readback above |
 | --- | --- |
 | KidRemote invalid message after the additional in-app camera attempt | OWNER_REPORTED |
 | Samsung stock Camera recognizing `{}` | Separate owner observation; not KidRemote decoder evidence |
@@ -44,6 +82,10 @@ The emulator NOT_PASSED result and virtual-scene cause remain unchanged/UNSPECIF
 AC-2/3/4 remain partial; AC-6/7 and outstanding physical/OEM checks remain pending.
 
 ### Only remaining owner command — later read-only state
+
+**Historical handoff, now executed: do not repeat.** The instructions and conditional
+interpretation below are preserved as originally prepared; the completed later
+readback is recorded above and no remaining device command is requested.
 
 Do **not** run the installer or repeat the scan. This block only loads the checked
 existing native transport helper (dot-sourcing does not invoke its camera/installer
