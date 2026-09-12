@@ -33,6 +33,20 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
  const count=sql("select count(*) from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");
  if(count.trim()!=='1')throw Error('NOT_EXACTLY_ONE_RUNTIME_DEVICE');
  evidence.enrollmentDeviceCount=1;evidence.cameraEvidence='GENERATED_QR_DECODER_INPUT_NOT_CAMERA_CAPTURE';
+ // AC-6: stored timestamp fixtures only, never host/emulator clocks. Real app contact drives renewal.
+ const ageCurrent=()=>sql("update private.device_credentials c set created_at=clock_timestamp()-interval '31 days' from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where c.device_id=d.id and c.revoked_at is null and u.email like 'kr006-runtime-%@example.test';");
+ const rotations=()=>sql("select count(*) from private.credential_rotations r join public.devices d on d.id=r.device_id join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");
+ ageCurrent();await stage(child,'dev.kidremote.child.RotationRuntimeTest','normal');
+ for(const method of ['loseBegin','loseConfirm']) {
+  ageCurrent();const before=Number(rotations());await stage(child,'dev.kidremote.child.RotationRuntimeTest',method);
+  if(Number(rotations())!==before+1)throw Error('ROTATION_NOT_REAL_COMMIT');
+  await stage(child,'dev.kidremote.child.RotationRuntimeTest','restartPending');
+  if(Number(rotations())!==before+1)throw Error('ROTATION_RESTART_DUPLICATED_GENERATION');
+ }
+ await gatewayAvailable(false);
+ try{await stage(child,'dev.kidremote.child.RotationRuntimeTest','outageRetains');}finally{await gatewayAvailable(true);}
+ if(sql("select count(*) from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';")!=='1')throw Error('ROTATION_DUPLICATE_DEVICE');
+ evidence.rotation='REAL_APP_HTTP_DB:LOSS_AFTER_HTTP_BEFORE_RENEWAL_CONSUMPTION:PROCESS_RESTART:UNCHANGED_DEVICE';
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','corruptIdentityRecovery');
  await command(['shell','pm','clear',child]);
  await stage(app,'dev.kidremote.parent.ParentRuntimeTest','prepareInterruptedQr');

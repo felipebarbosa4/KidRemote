@@ -16,7 +16,7 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
  // Windows-owned loopback is contacted with the existing native Node process.
  // Request bodies/tokens travel through stdin, never argv/files/tool output.
  const http=async(url,method='GET',body,headers={})=>{
-  for(const key of ['password','refresh_token','token_hash']) if(typeof body?.[key]==='string') secrets.add(body[key]);
+  for(const key of ['password','refresh_token','token_hash','new_credential']) if(typeof body?.[key]==='string') secrets.add(body[key]);
   if(headers.authorization?.startsWith('Bearer ')) secrets.add(headers.authorization.slice(7));
   const request={url,options:{method,headers:{'content-type':'application/json',...headers},...(body===undefined?{}:{body:JSON.stringify(body)})}};
   if(!windows) {
@@ -106,6 +106,7 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    const {testParentAuth}=await import('./real-auth-tests.mjs');await testParentAuth({http,sql,mailAvailable,restAvailable});
    if(enrollment) {
     const {testEnrollment}=await import('../kr007/backend-tests.mjs');await testEnrollment({http,sql});
+    const {testRotation}=await import('../kr007/rotation-tests.mjs');await testRotation({http,sql});
    }
    if(enrollmentRuntime) {
     const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql,gatewayAvailable});

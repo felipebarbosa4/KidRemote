@@ -46,7 +46,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
  const evidence={scope:enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
  const cameraStorage=enrollment&&process.env.KR007_CAMERA_STORAGE==='1';
- const apkDirectory=cameraStorage?'apks-kr007-camera':enrollment?'apks-kr007':'apks';
+ const apkDirectory=cameraStorage?'apks-kr007-camera':enrollment?(process.env.KR007_ROTATION_RUNTIME==='1'?'apks-kr007-rotation':'apks-kr007'):'apks';
  let primary,networkRestored=true;
  try {
   await guard();

@@ -2,7 +2,10 @@
 // The injected SQL session is transport, not an authorization/storage-result stub.
 const digest=d=>{if(!/^[0-9a-f]{64}$/.test(d))throw Error('INVALID_DIGEST');return `decode('${d}','hex')`;};
 export function databaseRepository(session) {
- return {withCredential:async(d,callback)=>session(async query=>{
+ return {rotate:async(d,p)=>session(async query=>{
+  if(!/^[0-9a-f-]{36}$/i.test(p.operation_id)||!['BEGIN','CONFIRM','STATUS'].includes(p.phase))throw Error('INVALID_ROTATION');
+  return JSON.parse(await query(`select public.rotate_device_credential(${digest(d)},'${p.operation_id}'::uuid,'${p.phase}',${p.new_digest?digest(p.new_digest):'null'});`));
+ }),withCredential:async(d,callback)=>session(async query=>{
   await query('begin isolation level repeatable read;');
   try {
    const row=JSON.parse(await query(`select coalesce((select jsonb_build_object('credential',to_jsonb(c)||jsonb_build_object('secret_digest',encode(c.secret_digest,'hex')),'device',to_jsonb(v))
@@ -18,7 +21,10 @@ export function databaseRepository(session) {
      throw Error('ONLY_UNCONFIGURED_BOOTSTRAP_IMPLEMENTED');
     return {protocol_version:1,kind:'ENROLLMENT_BOOTSTRAP',device_id:scope.device_id,policy_epoch:scope.policy_epoch,
      version:policy.version,policy_configured:policy.policy_configured,daily_limit_seconds:policy.daily_limit_seconds,
-     manual_lock:policy.manual_lock,enforcement_available:false};
+     manual_lock:policy.manual_lock,enforcement_available:false,
+     credential_lifecycle:{generation:row.credential.generation,expires_at:row.credential.expires_at,
+      rotate_after:new Date(Date.parse(row.credential.created_at)+30*86400000).toISOString(),
+      rotation_due:JSON.parse(await query(`select to_json(clock_timestamp() >= created_at + interval '30 days') from private.device_credentials where credential_id='${row.credential.credential_id}'::uuid;`))}};
    }});
    await query('commit;');return out;
   } catch(e){try{await query('rollback;');}catch{}throw e;}

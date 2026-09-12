@@ -1,5 +1,18 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../../'+p,import.meta.url),'utf8');
+test('rotation uses durable encrypted candidates, server clock and release-free loss hook',()=>{
+ const app=read('apps/child-android/src/main/java/dev/kidremote/child/Enrollment.kt');
+ assert.ok(app.indexOf('store.save(identity) // One encrypted')<app.indexOf('val confirmed=try'));
+ assert.match(app,/SecureRandom\(\)/);assert.match(app,/rotation\(identity,"CONFIRM",true\)/);
+ const migration=read('supabase/migrations/202609120001_rotation.sql');
+ assert.match(migration,/for update/);assert.match(migration,/clock_timestamp\(\)/);
+ assert.match(migration,/least\(c.expires_at,t\+interval '5 minutes'\)/);
+ assert.match(migration,/from public,anon,authenticated/);
+ assert.doesNotMatch(migration,/p_device|p_household|p_clock|p_now|new_credential text|secret text/);
+ const release=read('apps/child-android/src/release/java/dev/kidremote/child/EnrollmentFaults.kt');
+ assert.doesNotMatch(release,/var afterRotationResponse/);
+ assert.match(read('tools/kr007/audit-child.mjs'),/setAfterRotationResponse/);
+});
 test('child source keeps camera foreground and closes frames without capture retention',()=>{
  const s=read('apps/child-android/src/main/java/dev/kidremote/child/ChildActivity.kt');
  assert.match(s,/override fun onPause\(\)\{stopCamera/);assert.match(s,/finally\{image.close\(\)\}/);
@@ -39,7 +52,8 @@ test('camera boundary counters are content-free and release has no counter stora
  const debug=read('apps/child-android/src/debug/java/dev/kidremote/child/EnrollmentFaults.kt');
  const release=read('apps/child-android/src/release/java/dev/kidremote/child/EnrollmentFaults.kt');
  assert.match(debug,/AtomicIntegerArray\(8\)/);assert.match(debug,/cameraStage\(stage:Int\)/);
- assert.doesNotMatch(debug,/String|Bitmap|ByteArray|File|Log\./);
+ assert.doesNotMatch(debug,/Bitmap|ByteArray|File|Log\./);
+ assert.match(debug,/afterRotationResponse:\(String\)->Unit/); // Phase only, debug response-withholding hook.
  assert.doesNotMatch(release,/AtomicInteger|cameraCounts/);
  assert.match(release,/inline fun cameraStage/);
  const fixture=read('apps/child-android/src/androidTest/java/dev/kidremote/child/InvalidQrFixtureTest.kt');

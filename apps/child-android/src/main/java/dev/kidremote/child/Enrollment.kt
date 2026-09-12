@@ -56,6 +56,11 @@ internal class IdentityStore(context: Context) {
         val bytes=file.readBytes();val c=Cipher.getInstance("AES/GCM/NoPadding").apply{init(Cipher.DECRYPT_MODE,key(false),GCMParameterSpec(128,bytes.copyOfRange(0,12)))}
         val v=JSONObject(String(c.doFinal(bytes.copyOfRange(12,bytes.size)),Charsets.UTF_8))
         check(v.getString("credential").matches(Regex("[A-Za-z0-9_-]{43}")));java.util.UUID.fromString(v.getString("device_id"));java.util.UUID.fromString(v.getString("policy_epoch"))
+        if(v.has("rotation")) {
+            val r=v.getJSONObject("rotation");java.util.UUID.fromString(r.getString("operation_id"))
+            check(r.getString("new_credential").matches(Regex("[A-Za-z0-9_-]{43}")))
+            check(r.getString("new_credential")!=v.getString("credential"))
+        }
         return v
     }
     fun discardUnreadable():Boolean {
@@ -65,6 +70,37 @@ internal class IdentityStore(context: Context) {
     }
 }
 internal class EnrollmentApi {
+    private fun rotation(identity:JSONObject,phase:String,useNew:Boolean):JSONObject {
+        val pending=identity.getJSONObject("rotation")
+        val body=JSONObject().put("protocol_version",1).put("operation_id",pending.getString("operation_id")).put("phase",phase)
+        if(phase=="BEGIN")body.put("new_credential",pending.getString("new_credential"))
+        val result=request("/device/credentials/rotate",body,if(useNew)pending.getString("new_credential") else identity.getString("credential"))
+        // Debug instrumentation may withhold this REAL committed HTTP reply before renewal consumes it.
+        EnrollmentFaults.afterRotationResponse(phase)
+        check(result.getString("operation_id")==pending.getString("operation_id")&&result.getString("device_id")==identity.getString("device_id")&&result.getString("policy_epoch")==identity.getString("policy_epoch"))
+        check(result.getLong("generation")>1)
+        return result
+    }
+    fun contact(store:IdentityStore,identity:JSONObject):JSONObject {
+        if(!identity.has("rotation")) {
+            val state=initial(identity)
+            if(!state.getJSONObject("credential_lifecycle").getBoolean("rotation_due"))return state
+            val bytes=ByteArray(32).also{java.security.SecureRandom().nextBytes(it)}
+            identity.put("rotation",JSONObject().put("operation_id",java.util.UUID.randomUUID().toString()).put("new_credential",java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)))
+            store.save(identity) // One encrypted AtomicFile contains BOTH candidates and operation before BEGIN.
+        }
+        val confirmed=try { rotation(identity,"CONFIRM",true) } catch(e:SecurityException) {
+            if(e.message!="CREDENTIAL_REJECTED")throw e
+            check(rotation(identity,"BEGIN",false).getString("result")=="PENDING")
+            rotation(identity,"CONFIRM",true)
+        }
+        check(confirmed.getString("result")=="CONFIRMED")
+        identity.put("credential",identity.getJSONObject("rotation").getString("new_credential"))
+        identity.remove("rotation")
+        identity.put("generation",confirmed.getLong("generation")).put("expires_at",confirmed.getString("expires_at")).put("rotate_after",confirmed.getString("rotate_after"))
+        store.save(identity)
+        return initial(identity)
+    }
     fun request(path:String,body:JSONObject,credential:String?=null):JSONObject {
         check(Backend.endpoint.isNotEmpty())
         val c=URL(Backend.endpoint+path).openConnection() as HttpURLConnection
@@ -105,7 +141,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         val saved=store.read()
         if(saved==null){if(store.pending.exists())throw IllegalStateException("INTERRUPTED_PAIRING");EnrollmentState()}
         else {
-            try{api.initial(saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
+            try{api.contact(store,saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
             catch(_:SecurityException){EnrollmentState(message="Credencial recusada ou revogada. Identidade local preservada; procure o responsável. Enforcement não ativo.",recovery=true)}
             catch(_:Exception){EnrollmentState(paired=true,message="Identidade armazenada; contato não confirmado. Enforcement não ativo. Tente verificar novamente.")}
         }

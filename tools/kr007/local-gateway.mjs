@@ -57,7 +57,7 @@ async function start(c) {
       response=reply(result.result==='CREATED'?200:result.result==='RATE_LIMITED'?429:403,result);
      }
     }
-   } else if(req.method==='POST'&&!url.search&&['/pairing/redeem','/device/sync'].includes(url.pathname)) {
+   } else if(req.method==='POST'&&!url.search&&['/pairing/redeem','/device/sync','/device/credentials/rotate'].includes(url.pathname)) {
     const r=new Request('http://127.0.0.1'+req.url,{method:req.method,headers:req.headers,body:Readable.toWeb(req),duplex:'half'});
     response=await (url.pathname==='/pairing/redeem'?pairing:device)(r);
    } else response=reply(404,{result:'UNSUPPORTED_OPERATION'});
