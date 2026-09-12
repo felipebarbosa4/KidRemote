@@ -4,6 +4,54 @@ OD-45 narrow physical extension. **Prepared, physically UNRUN.** Do not repeat t
 virtual-scene investigation or historical NOT_PASSED runs. No real enrollment,
 backend, endpoint change, enforcement, KR-003 operation or AC closure.
 
+## Retained host startup failure and bounded correction
+
+Owner output for the first invocation: `STOP_STAGE=LOCAL_ARTIFACTS`,
+`RESULT=STOPPED_OR_UNCERTAIN_NO_AUTOMATIC_RETRY`,
+`NEW_INSTALL_VERIFIED_THIS_INVOCATION=False`. No target prompt appeared.
+This is **host startup failure, installation NOT_ATTEMPTED, camera UNRUN**.
+Source HEAD and deployed script were byte-identical to `2944622`, SHA256
+`d6d0a614cbc4276b8128456609b7f1a23d2168345c1aab0c5985afe1b7d91d5c`.
+The original deployed file is retained alongside it as
+`C:\platform-tools\kr007-physical-invalid-camera.original-d6d0a614.ps1`; do not execute that historical copy.
+
+Native Windows PowerShell 5.1 independently observed: `ADB_TRACE=False`,
+`ADB_SERVER_SOCKET=False`, `ANDROID_ADB_SERVER_PORT=False` (presence in the agent's
+new Windows process only). The previous owner's process values remain UNSPECIFIED.
+`C:\platform-tools\adb.exe` exists/readable; its binary was **not invoked**.
+APK and QR exist/readable and match the unchanged hashes below.
+**Reproduced failed prerequisite:** `C:\Windows\System32\mspaint.exe` does not exist.
+Registered `Microsoft.Paint_8wekyb3d8bbwe` is Store-signed, status Ok, not development;
+its existing executable is
+`C:\Program Files\WindowsApps\Microsoft.Paint_11.2605.81.0_x64__8wekyb3d8bbwe\PaintApp\mspaint.exe`.
+The previous coarse output cannot establish whether an earlier environment guard
+also failed, but this missing path independently blocks the published preparation.
+
+Correction: use System32 Paint when present, otherwise resolve only the installed
+Microsoft Paint package with the verified family/status/signature-kind checks and
+existing executable. No software install, cloud/default viewer, file association or
+APK/QR changes. Resolve before any target prompt/ADB. Emit fixed `FAILED_CHECK`
+identifiers and allowlisted `EXCEPTION_CATEGORY`, never exception messages or values.
+Installation now reports `NOT_ATTEMPTED`, `ATTEMPTED_UNVERIFIED` or `VERIFIED`.
+Local failure no longer implies possible installation.
+
+Actual Windows 5.1 `-HostOnly` returned `HOST_ARTIFACT_CHECKS=PASS_NO_ADB` and
+`INSTALLATION_STATUS=NOT_ATTEMPTED`, with no prompt/viewer/device operation.
+Eighteen focused fake-boundary cases passed on 5.1, adding Store Paint resolution,
+missing viewer/ADB, unreadable APK, both hash failures, each environment override,
+host-only early return and installation failure states. All local-failure cases
+assert zero ADB calls; original target/package/no-replacement tests remain.
+An initial test-harness failure was fixed by loading standard PowerShell modules
+before defining mocks, preventing module autoload from replacing test doubles.
+This is test scaffolding only, not an app/device defect. PowerShell 7 execution is
+tracked in the existing Windows CI job; no local PowerShell 7 installation was found.
+
+Safe optional local-only check (never calls ADB):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\platform-tools\kr007-physical-invalid-camera.ps1" -HostOnly
+```
+
 ## Verified existing artifacts
 
 Owner-local root (outside repository/cloud directories):

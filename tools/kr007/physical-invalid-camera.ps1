@@ -1,24 +1,45 @@
 # Owner-operated only. Dot-source for preparation tests; never executed by the agent against ADB.
+param([switch]$HostOnly)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+function Get-KRInvalidArtifacts {
+    $script:failedLocalCheck = 'ADB_ENVIRONMENT'
+    if ($env:ADB_TRACE -or $env:ADB_SERVER_SOCKET -or $env:ANDROID_ADB_SERVER_PORT) { throw 'GUARD' }
+    $root = 'C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe'
+    $apk = "$root\artifacts-kr007-14d82db\debug\child-debug.apk"
+    $qr = "$root\camera-storage-2026-09-11T23-02-20-209Z\scene-invalid.png"
+    $script:failedLocalCheck = 'ADB_PATH'
+    if (!(Test-Path -LiteralPath 'C:\platform-tools\adb.exe' -PathType Leaf)) { throw 'GUARD' }
+    $script:failedLocalCheck = 'LOCAL_VIEWER'
+    $viewer = 'C:\Windows\System32\mspaint.exe'
+    if (!(Test-Path -LiteralPath $viewer -PathType Leaf)) {
+        $paint = @(Get-AppxPackage -Name Microsoft.Paint | Where-Object {
+            $_.PackageFamilyName -eq 'Microsoft.Paint_8wekyb3d8bbwe' -and
+            [string]$_.Status -eq 'Ok' -and [string]$_.SignatureKind -eq 'Store' -and !$_.IsDevelopmentMode
+        })
+        if ($paint.Count -ne 1) { throw 'GUARD' }
+        $viewer = Join-Path $paint[0].InstallLocation 'PaintApp\mspaint.exe'
+        if (!(Test-Path -LiteralPath $viewer -PathType Leaf)) { throw 'GUARD' }
+    }
+    $script:failedLocalCheck = 'APK_READ_HASH'
+    if ((Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash -ne '3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9') { throw 'GUARD' }
+    $script:failedLocalCheck = 'QR_READ_HASH'
+    if ((Get-FileHash -LiteralPath $qr -Algorithm SHA256).Hash -ne '3c9a84602486d7052346116f0e182527578970f36a894a8a733b6515cd1d5287') { throw 'GUARD' }
+    return @{Apk=$apk; Qr=$qr; Viewer=$viewer}
+}
 function Invoke-KRInvalidAdb([string[]]$Command) {
     $output = & 'C:\platform-tools\adb.exe' @Command 2>&1
     if ($LASTEXITCODE -ne 0) { throw 'ADB_REJECTED' }
     return (($output | ForEach-Object { $_.ToString() }) -join "`n").Trim()
 }
-function Invoke-KRInvalidCamera {
+function Invoke-KRInvalidCamera([switch]$HostOnly) {
     $stage = 'LOCAL_ARTIFACTS'
-    $installedHere = $false
+    $installationStatus = 'NOT_ATTEMPTED'
     try {
-        if ($env:ADB_TRACE -or $env:ADB_SERVER_SOCKET -or $env:ANDROID_ADB_SERVER_PORT) { throw 'UNEXPECTED_ADB_ENVIRONMENT' }
-        $root = 'C:\Users\3feli\AppData\Local\KidRemote\kr006-runtime\e03b4820-193b-4132-b1fc-f7950eeed7fe'
-        $apk = "$root\artifacts-kr007-14d82db\debug\child-debug.apk"
-        $qr = "$root\camera-storage-2026-09-11T23-02-20-209Z\scene-invalid.png"
+        $artifacts = Get-KRInvalidArtifacts
+        $apk = $artifacts.Apk; $qr = $artifacts.Qr
         $package = 'dev.kidremote.child.unassigned.debug'
-        if (!(Test-Path -LiteralPath 'C:\platform-tools\adb.exe')) { throw 'ADB_MISSING' }
-        if (!(Test-Path -LiteralPath 'C:\Windows\System32\mspaint.exe')) { throw 'LOCAL_VIEWER_MISSING' }
-        if ((Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash -ne '3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9') { throw 'APK_HASH' }
-        if ((Get-FileHash -LiteralPath $qr -Algorithm SHA256).Hash -ne '3c9a84602486d7052346116f0e182527578970f36a894a8a733b6515cd1d5287') { throw 'QR_HASH' }
+        if ($HostOnly) { Write-Output 'HOST_ARTIFACT_CHECKS=PASS_NO_ADB'; return }
         $stage = 'OWNER_TARGET_CONFIRMATION'
         if ((Read-Host 'Conecte SOMENTE o Samsung SM-X400 por USB. Sem restricao KR-003 impedindo o teste, digite SM-X400; qualquer outra resposta para') -cne 'SM-X400') { throw 'OWNER_STOP' }
         $stage = 'SINGLE_USB_TARGET'
@@ -44,9 +65,10 @@ function Invoke-KRInvalidCamera {
         if ($helpText -notmatch '(?m)^\s*-R:\s*disallow replacement of existing application') { throw 'NO_REPLACE_NOT_VERIFIED' }
         $stage = 'INSTALL_NEW_ONLY'
         # -R explicitly disables replacement at the package-manager boundary; never -r or -g.
+        $installationStatus = 'ATTEMPTED_UNVERIFIED'
         $installResult = Invoke-KRInvalidAdb ($target + @('install','--no-streaming','-R','--user','0',$apk))
         if ($installResult -notmatch '(?m)^Success\s*$') { throw 'INSTALL_NOT_VERIFIED' }
-        $installedHere = $true
+        $installationStatus = 'VERIFIED'
         $stage = 'OPEN'
         $openResult = Invoke-KRInvalidAdb ($target + @('shell','am','start','-W','-n',"$package/dev.kidremote.child.ChildActivity"))
         if ($openResult -notmatch '(?m)^Status: ok\s*$') { throw 'OPEN_NOT_VERIFIED' }
@@ -56,7 +78,7 @@ function Invoke-KRInvalidCamera {
         if ((Invoke-KRInvalidAdb ($target + @('shell','run-as',$package,'sh','-c',$probe))) -ne 'EMPTY') { throw 'IDENTITY_STATE_UNKNOWN_OR_PRESENT' }
         if ((Read-Host 'Aguarde carregar. Confirma tela Nao pareado, sem recuperacao/pareamento pendente? S=sim; outro=parar') -ine 'S') { throw 'NOT_FRESH' }
         $stage = 'OWNER_CAMERA_CHECK'
-        Start-Process -FilePath 'C:\Windows\System32\mspaint.exe' -ArgumentList ('"' + $qr + '"') # Owner-local only.
+        Start-Process -FilePath $artifacts.Viewer -ArgumentList ('"' + $qr + '"') # Owner-local only.
         Write-Output 'No PC: mostre o QR inteiro, sem recortar a borda branca. No tablet: Escanear QR do responsavel; permita camera manualmente; aponte somente para este QR por ate 30 segundos.'
         $answer = Read-Host 'P=apareceu QR invalido apos escanear; N=nao reconheceu; E=outro erro; qualquer outra resposta=incerto'
         $stage = 'POST_STATE'
@@ -69,10 +91,23 @@ function Invoke-KRInvalidCamera {
             Write-Output 'RESULT=OWNER_OBSERVED_INVALID_QR_WITH_EMPTY_LOCAL_IDENTITY'
             Write-Output 'NO_REDEMPTION=SOURCE_DERIVED_NOT_NETWORK_INSTRUMENTED'
         } else { Write-Output 'RESULT=NOT_ESTABLISHED_NO_AUTOMATIC_RETRY' }
-    } catch { Write-Output "STOP_STAGE=$stage"; Write-Output 'RESULT=STOPPED_OR_UNCERTAIN_NO_AUTOMATIC_RETRY' }
+    } catch {
+        $reason = $stage
+        if ($stage -eq 'LOCAL_ARTIFACTS') { $reason = $script:failedLocalCheck }
+        $category = switch ($_.Exception.GetType().Name) {
+            'RuntimeException' { 'GUARD_OR_RUNTIME' }
+            'ItemNotFoundException' { 'NOT_FOUND' }
+            'UnauthorizedAccessException' { 'ACCESS_DENIED' }
+            'IOException' { 'IO' }
+            default { 'OTHER' }
+        }
+        Write-Output "STOP_STAGE=$stage"; Write-Output "FAILED_CHECK=$reason"; Write-Output "EXCEPTION_CATEGORY=$category"
+        Write-Output 'RESULT=STOPPED_OR_UNCERTAIN_NO_AUTOMATIC_RETRY'
+    }
     finally {
-        Write-Output "NEW_INSTALL_VERIFIED_THIS_INVOCATION=$installedHere"
-        Write-Output 'Nenhuma limpeza automatica. Se instalacao foi tentada, o app pode permanecer instalado; permissao concedida permanece. Pare camera/saia do app manualmente. Nao reinstale, limpe dados, revogue ou repita.'
+        Write-Output "INSTALLATION_STATUS=$installationStatus"
+        if ($installationStatus -eq 'NOT_ATTEMPTED') { Write-Output 'Nenhuma instalacao foi tentada por esta execucao.' }
+        else { Write-Output 'Nenhuma limpeza automatica. O app pode permanecer instalado; permissao concedida permanece. Pare camera/saia do app manualmente. Nao reinstale, limpe dados, revogue ou repita.' }
     }
 }
-if ($MyInvocation.InvocationName -ne '.') { Invoke-KRInvalidCamera }
+if ($MyInvocation.InvocationName -ne '.') { Invoke-KRInvalidCamera -HostOnly:$HostOnly }
