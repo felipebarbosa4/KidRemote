@@ -2,6 +2,13 @@
 
 ## KR-007 camera and identity-storage continuation — OD-45
 
+### AC-6 local credential rotation
+
+- **Goal:** connected local renewal with durable candidate/operation persistence, real transactional authorization and restart/response-loss recovery.
+- **Context:** clean `3221311`, same PR #20/stack; OD-45 prospective extension recorded before implementation. Native Docker Desktop Linux engine responded `linux`; this alone is not database evidence.
+- **Constraints:** synthetic disposable local DB/gateway and verified owned emulator only; no Samsung/camera work, enforcement, configured sync, AC-7 expansion or next issue. Secrets encrypted locally/digests server-side; server controls expiry, no system clock changes.
+- **Done when:** actual SQL/concurrency/HTTP/Android persistence evidence supports AC-6, regressions/build/lint/isolation/CI pass and owned cleanup verified; or a precise genuine blocker is documented. Do not count unrun/stub boundaries as PASS.
+
 ### One owner-operated physical invalid-camera preparation
 
 **Completed readback handoff at clean `2a9f577`: Goal** append exact owner-supplied later-state output; **Context** readback UTC `2026-09-12T05:41:42.0288136Z`; **Constraints** documentation only, no device/application/bundle changes or invented scan/post-check equivalence; **Done when** current APK hash provenance and absent known identity/pending files at that time are recorded and Issue #7/PR #20 synchronized. Result: later installed APK matches verified 14d82db; both files absent. Earlier camera message remains OWNER_REPORTED, original scripted post-check incomplete, release unmeasured, valid physical pairing untested. No repeat readback/scan requested. **Recommended next bounded product task (PROPOSED, requires explicit OD-45 extension): KR-007 AC-6 local credential-rotation transaction and response-loss/overlap tests with synthetic identities, reusing the existing database/gateway.** Current authority excludes rotation; do not implement automatically or infer permission from this evidence update. KR-003/enforcement, AC-7 and physical/OEM gates remain unchanged.
