@@ -31,12 +31,13 @@ async function boundedJson(request) {
 
 // withCredential must read current credential + device server-side, in the same
 // transaction/snapshot used by its scoped storage methods; credential/device revocation
-// must serialize with that transaction. HTTP tests label that DB adapter as a stub.
+// must serialize with that transaction. KR-004 HTTP unit fixtures label storage as
+// stubbed; KR-007 local-database.mjs supplies real initial-read and rotation transactions.
 export function createDeviceHandler(repository, clock = () => Date.now()) {
   return async request => {
     try {
       const url = new URL(request.url);
-      if (request.method !== 'POST' || url.search || !['/device/sync','/device/ack','/device/push-registration'].includes(url.pathname))
+      if (request.method !== 'POST' || url.search || !['/device/sync','/device/ack','/device/push-registration','/device/credentials/rotate'].includes(url.pathname))
         return reply(404,'UNSUPPORTED_OPERATION');
       const authorization = request.headers.get('authorization') ?? '';
       // Existing opaque bearer contract; no parent JWT, API key or caller ID fallback.
@@ -46,6 +47,20 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
       const digest = credentialDigest(match[1]);
       const body = await boundedJson(request);
       if (!object(body) || body.protocol_version !== 1) return reply(400,'INVALID_PAYLOAD');
+
+      if (url.pathname === '/device/credentials/rotate') {
+        const keys=body.phase==='BEGIN'?['protocol_version','operation_id','phase','new_credential']:['protocol_version','operation_id','phase'];
+        if(!exact(body,keys)||!UUID.test(body.operation_id)||!['BEGIN','CONFIRM','STATUS'].includes(body.phase))return reply(400,'INVALID_PAYLOAD');
+        let next=null;
+        if(body.phase==='BEGIN') {
+          if(typeof body.new_credential!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(body.new_credential)||Buffer.from(body.new_credential,'base64url').toString('base64url')!==body.new_credential)return reply(400,'INVALID_PAYLOAD');
+          next=credentialDigest(body.new_credential);
+        }
+        // SQL independently authenticates/rechecks scope under the device lock. Only digests cross storage boundary.
+        const r=await repository.rotate(digest,{operation_id:body.operation_id,phase:body.phase,new_digest:next});
+        const status=['PENDING','CONFIRMED'].includes(r.result)?200:r.result==='UNAUTHORIZED'?401:r.result==='REVOKED'?403:r.result==='INVALID'?400:409;
+        return reply(status,null,r);
+      }
 
       const response = await repository.withCredential(digest, async records => {
         const c = records?.credential, d = records?.device;

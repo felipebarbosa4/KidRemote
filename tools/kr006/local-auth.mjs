@@ -1,21 +1,22 @@
 // Reuses the ownership-verified KR-004 DB runner. No secrets in argv or output.
 import {randomBytes} from 'node:crypto';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 const images={
  auth:'supabase/gotrue:v2.196.0@sha256:c0c25187a6b835e65a6f6e6c6b39d090e832d40e6de5186f2c038e0411944232',
  rest:'postgrest/postgrest:v14.17@sha256:c9dc201e555f5d8e37e7f39cdd4df0229774996e213bfd7de8d10ac609030f2c',
  mail:'axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365',
 };
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep,runtime=false}) {
- const resources=[];let primary;
+export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep,runtime=false,enrollment=false,enrollmentRuntime=false,gatewayConfig}) {
+ const resources=[];let primary,gateway;
  const secrets=new Set();
  const jwt=randomBytes(48).toString('hex'), password=randomBytes(32).toString('hex');
  const check=(b,c)=>{if(!b) throw Error(c);};
  // Windows-owned loopback is contacted with the existing native Node process.
  // Request bodies/tokens travel through stdin, never argv/files/tool output.
  const http=async(url,method='GET',body,headers={})=>{
-  for(const key of ['password','refresh_token','token_hash']) if(typeof body?.[key]==='string') secrets.add(body[key]);
+  for(const key of ['password','refresh_token','token_hash','new_credential']) if(typeof body?.[key]==='string') secrets.add(body[key]);
   if(headers.authorization?.startsWith('Bearer ')) secrets.add(headers.authorization.slice(7));
   const request={url,options:{method,headers:{'content-type':'application/json',...headers},...(body===undefined?{}:{body:JSON.stringify(body)})}};
   if(!windows) {
@@ -42,6 +43,22 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    ...ports.flatMap(p=>['-p','127.0.0.1:'+p]),...(kind==='mail'?['--tmpfs','/data:rw']:[]),
    ...Object.keys(vars).flatMap(k=>['-e',k]),r.image]);
   resources.push(r);verify(r);call(['start',r.id]);return r;
+ }
+ async function gatewayAvailable(enabled) {
+  if(!enrollment)throw Error('GATEWAY_NOT_IN_SCOPE');
+  if(!enabled){
+   if(!gateway)throw Error('OWN_GATEWAY_MISSING');gateway.kill();
+   for(let i=0;i<20&&(await http('http://127.0.0.1:57366/health')).status!==0;i++)await sleep(250);
+   check((await http('http://127.0.0.1:57366/health')).status===0,'GATEWAY_STOP_UNVERIFIED');gateway=null;return;
+  }
+  check(!gateway,'GATEWAY_ALREADY_RUNNING');
+  const path=fileURLToPath(new URL('../kr007/local-gateway.mjs',import.meta.url));
+  const win=p=>execFileSync('wslpath',['-w',p],{encoding:'utf8'}).trim();
+  gateway=spawn(windows?'/mnt/c/Program Files/nodejs/node.exe':process.execPath,[windows?win(path):path],{stdio:['pipe','pipe','pipe']});
+  let ready=false;gateway.stdout.on('data',b=>{if(b.toString().includes('LOCAL_ENROLLMENT_GATEWAY_READY'))ready=true;});gateway.stderr.resume();
+  gateway.stdin.end(JSON.stringify({...gatewayConfig,docker:windows?win(gatewayConfig.docker):gatewayConfig.docker}));
+  for(let i=0;i<30&&!ready;i++)await sleep(1000);
+  check(ready&&(await http('http://127.0.0.1:57366/health')).status===200,'ENROLLMENT_GATEWAY_UNAVAILABLE');
  }
  try {
   // Credentials generated for this isolated DB only; statement body not emitted.
@@ -74,6 +91,10 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    }await sleep(1000);
   }
   console.log('LOCAL_AUTH_REST_MAIL_READY:confirmationRequired=true:loopbackOnly=true');
+  if(enrollment) {
+   await gatewayAvailable(true);
+   console.log('LOCAL_ENROLLMENT_GATEWAY_VERIFIED_LOOPBACK');
+  }
   if(keep) {
    console.log('PARENT_DEV_READY:Auth=127.0.0.1:57361:REST=127.0.0.1:57362:Mail=127.0.0.1:57365:CtrlC=scopedCleanup');
    await new Promise(r=>{process.once('SIGINT',r);process.once('SIGTERM',r);});
@@ -83,6 +104,13 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    const restResource=resources.find(r=>r.image===images.rest);
    const restAvailable=enabled=>{verify(restResource);call([enabled?'start':'stop',restResource.id]);};
    const {testParentAuth}=await import('./real-auth-tests.mjs');await testParentAuth({http,sql,mailAvailable,restAvailable});
+   if(enrollment) {
+    const {testEnrollment}=await import('../kr007/backend-tests.mjs');await testEnrollment({http,sql});
+    const {testRotation}=await import('../kr007/rotation-tests.mjs');await testRotation({http,sql});
+   }
+   if(enrollmentRuntime) {
+    const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql,gatewayAvailable});
+   }
    if(runtime) {
     const {testAndroidRuntime}=await import('./android-runtime.mjs');
     await testAndroidRuntime({restAvailable,sql});
@@ -95,6 +123,12 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
   }
  } catch(e) {primary=e;}
  finally {
+  if(gateway) {
+   gateway.kill();
+   for(let i=0;i<15&&(await http('http://127.0.0.1:57366/health')).status!==0;i++)await sleep(500);
+   if((await http('http://127.0.0.1:57366/health')).status!==0)primary??=Error('GATEWAY_CLEANUP_UNVERIFIED');
+   else console.log('ENROLLMENT_GATEWAY_CLEANUP_VERIFIED');
+  }
   for(const r of resources.reverse()) {
    try {verify(r);call(['rm','-f',r.id]);check(call(['container','ls','-a','--filter','id='+r.id,'--format','{{.ID}}'])==='','AUTH_CLEANUP_UNVERIFIED');}
    catch(e){primary??=e;console.error('AUTH_RESOURCE_CLEANUP_FAILED:'+r.id);}

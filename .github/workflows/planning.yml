@@ -24,7 +24,8 @@ jobs:
       - name: Local Auth, email, PostgREST and regression tests
         run: |
           node --test tools/kr006/*.test.mjs
-          node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --parent-test
+          node --test tools/kr007/*.test.mjs
+          node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --enrollment-test
       - name: Build parent with preinstalled SDK only
         run: |
           test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"
@@ -34,11 +35,21 @@ jobs:
           if test -r /dev/kvm && test -w /dev/kvm; then echo KVM_ACCESS=AVAILABLE; else echo KVM_ACCESS=UNAVAILABLE; fi
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
+          node tools/kr007/audit-child.mjs
       - name: Retain debug APK only (no accounts, mail or local-service data)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kr006-parent-debug
           path: apps/parent-mobile/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain child APKs only (no runtime fixtures)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kr007-child-apks
+          path: |
+            apps/child-android/build/outputs/apk/debug/child-debug.apk
+            apps/child-android/build/outputs/apk/androidTest/debug/child-debug-androidTest.apk
           if-no-files-found: error
           retention-days: 7
       - name: Retain test APK only (compilation is not runtime evidence)
@@ -124,6 +135,8 @@ jobs:
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/kr007/physical-invalid-camera.test.ps1
+          ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/OracleTransport.Tests.ps1
@@ -149,6 +162,8 @@ jobs:
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
+          ./tools/kr007/physical-invalid-camera.test.ps1
+          ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/PowerShellSafety.Tests.ps1

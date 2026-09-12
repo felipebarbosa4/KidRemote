@@ -1,5 +1,60 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-007 camera and identity-storage continuation — OD-45
+
+### AC-6 local credential rotation
+
+- **Goal:** connected local renewal with durable candidate/operation persistence, real transactional authorization and restart/response-loss recovery.
+- **Context:** clean `3221311`, same PR #20/stack; OD-45 prospective extension recorded before implementation. Native Docker Desktop Linux engine responded `linux`; this alone is not database evidence.
+- **Constraints:** synthetic disposable local DB/gateway and verified owned emulator only; no Samsung/camera work, enforcement, configured sync, AC-7 expansion or next issue. Secrets encrypted locally/digests server-side; server controls expiry, no system clock changes.
+- **Done when:** actual SQL/concurrency/HTTP/Android persistence evidence supports AC-6, regressions/build/lint/isolation/CI pass and owned cleanup verified; or a precise genuine blocker is documented. Do not count unrun/stub boundaries as PASS.
+
+### One owner-operated physical invalid-camera preparation
+
+**Completed readback handoff at clean `2a9f577`: Goal** append exact owner-supplied later-state output; **Context** readback UTC `2026-09-12T05:41:42.0288136Z`; **Constraints** documentation only, no device/application/bundle changes or invented scan/post-check equivalence; **Done when** current APK hash provenance and absent known identity/pending files at that time are recorded and Issue #7/PR #20 synchronized. Result: later installed APK matches verified 14d82db; both files absent. Earlier camera message remains OWNER_REPORTED, original scripted post-check incomplete, release unmeasured, valid physical pairing untested. No repeat readback/scan requested. **Recommended next bounded product task (PROPOSED, requires explicit OD-45 extension): KR-007 AC-6 local credential-rotation transaction and response-loss/overlap tests with synthetic identities, reusing the existing database/gateway.** Current authority excludes rotation; do not implement automatically or infer permission from this evidence update. KR-003/enforcement, AC-7 and physical/OEM gates remain unchanged.
+
+**Evidence handoff at clean `7ec1dbf`: Goal** record the subsequently owner-reported KidRemote camera-triggered invalid message; **Context** an explicitly authorized additional framing attempt, not the earlier inconclusive/stock-camera observations; **Constraints** no scan/installer/device operation, no inferred APK identity/post-state/CameraX release or historical reclassification; **Done when** qualified observation is retained, Issue #7/PR #20 synchronized, and one read-only later-state command is supplied. Result: OWNER_REPORTED invalid-QR response; installed APK provenance UNVERIFIED, identity/pending post-check NOT_COMPLETED, valid physical pairing NOT_TESTED. Broader AC status unchanged. Readback is a future later-state observation only, never a reconstructed before/after scan record.
+
+Native-install-result follow-up at clean `b2641ab`: **Goal** retain native stdout/stderr/completion independently; **Context** owner stopped INSTALL_NEW_ONLY/OTHER/ATTEMPTED_UNVERIFIED, later user0 query exit0/no package (not historical cause or global absence); **Constraints** fake native process only, no ADB/physical operation or guard changes; **Done when** actual Windows 5.1/7 native-boundary tests and host artifacts pass, deployed predecessor preserved, checked script updated and owner-only handoff. The old stderr/Stop interference was reproduced on 5.1, not attributed retrospectively to Samsung.
+
+Host-only follow-up at clean `2944622`: **Goal** identify owner-reported LOCAL_ARTIFACTS stop; **Context** deployed bytes matched published SHA256 `d6d0a614cbc4276b8128456609b7f1a23d2168345c1aab0c5985afe1b7d91d5c`; **Constraints** no ADB/physical invocation, preserve APK/QR and historical failure; **Done when** existing local viewer resolves, real host-only checks and focused 5.1/7 tests pass, old deployed copy retained, corrected owner command handed off. Observed missing System32 Paint; installed Microsoft Store Paint found. This is not a camera result or new authorization.
+
+- **Goal:** prepare the existing verified child APK and nonsecret `{}` QR for one Samsung SM-X400 camera -> decode -> schema rejection check.
+- **Context:** clean `6ab4ba0`; published focused camera evidence remains NOT_PASSED. OD-45 now explicitly permits owner-only physical execution, not agent operation.
+- **Constraints:** no rebuild/new framework/backend/endpoint change; package already present means STOP, no update/data mutation. No KR-003 operation, media/log capture, real enrollment, physical acceptance closure or KR-008. Only manually granted camera access on a new installation.
+- **Done when:** hashes/package/permissions/QR verified, bounded owner commands checked locally, existing decision extended, and handoff stops before all physical operations. [Owner checklist](../test-plans/KR-007-PHYSICAL-INVALID-CAMERA.md) separates observed UI/camera release from read-only identity-file checks and source-derived no-redemption reasoning.
+
+### Focused invalid-camera boundary pass
+
+- **Goal:** isolate camera open -> analyzer -> conversion -> decode -> schema rejection -> UI for the nonsecret `{}` QR only.
+- **Context:** clean `ee4c997`, PR #20; historical 23 PASS/one failed attempt and APKs remain unchanged. OD-45 already authorizes this diagnosis; no new decision.
+- **Constraints:** approximately 20 minutes of acquisition investigation excluding builds/CI, one owned AVD, no backend unless this control passes; memory-only debug counters, no frames/payload/exception retention, webcam, pose invention or capture analysis.
+- **Done when:** a focused executed pass identifies the last established boundary and any reproduced defect is fixed/tested, or the unresolved boundary is retained with one proposed future physical check (not executed). No full storage rerun or wider scope.
+
+**Focused result:** [retained two-attempt record](../test-plans/evidence/KR-007-CAMERA-STORAGE-2026-09-11.md#focused-follow-up--2026-09-12-utc): the byte-verified PNG passes separate synthetic decode/schema control; actual camera opens and delivers/converts 922 frames, but decodes zero QR. Model/schema/UI rejection was never reached; COMPOSE_TIMEOUT with scanning UI remains NOT_PASSED. Poster-in-view is UNSPECIFIED; official default-pose/framing guidance supports a stimulus-placement hypothesis, not an app-defect conclusion. A new isolated PNG-precheck binary-stdin truncation was corrected using nonsecret staging plus exact-byte verification; historical evidence unchanged. No backend or valid-camera redemption started. AVD/data/posters/staging cleanup verified. Stop emulator investigation here; one proposed future explicitly authorized brief physical invalid-QR check, not automatic installation or another framework.
+
+- **Goal:** execute actual virtual-camera/permission and Keystore failure tests; fix reproduced defects only.
+- **Context:** clean `c9843000e8ec0586a20a532e3c9e70a972a1b64e`, existing draft PR #20 stacked on #19; preserve exercised `fb52936` APKs and all prior results. Initial-read gateway uses real DB storage.
+- **Constraints:** same owned Windows AVD and synthetic local services; no webcam/physical target, frame retention/upload, general camera simulator, enforcement, rotation/removal expansion or next issue. Generated scene images remain local. Original APKs untouched.
+- **Done when:** available camera path and permission/storage failures have executed evidence, focused regressions/build/lint/isolation/CI pass, resources cleaned, and camera/OEM/physical gaps remain explicit. If virtual camera is unavailable, retain the precise limitation and finish independent permission/storage tests.
+
+**Bounded result:** [camera/storage evidence](../test-plans/evidence/KR-007-CAMERA-STORAGE-2026-09-11.md) records 23 passing actual Android invocations and one failed virtual-scene invalid-QR control; the valid camera QR path remains unrun, not substituted by decoder injection. Real permission denial/grant, cancellation/background/recreation, OS revocation/restart, ciphertext corruption/missing key/clean reinstall and real gateway-outage preservation passed. Fixed reproduced missing-key read mutation (no replacement key on read); actual auth/read gates unchanged. All backend regressions and source `01c6264` CI passed; overall camera runtime remains NOT_PASSED. Cleanup verified and owned AVD stopped. Earlier failures and `fb52936` APKs preserved. AC-2/3/4 remain partial, AC-6/7/physical/OEM pending. Next bounded step is review of these results and the unresolved native virtual-scene acquisition boundary, not another framework, physical installation, rotation/removal expansion or KR-008.
+
+## KR-007 first local enrollment — OD-45, 2026-09-11
+
+- **Goal:** authenticated parent QR -> real child redemption -> persisted independent identity -> own initial read -> actual parent list.
+- **Context:** clean `a4d6beb58368318ada2d3f9d505d9e404f789e85`; new `kr-007-local-enrollment` stacked on unmerged PR #19. Reuse KR-005 transactions/handler and KR-006 Auth/Windows AVD/runtime infrastructure. OD-45 is separate from OD-44.
+- **Constraints:** synthetic local resources only; explicit emulator target; no enforcement/privileges, physical install, deployment, real use, next issues or visual work. No raw secrets/media in logs/arguments/artifacts. Unknown/unconfigured is not zero allowance or healthy/protected. Camera decoding tests are distinct from camera scanning.
+- **Done when:** two actual apps sequentially exercise connected local enrollment with real gateway persistence and scoped read, regressions/build/lint/security/runtime evidence retained; or exact genuine blocker. Remaining camera/physical, rotation, removal/transfer acceptance stays partial.
+
+Implement only initial unconfigured-policy projection; configured/sync-engine operations
+remain unavailable rather than synthesized. Parent Auth routes use actual verified JWT
+and existing membership-scoped RPCs. Device adapter holds credential/device/policy locks
+through handler authorization/read in one actual PostgreSQL transaction. Reuse local
+debug endpoints and capture only sanitized results. Stop after this connected slice.
+
+**Executed result:** [KR-007 local enrollment evidence](../test-plans/evidence/KR-007-LOCAL-ENROLLMENT-2026-09-11.md): real parent UI -> QR -> child decoder/redemption -> Keystore identity -> initial scoped read -> real parent list passed, then committed interruption/revoke/fresh-QR recovery. Fifteen instrumentation invocations passed on one owned Windows API-36 emulator, sequential app identities; 496 SQL, 44 Auth and 28 new enrollment HTTP/DB assertions passed alongside existing pairing regressions. The initial install failure and two manifest-audit CI failures are preserved separately. Actual APK source is `fb52936`, host source `b6087c3`; prior KR-006 APKs unchanged. Cleanup verified, AVD stopped. AC-1/5 demonstrated locally; remaining camera/physical, transfer, permission/removal and rotation criteria stay open. PR #20 stays draft/stacked on PR #19. Next bounded step: review this slice, then plan the remaining KR-007 camera/identity lifecycle acceptance within explicit authorization; no automatic KR-008/009/010 or enforcement.
+
 - **Goal:** Establish an approved product contract and evidence-based Android/backend/pairing path.
 - **Context:** Architecture baseline merged in PR #11; owner directed execution to start on 2026-09-05; production enforcement is unproven.
 - **Constraints:** Seven calendar days ending 2026-09-11, no full MVP promise. One active coding agent; physical-device inventory and availability remain **UNSPECIFIED**.

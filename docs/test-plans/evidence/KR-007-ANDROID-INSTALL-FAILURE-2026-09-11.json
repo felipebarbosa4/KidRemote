@@ -1,0 +1,15 @@
+{
+  "scope": "KR007_ENROLLMENT_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [],
+  "primary": "TARGETED_ANDROID_OPERATION_REJECTED",
+  "cleanup": "UNVERIFIED",
+  "apkHashes": {
+    "app": "3c285506d58e6070a096f52db9fd32f70b7537faa728cfef30c4703b68dc98b5"
+  },
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "overall": "NOT_PASSED"
+}

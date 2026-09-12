@@ -14,6 +14,7 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     var state by mutableStateOf(AuthState()); private set
     private val api = AuthApi()
     private val vault = SessionVault(application)
+    private val pairingIdFile=java.io.File(application.noBackupFilesDir,"pairing-session-id")
     private val worker = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
     private val lock = Any()
@@ -39,7 +40,7 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
             if (recovery) vault.clear() else vault.save(session.getString("refresh_token"))
             access=token
         }
-        return AuthState(if (recovery) Screen.RESET else Screen.SETUP)
+        return AuthState(if (recovery) Screen.RESET else Screen.SETUP,pairingSession=pairingIdFile.takeIf{it.exists()}?.readText()?.takeIf{it.matches(Regex("[0-9a-f-]{36}"))})
     }
     fun restore() = work { generation ->
         val saved=vault.read()
@@ -60,12 +61,36 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     }
     fun setup(timezone: String) = work {
         val token=synchronized(lock) { access } ?: error("NO_SESSION")
-        AuthState(Screen.DEVICES,deviceCount=api.setup(token,timezone))
+        api.setup(token,timezone)
+        val rows=api.devices(token);AuthState(Screen.DEVICES,deviceCount=rows.size,devices=rows,pairingSession=state.pairingSession)
+    }
+    fun refreshDevices() = work {
+        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val rows=api.devices(token);state.copy(loading=false,deviceCount=rows.size,devices=rows)
+    }
+    fun createPairing() = work {
+        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val r=api.pair(token);check(r.getString("result")=="CREATED")
+        val q=r.getJSONObject("qr");val session=q.getString("session_id")
+        pairingIdFile.writeText(session) // nonsecret recovery reference; server still checks current membership
+        val ttl=java.time.Instant.parse(r.getString("expires_at")).toEpochMilli()-System.currentTimeMillis()
+        main.post {main.postDelayed({if(state.pairingSession==session)clearPairingQr()},ttl.coerceIn(0,300000))}
+        state.copy(loading=false,qr=q.toString(),pairingSession=session,incompleteRecovery=false,message="QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+    }
+    fun clearPairingQr(){state=state.copy(qr=null)}
+    fun finishPairing(revoke: Boolean=false)=work {
+        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val id=state.pairingSession?:error("NO_SESSION")
+        val r=api.cancel(token,id,revoke).getString("result")
+        val rows=api.devices(token)
+        state.copy(loading=false,qr=null,deviceCount=rows.size,devices=rows,incompleteRecovery=r=="ALREADY_REDEEMED",
+            message=when(r){"CANCELLED"->"QR cancelado.";"ALREADY_REDEEMED"->"QR consumido. Se a credencial não foi salva, revogue o pareamento incompleto e gere outro QR.";"REVOKED_FRESH_QR_REQUIRED"->"Pareamento incompleto revogado. Gere outro QR.";else->"Operação indisponível; não foi confirmada a revogação."})
     }
     fun logout() {
         var cleared=true
         val token=synchronized(lock) {
             epoch++; val old=access; access=null
+            pairingIdFile.delete()
             try { vault.clear() } catch (_: Exception) { cleared=false }
             old
         }

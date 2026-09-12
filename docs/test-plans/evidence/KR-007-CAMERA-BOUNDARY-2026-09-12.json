@@ -1,0 +1,53 @@
+{
+  "scope": "KR007_EXCLUDED_FOCUSED_INVALID_CAMERA_DIAGNOSTIC",
+  "apkSource": "14d82dbbf764c5a78c2c80393756d5302842958f",
+  "childApkSha256": "3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9",
+  "testApkSha256": "36d934922116b1381c43298fe6ab61fa3ea4503a58b231a5da026ec68ac86fe8",
+  "backendStarted": false,
+  "physicalDeviceOperated": false,
+  "fixtureSourceSha256": "3c9a84602486d7052346116f0e182527578970f36a894a8a733b6515cd1d5287",
+  "fixtureDimensions": [512, 512],
+  "attempts": [
+    {
+      "startedUtc": "2026-09-12T00:42:50.141Z",
+      "finishedUtc": "2026-09-12T00:42:52.769Z",
+      "primary": "NOT_PASSED",
+      "fixtureDecoderControl": "FAILED",
+      "cameraTest": "UNRUN",
+      "cleanup": "VERIFIED_APP_DATA_CLEARED_POSTERS_RESET"
+    },
+    {
+      "startedUtc": "2026-09-12T00:47:40.698Z",
+      "finishedUtc": "2026-09-12T00:48:38.755Z",
+      "primary": "NOT_PASSED",
+      "fixtureTransfer": "EXACT_BYTES_VERIFIED",
+      "fixtureBytes": 2787,
+      "fixtureDecoderControl": "INVALID_PNG_DECODER_AND_SCHEMA_CONTROL_PASS_NOT_CAMERA",
+      "cameraTest": "FAILED",
+      "cameraOpen": true,
+      "providerBindCount": 1,
+      "analyzerFrames": 922,
+      "convertedFrames": 922,
+      "qrDecodedCount": 0,
+      "modelCallbackCount": 0,
+      "schemaRejectedCount": 0,
+      "bindExceptionCount": 0,
+      "conversionExceptionCount": 0,
+      "exceptionClass": "COMPOSE_TIMEOUT",
+      "schemaRejected": false,
+      "scanningUi": true,
+      "cleanup": "VERIFIED_APP_DATA_CLEARED_POSTERS_RESET_STAGING_REMOVED"
+    }
+  ],
+  "separateBinaryStdinProbe": {
+    "sourceBytes": 2787,
+    "receivedBytes": 5,
+    "exactEqual": false,
+    "receivedSha256": "12c593c5bd2f0972188eb30e32bee7ad4060be582c2c6826caff89372ca84707"
+  },
+  "validCameraRedemption": "UNRUN",
+  "qrInCameraView": "UNSPECIFIED",
+  "emulatorStopped": true,
+  "remainingEmulatorListeners": 0,
+  "historicalResultsUnchanged": true
+}
