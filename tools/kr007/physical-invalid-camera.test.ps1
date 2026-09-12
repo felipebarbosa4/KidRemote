@@ -45,22 +45,26 @@ function Invoke-KRInvalidAdb {
         '^shell getprop ro.build.version.sdk$' { return '36' }
         '^shell getprop ro.build.version.release$' { return '16' }
         '^shell am get-current-user$' { return '0' }
-        '^shell pm list packages -u ' { if ($script:case -eq 'existing') { return 'package:dev.kidremote.child.unassigned.debug' }; return '' }
+        '^shell pm list packages -u ' {
+            $script:absenceChecks++
+            if ($script:case -eq 'existing' -or ($script:case -eq 'appeared' -and $script:absenceChecks -eq 2)) { return 'package:dev.kidremote.child.unassigned.debug' }; return ''
+        }
+        '^shell pm list packages --user 0 ' { if ($script:case -eq 'verify-missing') { return '' }; return 'package:dev.kidremote.child.unassigned.debug' }
         '^shell cmd package help$' { if ($script:case -eq 'unknown-capability') { return 'UNKNOWN' }; return '  -R: disallow replacement of existing application' }
-        '^install --no-streaming -R --user 0 ' { if ($script:case -eq 'install-error') { throw 'SENSITIVE_DO_NOT_OUTPUT' }; return "Performing Push Install`nSuccess" }
+        '^install --no-streaming -R --user 0 ' { if ($script:case -eq 'install-error') { throw 'SENSITIVE_DO_NOT_OUTPUT' }; if ($script:case -eq 'missing-success') { return 'Completed' }; return "Performing Push Install`nSuccess" }
         '^shell am start -W -n ' { return 'Status: ok' }
         '^shell run-as ' { if ($script:case -eq 'identity-present') { return 'PRESENT' }; return 'EMPTY' }
         default { throw 'UNEXPECTED_TEST_COMMAND' }
     }
 }
 $count = 0
-foreach ($case in @('success','store-paint','existing','multiple','foreign','bad-hash','unknown-capability','identity-present','unrecognized','adb-missing','viewer-missing','unreadable','qr-hash','install-error','host-only')) {
-    $script:case=$case; $script:calls=[Collections.Generic.List[string]]::new(); $script:viewerCalls=0
+foreach ($case in @('success','store-paint','existing','multiple','foreign','bad-hash','unknown-capability','identity-present','unrecognized','adb-missing','viewer-missing','unreadable','qr-hash','install-error','host-only','missing-success','verify-missing','appeared')) {
+    $script:case=$case; $script:calls=[Collections.Generic.List[string]]::new(); $script:viewerCalls=0; $script:absenceChecks=0
     $output = (Invoke-KRInvalidCamera -HostOnly:($case -eq 'host-only')) -join "`n"
     if ($case -in @('success','store-paint')) {
         if ($output -notmatch 'RESULT=OWNER_OBSERVED_INVALID_QR_WITH_EMPTY_LOCAL_IDENTITY' -or $script:viewerCalls -ne 1) { Write-Output "FAILED_CASE=$case"; Write-Output ($output -split "`n" | Where-Object { $_ -match '^(FAILED_CHECK|STOP_STAGE|EXCEPTION_CATEGORY)=' }); throw 'SUCCESS_FLOW_ASSERTION' }
     } elseif ($output -match 'RESULT=OWNER_OBSERVED_INVALID_QR_WITH_EMPTY_LOCAL_IDENTITY') { throw 'FALSE_SUCCESS' }
-    if ($case -in @('existing','multiple','foreign','bad-hash','unknown-capability')) {
+    if ($case -in @('existing','multiple','foreign','bad-hash','unknown-capability','appeared')) {
         if (@($script:calls | Where-Object { $_ -match ' install | am start ' }).Count -ne 0) { throw 'MUTATION_BEFORE_GUARD' }
     }
     if ($case -in @('adb-missing','viewer-missing','bad-hash','unreadable','qr-hash','host-only')) {
@@ -69,6 +73,9 @@ foreach ($case in @('success','store-paint','existing','multiple','foreign','bad
     $expectedReason = @{ 'adb-missing'='ADB_PATH'; 'viewer-missing'='LOCAL_VIEWER'; 'bad-hash'='APK_READ_HASH'; 'unreadable'='APK_READ_HASH'; 'qr-hash'='QR_READ_HASH' }
     if ($expectedReason.ContainsKey($case) -and $output -notmatch "FAILED_CHECK=$($expectedReason[$case])") { throw 'WRONG_FAILED_CHECK' }
     if ($case -eq 'install-error' -and $output -notmatch 'INSTALLATION_STATUS=ATTEMPTED_UNVERIFIED') { throw 'LOST_INSTALL_ATTEMPT' }
+    if ($case -in @('missing-success','verify-missing')) {
+        if ($output -notmatch 'INSTALLATION_STATUS=ATTEMPTED_UNVERIFIED' -or @($script:calls | Where-Object { $_ -match ' am start ' }).Count -ne 0) { throw 'INSTALL_WITHOUT_VERIFICATION' }
+    }
     if ($case -eq 'success' -and $output -notmatch 'INSTALLATION_STATUS=VERIFIED') { throw 'LOST_VERIFIED_INSTALL' }
     if ($output -match 'SENSITIVE_DO_NOT_OUTPUT') { throw 'RAW_EXCEPTION_LEAK' }
     if ($output -match 'SYNTHETIC|SECOND|package:') { throw 'RAW_TARGET_OR_PACKAGE_OUTPUT' }

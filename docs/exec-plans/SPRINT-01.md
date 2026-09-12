@@ -4,6 +4,8 @@
 
 ### One owner-operated physical invalid-camera preparation
 
+Native-install-result follow-up at clean `b2641ab`: **Goal** retain native stdout/stderr/completion independently; **Context** owner stopped INSTALL_NEW_ONLY/OTHER/ATTEMPTED_UNVERIFIED, later user0 query exit0/no package (not historical cause or global absence); **Constraints** fake native process only, no ADB/physical operation or guard changes; **Done when** actual Windows 5.1/7 native-boundary tests and host artifacts pass, deployed predecessor preserved, checked script updated and owner-only handoff. The old stderr/Stop interference was reproduced on 5.1, not attributed retrospectively to Samsung.
+
 Host-only follow-up at clean `2944622`: **Goal** identify owner-reported LOCAL_ARTIFACTS stop; **Context** deployed bytes matched published SHA256 `d6d0a614cbc4276b8128456609b7f1a23d2168345c1aab0c5985afe1b7d91d5c`; **Constraints** no ADB/physical invocation, preserve APK/QR and historical failure; **Done when** existing local viewer resolves, real host-only checks and focused 5.1/7 tests pass, old deployed copy retained, corrected owner command handed off. Observed missing System32 Paint; installed Microsoft Store Paint found. This is not a camera result or new authorization.
 
 - **Goal:** prepare the existing verified child APK and nonsecret `{}` QR for one Samsung SM-X400 camera -> decode -> schema rejection check.

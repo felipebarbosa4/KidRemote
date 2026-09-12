@@ -27,14 +27,65 @@ function Get-KRInvalidArtifacts {
     if ((Get-FileHash -LiteralPath $qr -Algorithm SHA256).Hash -ne '3c9a84602486d7052346116f0e182527578970f36a894a8a733b6515cd1d5287') { throw 'GUARD' }
     return @{Apk=$apk; Qr=$qr; Viewer=$viewer}
 }
+function Invoke-KRInvalidProcess([string]$Executable,[string[]]$Command,[int]$TimeoutMillis=120000) {
+    # Same redirected Process pattern as existing host tools; no PowerShell stderr pipeline.
+    $p = New-Object Diagnostics.Process
+    $p.StartInfo.FileName=$Executable; $p.StartInfo.UseShellExecute=$false; $p.StartInfo.CreateNoWindow=$true
+    $p.StartInfo.RedirectStandardOutput=$true; $p.StartInfo.RedirectStandardError=$true
+    $p.StartInfo.Arguments=($Command | ForEach-Object {
+        '"' + ([regex]::Replace([regex]::Replace($_,'(\\*)"','$1$1\"'),'(\\+)$','$1$1')) + '"'
+    }) -join ' '
+    $r=@{Completed=$false; ExitCode='UNKNOWN'; Stdout=''; Stderr=''; Category='PROCESS_START_FAILED'}
+    $started=$false
+    try {
+        $started=$p.Start()
+        if (!$started) { return $r }
+        $outTask=$p.StandardOutput.ReadToEndAsync(); $errTask=$p.StandardError.ReadToEndAsync()
+        $r.Category='PROCESS_TIMEOUT'
+        if (!$p.WaitForExit($TimeoutMillis)) { return $r }
+        $r.ExitCode=$p.ExitCode; $r.Category='STREAM_INCOMPLETE'
+        if (!$outTask.Wait(5000) -or !$errTask.Wait(5000)) { return $r }
+        $r.Stdout=$outTask.Result; $r.Stderr=$errTask.Result; $r.Completed=$true; $r.Category='NONE'
+    } catch {
+        $r.Category=if (!$started) {'PROCESS_START_FAILED'} else {'PROCESS_IO_FAILED'}
+    } finally {
+        if ($started -and !$p.HasExited) {
+            try { $p.Kill(); if (!$p.WaitForExit(5000)) { $r.Category='PROCESS_TERMINATION_UNVERIFIED' } }
+            catch { $r.Category='PROCESS_TERMINATION_UNVERIFIED' }
+        }
+        $p.Dispose()
+    }
+    return $r
+}
+function Get-KRInvalidNativeDiagnostic($Result) {
+    $text=$Result.Stdout + "`n" + $Result.Stderr # In memory only; never print raw native output.
+    $code='NONE'
+    $known=@('INSTALL_FAILED_USER_RESTRICTED','INSTALL_FAILED_ALREADY_EXISTS','INSTALL_FAILED_UPDATE_INCOMPATIBLE',
+        'INSTALL_FAILED_VERSION_DOWNGRADE','INSTALL_FAILED_INSUFFICIENT_STORAGE','INSTALL_FAILED_INVALID_APK',
+        'INSTALL_FAILED_NO_MATCHING_ABIS','INSTALL_FAILED_OLDER_SDK','INSTALL_FAILED_TEST_ONLY',
+        'INSTALL_FAILED_DUPLICATE_PERMISSION','INSTALL_FAILED_ABORTED','INSTALL_FAILED_INTERNAL_ERROR',
+        'INSTALL_FAILED_VERIFICATION_FAILURE','INSTALL_FAILED_VERIFICATION_TIMEOUT','INSTALL_FAILED_MISSING_SPLIT',
+        'INSTALL_PARSE_FAILED_NOT_APK','INSTALL_PARSE_FAILED_BAD_MANIFEST','INSTALL_PARSE_FAILED_NO_CERTIFICATES',
+        'INSTALL_PARSE_FAILED_INCONSISTENT_CERTIFICATES','INSTALL_PARSE_FAILED_MANIFEST_MALFORMED')
+    if ($text -match '\b(INSTALL_(?:FAILED|PARSE_FAILED)_[A-Z0-9_]+)\b') {
+        $code=if ($Matches[1] -cin $known) {$Matches[1]} else {'UNRECOGNIZED_INSTALL_CODE'}
+    }
+    $category=$Result.Category
+    if ($Result.Completed -and $Result.ExitCode -ne 0) {
+        $category=if ($code -ne 'NONE') {'INSTALLER_REJECTION'} elseif ($text -match 'device unauthorized') {'TRANSPORT_UNAUTHORIZED'} elseif ($text -match 'device offline') {'TRANSPORT_OFFLINE'} else {'NATIVE_NONZERO_EXIT'}
+    }
+    return @{ExitCode=$Result.ExitCode; InstallCode=$code; Category=$category; Completed=$Result.Completed}
+}
 function Invoke-KRInvalidAdb([string[]]$Command) {
-    $output = & 'C:\platform-tools\adb.exe' @Command 2>&1
-    if ($LASTEXITCODE -ne 0) { throw 'ADB_REJECTED' }
-    return (($output | ForEach-Object { $_.ToString() }) -join "`n").Trim()
+    $result=Invoke-KRInvalidProcess 'C:\platform-tools\adb.exe' $Command
+    $script:lastNativeDiagnostic=Get-KRInvalidNativeDiagnostic $result
+    if (!$result.Completed -or $result.ExitCode -ne 0 -or $script:lastNativeDiagnostic.InstallCode -ne 'NONE') { throw 'ADB_NATIVE_RESULT_REJECTED' }
+    return $result.Stdout.Trim()
 }
 function Invoke-KRInvalidCamera([switch]$HostOnly) {
     $stage = 'LOCAL_ARTIFACTS'
     $installationStatus = 'NOT_ATTEMPTED'
+    $script:lastNativeDiagnostic=$null
     try {
         $artifacts = Get-KRInvalidArtifacts
         $apk = $artifacts.Apk; $qr = $artifacts.Qr
@@ -63,11 +114,16 @@ function Invoke-KRInvalidCamera([switch]$HostOnly) {
         $stage = 'NO_REPLACE_CAPABILITY'
         $helpText = Invoke-KRInvalidAdb ($target + @('shell','cmd','package','help'))
         if ($helpText -notmatch '(?m)^\s*-R:\s*disallow replacement of existing application') { throw 'NO_REPLACE_NOT_VERIFIED' }
+        $stage = 'PACKAGE_ABSENCE_RECHECK'
+        if ((Invoke-KRInvalidAdb ($target + @('shell','pm','list','packages','-u',$package))) -ne '') { throw 'EXISTING_OR_UNKNOWN_PACKAGE_RECORD' }
         $stage = 'INSTALL_NEW_ONLY'
         # -R explicitly disables replacement at the package-manager boundary; never -r or -g.
         $installationStatus = 'ATTEMPTED_UNVERIFIED'
         $installResult = Invoke-KRInvalidAdb ($target + @('install','--no-streaming','-R','--user','0',$apk))
         if ($installResult -notmatch '(?m)^Success\s*$') { throw 'INSTALL_NOT_VERIFIED' }
+        $stage = 'INSTALL_PACKAGE_VERIFICATION'
+        $verifiedPackage=Invoke-KRInvalidAdb ($target + @('shell','pm','list','packages','--user','0',$package))
+        if ($verifiedPackage -cne "package:$package") { throw 'INSTALL_PACKAGE_NOT_VERIFIED' }
         $installationStatus = 'VERIFIED'
         $stage = 'OPEN'
         $openResult = Invoke-KRInvalidAdb ($target + @('shell','am','start','-W','-n',"$package/dev.kidremote.child.ChildActivity"))
@@ -102,6 +158,11 @@ function Invoke-KRInvalidCamera([switch]$HostOnly) {
             default { 'OTHER' }
         }
         Write-Output "STOP_STAGE=$stage"; Write-Output "FAILED_CHECK=$reason"; Write-Output "EXCEPTION_CATEGORY=$category"
+        if ($null -ne $script:lastNativeDiagnostic) {
+            Write-Output "NATIVE_EXIT_CODE=$($script:lastNativeDiagnostic.ExitCode)"
+            Write-Output "INSTALL_ERROR_CODE=$($script:lastNativeDiagnostic.InstallCode)"
+            Write-Output "NATIVE_CATEGORY=$($script:lastNativeDiagnostic.Category)"
+        } else { Write-Output 'NATIVE_EXIT_CODE=UNKNOWN'; Write-Output 'NATIVE_CATEGORY=NOT_INVOKED' }
         Write-Output 'RESULT=STOPPED_OR_UNCERTAIN_NO_AUTOMATIC_RETRY'
     }
     finally {

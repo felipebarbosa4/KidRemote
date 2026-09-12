@@ -6,6 +6,53 @@ backend, endpoint change, enforcement, KR-003 operation or AC closure.
 
 ## Retained host startup failure and bounded correction
 
+### Subsequent owner installation attempt — native result boundary
+
+Owner reported `STOP_STAGE=INSTALL_NEW_ONLY`, `FAILED_CHECK=INSTALL_NEW_ONLY`,
+`EXCEPTION_CATEGORY=OTHER`, `INSTALLATION_STATUS=ATTEMPTED_UNVERIFIED` on the next
+attempt. Later owner read-only query: SM-X400, exit0, package installed user0=NO.
+This establishes absence for user0 **at that later query only**, not the historical
+installation error or absence of retained records/other-user installations. Camera
+remains UNRUN. No automatic retry, uninstall or security-setting change follows.
+
+Before correction, repository/deployed bytes matched `b2641ab`, SHA256
+`374dbf525b6ce4a4695142f5b79d61d944d7d9ab8a01d9e1e2e84d688541c275`.
+Retained predecessor: `C:\platform-tools\kr007-physical-invalid-camera.original-374dbf52.ps1`.
+Do not execute either historical script copy.
+
+**Reproduced host defect:** a locally compiled synthetic executable writing informational
+stderr with an exit-zero success path interrupts the exact former `& executable
+@Command 2>&1` wrapper under Windows PowerShell 5.1/Stop. This is a tested possible
+failure mechanism; the owner's historical stderr, completion and installer error
+remain **UNSPECIFIED**. No Samsung Auto Blocker inference is made.
+
+Use the existing repository's redirected .NET Process pattern: stdout/stderr captured
+as separate asynchronous memory-only streams, completed exit code inspected independently.
+Nonempty informational stderr with exit0 is not failure; nonzero exit never passes.
+No raw stream is printed/persisted. Report stage, numeric native exit (or UNKNOWN),
+allowlisted installer error code and safe native category. Unsupported installer
+codes remain `UNRECOGNIZED_INSTALL_CODE`, not serialized arbitrary strings.
+Start failure, timeout, incomplete stream/termination and nonzero exit remain distinct.
+Timeout stops only the host process this invocation started; it cannot prove a
+device-side install transaction was cancelled, so ATTEMPTED_UNVERIFIED forbids automatic retry.
+
+Recheck filtered all-user/retained package absence immediately before installation;
+keep the original earlier check and uppercase -R. Require exit0, explicit standalone
+`Success` and a subsequent exact read-only user0 package-list match before marking
+VERIFIED/opening the app. A missing success response or missing/unverified package
+does not become an installation PASS.
+
+Executed locally on native Windows 5.1: old-wrapper interference reproduced; six
+real native-fixture cases passed (stderr/exit0, rejection exit7 with bounded code,
+missing success, absent executable, incomplete execution/timeout, Windows argument
+quoting); 21 focused orchestration guard cases passed. The fake process is compiled
+with existing Windows .NET compiler in a newly allocated temporary directory and
+removed after tests. No native boundary is mocked in those six tests. Orchestration
+cases are separately labelled fakes, including immediate-absence race and package
+verification failure. Host-only real artifact check passes; APK/QR hashes unchanged.
+PowerShell 7 runs the same cases in existing CI. No ADB invocation, emulator, physical
+installation, APK rebuild or broader test framework is introduced.
+
 Owner output for the first invocation: `STOP_STAGE=LOCAL_ARTIFACTS`,
 `RESULT=STOPPED_OR_UNCERTAIN_NO_AUTOMATIC_RETRY`,
 `NEW_INSTALL_VERIFIED_THIS_INVOCATION=False`. No target prompt appeared.

@@ -136,6 +136,7 @@ jobs:
         shell: powershell
         run: |
           ./tools/kr007/physical-invalid-camera.test.ps1
+          ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/OracleTransport.Tests.ps1
@@ -162,6 +163,7 @@ jobs:
         shell: pwsh
         run: |
           ./tools/kr007/physical-invalid-camera.test.ps1
+          ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
           ./tools/kr003/Runner.Tests.ps1
           ./tools/kr003/PowerShellSafety.Tests.ps1
