@@ -2,6 +2,13 @@
 
 ## KR-007 camera and identity-storage continuation — OD-45
 
+### One owner-operated physical invalid-camera preparation
+
+- **Goal:** prepare the existing verified child APK and nonsecret `{}` QR for one Samsung SM-X400 camera -> decode -> schema rejection check.
+- **Context:** clean `6ab4ba0`; published focused camera evidence remains NOT_PASSED. OD-45 now explicitly permits owner-only physical execution, not agent operation.
+- **Constraints:** no rebuild/new framework/backend/endpoint change; package already present means STOP, no update/data mutation. No KR-003 operation, media/log capture, real enrollment, physical acceptance closure or KR-008. Only manually granted camera access on a new installation.
+- **Done when:** hashes/package/permissions/QR verified, bounded owner commands checked locally, existing decision extended, and handoff stops before all physical operations. [Owner checklist](../test-plans/KR-007-PHYSICAL-INVALID-CAMERA.md) separates observed UI/camera release from read-only identity-file checks and source-derived no-redemption reasoning.
+
 ### Focused invalid-camera boundary pass
 
 - **Goal:** isolate camera open -> analyzer -> conversion -> decode -> schema rejection -> UI for the nonsecret `{}` QR only.
