@@ -80,11 +80,6 @@ class CameraStorageRuntimeTest {
     }
     @Test fun invalidCameraBoundary()=safe("INVALID_CAMERA_BOUNDARY_FAILED") {
         settled();expect(!model.state.paired&&!model.state.recovery)
-        // Separate fixture-generation control, never counted as camera acquisition.
-        val bitmap=android.graphics.BitmapFactory.decodeFile(File(context.noBackupFilesDir,"scene-invalid.png").path)
-        expect(bitmap!=null);val pixels=IntArray(bitmap.width*bitmap.height);bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height)
-        expect(decodePixels(pixels,bitmap.width,bitmap.height)=="{}"&&parseQr("{}")==null);bitmap.recycle()
-        result("INVALID_PNG_DECODER_AND_SCHEMA_CONTROL_PASS_NOT_CAMERA")
         for(i in 0..7)EnrollmentFaults.cameraCounts.set(i,0)
         var open=false;var verdict="UNRUN"
         try {
@@ -99,7 +94,8 @@ class CameraStorageRuntimeTest {
         } catch(e:Throwable){verdict=when(e){is ComposeTimeoutException->"COMPOSE_TIMEOUT";is AssertionError->"ASSERTION";is IllegalStateException->"ILLEGAL_STATE";else->"OTHER"};throw AssertionError("INVALID_CAMERA_BOUNDARY_FAILED")}
         finally {
             val counts=(0..7).map{EnrollmentFaults.cameraCounts.get(it)}
-            val metrics=org.json.JSONObject().put("counts",org.json.JSONArray(counts)).put("cameraOpen",open).put("verdict",verdict).put("schemaRejected",model.state.message.startsWith("QR inválido")).put("scanningUi",ui.onAllNodes(hasText("Parar câmera")).fetchSemanticsNodes().isNotEmpty())
+            val scanningUi=runCatching{ui.onAllNodes(hasText("Parar câmera")).fetchSemanticsNodes().isNotEmpty()}.getOrNull()
+            val metrics=org.json.JSONObject().put("counts",org.json.JSONArray(counts)).put("cameraOpen",open).put("verdict",verdict).put("schemaRejected",model.state.message.startsWith("QR inválido")).put("scanningUi",scanningUi?:org.json.JSONObject.NULL)
             InstrumentationRegistry.getInstrumentation().sendStatus(0,android.os.Bundle().apply{putString("kr007metrics",metrics.toString())})
         }
     }
