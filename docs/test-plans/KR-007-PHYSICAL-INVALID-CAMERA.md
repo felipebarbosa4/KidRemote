@@ -1,8 +1,103 @@
 # KR-007 — one owner-operated invalid-camera check
 
-OD-45 narrow physical extension. **Prepared, physically UNRUN.** Do not repeat the
+OD-45 narrow physical extension. **Historical preparation status: prepared, physically UNRUN.** Do not repeat the
 virtual-scene investigation or historical NOT_PASSED runs. No real enrollment,
 backend, endpoint change, enforcement, KR-003 operation or AC closure.
+
+## Subsequent owner observation — recorded 2026-09-12
+
+This section records subsequent chat evidence, without rewriting preparation-time
+UNRUN or prior results. Exact physical event timestamps are **UNSPECIFIED**; this
+heading is the documentation date, not a fabricated scan timestamp.
+
+After explicitly authorizing one additional framing attempt in the existing
+installation, the owner reports using **Escanear QR do responsável inside KidRemote**
+on the Samsung SM-X400. The scanner closed and the owner transcribed:
+**“QR inválido. Use apenas o QR do responsável neste ambiente.”**
+This supports an **OWNER_REPORTED camera-triggered invalid-QR acquisition/rejection
+observation**. It is not an instrumented full diagnostic PASS.
+
+| Fact / boundary | Retained classification |
+| --- | --- |
+| KidRemote invalid message after the additional in-app camera attempt | OWNER_REPORTED |
+| Samsung stock Camera recognizing `{}` | Separate owner observation; not KidRemote decoder evidence |
+| Earlier KidRemote attempt remaining in scanning UI | INCONCLUSIVE; preserved |
+| Two later installer script stops at PACKAGE_ABSENCE | Each separately retained: exit0, INSTALL_ERROR_CODE=NONE, NATIVE_CATEGORY=NONE, GUARD_OR_RUNTIME, NOT_ATTEMPTED; neither ran the camera check |
+| Cable disconnection and incomplete scripted post-check | Owner-reported interruption; no completed runner verdict retained |
+| Identity/pending-file post-check | NOT_COMPLETED |
+| Installed APK source/hash | UNVERIFIED; host artifact hash is not an installed-artifact readback |
+| CameraX release / measured active-camera indicator | NOT_VERIFIED; final “ok” acknowledges the instruction only |
+| Valid physical pairing | NOT_TESTED |
+| Full scripted diagnostic | NOT_COMPLETED; do not emit `OWNER_OBSERVED_INVALID_QR_WITH_EMPTY_LOCAL_IDENTITY` |
+
+The owner transcript's two PACKAGE_ABSENCE stops do not establish the APK version
+or its exact installed bytes. A prior later query reporting user0 absent likewise
+does not establish the state during this scan. Targeted inspection of the existing
+owner-local runtime directory found only earlier emulator result JSON files, no
+new sanitized physical installation/hash/post-state record. No raw logs, device
+inventory or media were inspected to fill that gap.
+
+**INFERRED only:** the observed message is consistent with the reviewed application's
+invalid-schema branch. Its no-redemption-before-validation reasoning remains
+conditional on binary provenance; there is no physical network measurement.
+The emulator NOT_PASSED result and virtual-scene cause remain unchanged/UNSPECIFIED.
+AC-2/3/4 remain partial; AC-6/7 and outstanding physical/OEM checks remain pending.
+
+### Only remaining owner command — later read-only state
+
+Do **not** run the installer or repeat the scan. This block only loads the checked
+existing native transport helper (dot-sourcing does not invoke its camera/installer
+entrypoint). Connect only the authorized Samsung, then paste the entire block into
+Windows PowerShell. Nothing is installed, launched, granted, deleted or written on
+the device. No KR-003 interaction. Target identifiers, paths and raw outputs remain
+in memory. Return only its sanitized output. Unknown/mismatch stops; no remediation.
+
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  try {
+    $helper = 'C:\platform-tools\kr007-physical-invalid-camera.ps1'
+    if ((Get-FileHash -LiteralPath $helper -Algorithm SHA256).Hash -ne '0c7270874869371f3411492da9c2a4dea07a3f47d5c8f836c3dc418f26187ea0') { throw 'HELPER' }
+    . $helper
+    if ($env:ADB_TRACE -or $env:ADB_SERVER_SOCKET -or $env:ANDROID_ADB_SERVER_PORT) { throw 'ENVIRONMENT' }
+    if ((Read-Host 'Somente Samsung SM-X400 conectado por USB? Digite SM-X400 para leitura sem alteracoes') -cne 'SM-X400') { throw 'STOP' }
+    $rows = @( (Invoke-KRInvalidAdb @('devices')) -split "`r?`n" | Where-Object { $_.Trim() -and $_ -notmatch '^List of devices attached' })
+    if ($rows.Count -ne 1 -or $rows[0] -notmatch '^([A-Za-z0-9]+)\s+device$') { throw 'TARGET' }
+    $target = @('-s', $Matches[1])
+    foreach ($check in @(@('ro.product.manufacturer','samsung'),@('ro.product.model','SM-X400'),@('ro.build.version.sdk','36'),@('ro.build.version.release','16'))) {
+      if ((Invoke-KRInvalidAdb ($target + @('shell','getprop',$check[0]))) -ine $check[1]) { throw 'TARGET' }
+    }
+    if ((Invoke-KRInvalidAdb ($target + @('shell','am','get-current-user'))) -ne '0') { throw 'USER' }
+    Write-Output 'TARGET=samsung/SM-X400/Android16/API36'
+    $pkg = 'dev.kidremote.child.unassigned.debug'
+    if ((Invoke-KRInvalidAdb ($target + @('shell','pm','list','packages','--user','0',$pkg))) -cne "package:$pkg") { throw 'PACKAGE' }
+    Write-Output 'PACKAGE_INSTALLED_USER0=YES'
+    $paths = @( (Invoke-KRInvalidAdb ($target + @('shell','pm','path','--user','0',$pkg))) -split "`r?`n" )
+    if ($paths.Count -ne 1 -or $paths[0] -notmatch '^package:(/data/app/[A-Za-z0-9_./+=~-]+/base\.apk)$') { throw 'APK_PATH_UNKNOWN' }
+    $apkPath = $Matches[1]
+    $digest = Invoke-KRInvalidAdb ($target + @('shell','sha256sum',$apkPath))
+    if ($digest -notmatch '^([a-fA-F0-9]{64})\s+') { throw 'APK_HASH_UNKNOWN' }
+    $installedHash = $Matches[1].ToLowerInvariant()
+    Write-Output "INSTALLED_APK_SHA256=$installedHash"
+    if ($installedHash -ne '3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9') { throw 'APK_MISMATCH' }
+    Write-Output 'CURRENT_APK_PROVENANCE=MATCHES_VERIFIED_14d82db'
+    $probe = '"if [ ! -d no_backup ]; then exit 4; fi; if [ -e no_backup/device-identity ]; then echo IDENTITY=PRESENT; else echo IDENTITY=ABSENT; fi; if [ -e no_backup/pairing-pending ]; then echo PENDING=PRESENT; else echo PENDING=ABSENT; fi"'
+    $bits = Invoke-KRInvalidAdb ($target + @('shell','run-as',$pkg,'sh','-c',$probe))
+    if ($bits -notmatch '^IDENTITY=(PRESENT|ABSENT)\r?\nPENDING=(PRESENT|ABSENT)$') { throw 'STATE_UNKNOWN' }
+    Write-Output $bits
+    Write-Output ('READBACK_UTC=' + [DateTime]::UtcNow.ToString('o'))
+    Write-Output 'SCOPE=LATER_STATE_ONLY_NOT_SCAN_BEFORE_AFTER'
+  } catch { Write-Output 'READBACK=INCOMPLETE_OR_MISMATCH_STOP_NO_CHANGES' }
+}
+```
+
+An APK hash match would verify the **current** installed monolithic APK against the
+known host artifact. It would not retrospectively prove which bytes were running at
+the earlier scan. If hash access/shell hashing is unavailable, provenance remains
+UNVERIFIED and this block stops without bypass or copying secret app data. The two
+file results concern existence at readback time only, not contents, credential validity,
+network activity, camera release or contemporaneous scan before/after state. No
+automatic combined PASS or AC promotion follows from that later readback.
 
 ## Retained host startup failure and bounded correction
 
