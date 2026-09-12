@@ -52,16 +52,18 @@ class ChildActivity:ComponentActivity() {
                 val preview=Preview.Builder().build().also{it.surfaceProvider=view.surfaceProvider}
                 val analysis=ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build()
                 analysis.setAnalyzer(analyzer){image->
+                    EnrollmentFaults.cameraStage(1)
                     try {
                         val w=image.width;val h=image.height
                         if(w<=1920&&h<=1920){val p=image.planes[0]
                             val decoded=decodeLuma(p.buffer,w,h,p.rowStride,p.pixelStride)
-                            if(decoded!=null)runOnUiThread {if(scanning){stopCamera();model.decoded(decoded)}}
+                            if(decoded!=null){EnrollmentFaults.cameraStage(3);runOnUiThread {if(scanning){EnrollmentFaults.cameraStage(4);stopCamera();model.decoded(decoded)}}}
                         }
                     }catch(_:Exception){/* discard unrecognized frame, never persist it */}finally{image.close()}
                 }
                 provider.bindToLifecycle(this,CameraSelector.DEFAULT_BACK_CAMERA,preview,analysis)
-            }catch(_:Exception){stopCamera();cameraMessage="Câmera indisponível. Nenhum pareamento foi confirmado."}
+                EnrollmentFaults.cameraStage(0)
+            }catch(_:Exception){EnrollmentFaults.cameraStage(6);stopCamera();cameraMessage="Câmera indisponível. Nenhum pareamento foi confirmado."}
         },ContextCompat.getMainExecutor(this))
     }
     private fun stopCamera(){scanning=false;camera?.unbindAll()}

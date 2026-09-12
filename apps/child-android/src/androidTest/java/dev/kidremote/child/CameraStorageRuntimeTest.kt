@@ -78,6 +78,31 @@ class CameraStorageRuntimeTest {
         expect(!model.state.paired&&!IdentityStore(context).file.exists()&&!IdentityStore(context).pending.exists())
         result("ACTUAL_CAMERA_INVALID_QR_NO_IDENTITY_PASS")
     }
+    @Test fun invalidCameraBoundary()=safe("INVALID_CAMERA_BOUNDARY_FAILED") {
+        settled();expect(!model.state.paired&&!model.state.recovery)
+        // Separate fixture-generation control, never counted as camera acquisition.
+        val bitmap=android.graphics.BitmapFactory.decodeFile(File(context.noBackupFilesDir,"scene-invalid.png").path)
+        expect(bitmap!=null);val pixels=IntArray(bitmap.width*bitmap.height);bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height)
+        expect(decodePixels(pixels,bitmap.width,bitmap.height)=="{}"&&parseQr("{}")==null);bitmap.recycle()
+        result("INVALID_PNG_DECODER_AND_SCHEMA_CONTROL_PASS_NOT_CAMERA")
+        for(i in 0..7)EnrollmentFaults.cameraCounts.set(i,0)
+        var open=false;var verdict="UNRUN"
+        try {
+            CameraProbe().use{camera->
+                scan();if(context.checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED)permissionButton("permission_allow_foreground_only_button")
+                camera.waitFor(false);open=true;result("CAMERA_OPEN_OBSERVED")
+                ui.waitUntil(45000){model.state.message.startsWith("QR inválido")&&!model.state.loading}
+                expect(!model.state.paired&&!IdentityStore(context).file.exists()&&!IdentityStore(context).pending.exists())
+                ui.onNodeWithText("QR inválido. Use apenas o QR do responsável neste ambiente.").assertIsDisplayed()
+                verdict="REJECTED_IN_UI";result("ACTUAL_CAMERA_INVALID_QR_NO_IDENTITY_PASS")
+            }
+        } catch(e:Throwable){verdict=when(e){is ComposeTimeoutException->"COMPOSE_TIMEOUT";is AssertionError->"ASSERTION";is IllegalStateException->"ILLEGAL_STATE";else->"OTHER"};throw AssertionError("INVALID_CAMERA_BOUNDARY_FAILED")}
+        finally {
+            val counts=(0..7).map{EnrollmentFaults.cameraCounts.get(it)}
+            val metrics=org.json.JSONObject().put("counts",org.json.JSONArray(counts)).put("cameraOpen",open).put("verdict",verdict).put("schemaRejected",model.state.message.startsWith("QR inválido")).put("scanningUi",ui.onAllNodes(hasText("Parar câmera")).fetchSemanticsNodes().isNotEmpty())
+            InstrumentationRegistry.getInstrumentation().sendStatus(0,android.os.Bundle().apply{putString("kr007metrics",metrics.toString())})
+        }
+    }
     @Test fun validCameraQr()=safe("VALID_VIRTUAL_CAMERA_QR_FAILED") {
         scan();paired();val first=IdentityStore(context).read()!!
         CameraProbe().use{it.waitFor(true)};Thread.sleep(2000)

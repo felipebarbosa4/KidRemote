@@ -112,7 +112,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
     }
     fun decoded(text:String)=run {
         check(store.read()==null&&!store.pending.exists())
-        val qr=parseQr(text)?:return@run EnrollmentState(message="QR inválido. Use apenas o QR do responsável neste ambiente.")
+        val qr=parseQr(text)?:return@run EnrollmentState(message="QR inválido. Use apenas o QR do responsável neste ambiente.").also{EnrollmentFaults.cameraStage(5)}
         // Durable uncertainty boundary BEFORE HTTP. Never auto-replay on restart/response loss.
         val marker=android.util.AtomicFile(store.pending);val out=marker.startWrite();try{out.write(byteArrayOf(1));marker.finishWrite(out)}catch(e:Exception){marker.failWrite(out);throw e}
         val identity=api.redeem(qr);check(identity.getString("result")=="REDEEMED")

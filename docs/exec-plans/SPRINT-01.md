@@ -2,6 +2,13 @@
 
 ## KR-007 camera and identity-storage continuation — OD-45
 
+### Focused invalid-camera boundary pass
+
+- **Goal:** isolate camera open -> analyzer -> conversion -> decode -> schema rejection -> UI for the nonsecret `{}` QR only.
+- **Context:** clean `ee4c997`, PR #20; historical 23 PASS/one failed attempt and APKs remain unchanged. OD-45 already authorizes this diagnosis; no new decision.
+- **Constraints:** approximately 20 minutes of acquisition investigation excluding builds/CI, one owned AVD, no backend unless this control passes; memory-only debug counters, no frames/payload/exception retention, webcam, pose invention or capture analysis.
+- **Done when:** a focused executed pass identifies the last established boundary and any reproduced defect is fixed/tested, or the unresolved boundary is retained with one proposed future physical check (not executed). No full storage rerun or wider scope.
+
 - **Goal:** execute actual virtual-camera/permission and Keystore failure tests; fix reproduced defects only.
 - **Context:** clean `c9843000e8ec0586a20a532e3c9e70a972a1b64e`, existing draft PR #20 stacked on #19; preserve exercised `fb52936` APKs and all prior results. Initial-read gateway uses real DB storage.
 - **Constraints:** same owned Windows AVD and synthetic local services; no webcam/physical target, frame retention/upload, general camera simulator, enforcement, rotation/removal expansion or next issue. Generated scene images remain local. Original APKs untouched.

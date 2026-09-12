@@ -25,6 +25,7 @@ for(const variant of ['debug','release']){
  if(/GOTRUE_JWT_SECRET|service_role|POSTGRES_PASSWORD|LabControlReceiver|UsageStatsManager|DeviceAdminReceiver|MediaProjectionManager/.test(dex))throw Error('CHILD_PRIVILEGE_ISOLATION');
  if(variant==='release'&&/http:\/\/(?:10\.0\.2\.2|127\.0\.0\.1)/.test(dex))throw Error('CHILD_RELEASE_LAB_ENDPOINT');
  if(variant==='release'&&/setBeforeIdentitySave|INJECTED_RESPONSE_LOSS/.test(dex))throw Error('CHILD_RELEASE_TEST_FAULT');
+ if(variant==='release'&&/cameraCounts|getCameraCounts/.test(dex))throw Error('CHILD_RELEASE_CAMERA_COUNTERS');
  console.log('CHILD_APK_'+variant.toUpperCase()+'_SHA256='+createHash('sha256').update(readFileSync(apk)).digest('hex'));
 }
 console.log('CHILD_JVM_TESTS_PASS='+count);
