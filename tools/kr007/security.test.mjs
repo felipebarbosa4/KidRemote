@@ -35,6 +35,19 @@ test('camera continuation uses native virtual scene and platform permission UI, 
  const start=read('tools/kr006/windows-emulator.ps1');assert.match(start,/'-camera-back','virtualscene','-camera-front','none'/);
 });
 import {backupResourcePath} from './backup-resource.mjs';
+test('camera boundary counters are content-free and release has no counter storage',()=>{
+ const debug=read('apps/child-android/src/debug/java/dev/kidremote/child/EnrollmentFaults.kt');
+ const release=read('apps/child-android/src/release/java/dev/kidremote/child/EnrollmentFaults.kt');
+ assert.match(debug,/AtomicIntegerArray\(8\)/);assert.match(debug,/cameraStage\(stage:Int\)/);
+ assert.doesNotMatch(debug,/String|Bitmap|ByteArray|File|Log\./);
+ assert.doesNotMatch(release,/AtomicInteger|cameraCounts/);
+ assert.match(release,/inline fun cameraStage/);
+ const fixture=read('apps/child-android/src/androidTest/java/dev/kidremote/child/InvalidQrFixtureTest.kt');
+ assert.match(fixture,/NOT_CAMERA/);assert.doesNotMatch(fixture,/model\.decoded|EnrollmentApi|CameraManager/);
+ const boundary=read('apps/child-android/src/androidTest/java/dev/kidremote/child/CameraStorageRuntimeTest.kt');
+ assert.match(boundary,/COMPOSE_TIMEOUT/);assert.match(boundary,/kr007metrics/);
+ assert.doesNotMatch(boundary,/printStackTrace|\be\.message|\be\.toString/);
+});
 test('packaged backup audit resolves optimized release paths and rejects missing or ambiguous resources',()=>{
  for(const path of ['res/xml/backup_rules.xml','res/a1.xml'])assert.equal(backupResourcePath(`    resource 0x7f0e0000 xml/backup_rules\n      () (file) ${path} type=XML\n`,'backup_rules'),path);
  assert.throws(()=>backupResourcePath('','backup_rules'));
