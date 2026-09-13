@@ -7,6 +7,8 @@
 - **Constraints:** owned emulator; same-signature lab APK v1→v2; no clear/uninstall inside the update window; no core redesign, physical execution, sync/receipts or enforcement. Preserve each attempt separately.
 - **Done when:** pre/post APK source/hash identities, real update/restart/migration/death/refusal results and remaining physical/KR-009 gaps are recorded; CI passes; Issue #8 / PR #21 synchronized.
 
+**Executed local result:** [update evidence](../test-plans/evidence/KR-008-UPDATE-2026-09-13.md): two actual v1→v2 replacements, 12 normal Android checks, two expected downgrade refusals and one deliberate migration death passed. Full aggregate/identity equality, transactional rollback and one committed migration with no replay observed. Code `8c4b2f7` CI passed; earlier failed/cancelled CI attempts are preserved. Local AC-2 persistence demonstrated except KR-009 receipts; physical/OEM acceptance remains open.
+
 ## KR-008 local accounting — OD-46
 
 - **Goal:** a persisted local reducer implements approved accounting/period/version semantics without double counting or free recovery allowance.
