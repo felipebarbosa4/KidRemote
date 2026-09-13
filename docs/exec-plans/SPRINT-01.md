@@ -7,6 +7,8 @@
 - **Constraints:** canonical inputs through a local interface only; one aggregate ledger bound to existing identity/epoch; no per-package persistence, network sync/receipts, enforcement or physical device. No reinterpretation of KR-007 evidence.
 - **Done when:** controlled domain fixtures, actual Room transaction/migration/crash and owned-emulator results are retained with OBSERVED/INFERRED/UNSPECIFIED labels; CI passes; remaining physical/battery/KR-009 gaps stay explicit and Issue #8/new draft PR synchronized.
 
+**Local result:** [classified KR-008 evidence](../test-plans/evidence/KR-008-LOCAL-2026-09-13.md): 29 accounting domain tests, actual Room migration/transaction/failure and two separately retained emulator attempts pass. Eight normal stages plus two deliberate process kills per attempt; final code `eea8d6a`. Draft PR #21 targets KR-007. Issue #8 remains open: physical AC-4, battery/OEM/history correctness, authorized recovery, real app updates and KR-009 receipts/convergence are not accepted.
+
 ## KR-007 camera and identity-storage continuation — OD-45
 
 ### AC-7 local removal — OD-45, 2026-09-13
