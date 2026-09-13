@@ -37,7 +37,8 @@ Its fixed response is `kind=ENROLLMENT_BOOTSTRAP`, protocol_version, device_id,
 policy_epoch, version, policy_configured=false, daily_limit_seconds=null, manual_lock
 and enforcement_available=false. Values come from a single locked DB transaction;
 this is **not** the full synchronization contract below. Configured-policy reads,
-ack/push/rotation routes remain unsupported in the local enrollment gateway, not stubbed.
+ack/push routes remain unsupported in the local enrollment gateway, not stubbed.
+The AC-6 extension below implements local credential rotation.
 No device-state report/online/healthy status is created from this initial read alone.
 
 ```json

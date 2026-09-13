@@ -46,13 +46,13 @@ class ParentRuntimeTest {
     }
     private fun mail(email: String, type: String): String {
         repeat(30) {
-            val messages=JSONObject(get("57365/api/v1/messages")).getJSONArray("messages")
+            val messages=JSONObject(get("47365/api/v1/messages")).getJSONArray("messages")
             for(i in 0 until messages.length()) {
                 val m=messages.getJSONObject(i)
                 if(!m.getJSONArray("To").toString().contains(email)) continue
-                val detail=JSONObject(get("57365/api/v1/message/"+m.getString("ID")))
+                val detail=JSONObject(get("47365/api/v1/message/"+m.getString("ID")))
                 val content=detail.optString("Text")+detail.optString("HTML")
-                val link=Regex("http://127\\.0\\.0\\.1:57361/verify\\?[^\\s\"<>]+").find(content)?.value?.replace("&amp;","&")
+                val link=Regex("http://127\\.0\\.0\\.1:47361/verify\\?[^\\s\"<>]+").find(content)?.value?.replace("&amp;","&")
                 if(link!=null && emailAction(link,type,BackendConfig.emailOrigin)!=null) return link
             }
             Thread.sleep(1000)
@@ -67,7 +67,7 @@ class ParentRuntimeTest {
         checkThat(SessionVault(target).read()==null,"SESSION_CREDENTIAL_REMAINS")
     }
     @Test fun enrollAndPersist() = safe("ENROLLMENT_RUNTIME_FAILED") {
-        get("57361/health");get("57362/");get("57365/api/v1/messages");result("EMULATOR_BACKEND_CONNECTIVITY_PASS")
+        get("47361/health");get("47362/");get("47365/api/v1/messages");result("EMULATOR_BACKEND_CONNECTIVITY_PASS")
         checkThat(!fixture.exists(),"FRESH_FIXTURE_REQUIRED")
         val email="kr006-runtime-"+UUID.randomUUID()+"@example.test"
         val pass="Kr6!"+UUID.randomUUID();val next="Kr6!"+UUID.randomUUID()
@@ -108,7 +108,7 @@ class ParentRuntimeTest {
     }
     @Test fun httpFailureIsRetryable() = safe("HTTP_RETRY_CLASSIFICATION_FAILED") {
         var rejected=false
-        try{get("57362/kr007_absent_test_resource")}catch(e:java.io.IOException){rejected=e.message=="LOCAL_HTTP_UNAVAILABLE"}
+        try{get("47362/kr007_absent_test_resource")}catch(e:java.io.IOException){rejected=e.message=="LOCAL_HTTP_UNAVAILABLE"}
         checkThat(rejected,"NON_SUCCESS_HTTP_NOT_REJECTED")
         result("HTTP_NON_SUCCESS_IS_RETRYABLE_PASS")
     }
@@ -117,7 +117,7 @@ class ParentRuntimeTest {
         waitText("Não foi possível concluir. Verifique os dados ou tente novamente.");result("ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS")
         File(target.filesDir,"kr006-restore-rest").writeText("RESTORE")
         var ready=false
-        repeat(45) { if(!ready) { try { get("57362/");ready=true } catch(_:Exception){Thread.sleep(1000)} } }
+        repeat(45) { if(!ready) { try { get("47362/");ready=true } catch(_:Exception){Thread.sleep(1000)} } }
         checkThat(ready,"REST_NOT_RESTORED");result("REST_HTTP_READY_AFTER_OUTAGE");emptyList();result("NETWORK_RECOVERY_SAME_PROCESS_PASS")
         click("Sair e limpar dados locais");waitText("Entrar");cleared()
         checkThat(fixture.delete(),"TEST_FIXTURE_CLEANUP_FAILED");File(target.filesDir,"kr006-restore-rest").delete()

@@ -14,7 +14,7 @@ export async function testEnrollment({http,sql}) {
  const parent=q=>sql(`set role authenticated;set "request.jwt.claim.sub"='${id}';${q}`);
  const create=()=>createPairing({create:async d=>JSON.parse(parent(`select public.create_pairing(decode('${d}','hex'));`))});
  const finish=(sid,revoke=false)=>JSON.parse(parent(`select public.finish_pairing('${sid}',${revoke});`));
- const send=async(path,body,bearer)=>{const r=await http('http://127.0.0.1:57366'+path,'POST',body,bearer?{authorization:'Bearer '+bearer}:{});return {...r,json:JSON.parse(r.body||'{}')};};
+ const send=async(path,body,bearer)=>{const r=await http('http://127.0.0.1:47366'+path,'POST',body,bearer?{authorization:'Bearer '+bearer}:{});return {...r,json:JSON.parse(r.body||'{}')};};
  const metadata={platform:'android',os_major:16,agent_version:'kr007-synthetic',nickname:'fixture'};
  const q=await create();ok(q.result==='CREATED','REAL_SQL_CREATE');
  const r=await send('/pairing/redeem',{qr:q.qr,metadata});ok(r.status===200,'REAL_HTTP_REDEMPTION');
@@ -50,6 +50,6 @@ export async function testEnrollment({http,sql}) {
  const stored=sql('select row_to_json(c) from private.device_credentials c;select row_to_json(s) from private.pairing_sessions s;');
  ok(!stored.includes(credential)&&!stored.includes(q.qr.token),'NO_STORED_PLAINTEXT');
  ok(stored.includes('\\x'+secretDigest(credential)),'DIGEST_STORED');
- ok((await http('http://127.0.0.1:57362/devices?select=id','GET',undefined,{authorization:'Bearer '+credential})).status===401,'DEVICE_NOT_DATA_API_PARENT');
+ ok((await http('http://127.0.0.1:47362/devices?select=id','GET',undefined,{authorization:'Bearer '+credential})).status===401,'DEVICE_NOT_DATA_API_PARENT');
  console.log('REAL_ENROLLMENT_HTTP_DB_PASS:assertions='+count+':parentCreationFixture=SQL_ROLE:deviceRead=REAL_TRANSACTION');
 }

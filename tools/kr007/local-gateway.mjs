@@ -46,12 +46,12 @@ async function start(c) {
     if(n>2)response=reply(400,{result:'INVALID'});
     else {
      const authorization=req.headers.authorization??'';
-     const verified=await fetch('http://127.0.0.1:57361/user',{headers:{authorization},signal:AbortSignal.timeout(5000)});
+     const verified=await fetch('http://127.0.0.1:47361/user',{headers:{authorization},signal:AbortSignal.timeout(5000)});
      const user=verified.ok?await verified.json():null;
      if(!user?.email_confirmed_at)response=reply(401,{result:'DENIED'});
      else {
       const result=await createPairing({create:async digest=>{
-       const r=await fetch('http://127.0.0.1:57362/rpc/create_pairing',{method:'POST',headers:{authorization,'content-type':'application/json'},body:JSON.stringify({p_token_digest:'\\x'+digest}),signal:AbortSignal.timeout(5000)});
+       const r=await fetch('http://127.0.0.1:47362/rpc/create_pairing',{method:'POST',headers:{authorization,'content-type':'application/json'},body:JSON.stringify({p_token_digest:'\\x'+digest}),signal:AbortSignal.timeout(5000)});
        if(!r.ok)throw Error('PARENT_RPC_DENIED');return r.json();
       }});
       response=reply(result.result==='CREATED'?200:result.result==='RATE_LIMITED'?429:403,result);
@@ -64,7 +64,7 @@ async function start(c) {
    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));
   } catch {res.writeHead(503,{'content-type':'application/json','cache-control':'no-store'});res.end('{"result":"UNAVAILABLE"}');}
  });
- await new Promise((ok,no)=>{server.once('error',no);server.listen(57366,'127.0.0.1',ok);});
+ await new Promise((ok,no)=>{server.once('error',no);server.listen(47366,'127.0.0.1',ok);});
  console.log('LOCAL_ENROLLMENT_GATEWAY_READY');
  for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(()=>process.exit()));
 }

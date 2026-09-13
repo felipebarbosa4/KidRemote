@@ -11,7 +11,7 @@ test('runtime host always selects fixed emulator and verifies AVD plus qemu befo
 });
 test('actual test uses Compose activity and local mail, never fabricated auth/state',()=>{
  assert.match(device,/createAndroidComposeRule<MainActivity>/);
- assert.match(device,/57365\/api\/v1\/message/);assert.match(device,/UUID.randomUUID/);
+ assert.match(device,/47365\/api\/v1\/message/);assert.match(device,/UUID.randomUUID/);
  assert.doesNotMatch(device,/setContent|model\.(login|setup)|mock|\/admin\/|email_confirmed_at\s*=/i);
  assert.match(device,/PROCESS_DID_NOT_RESTART/);assert.match(device,/SESSION_KEY_REMAINS/);
 });

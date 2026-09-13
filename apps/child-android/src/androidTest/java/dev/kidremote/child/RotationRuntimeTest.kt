@@ -62,4 +62,18 @@ class RotationRuntimeTest {
             checkSafe(store.read()!=null);result("ACTUAL_BACKEND_OUTAGE_ENCRYPTED_IDENTITY_UNCHANGED_PASS")
         }
     }
+    private fun deniedRetains(expected:String) {
+        val before=store.file.readBytes();val identity=store.read()!!
+        var denied=false
+        try{EnrollmentApi().contact(store,identity)}catch(e:SecurityException){denied=e.message==expected}
+        checkSafe(denied)
+        ActivityScenario.launch(ChildActivity::class.java).use {
+            Thread.sleep(12000)
+            checkSafe(before.contentEquals(store.file.readBytes())&&store.read()!=null)
+            result(if(expected=="CREDENTIAL_REJECTED")"EXPIRED_REAL_HTTP_DENIED_IDENTITY_RETAINED_PASS" else "REVOKED_REAL_HTTP_DENIED_IDENTITY_RETAINED_PASS")
+        }
+    }
+    @Test fun expiredRetains()=safe{deniedRetains("CREDENTIAL_REJECTED")}
+    @Test fun revokedRetains()=safe{deniedRetains("DEVICE_REVOKED")}
+
 }

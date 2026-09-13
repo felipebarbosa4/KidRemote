@@ -19,7 +19,7 @@ for(const variant of ['debug','release']) {
  const dex=execFileSync('unzip',['-p',apk,'classes*.dex'],{maxBuffer:128*1024*1024});
  for(const marker of ['GOTRUE_JWT_SECRET','service_role','supabase_auth_admin','POSTGRES_PASSWORD','LabControlReceiver'])
   check(!dex.includes(Buffer.from(marker)),'PARENT_PRIVILEGED_CODE_IN_APK');
- if(variant==='release') for(const marker of ['10.0.2.2:57361','10.0.2.2:57362','127.0.0.1:57361'])
+ if(variant==='release') for(const marker of ['10.0.2.2:47361','10.0.2.2:47362','127.0.0.1:47361'])
   check(!dex.includes(Buffer.from(marker)),'RELEASE_LOCAL_ENDPOINT');
  console.log('PARENT_APK_'+variant.toUpperCase()+'_SHA256='+createHash('sha256').update(readFileSync(apk)).digest('hex'));
 }

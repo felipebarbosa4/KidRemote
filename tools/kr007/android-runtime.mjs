@@ -40,6 +40,10 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
  for(const method of ['loseBegin','loseConfirm']) {
   ageCurrent();const before=Number(rotations());await stage(child,'dev.kidremote.child.RotationRuntimeTest',method);
   if(Number(rotations())!==before+1)throw Error('ROTATION_NOT_REAL_COMMIT');
+  if(method==='loseBegin') {
+   await gatewayAvailable(false);
+   try{await stage(child,'dev.kidremote.child.RotationRuntimeTest','outageRetains');}finally{await gatewayAvailable(true);}
+  }
   await stage(child,'dev.kidremote.child.RotationRuntimeTest','restartPending');
   if(Number(rotations())!==before+1)throw Error('ROTATION_RESTART_DUPLICATED_GENERATION');
  }
@@ -60,5 +64,13 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','recoverWithFreshQr');
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','restartAndNegatives');
  evidence.interruptedCommitRecovery='ACTUAL_COMMIT_TEST_FAULT_BEFORE_PERSIST_REVOKE_FRESH_QR';
+
  if(cameraStorage){const {exerciseCameraStorage}=await import('./camera-storage-runtime.mjs');await exerciseCameraStorage({command,run,guard,dir,windowsPath,app,child,evidence,sql,installFresh,stage,apkDirectory,gatewayAvailable});}
+
+ // Final synthetic identity: no valid credential may be revived by app contact.
+ sql("update private.device_credentials c set expires_at=clock_timestamp() from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where c.device_id=d.id and c.revoked_at is null and u.email like 'kr006-runtime-%@example.test';");
+ await stage(child,'dev.kidremote.child.RotationRuntimeTest','expiredRetains');
+ sql("update public.devices d set revoked_at=clock_timestamp() from public.household_members m join auth.users u on u.id=m.user_id where m.household_id=d.household_id and u.email like 'kr006-runtime-%@example.test';");
+ await stage(child,'dev.kidremote.child.RotationRuntimeTest','revokedRetains');
+ evidence.expiredRevoked='ACTUAL_APP_HTTP_DENIAL_ENCRYPTED_IDENTITY_RETAINED';
 }

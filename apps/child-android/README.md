@@ -15,7 +15,7 @@ to the lifecycle, closes each ImageProxy and stops on pause. No frame retention/
 gallery permission or background camera feature. See [ZXing](https://github.com/zxing/zxing/releases)
 and [CameraX analysis](https://developer.android.com/media/camera/camerax/analyze).
 
-Only the fixed debug endpoint `10.0.2.2:57366` is cleartext-enabled; release has no
+Only the fixed debug endpoint `10.0.2.2:47366` is cleartext-enabled; release has no
 endpoint. Credential bytes use AndroidKeyStore AES-GCM + AtomicFile/noBackupFilesDir,
 with cloud/transfer exclusions. A durable nonsecret pending marker precedes redemption:
 uncertain outcome cannot auto-replay; parent must verify/revoke incomplete pairing and
@@ -36,8 +36,8 @@ scoped cleanup; no pre-existing database is reset):
 node tools/kr004/test-local-db.mjs '/mnt/c/Users/3feli/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe' 'npipe:////./pipe/dockerDesktopLinuxEngine' --enrollment-dev
 ```
 
-This adds the loopback-only Node gateway on 57366 to the existing Auth/PostgREST/mail
-ports 57361/57362/57365. The debug apps use Android emulator host alias `10.0.2.2`.
+This adds the loopback-only Node gateway on 47366 to the existing Auth/PostgREST/mail
+ports 47361/47362/47365. The debug apps use Android emulator host alias `10.0.2.2`.
 Use the existing [owned emulator startup](../parent-mobile/README.md#verified-windows-emulator-integration).
 Do not operate another AVD or a physical device. Download the four APK artifacts from
 the tested PR #20 CI source into the owned task directory's **apks-kr007/**, keeping

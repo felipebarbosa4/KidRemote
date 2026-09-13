@@ -50,7 +50,7 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
 
       if (url.pathname === '/device/credentials/rotate') {
         const keys=body.phase==='BEGIN'?['protocol_version','operation_id','phase','new_credential']:['protocol_version','operation_id','phase'];
-        if(!exact(body,keys)||!UUID.test(body.operation_id)||!['BEGIN','CONFIRM','STATUS'].includes(body.phase))return reply(400,'INVALID_PAYLOAD');
+        if(!exact(body,keys)||typeof body.operation_id!=='string'||!UUID.test(body.operation_id)||!['BEGIN','CONFIRM','STATUS'].includes(body.phase))return reply(400,'INVALID_PAYLOAD');
         let next=null;
         if(body.phase==='BEGIN') {
           if(typeof body.new_credential!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(body.new_credential)||Buffer.from(body.new_credential,'base64url').toString('base64url')!==body.new_credential)return reply(400,'INVALID_PAYLOAD');

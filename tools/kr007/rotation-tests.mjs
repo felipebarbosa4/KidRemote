@@ -11,10 +11,13 @@ export async function testRotation({http,sql}) {
    insert into private.device_credentials(credential_id,device_id,secret_digest,created_at,expires_at,generation) values(gen_random_uuid(),'${id}',decode('${credentialDigest(old)}','hex'),clock_timestamp()-interval '30 days',clock_timestamp()+interval '60 days',1);`);
   return {id,epoch,old,next,op};
  }
- const send=async(path,body,secret)=>{const r=await http('http://127.0.0.1:57366'+path,'POST',body,{authorization:'Bearer '+secret});return {status:r.status,body:JSON.parse(r.body||'{}')};};
+ const send=async(path,body,secret)=>{const r=await http('http://127.0.0.1:47366'+path,'POST',body,{authorization:'Bearer '+secret});return {status:r.status,body:JSON.parse(r.body||'{}')};};
  const rotate=(f,phase,secret=phase==='BEGIN'?f.old:f.next,extra={})=>send('/device/credentials/rotate',{protocol_version:1,operation_id:f.op,phase,...(phase==='BEGIN'?{new_credential:f.next}:{}),...extra},secret);
  const read=s=>send('/device/sync',{protocol_version:1,after_version:0},s);
  const f=fixture();const before=await read(f.old);ok(before.status===200&&before.body.credential_lifecycle.rotation_due,'SERVER_DUE_DAY30');
+ ok((await rotate(f,'BEGIN',f.old,{operation_id:[f.op]})).status===400,'OPERATION_ID_NOT_COERCED');
+ ok((await rotate(f,'BEGIN',f.old,{new_credential:'invalid'})).status===400,'INVALID_CANDIDATE');
+ ok((await rotate(f,'BEGIN',randomBytes(32).toString('base64url'))).status===401,'UNKNOWN_BEARER');
  const parallel=await Promise.all(Array.from({length:20},()=>rotate(f,'BEGIN')));
  ok(parallel.every(r=>r.status===200&&r.body.result==='PENDING'&&r.body.generation===2),'20_IDENTICAL_CONCURRENT_BEGIN');
  ok(new Set(parallel.map(r=>r.body.overlap_until)).size===1,'NO_OVERLAP_EXTENSION');

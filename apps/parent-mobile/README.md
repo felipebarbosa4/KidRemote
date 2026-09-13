@@ -23,8 +23,8 @@ node tools/kr004/test-local-db.mjs '/mnt/c/Users/3feli/AppData/Local/Programs/Do
 ```
 
 The existing runner allocates/validates its own disposable DB plus Auth/PostgREST/Mailpit
-containers and a task bridge. Ports are loopback-only: Auth 57361, REST 57362, mailbox
-57365. No DB port, external SMTP or shared volume. Masquerading is disabled; no global
+containers and a task bridge. Ports are loopback-only: Auth 47361, REST 47362, mailbox
+47365. No DB port, external SMTP or shared volume. Masquerading is disabled; no global
 Docker/host setting changes. A occupied port fails rather than replacing another service.
 Ctrl+C performs exact-owned-resource cleanup; all synthetic account/mail state is disposable.
 After an external process kill, identify resources by the emitted run ID/ownership label;
@@ -80,7 +80,7 @@ local backend startup, use `--parent-dev` above; Ctrl+C performs scoped backend 
 
 ## Implemented screens and limits
 
-Signup sends a real confirmation message to the local mailbox at `http://127.0.0.1:57365`.
+Signup sends a real confirmation message to the local mailbox at `http://127.0.0.1:47365`.
 Only synthetic `@example.test` accounts are appropriate. Copy the confirmation link into
 the app's verification form; it validates exact origin/path/type/parameters then exchanges
 the token in a POST body. Sign in after confirmation. Confirm the visible IANA household
