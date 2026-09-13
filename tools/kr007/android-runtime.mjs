@@ -43,7 +43,7 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
   try{await removal('offlineRestart');}finally{await gatewayAvailable(true);}
   sql("update private.device_credentials c set expires_at=clock_timestamp() from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where c.device_id=d.id and u.email like 'kr006-runtime-%@example.test';");
   await removal('expired');
-  const actor=sql("select u.id from auth.users u join public.household_members m on m.user_id=u.id where u.email like 'kr006-runtime-%@example.test';");
+  const actor=sql(`select u.id from auth.users u join public.household_members m on m.user_id=u.id join private.pairing_sessions s on s.household_id=m.household_id where s.id='${enrollmentSession}' and m.role='owner' and u.email like 'kr006-runtime-%@example.test';`);
   if(!/^[a-f0-9-]{36}$/.test(actor))throw Error('REMOVAL_ACTOR_UNVERIFIED');
   const revoked=JSON.parse(sql(`set role authenticated;set "request.jwt.claim.sub"='${actor}';select public.finish_pairing('${enrollmentSession}',true);`));
   if(revoked.result!=='REVOKED_FRESH_QR_REQUIRED')throw Error('REMOVAL_NOT_REAL_PARENT_TRANSACTION');
