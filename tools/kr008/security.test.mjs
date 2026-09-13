@@ -31,3 +31,10 @@ test('signature digest parser supports actual build-tools 37 output and rejects 
  assert.throws(()=>certificateDigest('Unknown signer certificate SHA-256 digest: '+a));
  assert.throws(()=>certificateDigest('verification did not produce a certificate'));
 });
+test('instrumentation APK absent version is recorded as absent; application pair still requires v1/v2',async()=>{
+ const {manifestIdentity}=await import('./apk-identity.mjs');
+ assert.deepEqual(manifestIdentity("package: name='dev.kidremote.child.unassigned.debug.test' versionCode='' versionName='' platformBuildVersionName='17'"),{package:'dev.kidremote.child.unassigned.debug.test',versionCode:null,versionName:''});
+ assert.equal(manifestIdentity("package: name='dev.kidremote.child.unassigned.debug' versionCode='2' versionName='0.0.2-local'").versionCode,2);
+ assert.throws(()=>manifestIdentity("package: name='app' versionCode='invalid' versionName='x'"));
+ assert.match(read('tools/kr008/build-update.mjs'),/pre.versionCode!==1\|\|post.versionCode!==2/);
+});

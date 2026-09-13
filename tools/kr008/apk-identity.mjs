@@ -5,3 +5,8 @@ export function certificateDigest(output) {
  if(!values.length||values.some(x=>!x)||new Set(values).size!==1)throw Error('SIGNATURE_UNVERIFIED');
  return values[0];
 }
+export function manifestIdentity(output) {
+ const m=output.match(/^package: name='([^']+)' versionCode='(\d*)' versionName='([^']*)'/m);
+ if(!m)throw Error('APK_MANIFEST_UNVERIFIED');
+ return {package:m[1],versionCode:m[2]===''?null:Number(m[2]),versionName:m[3]};
+}
