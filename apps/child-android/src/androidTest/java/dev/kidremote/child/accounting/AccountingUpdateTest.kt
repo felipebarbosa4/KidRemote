@@ -100,7 +100,7 @@ class AccountingUpdateTest {
     @Test fun refuseMissingMigration()=safe {
         unchanged(1)
         val db=Room.databaseBuilder(context,LedgerDatabase::class.java,file.absolutePath).build()
-        try{checkSafe(runCatching{db.openHelper.writableDatabase}.exceptionOrNull() is IllegalStateException)}finally{db.close()}
+        try{val failure=runCatching{db.openHelper.writableDatabase}.exceptionOrNull();checkSafe(failure is IllegalStateException&&failure.message?.contains("migration",ignoreCase=true)==true)}finally{db.close()}
         unchanged(1);checkSafe(!revisionColumn());result("ROOM_MISSING_PATH_REFUSED_SCHEMA_AND_DATA_RETAINED")
     }
     @Test fun killDuringMigration(){unchanged(1);openObserved(true);error("EXPECTED_KILL_MISSING")}
@@ -124,14 +124,14 @@ class AccountingUpdateTest {
         val before=LedgerCodec.decode(payload())
         ChildAccounting(context).use { engine->
             checkSafe(engine.read().ledger==before&&engine.read().restrictionRequired)
-            val covered=listOf(Range(7,0,120000,yes))
-            val recovered=engine.reconcile(covered,now(120000),true).ledger!!
-            checkSafe(recovered==before.copy(uncertainty=Uncertainty.NONE))
-            checkSafe(engine.reconcile(covered,now(120000),true).ledger==recovered)
-            val unlocked=engine.acceptPolicy(before.policy.copy(version=8,manualLock=false),now(120000)).ledger!!
-            val n=engine.reconcile(listOf(Range(7,0,121000,yes)),now(121000),true).ledger!!
-            checkSafe(n.usedMs==121000L&&n.cursor==121000L&&n.policy==unlocked.policy)
-            checkSafe(engine.reconcile(listOf(Range(7,0,121000,yes)),now(121000),true).ledger==n)
+            val covered=listOf(Range(7,0,120000,yes),Range(7,120000,125000,yes.copy(permitted=false)))
+            val recovered=engine.reconcile(covered,now(125000),true).ledger!!
+            checkSafe(recovered==before.copy(uncertainty=Uncertainty.NONE,cursor=125000,uptime=125000))
+            checkSafe(engine.reconcile(covered,now(125000),true).ledger==recovered)
+            val unlocked=engine.acceptPolicy(before.policy.copy(version=8,manualLock=false),now(125000)).ledger!!
+            val n=engine.reconcile(listOf(Range(7,0,126000,yes)),now(126000),true).ledger!!
+            checkSafe(n.usedMs==121000L&&n.cursor==126000L&&n.policy==unlocked.policy)
+            checkSafe(engine.reconcile(listOf(Range(7,0,126000,yes)),now(126000),true).ledger==n)
         }
         verifyIdentity()
         write(oracleFile,oracle().put("payload_digest",digest(payload())).put("revision",rowRevision()).toString())

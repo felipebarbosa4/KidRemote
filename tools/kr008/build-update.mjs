@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {copyFileSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
+import {certificateDigest} from './apk-identity.mjs';
 const output='apps/child-android/build/outputs/kr008-update';mkdirSync(output,{recursive:true});
 const apk='apps/child-android/build/outputs/apk/debug/child-debug.apk';
 copyFileSync(apk,join(output,'post-v2.apk'));
@@ -16,7 +17,7 @@ for(const file of ['pre-v1.apk','post-v2.apk','update-test.apk']) {
  const path=join(output,file),badging=execFileSync(join(sdk,'build-tools/37.0.0/aapt2'),['dump','badging',path],{encoding:'utf8'});
  const m=badging.match(/package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'/);if(!m)throw Error('APK_MANIFEST_UNVERIFIED');
  const sign=execFileSync(join(sdk,'build-tools/37.0.0/apksigner'),['verify','--print-certs',path],{encoding:'utf8'});
- const certificate=sign.match(/Signer #1 certificate SHA-256 digest: ([a-f0-9]{64})/)?.[1];if(!certificate)throw Error('SIGNATURE_UNVERIFIED');
+ const certificate=certificateDigest(sign);
  result.apks[file]={sha256:createHash('sha256').update(readFileSync(path)).digest('hex'),package:m[1],versionCode:Number(m[2]),versionName:m[3],certificate};
 }
 const pre=result.apks['pre-v1.apk'],post=result.apks['post-v2.apk'],test=result.apks['update-test.apk'];
