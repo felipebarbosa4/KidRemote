@@ -9,6 +9,8 @@
 - **Constraints:** existing gateway/AtomicFile paths; no new sync/cache architecture, physical/camera/enforcement or later issue. Unknown bearer cannot discover removal; credential retirement alone is not device removal.
 - **Done when:** typed-result validation, durable removed state and explicit local clear are implemented; actual SQL/HTTP/Android identity preservation and negatives have recorded results, CI/cleanup pass, configured-policy gap remains explicit.
 
+**AC-7 result:** local removal subset passed on APK `19a3dbf` / host `1a254d9`: 521 SQL, 44 Auth, 38 enrollment/removal HTTP, 27 rotation HTTP and 17 actual Android invocations. First attempt remains NOT_PASSED after 12 stages/actor guard; independent retry scoped the actor to its pairing session. Strict bound response, durable removed state, offline identity preservation and explicit clear passed; no new identity/credential. Cleanup/AVD stop verified. **AC-7 remains partial** because configured-policy cache/ordered sync/offline limits are absent, and no later issue was implemented. [Exact evidence and boundary](../test-plans/evidence/KR-007-REMOVAL-2026-09-13.md).
+
 ### AC-6 local credential rotation
 
 - **Goal:** connected local renewal with durable candidate/operation persistence, real transactional authorization and restart/response-loss recovery.
