@@ -1,7 +1,7 @@
 import {randomBytes,randomUUID} from 'node:crypto';
 export async function testParentAuth({http,sql,mailAvailable,restAvailable}) {
  let count=0;const check=(ok,label)=>{if(!ok) throw Error('AUTH_TEST_FAILED:'+label);count++;};
- const auth='http://127.0.0.1:57361',rest='http://127.0.0.1:57362',mail='http://127.0.0.1:57365';
+ const auth='http://127.0.0.1:47361',rest='http://127.0.0.1:47362',mail='http://127.0.0.1:47365';
  const json=r=>{try{return JSON.parse(r.body);}catch{return {};}};
  const bearer=s=>({authorization:'Bearer '+s.access_token});
  const password=()=>randomBytes(24).toString('base64url')+'aA1!';
@@ -12,7 +12,7 @@ export async function testParentAuth({http,sql,mailAvailable,restAvailable}) {
    if(hit) {
     const detail=json(await http(mail+'/api/v1/message/'+hit.ID));
     const content=(detail.HTML??detail.Text??'').replaceAll('&amp;','&');
-    const link=content.match(/http:\/\/127\.0\.0\.1:57361\/verify\?[^\s"<>]+/)?.[0];
+    const link=content.match(/http:\/\/127\.0\.0\.1:47361\/verify\?[^\s"<>]+/)?.[0];
     if(link) return new URL(link);
    }
    await new Promise(r=>setTimeout(r,200));

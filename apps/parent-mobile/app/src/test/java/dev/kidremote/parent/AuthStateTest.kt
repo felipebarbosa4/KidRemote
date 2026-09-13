@@ -18,8 +18,8 @@ class AuthStateTest {
     }
     @Test fun callbacksRejectForeignHostsFragmentsOverridesAndDuplicates() {
         val token="a".repeat(64)
-        val good="http://127.0.0.1:57361/verify?token=$token&type=recovery"
-        val origin="http://127.0.0.1:57361"
+        val good="http://127.0.0.1:47361/verify?token=$token&type=recovery"
+        val origin="http://127.0.0.1:47361"
         assertEquals(token,emailAction(good,"recovery",origin))
         for(bad in listOf(good.replace("127.0.0.1","evil.example"),good+"#access_token=forged",good+"&type=signup",
             good+"&redirect_to=https%3A%2F%2Fevil.example",good.replace("/verify","/user"),good.replace("http:","kidremote:")))

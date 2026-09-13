@@ -1,0 +1,157 @@
+{
+  "scope": "KR007_ENROLLMENT_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [
+    {
+      "method": "enrollAndPersist",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restoreAndLogout",
+      "result": "PASS",
+      "codes": [
+        "PROCESS_RESTART_VAULT_SESSION_RESTORED_PASS",
+        "LOGOUT_STORAGE_KEY_UI_CLEAR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartLoggedOutAndRecover",
+      "result": "PASS",
+      "codes": [
+        "RESTART_AFTER_LOGOUT_UNAUTHENTICATED_PASS",
+        "REAL_EMAIL_RECOVERY_OLD_PASSWORD_DENIED_NEW_LOGIN_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "networkFailureAndRecovery",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS",
+        "NETWORK_RECOVERY_SAME_PROCESS_PASS",
+        "RUNTIME_FINAL_LOGOUT_CLEANUP_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "createEnrollmentQr",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS",
+        "PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "decodeRedeemAndRead",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_DECODER_REDEMPTION_PERSISTENCE_INITIAL_READ_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartAndNegatives",
+      "result": "PASS",
+      "codes": [
+        "CHILD_PROCESS_RESTART_SCOPED_DENIALS_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "parentSeesEnrollment",
+      "result": "PASS",
+      "codes": [
+        "PARENT_ACTUAL_ENROLLED_LIST_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "corruptIdentityRecovery",
+      "result": "PASS",
+      "codes": [
+        "CORRUPT_IDENTITY_NO_FALSE_PAIRED_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareInterruptedQr",
+      "result": "PASS",
+      "codes": [
+        "PARENT_FRESH_INTERRUPTION_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "interruptAfterCommit",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_HTTP_COMMIT_BEFORE_PERSISTENCE_LOSS_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "interruptedRestart",
+      "result": "PASS",
+      "codes": [
+        "PENDING_RESTART_REQUIRES_PARENT_NO_AUTO_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "recoverInterruptedQr",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REVOKED_LOST_RESPONSE_IDENTITY_FRESH_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "recoverWithFreshQr",
+      "result": "PASS",
+      "codes": [
+        "FRESH_QR_NEW_INDEPENDENT_IDENTITY_AFTER_REVOKE_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartAndNegatives",
+      "result": "PASS",
+      "codes": [
+        "CHILD_PROCESS_RESTART_SCOPED_DENIALS_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "primary": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED",
+  "apkHashes": {
+    "app": "3c285506d58e6070a096f52db9fd32f70b7537faa728cfef30c4703b68dc98b5",
+    "test": "a5d0e4b78d58d23615b36ed8a3723d5644d3019be30bb5003ae172d2adf7d1e3",
+    "dev.kidremote.child.unassigned.debug": "24563b8d8917b506ccc41bec8fcdbacd986810d420f665a0f0b86cd19734a043",
+    "dev.kidremote.child.unassigned.debug.test": "7ec4026f5e66185964dbafa74f0359ccc8d393c61ef342f09b5cdbcb4b693053"
+  },
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "enrollmentDeviceCount": 1,
+  "cameraEvidence": "GENERATED_QR_DECODER_INPUT_NOT_CAMERA_CAPTURE",
+  "interruptedCommitRecovery": "ACTUAL_COMMIT_TEST_FAULT_BEFORE_PERSIST_REVOKE_FRESH_QR",
+  "overall": "PASS_THIS_EMULATOR_ONLY"
+}

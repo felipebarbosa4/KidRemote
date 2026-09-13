@@ -95,7 +95,8 @@ test('actual gateway HTTP authorization on loopback with synthetic storage stub'
     pushOwner={device_id:d}; await denied('foreign/sibling push address cannot be stolen',push,'/device/push-registration',409);
   }
   pushOwner=null;
-  for(const path of ['/parent/households','/parent/devices/'+u.a+'/operations','/rpc/accept_command','/device/credentials/rotate','/device/sync?rpc=anything'])
+  await denied('rotation rejects sync payload',sync,'/device/credentials/rotate',400);
+  for(const path of ['/parent/households','/parent/devices/'+u.a+'/operations','/rpc/accept_command','/device/sync?rpc=anything'])
     await denied('unsupported route '+path,sync,path,404);
   await denied('unsupported method',sync,'/device/sync',404,secret,'GET');
   await denied('oversize payload',{...sync,padding:'x'.repeat(65536)},'/device/sync');

@@ -174,3 +174,12 @@ Normal process death/update/reboot still require evidence; network loss alone mu
 Push, clock/calendar trust after offline reboot, policy acceptance, physical OEM durability and credential compromise remain top risks.
 Security reporting address, incident owner, recovery SLA and disclosure channel: **UNSPECIFIED**.
 This is a technical threat model, not legal advice.
+
+KR-007 AC-7 local boundary (OD-45, 2026-09-13): a device's verified revocation on
+own sync has an exact device/epoch-bound response; mere old-generation retirement
+returns credential rejection, not permission to remove an active installation. The
+child validates before encrypting a durable removed marker and exposes an explicit
+clear/re-pair step. Outage, 401 and invalid envelopes cannot authorize erasure.
+Unknown/purged identities remain generic. No configured policy cache exists in this
+child slice: its offline-policy acceptance remains blocked by later sync work, not
+proved using an invented placeholder policy. [Wire and persistence contract](../packages/protocol/CONTRACT.md#kr-007-local-validated-removal-od-45-ac-7).

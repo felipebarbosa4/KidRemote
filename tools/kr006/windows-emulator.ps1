@@ -1,6 +1,7 @@
 param(
  [Parameter(Mandatory=$true)][ValidateSet('Create','Start','Stop')][string]$Mode,
  [string]$TaskDirectory,
+ [switch]$CameraValidation,
  [string]$Sdk='C:\Users\3feli\AppData\Local\Android\Sdk'
 )
 $ErrorActionPreference='Stop'
@@ -32,7 +33,10 @@ $env:ANDROID_AVD_HOME=Join-Path $TaskDirectory 'avds'
 $serial='emulator-'+$state.Port
 if($Mode -eq 'Start') {
  if(Get-NetTCPConnection -LocalPort 5584,5585 -ErrorAction SilentlyContinue){throw 'TASK_PORT_ALREADY_USED'}
- $p=Start-Process -FilePath "$Sdk\emulator\emulator.exe" -ArgumentList @('-avd',$state.AvdName,'-port','5584','-no-window','-no-snapshot','-no-boot-anim','-no-audio','-gpu','swiftshader','-no-metrics') -WorkingDirectory $TaskDirectory -RedirectStandardOutput (Join-Path $TaskDirectory 'emulator.stdout.log') -RedirectStandardError (Join-Path $TaskDirectory 'emulator.stderr.log') -PassThru
+ $startArgs=@('-avd',$state.AvdName,'-port','5584','-no-window','-no-snapshot','-no-boot-anim','-no-audio','-gpu','swiftshader','-no-metrics')
+ if($CameraValidation){$startArgs+=@('-camera-back','virtualscene','-camera-front','none')}
+ $logId=Get-Date -Format 'yyyyMMdd-HHmmss'
+ $p=Start-Process -FilePath "$Sdk\emulator\emulator.exe" -ArgumentList $startArgs -WorkingDirectory $TaskDirectory -RedirectStandardOutput (Join-Path $TaskDirectory "emulator-$logId.stdout.log") -RedirectStandardError (Join-Path $TaskDirectory "emulator-$logId.stderr.log") -PassThru
  Write-Output ('TASK_EMULATOR_PROCESS_STARTED='+$p.Id)
 } else {
  $name=(& "$Sdk\platform-tools\adb.exe" -s $serial emu avd name 2>$null | Select-Object -First 1)

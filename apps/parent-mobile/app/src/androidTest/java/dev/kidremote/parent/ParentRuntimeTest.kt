@@ -40,19 +40,19 @@ class ParentRuntimeTest {
     private fun get(path: String): String {
         val c=URL("http://10.0.2.2:$path").openConnection() as HttpURLConnection
         try { c.connectTimeout=2000;c.readTimeout=2000;c.instanceFollowRedirects=false
-            checkThat(c.responseCode==200,"LOCAL_HTTP_UNAVAILABLE")
+            if(c.responseCode!=200)throw java.io.IOException("LOCAL_HTTP_UNAVAILABLE")
             return c.inputStream.bufferedReader().use { it.readText() }
         } finally { c.disconnect() }
     }
     private fun mail(email: String, type: String): String {
         repeat(30) {
-            val messages=JSONObject(get("57365/api/v1/messages")).getJSONArray("messages")
+            val messages=JSONObject(get("47365/api/v1/messages")).getJSONArray("messages")
             for(i in 0 until messages.length()) {
                 val m=messages.getJSONObject(i)
                 if(!m.getJSONArray("To").toString().contains(email)) continue
-                val detail=JSONObject(get("57365/api/v1/message/"+m.getString("ID")))
+                val detail=JSONObject(get("47365/api/v1/message/"+m.getString("ID")))
                 val content=detail.optString("Text")+detail.optString("HTML")
-                val link=Regex("http://127\\.0\\.0\\.1:57361/verify\\?[^\\s\"<>]+").find(content)?.value?.replace("&amp;","&")
+                val link=Regex("http://127\\.0\\.0\\.1:47361/verify\\?[^\\s\"<>]+").find(content)?.value?.replace("&amp;","&")
                 if(link!=null && emailAction(link,type,BackendConfig.emailOrigin)!=null) return link
             }
             Thread.sleep(1000)
@@ -67,7 +67,7 @@ class ParentRuntimeTest {
         checkThat(SessionVault(target).read()==null,"SESSION_CREDENTIAL_REMAINS")
     }
     @Test fun enrollAndPersist() = safe("ENROLLMENT_RUNTIME_FAILED") {
-        get("57361/health");get("57362/");get("57365/api/v1/messages");result("EMULATOR_BACKEND_CONNECTIVITY_PASS")
+        get("47361/health");get("47362/");get("47365/api/v1/messages");result("EMULATOR_BACKEND_CONNECTIVITY_PASS")
         checkThat(!fixture.exists(),"FRESH_FIXTURE_REQUIRED")
         val email="kr006-runtime-"+UUID.randomUUID()+"@example.test"
         val pass="Kr6!"+UUID.randomUUID();val next="Kr6!"+UUID.randomUUID()
@@ -106,15 +106,65 @@ class ParentRuntimeTest {
         login(f.getString("email"),f.getString("pass"));waitText("Não foi possível concluir. Verifique os dados ou tente novamente.")
         login(f.getString("email"),f.getString("next"));emptyList();result("REAL_EMAIL_RECOVERY_OLD_PASSWORD_DENIED_NEW_LOGIN_PASS")
     }
+    @Test fun httpFailureIsRetryable() = safe("HTTP_RETRY_CLASSIFICATION_FAILED") {
+        var rejected=false
+        try{get("47362/kr007_absent_test_resource")}catch(e:java.io.IOException){rejected=e.message=="LOCAL_HTTP_UNAVAILABLE"}
+        checkThat(rejected,"NON_SUCCESS_HTTP_NOT_REJECTED")
+        result("HTTP_NON_SUCCESS_IS_RETRYABLE_PASS")
+    }
     @Test fun networkFailureAndRecovery() = safe("NETWORK_RECOVERY_RUNTIME_FAILED") {
         waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")
         waitText("Não foi possível concluir. Verifique os dados ou tente novamente.");result("ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS")
         File(target.filesDir,"kr006-restore-rest").writeText("RESTORE")
         var ready=false
-        repeat(45) { if(!ready) { try { get("57362/");ready=true } catch(_:Exception){Thread.sleep(1000)} } }
-        checkThat(ready,"REST_NOT_RESTORED");emptyList();result("NETWORK_RECOVERY_SAME_PROCESS_PASS")
+        repeat(45) { if(!ready) { try { get("47362/");ready=true } catch(_:Exception){Thread.sleep(1000)} } }
+        checkThat(ready,"REST_NOT_RESTORED");result("REST_HTTP_READY_AFTER_OUTAGE");emptyList();result("NETWORK_RECOVERY_SAME_PROCESS_PASS")
         click("Sair e limpar dados locais");waitText("Entrar");cleared()
         checkThat(fixture.delete(),"TEST_FIXTURE_CLEANUP_FAILED");File(target.filesDir,"kr006-restore-rest").delete()
         result("RUNTIME_FINAL_LOGOUT_CLEANUP_PASS")
+    }
+    @Test fun createEnrollmentQr() = safe("PARENT_QR_RUNTIME_FAILED") {
+        enrollAndPersist()
+        click("Criar QR de pareamento")
+        waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        click("Cancelar ou verificar QR");waitText("QR cancelado.")
+        click("Criar QR de pareamento");waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        var qr:String?=null;ui.runOnIdle {qr=model.state.qr}
+        checkThat(qr!=null,"ACTUAL_PARENT_QR_MISSING")
+        // Test-only local capability handoff, never an image upload or parent session transfer.
+        File(target.noBackupFilesDir,"qr-handoff").writeText(qr!!)
+        result("PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS")
+    }
+    @Test fun parentSeesEnrollment() = safe("PARENT_ENROLLED_LIST_FAILED") {
+        waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")
+        waitText("Dispositivo Android");waitText("Pareado · configuração incompleta · proteção não verificada")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        ui.runOnIdle {checkThat(model.state.devices.size==1,"NOT_EXACTLY_ONE_DEVICE")}
+        result("PARENT_ACTUAL_ENROLLED_LIST_PASS")
+    }
+    private fun openExistingList() {waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos");waitText("Controles e enforcement não estão disponíveis nesta etapa.")}
+    private fun exportNewQr() {
+        click("Criar QR de pareamento");waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        var q:String?=null;ui.runOnIdle{q=model.state.qr};checkThat(q!=null,"ACTUAL_QR_MISSING")
+        File(target.noBackupFilesDir,"qr-handoff").writeText(q!!)
+    }
+    @Test fun prepareInterruptedQr()=safe("PARENT_INTERRUPTION_QR_FAILED") {openExistingList();exportNewQr();result("PARENT_FRESH_INTERRUPTION_QR_PASS")}
+    @Test fun prepareCameraQr()=safe("PARENT_CAMERA_QR_FAILED") {
+        openExistingList();exportNewQr()
+        val text=File(target.noBackupFilesDir,"qr-handoff").readText()
+        for((name,value) in listOf("valid" to text,"invalid" to "{}")) {
+            val bitmap=pairingBitmap(value)
+            File(target.noBackupFilesDir,"scene-$name.png").outputStream().use{checkThat(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it),"SYNTHETIC_SCENE_WRITE_FAILED")}
+            bitmap.recycle()
+        }
+        result("LOCAL_SYNTHETIC_SCENE_QR_PREPARED")
+    }
+    @Test fun recoverInterruptedQr()=safe("PARENT_REVOKE_FRESH_QR_FAILED") {
+        openExistingList();click("Cancelar ou verificar QR")
+        waitText("QR consumido. Se a credencial não foi salva, revogue o pareamento incompleto e gere outro QR.")
+        click("Revogar pareamento incompleto");waitText("Pareamento incompleto revogado. Gere outro QR.")
+        exportNewQr();result("PARENT_REVOKED_LOST_RESPONSE_IDENTITY_FRESH_QR_PASS")
     }
 }

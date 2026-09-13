@@ -1,0 +1,253 @@
+{
+  "scope": "KR007_ENROLLMENT_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [
+    {
+      "method": "httpFailureIsRetryable",
+      "result": "PASS",
+      "codes": [
+        "HTTP_NON_SUCCESS_IS_RETRYABLE_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "enrollAndPersist",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restoreAndLogout",
+      "result": "PASS",
+      "codes": [
+        "PROCESS_RESTART_VAULT_SESSION_RESTORED_PASS",
+        "LOGOUT_STORAGE_KEY_UI_CLEAR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartLoggedOutAndRecover",
+      "result": "PASS",
+      "codes": [
+        "RESTART_AFTER_LOGOUT_UNAUTHENTICATED_PASS",
+        "REAL_EMAIL_RECOVERY_OLD_PASSWORD_DENIED_NEW_LOGIN_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "networkFailureAndRecovery",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_REST_OUTAGE_RECOVERABLE_UI_PASS",
+        "REST_HTTP_READY_AFTER_OUTAGE",
+        "NETWORK_RECOVERY_SAME_PROCESS_PASS",
+        "RUNTIME_FINAL_LOGOUT_CLEANUP_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "createEnrollmentQr",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS",
+        "PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "decodeRedeemAndRead",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_DECODER_REDEMPTION_PERSISTENCE_INITIAL_READ_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartAndNegatives",
+      "result": "PASS",
+      "codes": [
+        "CHILD_PROCESS_RESTART_SCOPED_DENIALS_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "parentSeesEnrollment",
+      "result": "PASS",
+      "codes": [
+        "PARENT_ACTUAL_ENROLLED_LIST_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "corruptIdentityRecovery",
+      "result": "PASS",
+      "codes": [
+        "CORRUPT_IDENTITY_NO_FALSE_PAIRED_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareInterruptedQr",
+      "result": "PASS",
+      "codes": [
+        "PARENT_FRESH_INTERRUPTION_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "interruptAfterCommit",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_HTTP_COMMIT_BEFORE_PERSISTENCE_LOSS_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "interruptedRestart",
+      "result": "PASS",
+      "codes": [
+        "PENDING_RESTART_REQUIRES_PARENT_NO_AUTO_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "recoverInterruptedQr",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REVOKED_LOST_RESPONSE_IDENTITY_FRESH_QR_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "recoverWithFreshQr",
+      "result": "PASS",
+      "codes": [
+        "FRESH_QR_NEW_INDEPENDENT_IDENTITY_AFTER_REVOKE_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartAndNegatives",
+      "result": "PASS",
+      "codes": [
+        "CHILD_PROCESS_RESTART_SCOPED_DENIALS_REPLAY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "backendOutagePreservesIdentity",
+      "result": "PASS",
+      "codes": [
+        "REAL_GATEWAY_OUTAGE_SAME_CIPHERTEXT_IDENTITY_RECOVERY_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "authenticatedCiphertextCorruption",
+      "result": "PASS",
+      "codes": [
+        "AUTHENTICATED_CIPHERTEXT_TAMPER_REJECTED",
+        "ORIGINAL_CIPHERTEXT_CONTROL_RECOVERED_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "missingKeyDiagnostic",
+      "result": "PASS",
+      "codes": [
+        "MISSING_KEY_FAIL_CLOSED_NO_KEY_CREATION_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "isolatedCiphertextWithoutKey",
+      "result": "PASS",
+      "codes": [
+        "CLEAN_INSTALL_CIPHERTEXT_WITHOUT_ORIGINAL_KEY_REJECTED_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "permissionAndLifecycle",
+      "result": "PASS",
+      "codes": [
+        "NO_CAMERA_BEFORE_EXPLICIT_SCAN_PASS",
+        "SCAN_PERMISSION_REQUEST_CLICKED",
+        "SYSTEM_PERMISSION_DENY_CLICKED",
+        "ACTUAL_CAMERA_PERMISSION_DENIAL_NO_REDEMPTION_PASS",
+        "ACTUAL_PERMISSION_GRANT_CAMERA_OPEN_PASS",
+        "CANCEL_BACKGROUND_RECREATE_EXPLICIT_REACQUIRE_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterPermissionRevocation",
+      "result": "PASS",
+      "codes": [
+        "OS_REVOKE_PROCESS_RESTART_EXPLICIT_REGRANT_PASS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareCameraQr",
+      "result": "PASS",
+      "codes": [
+        "LOCAL_SYNTHETIC_SCENE_QR_PREPARED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "invalidCameraQr",
+      "result": "FAIL",
+      "codes": [
+        "FAILURE_OTHER"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "primary": "ENROLLMENT_ANDROID_FAILED:invalidCameraQr",
+  "cleanup": "VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED",
+  "apkHashes": {
+    "app": "cd6b0e911a0547003a949268cb39bd78a2179d07228370158fd4c8dc7ea248b7",
+    "test": "81518c1db3ad6160cab1f60f60cc3067042d5cede715a57237dc706fd36fe2b4",
+    "dev.kidremote.child.unassigned.debug": "77850d6c4317095f03fe41294ca7dc8afb114f47206393164097327ee2837bd9",
+    "dev.kidremote.child.unassigned.debug.test": "459ede363ea433b35233110a8d5cc80d50e73ebf8715325ccc94ab8af6482326"
+  },
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "enrollmentDeviceCount": 1,
+  "cameraEvidence": "GENERATED_QR_DECODER_INPUT_NOT_CAMERA_CAPTURE",
+  "interruptedCommitRecovery": "ACTUAL_COMMIT_TEST_FAULT_BEFORE_PERSIST_REVOKE_FRESH_QR",
+  "cameraStorage": {
+    "scope": "SYNTHETIC_OWNED_EMULATOR_ONLY",
+    "localArtifacts": "/mnt/c/Users/3feli/AppData/Local/KidRemote/kr006-runtime/e03b4820-193b-4132-b1fc-f7950eeed7fe/camera-storage-2026-09-11T23-02-20-209Z",
+    "camera": "NOT_PASSED",
+    "storage": "PASS_NO_NEW_DEVICE",
+    "posterCleanup": "VERIFIED_DEFAULTS_RESTORED",
+    "ciphertextHash": "f113ef2d8ff4bf250acddbe6397c9bfccc0e9e6c1c986eb64a8bdca5cec761a7",
+    "revocation": {
+      "cameraOpenMarker": true,
+      "osProcessAbsent": true,
+      "instrumentationCompleted": false,
+      "expectedTermination": true
+    },
+    "invalidSceneHash": "3c9a84602486d7052346116f0e182527578970f36a894a8a733b6515cd1d5287"
+  },
+  "overall": "NOT_PASSED",
+  "apkSource": "01c6264096d773670dbc0846413ceb00e54c2c05",
+  "ciRun": 34655855796
+}

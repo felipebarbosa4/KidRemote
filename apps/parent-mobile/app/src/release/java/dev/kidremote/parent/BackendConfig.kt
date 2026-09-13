@@ -4,4 +4,5 @@ internal object BackendConfig {
     const val emailOrigin = ""
     const val auth = ""
     const val rest = ""
+    const val gateway = ""
 }

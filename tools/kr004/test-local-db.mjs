@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const options = process.argv.slice(2);
 const docker = options[0] ?? 'docker';
 const host = options[1] ?? 'unix:///var/run/docker.sock';
-if (options.length > 3 || (options.length===3 && !['--pairing','--parent-test','--parent-dev','--parent-runtime'].includes(options[2])) || !localEndpoints.includes(host))
+if (options.length > 3 || (options.length===3 && !['--pairing','--parent-test','--parent-dev','--parent-runtime','--enrollment-test','--enrollment-runtime','--enrollment-dev'].includes(options[2])) || !localEndpoints.includes(host))
   throw new Error('Only the explicit local Unix socket or Docker Desktop Linux named pipe is allowed');
 const image = 'supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00';
 const token = randomUUID();
@@ -25,7 +25,7 @@ for (const key of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CE
 // Native docker.exe reads the value for '-e POSTGRES_PASSWORD'; never put it in argv.
 if (docker.endsWith('.exe')) env.WSLENV = [process.env.WSLENV, 'POSTGRES_PASSWORD/w'].filter(Boolean).join(':');
 let id, verified = false, primary, networkId;
-const parentMode=options[2]?.startsWith('--parent-');
+const parentMode=options[2]?.startsWith('--parent-') || options[2]?.startsWith('--enrollment-');
 const network=parentMode ? name+'-network' : 'none';
 function inspectNetwork() {
   const n=JSON.parse(call(['network','inspect',networkId]))[0];
@@ -129,7 +129,8 @@ try {
   if(parentMode) {
     const {runParentAuth}=await import('../kr006/local-auth.mjs');
     await runParentAuth({sql,call,env,name,label,token,network,databaseHost:name,
-      windows:docker.endsWith('.exe'),keep:options[2]==='--parent-dev',runtime:options[2]==='--parent-runtime'});
+      windows:docker.endsWith('.exe'),keep:['--parent-dev','--enrollment-dev'].includes(options[2]),runtime:options[2]==='--parent-runtime',
+      enrollment:options[2]?.startsWith('--enrollment-'),enrollmentRuntime:options[2]==='--enrollment-runtime',gatewayConfig:{docker,host,container:id,label,owner:token}});
   }
 } catch (error) {
   primary = error;

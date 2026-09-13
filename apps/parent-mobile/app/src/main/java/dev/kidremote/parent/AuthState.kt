@@ -2,7 +2,10 @@ package dev.kidremote.parent
 
 enum class Screen { LOGIN, SIGNUP, VERIFY, RECOVER, RESET, SETUP, DEVICES }
 data class AuthState(val screen: Screen = Screen.LOGIN, val loading: Boolean = false,
-    val message: String = "", val deviceCount: Int? = null)
+    val message: String = "", val deviceCount: Int? = null,
+    val devices: List<DeviceSummary> = emptyList(), val qr: String? = null,
+    val pairingSession: String? = null, val incompleteRecovery: Boolean = false)
+data class DeviceSummary(val id: String,val nickname: String,val revoked: Boolean)
 enum class Event { START, SIGNED_UP, RECOVERY_SENT, RECOVERY_VERIFIED, AUTHENTICATED, LOADED, FAILURE, LOGOUT }
 fun reduce(state: AuthState, event: Event): AuthState = when (event) {
     Event.START -> state.copy(loading = true, message = "")

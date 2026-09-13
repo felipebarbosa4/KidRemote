@@ -23,8 +23,8 @@ node tools/kr004/test-local-db.mjs '/mnt/c/Users/3feli/AppData/Local/Programs/Do
 ```
 
 The existing runner allocates/validates its own disposable DB plus Auth/PostgREST/Mailpit
-containers and a task bridge. Ports are loopback-only: Auth 57361, REST 57362, mailbox
-57365. No DB port, external SMTP or shared volume. Masquerading is disabled; no global
+containers and a task bridge. Ports are loopback-only: Auth 47361, REST 47362, mailbox
+47365. No DB port, external SMTP or shared volume. Masquerading is disabled; no global
 Docker/host setting changes. A occupied port fails rather than replacing another service.
 Ctrl+C performs exact-owned-resource cleanup; all synthetic account/mail state is disposable.
 After an external process kill, identify resources by the emitted run ID/ownership label;
@@ -80,12 +80,19 @@ local backend startup, use `--parent-dev` above; Ctrl+C performs scoped backend 
 
 ## Implemented screens and limits
 
-Signup sends a real confirmation message to the local mailbox at `http://127.0.0.1:57365`.
+Signup sends a real confirmation message to the local mailbox at `http://127.0.0.1:47365`.
 Only synthetic `@example.test` accounts are appropriate. Copy the confirmation link into
 the app's verification form; it validates exact origin/path/type/parameters then exchanges
 the token in a POST body. Sign in after confirmation. Confirm the visible IANA household
 zone to bootstrap once, then read actual own profile/household/device rows via PostgREST.
-No fake devices, remaining-time values, pairing or control buttons are provided.
+No fake devices, remaining-time values or remote-control buttons are provided.
+OD-45 adds only real create/display/cancel pairing QR and a read-only enrolled list.
+The QR is memory-only and clears on background/expiry; a nonsecret session ID supports
+explicit revoke/fresh-QR recovery after a consumed response was not saved. Parent JWTs
+never enter the QR. Devices are labelled setup incomplete/protection unverified, not
+healthy or protected merely because registered. Use the child slice's
+[enrollment startup and test commands](../child-android/README.md#local-startup-and-bounded-test)
+for the additional local gateway. Earlier KR-006 APK evidence above stays unchanged.
 
 Recovery sends a local email; paste its link into the recovery form, verify with Auth,
 set a new password and sign in again. No exported implicit-token/custom-scheme callback

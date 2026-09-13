@@ -7,9 +7,9 @@ import java.net.URL
 
 internal class AuthApi {
     fun request(path: String, body: JSONObject? = null, bearer: String? = null,
-        rest: Boolean = false, method: String = if (body == null) "GET" else "POST"): String {
+        rest: Boolean = false, method: String = if (body == null) "GET" else "POST", gateway: Boolean = false): String {
         check(BackendConfig.enabled) { "BACKEND_NOT_CONFIGURED" }
-        val c = URL((if (rest) BackendConfig.rest else BackendConfig.auth) + path).openConnection() as HttpURLConnection
+        val c = URL((if(gateway) BackendConfig.gateway else if (rest) BackendConfig.rest else BackendConfig.auth) + path).openConnection() as HttpURLConnection
         try {
             c.requestMethod = method; c.connectTimeout = 10000; c.readTimeout = 10000
             c.instanceFollowRedirects = false; c.useCaches = false
@@ -47,4 +47,10 @@ internal class AuthApi {
         check(JSONArray(request("/profiles?select=user_id",bearer=token,rest=true)).length() == 1)
         return JSONArray(request("/devices?select=id",bearer=token,rest=true)).length()
     }
+    fun devices(token: String): List<DeviceSummary> {
+        val rows=JSONArray(request("/devices?select=id,nickname,revoked_at&order=id",bearer=token,rest=true))
+        return (0 until rows.length()).map { val r=rows.getJSONObject(it);DeviceSummary(r.getString("id"),r.getString("nickname"),!r.isNull("revoked_at")) }
+    }
+    fun pair(token: String)=JSONObject(request("/parent/pairing-sessions",JSONObject(),token,gateway=true))
+    fun cancel(token: String,id: String,revoke: Boolean)=JSONObject(request("/rpc/finish_pairing",JSONObject().put("p_session",id).put("p_revoke_incomplete",revoke),token,rest=true))
 }

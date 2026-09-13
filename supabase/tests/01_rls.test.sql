@@ -34,9 +34,9 @@ insert into public.command_receipts(command_id,device_id,snapshot_version,outcom
  values ('00000004-0000-4000-8000-000000000002','00000003-0000-4000-8000-000000000002',1,'applied',true);
 insert into public.device_state values ('00000003-0000-4000-8000-000000000002','00000002-0000-4000-8000-000000000002','00000005-0000-4000-8000-000000000002',1,1,'1:2026-09-11',0,600,4200000,false,false,false,'healthy',now(),now());
 
-select ok((select count(*) = 15 and bool_and(c.relrowsecurity)
+select ok((select count(*) = 16 and bool_and(c.relrowsecurity)
  from pg_class c join pg_namespace n on n.oid=c.relnamespace
- where n.nspname in ('public','private') and c.relkind='r'), 'all 15 app tables enable RLS');
+ where n.nspname in ('public','private') and c.relkind='r'), 'all 16 app tables enable RLS');
 select ok(not exists(select 1 from pg_roles where rolname in ('anon','authenticated')
  and (rolsuper or rolbypassrls)), 'client roles are neither superuser nor BYPASSRLS');
 select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace

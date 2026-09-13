@@ -13,3 +13,7 @@ supabase/.branches/
 *.p12
 *.pem
 google-services.json
+# KR-007 owner-local synthetic camera/identity fixtures; never repository or CI data.
+scene-valid.png
+scene-invalid.png
+synthetic-identity.ciphertext
