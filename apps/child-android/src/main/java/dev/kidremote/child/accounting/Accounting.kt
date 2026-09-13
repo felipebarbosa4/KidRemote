@@ -63,6 +63,7 @@ object Accounting {
         if(through.boot!=s.boot)return s.copy(uncertainty=Uncertainty.CLOCK)
         if(through.elapsed<s.cursor) return if(ranges.all{it.boot==s.boot&&it.start>=0&&it.end>=it.start&&it.end<=through.elapsed})s else s.copy(uncertainty=Uncertainty.HISTORY)
         if(s.uncertainty in listOf(Uncertainty.CLOCK,Uncertainty.STORAGE))return s
+        if(through.uptime<s.uptime||through.uptime>through.elapsed)return s.copy(uncertainty=Uncertainty.CLOCK)
         if(!coverageProven||ranges.size>10000)return s.copy(uncertainty=Uncertainty.HISTORY)
         val sorted=ranges.sortedWith(compareBy<Range>{it.start}.thenBy{it.end})
         if(sorted.any{it.boot!=s.boot||it.start<0||it.end<it.start||it.end>through.elapsed})return s.copy(uncertainty=Uncertainty.HISTORY)
@@ -79,7 +80,6 @@ object Accounting {
             next=integrate(next,r.copy(start=next.cursor))
         }
         if(next.cursor!=through.elapsed)return next.copy(uncertainty=Uncertainty.HISTORY)
-        if(through.uptime<s.uptime||through.uptime>through.elapsed)return next.copy(uncertainty=Uncertainty.CLOCK)
         return next.copy(uptime=through.uptime,signals=through.signals)
     }
     private fun integrate(initial:Ledger,r:Range):Ledger {

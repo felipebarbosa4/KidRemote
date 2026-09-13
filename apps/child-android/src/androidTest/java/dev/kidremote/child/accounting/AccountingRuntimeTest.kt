@@ -17,7 +17,10 @@ class AccountingRuntimeTest {
     private val file get()=File(context.noBackupFilesDir,"accounting.db")
     private val yes=Signals(true,false,true)
     private fun now(t:Long)=Sample(7,t,t,yes)
-    private fun safe(action:()->Unit){try{action()}catch(_:Throwable){throw AssertionError("ACCOUNTING_RUNTIME_FAILED")}}
+    private fun safe(action:()->Unit){try{action()}catch(error:Throwable){
+        val line=error.stackTrace.firstOrNull{it.className.startsWith("dev.kidremote.child.accounting.")}?.lineNumber?:0
+        result("ACCOUNTING_FAILURE_LINE_"+maxOf(0,line));throw AssertionError("ACCOUNTING_RUNTIME_FAILED")
+    }}
     private fun checkSafe(v:Boolean){if(!v)throw AssertionError("ACCOUNTING_ASSERTION")}
     private fun result(code:String){InstrumentationRegistry.getInstrumentation().sendStatus(0,android.os.Bundle().apply{putString("kr008",code)})}
     private fun database()=Room.databaseBuilder(context,LedgerDatabase::class.java,file.absolutePath).addMigrations(LedgerDatabase.MIGRATION_1_2).build()
@@ -40,14 +43,18 @@ class AccountingRuntimeTest {
     private fun persisted()=database().let{db->try{LedgerCodec.decode(db.ledger().read()!!.payload)}finally{db.close()}}
     private fun crashMarker(name:String){File(context.noBackupFilesDir,"accounting-crash").outputStream().use{it.write(name.toByteArray());it.fd.sync()};File(context.noBackupFilesDir,"accounting-pid").writeText(Process.myPid().toString());result(name)}
     @Test fun preparePersistence()=safe {
-        val state=prepare();ChildAccounting(context).use{engine->val r=engine.read();checkSafe(r.ledger!!.usedMs==state.usedMs&&r.restrictionRequired)}
+        val state=prepare();ChildAccounting(context).use{engine->
+            val r=engine.acceptPolicy(state.policy.copy(version=3,manualLock=true),now(1000))
+            checkSafe(r.ledger!!.usedMs==state.usedMs&&r.ledger.policy.manualLock&&r.restrictionRequired)
+        }
         File(context.noBackupFilesDir,"accounting-pid").writeText(Process.myPid().toString())
         result("REAL_ROOM_INITIALIZED_AGGREGATE_PERSISTED_NO_NETWORK")
     }
     @Test fun restartAndReconcile()=safe {
         checkSafe(Process.myPid()!=File(context.noBackupFilesDir,"accounting-pid").readText().toInt())
         ChildAccounting(context).use { engine->
-            val old=engine.read().ledger!!;checkSafe(old.usedMs==1000L&&old.policy.version==2L&&old.bonusSeconds==600L)
+            val old=engine.read().ledger!!;checkSafe(old.usedMs==1000L&&old.policy.version==3L&&old.bonusSeconds==600L&&old.policy.manualLock)
+            checkSafe(engine.acceptPolicy(old.policy.copy(version=4,manualLock=false),now(1000)).ledger!!.policy.version==4L)
             val gap=engine.resume(now(3000));checkSafe(gap.restrictionRequired&&gap.ledger!!.usedMs==1000L)
             val ranges=listOf(Range(7,0,2000,yes),Range(7,2000,3000,yes.copy(interactive=false)))
             val done=engine.reconcile(ranges,now(3000),true);checkSafe(done.ledger!!.usedMs==2000L)

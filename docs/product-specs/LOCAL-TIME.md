@@ -1,7 +1,7 @@
 # Android persistent local time engine
 
 - **Goal:** Measure total permitted screen use locally and enforce expiry without backend connectivity.
-- **Context:** Provisional state semantics, ADR-0002/0005; native child; no implementation exists yet.
+- **Context:** Provisional state semantics, ADR-0002/0005; native child; the OD-46 local reducer/Room slice exists, with physical and sync acceptance still open.
 - **Constraints:** No wall-clock-only accounting, exact WorkManager countdown, app-history upload, or process immortality assumption.
 - **Done when:** KR-008 passes deterministic fixtures and physical restart/reboot/offline tests within an approved support envelope.
 
@@ -25,7 +25,7 @@ Room persists one serialized engine record plus current/previous day aggregates,
 Record policy_epoch/version, period_key, recurring allowance, absolute dated bonus, manual lock,
 used_ms, last monotonic checkpoint, boot marker, last observed interactive/keyguard/enforcement states,
 trusted UTC anchor, timezone/revision, reconciliation coverage and report_sequence.
-Use a documented boot count/boot signal with monotonic regression detection; exact selected API and OEM reliability **UNSPECIFIED** pending spike.
+Use a documented boot count/boot signal with monotonic regression detection; OD-46 selects Settings.Global.BOOT_COUNT with monotonic regression detection for local development; OEM reliability remains **UNSPECIFIED** pending physical evidence.
 Do not subtract elapsedRealtime values across boots.
 
 ## Live algorithm proposal
@@ -42,7 +42,7 @@ Do not subtract elapsedRealtime values across boots.
 
 elapsedRealtime includes deep sleep, so blindly charging its entire delta would be wrong; eligibility intervals must gate it.
 [SystemClock](https://developer.android.com/reference/android/os/SystemClock).
-Room transactions are recommended for the coupled ledger/version/receipts; exact persistence library/version remains **UNSPECIFIED** until adoption.
+Room transactions are recommended for the coupled ledger/version/receipts; OD-46 adopts Room 2.8.5 for the bounded local accounting slice; receipts remain KR-009 scope.
 [Room](https://developer.android.com/training/data-storage/room).
 
 ## Crash and reconciliation algorithm
@@ -105,3 +105,7 @@ Persist command high-water version and active identity tombstones; old payload h
 Measure p95 expiry transition, grant persistence latency, recovery overcount/undercount and battery/write cost.
 Actual tolerable recovered-accounting error and battery threshold: **UNSPECIFIED**; propose ≤2 s error for ordinary same-boot recoverable gaps,
 and require owner-approved conservative behaviour when exact recovery is impossible.
+
+## OD-46 local implementation boundary
+
+See [local accounting lab](../../tools/kr008/README.md) and [classified evidence](../test-plans/evidence/KR-008-LOCAL-2026-09-13.md). Canonical policy/trusted-time inputs are local fixtures; the child enrollment UI does not automatically start accounting. Desired restriction is persisted/derived locally, with no enforcement adapter or healthy-enforcement claim. UsageStats querying is debug-only and cannot independently certify complete history. Clock recovery, actual app-update/physical lifecycle acceptance, receipt persistence and KR-009 sync are not demonstrated by this slice.
