@@ -66,7 +66,8 @@ class RemovalRuntimeTest {
         val bad=listOf("{}",good.replace("DEVICE_REVOKED","TARGET_DENIED"),good.replace(identity.getString("device_id"),java.util.UUID.randomUUID().toString()),
             good.replace(identity.getString("policy_epoch"),java.util.UUID.randomUUID().toString()),good.dropLast(1)+",\"protocol_version\":1}",
             good.dropLast(1)+",\"extra\":true}",good.replace("\"protocol_version\":1","\"protocol_version\":\"1\""))
-        for(text in bad){var rejected=false;try{validateRemoval(text,identity)}catch(_:Exception){rejected=true};checkSafe(rejected)}
+        val escapedDuplicate=good.dropLast(1)+",\"\\u0063ode\":\"DEVICE_REVOKED\"}"
+        for(text in bad+listOf(escapedDuplicate,good+"{}",good.replace("\"protocol_version\":1","\"protocol_version\":1.0"))){var rejected=false;try{validateRemoval(text,identity)}catch(_:Exception){rejected=true};checkSafe(rejected)}
         val ambiguous=JSONObject(identity.toString()).put("removal",JSONObject("{}"));store.save(ambiguous)
         val bytes=store.file.readBytes();ui.runOnIdle{model.restore()};settled()
         checkSafe(!model.state.removed&&!model.state.paired&&bytes.contentEquals(store.file.readBytes()))

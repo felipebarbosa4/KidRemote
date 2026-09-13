@@ -81,13 +81,23 @@ internal class IdentityStore(context: Context) {
 }
 internal class DeviceRemoved(val removal:JSONObject):SecurityException("DEVICE_REVOKED")
 internal fun validateRemoval(text:String,identity:JSONObject):JSONObject {
-    val r=JSONObject(text)
+    check(text.toByteArray(Charsets.UTF_8).size<=4096)
     val keys=setOf("protocol_version","code","device_id","policy_epoch")
-    check(r.keys().asSequence().toSet()==keys)
-    check(Regex("\"(?:protocol_version|code|device_id|policy_epoch)\"\\s*:").findAll(text).count()==4)
-    check(r.get("protocol_version") is Int&&r.getInt("protocol_version")==1)
-    check(r.get("code")=="DEVICE_REVOKED")
-    for(k in listOf("device_id","policy_epoch"))check(r.get(k) is String&&r.getString(k)==identity.getString(k))
+    val seen=mutableSetOf<String>();val r=JSONObject()
+    android.util.JsonReader(java.io.StringReader(text)).use { reader->
+        reader.isLenient=false;reader.beginObject()
+        while(reader.hasNext()) {
+            val name=reader.nextName();check(name in keys&&seen.add(name))
+            if(name=="protocol_version") {
+                check(reader.peek()==android.util.JsonToken.NUMBER&&reader.nextString()=="1");r.put(name,1)
+            } else {
+                check(reader.peek()==android.util.JsonToken.STRING);r.put(name,reader.nextString())
+            }
+        }
+        reader.endObject();check(reader.peek()==android.util.JsonToken.END_DOCUMENT&&seen==keys)
+    }
+    check(r.getString("code")=="DEVICE_REVOKED")
+    for(k in listOf("device_id","policy_epoch"))check(r.getString(k)==identity.getString(k))
     return r
 }
 internal class EnrollmentApi {
