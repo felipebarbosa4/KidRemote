@@ -98,3 +98,11 @@ Store submission is blocked by functioning UI/evidence, audience declarations, r
 Ready now: product review, documentation/CI checks, generic transport-first physical feasibility execution on the approved next device,
 local-only schema/RLS fixtures, pairing protocol review, deterministic domain fixtures using explicitly provisional semantics.
 No physical devices, Play Console approval, or deployed backend are assumed.
+
+**OD-45 prospective AC-7 local removal extension — 2026-09-13:** owner authorizes
+only KR-007 AC-7 on existing branch/PR #20 after `a424486`: validated typed revocation,
+explicit local removed/re-pair UX, preservation on outage/expiry and offline restart,
+and actual local PostgreSQL/gateway/owned-emulator tests. No physical/Samsung/camera
+work, enforcement, accounting, push, controls, deployment, merge or next issue. Do not
+build configured-policy caching/full KR-009 sync to claim AC-7 complete; report that
+boundary explicitly if absent. Existing AC-6 and historical evidence remain unchanged.

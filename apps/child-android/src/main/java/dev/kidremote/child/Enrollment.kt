@@ -61,13 +61,34 @@ internal class IdentityStore(context: Context) {
             check(r.getString("new_credential").matches(Regex("[A-Za-z0-9_-]{43}")))
             check(r.getString("new_credential")!=v.getString("credential"))
         }
+        if(v.has("removal"))validateRemoval(v.getJSONObject("removal").toString(),v)
         return v
     }
-    fun discardUnreadable():Boolean {
-        if(file.exists()){try{if(read()!=null)return false}catch(_:Exception){};android.util.AtomicFile(file).delete()
-            KeyStore.getInstance("AndroidKeyStore").apply{load(null);if(containsAlias(alias))deleteEntry(alias)}}
-        pending.delete();return !file.exists()&&!pending.exists()
+    fun clearConfirmedRemoval():Boolean {
+        val value=read()?:return false
+        if(!value.has("removal"))return false
+        validateRemoval(value.getJSONObject("removal").toString(),value)
+        android.util.AtomicFile(file).delete()
+        pending.delete()
+        check(!file.exists()&&!pending.exists())
+        KeyStore.getInstance("AndroidKeyStore").apply{load(null);if(containsAlias(alias))deleteEntry(alias)}
+        return true
     }
+    fun recoverMissingIdentity():Boolean {
+        if(file.exists())return false
+        pending.delete();return !pending.exists()
+    }
+}
+internal class DeviceRemoved(val removal:JSONObject):SecurityException("DEVICE_REVOKED")
+internal fun validateRemoval(text:String,identity:JSONObject):JSONObject {
+    val r=JSONObject(text)
+    val keys=setOf("protocol_version","code","device_id","policy_epoch")
+    check(r.keys().asSequence().toSet()==keys)
+    check(Regex("\"(?:protocol_version|code|device_id|policy_epoch)\"\\s*:").findAll(text).count()==4)
+    check(r.get("protocol_version") is Int&&r.getInt("protocol_version")==1)
+    check(r.get("code")=="DEVICE_REVOKED")
+    for(k in listOf("device_id","policy_epoch"))check(r.get(k) is String&&r.getString(k)==identity.getString(k))
+    return r
 }
 internal class EnrollmentApi {
     private fun rotation(identity:JSONObject,phase:String,useNew:Boolean):JSONObject {
@@ -82,6 +103,15 @@ internal class EnrollmentApi {
         return result
     }
     fun contact(store:IdentityStore,identity:JSONObject):JSONObject {
+        check(!identity.has("removal"))
+        try{return renew(store,identity)}catch(e:SecurityException){
+            if(e is DeviceRemoved)throw e
+            // Rotation 403 alone is not a removal instruction. Validate through own sync.
+            initial(identity)
+            throw e
+        }
+    }
+    private fun renew(store:IdentityStore,identity:JSONObject):JSONObject {
         if(!identity.has("rotation")) {
             val state=initial(identity)
             if(!state.getJSONObject("credential_lifecycle").getBoolean("rotation_due"))return state
@@ -101,14 +131,24 @@ internal class EnrollmentApi {
         store.save(identity)
         return initial(identity)
     }
-    fun request(path:String,body:JSONObject,credential:String?=null):JSONObject {
+    fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null):JSONObject {
         check(Backend.endpoint.isNotEmpty())
         val c=URL(Backend.endpoint+path).openConnection() as HttpURLConnection
         try {
             c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.instanceFollowRedirects=false;c.useCaches=false;c.doOutput=true
             c.setRequestProperty("Content-Type","application/json");if(credential!=null)c.setRequestProperty("Authorization","Bearer $credential")
             c.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
-            if(c.responseCode==403)throw SecurityException("DEVICE_REVOKED")
+            if(c.responseCode==403) {
+                if(path=="/device/sync"&&identity!=null) {
+                    val bytes=c.errorStream?.use{input->val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(1024)
+                        while(out.size()<=4096){val n=input.read(buffer);if(n<0)break;out.write(buffer,0,n)};out.toByteArray()}?:byteArrayOf()
+                    check(bytes.size<=4096)
+                    val text=String(bytes,Charsets.UTF_8)
+                    if(JSONObject(text).optString("code")!="DEVICE_REVOKED")throw SecurityException("CREDENTIAL_REJECTED")
+                    throw DeviceRemoved(validateRemoval(text,identity))
+                }
+                throw SecurityException("DEVICE_REVOKED")
+            }
             if(c.responseCode==401)throw SecurityException("CREDENTIAL_REJECTED")
             check(c.responseCode==200){"ENROLLMENT_UNAVAILABLE"}
             val bytes=c.inputStream.use{input->val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(4096)
@@ -118,13 +158,13 @@ internal class EnrollmentApi {
     }
     fun redeem(q:JSONObject)=request("/pairing/redeem",JSONObject().put("qr",q).put("metadata",JSONObject().put("platform","android").put("os_major",android.os.Build.VERSION.RELEASE.substringBefore('.').toInt()).put("agent_version","0.0.1-local").put("nickname","Dispositivo Android")))
     fun initial(identity:JSONObject):JSONObject {
-        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"))
+        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"),identity)
         check(r.getInt("protocol_version")==1&&r.getString("kind")=="ENROLLMENT_BOOTSTRAP"&&r.getString("device_id")==identity.getString("device_id")&&r.getString("policy_epoch")==identity.getString("policy_epoch"))
         check(!r.getBoolean("policy_configured")&&r.isNull("daily_limit_seconds")&&!r.getBoolean("enforcement_available"))
         return r
     }
 }
-data class EnrollmentState(val loading:Boolean=false,val paired:Boolean=false,val message:String="Não pareado. Enforcement não disponível.",val recovery:Boolean=false)
+data class EnrollmentState(val loading:Boolean=false,val paired:Boolean=false,val message:String="Não pareado. Enforcement não disponível.",val recovery:Boolean=false,val removed:Boolean=false,val pairingRecovery:Boolean=false)
 class EnrollmentModel(application:Application):AndroidViewModel(application) {
     var state by mutableStateOf(EnrollmentState());private set
     private val store=IdentityStore(application);private val api=EnrollmentApi();private val executor=Executors.newSingleThreadExecutor();private val main=Handler(Looper.getMainLooper())
@@ -133,16 +173,21 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         if(state.loading)return
         state=state.copy(loading=true)
         executor.execute {
-            val next=try{action()}catch(_:Exception){EnrollmentState(message="Identidade ou contato não confirmado. Não repita um QR consumido. O responsável deve verificar, revogar o pareamento incompleto e gerar novo QR.",recovery=true)}
+            val next=try{action()}catch(_:Exception){EnrollmentState(message="Identidade ou contato não confirmado. Não repita um QR consumido. O responsável deve verificar, revogar o pareamento incompleto e gerar novo QR.",recovery=true,pairingRecovery=!store.file.exists())}
             main.post{state=next}
         }
     }
     fun restore()=run {
         val saved=store.read()
         if(saved==null){if(store.pending.exists())throw IllegalStateException("INTERRUPTED_PAIRING");EnrollmentState()}
+        else if(saved.has("removal"))removedState()
         else {
             try{api.contact(store,saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
-            catch(_:SecurityException){EnrollmentState(message="Credencial recusada ou revogada. Identidade local preservada; procure o responsável. Enforcement não ativo.",recovery=true)}
+            catch(e:DeviceRemoved){
+                saved.put("removal",e.removal);store.save(saved)
+                removedState()
+            }
+            catch(_:SecurityException){EnrollmentState(message="Credencial não aceita. Remoção não confirmada; identidade local preservada. Procure o responsável. Enforcement não ativo.",recovery=true)}
             catch(_:Exception){EnrollmentState(paired=true,message="Identidade armazenada; contato não confirmado. Enforcement não ativo. Tente verificar novamente.")}
         }
     }
@@ -156,9 +201,14 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         store.save(identity);api.initial(identity)
         EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")
     }
+    private fun removedState()=EnrollmentState(message="Removido pelo responsável. Pareamento encerrado; limpe a identidade local para usar um novo QR. Enforcement não ativo.",recovery=true,removed=true)
+    fun clearRemoved()=run {
+        check(store.clearConfirmedRemoval())
+        EnrollmentState(message="Identidade removida deste aplicativo. Peça um novo QR ao responsável. Enforcement não ativo.")
+    }
     fun acknowledgeFreshQr() {
         // No persisted policy/identity is discarded. Missing identity recovery requires explicit parent action.
-        if(!state.loading&&store.discardUnreadable()) state=EnrollmentState(message="Use somente um novo QR após a revogação pelo responsável.")
+        if(!state.loading&&!store.file.exists()&&store.recoverMissingIdentity()) state=EnrollmentState(message="Use somente um novo QR após a revogação pelo responsável.")
     }
     override fun onCleared(){executor.shutdownNow();super.onCleared()}
 }

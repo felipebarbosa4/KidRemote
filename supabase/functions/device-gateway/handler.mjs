@@ -72,7 +72,13 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
             !UUID.test(c.credential_id) || !UUID.test(c.device_id) ||
             c.device_id !== d.id || !UUID.test(d.id) || !UUID.test(d.household_id) ||
             !UUID.test(d.policy_epoch)) return reply(401,'UNAUTHORIZED');
-        if (c.revoked_at != null || d.revoked_at != null) return reply(403,'DEVICE_REVOKED');
+        if (d.revoked_at != null) {
+          if (url.pathname !== '/device/sync') return reply(403,'DEVICE_REVOKED');
+          if (!exact(body,['protocol_version','after_version']) || !integer(body.after_version)) return reply(400,'INVALID_PAYLOAD');
+          // Only the matched device's revocation authorizes local removal, never rotation retirement.
+          return reply(403,null,{protocol_version:1,code:'DEVICE_REVOKED',device_id:d.id,policy_epoch:d.policy_epoch});
+        }
+        if (c.revoked_at != null) return reply(403,'CREDENTIAL_REVOKED');
         const expires = Date.parse(c.expires_at);
         if (!Number.isFinite(expires) || expires <= clock()) return reply(401,'UNAUTHORIZED');
         const scope = Object.freeze({credential_id:c.credential_id,device_id:d.id,

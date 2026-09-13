@@ -26,13 +26,40 @@ export async function exerciseEnrollment({command,run,guard,dir,windowsPath,app,
   if((await run(['shell','run-as',child,'sh','-c','"mkdir -p no_backup && cat > no_backup/qr-handoff"'],10000,qr)).code!==0)throw Error('LOCAL_QR_HANDOFF_FAILED');
   return parsed.session_id;
  }
- await handoff();
+ const enrollmentSession=await handoff();
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','decodeRedeemAndRead');
  await stage(child,'dev.kidremote.child.EnrollmentRuntimeTest','restartAndNegatives');
  await stage(app,'dev.kidremote.parent.ParentRuntimeTest','parentSeesEnrollment');
  const count=sql("select count(*) from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");
  if(count.trim()!=='1')throw Error('NOT_EXACTLY_ONE_RUNTIME_DEVICE');
  evidence.enrollmentDeviceCount=1;evidence.cameraEvidence='GENERATED_QR_DECODER_INPUT_NOT_CAMERA_CAPTURE';
+ if(process.env.KR007_REMOVAL_RUNTIME==='1') {
+  const removal=method=>stage(child,'dev.kidremote.child.RemovalRuntimeTest',method);
+  const counts=()=>sql("select count(*) from public.devices;select count(*) from private.device_credentials;");
+  const before=counts();
+  await removal('remember');
+  await removal('unknown');
+  await gatewayAvailable(false);
+  try{await removal('offlineRestart');}finally{await gatewayAvailable(true);}
+  sql("update private.device_credentials c set expires_at=clock_timestamp() from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where c.device_id=d.id and u.email like 'kr006-runtime-%@example.test';");
+  await removal('expired');
+  const actor=sql("select u.id from auth.users u join public.household_members m on m.user_id=u.id where u.email like 'kr006-runtime-%@example.test';");
+  if(!/^[a-f0-9-]{36}$/.test(actor))throw Error('REMOVAL_ACTOR_UNVERIFIED');
+  const revoked=JSON.parse(sql(`set role authenticated;set "request.jwt.claim.sub"='${actor}';select public.finish_pairing('${enrollmentSession}',true);`));
+  if(revoked.result!=='REVOKED_FRESH_QR_REQUIRED')throw Error('REMOVAL_NOT_REAL_PARENT_TRANSACTION');
+  await removal('removed');
+  await gatewayAvailable(false);
+  try {
+   await removal('removedOfflineRestart');
+   await removal('invalidEnvelopesAndStorage');
+   await removal('explicitClear');
+   await removal('clearedOfflineRestart');
+  }finally{await gatewayAvailable(true);}
+  if(counts()!==before)throw Error('REMOVAL_CREATED_IDENTITY_OR_CREDENTIAL');
+  evidence.removal='REAL_PARENT_SQL_GATEWAY_VALIDATED_REMOVAL_OFFLINE_RESTART_EXPLICIT_CLEAR';
+  evidence.configuredPolicy='NOT_IMPLEMENTED_NOT_TESTED_KR009_BOUNDARY';
+  return;
+ }
  // AC-6: stored timestamp fixtures only, never host/emulator clocks. Real app contact drives renewal.
  const ageCurrent=()=>sql("update private.device_credentials c set created_at=clock_timestamp()-interval '31 days' from public.devices d join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where c.device_id=d.id and c.revoked_at is null and u.email like 'kr006-runtime-%@example.test';");
  const rotations=()=>sql("select count(*) from private.credential_rotations r join public.devices d on d.id=r.device_id join public.household_members m on m.household_id=d.household_id join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");

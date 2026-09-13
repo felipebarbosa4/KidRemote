@@ -2,6 +2,13 @@
 
 ## KR-007 camera and identity-storage continuation — OD-45
 
+### AC-7 local removal — OD-45, 2026-09-13
+
+- **Goal:** explicit validated removal and local recovery without treating outage/expiry as removal.
+- **Context:** clean `a424486`, existing encrypted identity/rotation and unconfigured bootstrap only; no configured-policy persistence exists. Issue #7 open, PR #20 draft/stacked.
+- **Constraints:** existing gateway/AtomicFile paths; no new sync/cache architecture, physical/camera/enforcement or later issue. Unknown bearer cannot discover removal; credential retirement alone is not device removal.
+- **Done when:** typed-result validation, durable removed state and explicit local clear are implemented; actual SQL/HTTP/Android identity preservation and negatives have recorded results, CI/cleanup pass, configured-policy gap remains explicit.
+
 ### AC-6 local credential rotation
 
 - **Goal:** connected local renewal with durable candidate/operation persistence, real transactional authorization and restart/response-loss recovery.

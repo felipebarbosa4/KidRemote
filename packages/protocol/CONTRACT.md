@@ -201,3 +201,38 @@ withhold a **real committed HTTP reply after HTTP receipt/JSON parsing but befor
 renewal consumes it**. This tests application response loss/process recovery, not
 packet-level loss or an Edge deployment. The phase-only hook has no release storage
 or setter, no secret output and is not an authorization/commit stub.
+
+## KR-007 local validated removal (OD-45 AC-7)
+
+Own `POST /device/sync` with a matched digest and server-verified revoked **device**
+returns HTTP 403 and exactly `{protocol_version:1, code:"DEVICE_REVOKED", device_id,
+policy_epoch}`. Both IDs derive from the verified credential/device join. No policy,
+credential, household or replacement identity is returned. Caller target overrides
+are rejected. A retired credential of a still-active device (including AC-6 old
+generation retirement) returns only `CREDENTIAL_REVOKED`, never device removal.
+Unknown/purged digests remain generic 401 `UNAUTHORIZED`; account-deletion rows
+excluded by the existing active-household adapter also remain generic. No tombstone
+lookup, account deletion workflow or additional sync endpoint is implemented here.
+
+Only an exact bounded response from the configured own-sync endpoint with matching
+protocol/device/epoch authorizes removal. Bare 403, other route errors, malformed/
+duplicate/foreign fields, timeout and 401 cannot do so. Rotation 403 is rechecked
+through own sync; retirement alone cannot remove the installation. The local debug
+loopback transport is unchanged; production server authenticity still requires TLS.
+
+The child atomically stores the validated envelope in its existing encrypted identity,
+then displays Removed/re-pair required, never healthy or enforcement-ready. Pending
+rotation candidates and other identity fields are retained until the user explicitly
+clears the confirmed removed identity. Offline restart restores this state without
+contact; no automatic new identity/credential or QR replay. The explicit clear removes
+the identity/key and returns to unpaired. Corrupt/ambiguous identity/removal cannot
+authorize this clear; the older missing-identity pairing recovery cannot erase an
+existing unreadable file. No guardian confirmation method is invented.
+
+**Configured-policy boundary:** the current adapter rejects configured/nonzero-version
+policy and the child stores identity only, not any downloaded policy/cache/ledger.
+This slice proves identity/removal persistence, not offline configured-policy retention
+or application. Architecture still requires retaining the last valid downloaded policy
+on outage/expiry until a valid newer policy/removal. Implementing/testing that store
+and ordered snapshot acceptance belongs to later sync work (KR-009; accounting KR-008).
+AC-7 remains partial until that dependency exists; no dummy policy cache/test is substituted.

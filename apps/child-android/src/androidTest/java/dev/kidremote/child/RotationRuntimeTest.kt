@@ -69,7 +69,8 @@ class RotationRuntimeTest {
         checkSafe(denied)
         ActivityScenario.launch(ChildActivity::class.java).use {
             Thread.sleep(12000)
-            checkSafe(before.contentEquals(store.file.readBytes())&&store.read()!=null)
+            if(expected=="CREDENTIAL_REJECTED")checkSafe(before.contentEquals(store.file.readBytes())&&store.read()!=null)
+            else checkSafe(store.read()!!.has("removal")) // AC-7 now persists validated device removal.
             result(if(expected=="CREDENTIAL_REJECTED")"EXPIRED_REAL_HTTP_DENIED_IDENTITY_RETAINED_PASS" else "REVOKED_REAL_HTTP_DENIED_IDENTITY_RETAINED_PASS")
         }
     }
