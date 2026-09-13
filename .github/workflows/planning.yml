@@ -25,6 +25,7 @@ jobs:
         run: |
           node --test tools/kr006/*.test.mjs
           node --test tools/kr007/*.test.mjs
+          node --test tools/kr008/*.test.mjs
           node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --enrollment-test
       - name: Build parent with preinstalled SDK only
         run: |

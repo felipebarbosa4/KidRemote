@@ -4,3 +4,6 @@ rootProject.name = "KidRemoteParentLocal"
 include(":app")
 include(":child")
 project(":child").projectDir = file("../child-android")
+
+include(":accounting-storage")
+project(":accounting-storage").projectDir = file("../child-android/accounting-storage")

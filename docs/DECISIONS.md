@@ -106,3 +106,13 @@ and actual local PostgreSQL/gateway/owned-emulator tests. No physical/Samsung/ca
 work, enforcement, accounting, push, controls, deployment, merge or next issue. Do not
 build configured-policy caching/full KR-009 sync to claim AC-7 complete; report that
 boundary explicitly if absent. Existing AC-6 and historical evidence remain unchanged.
+
+**OD-46 — APPROVED OWNER LIMITED KR-008 LOCAL DEVELOPMENT EXCEPTION, 2026-09-13:**
+authorize local Android accounting on a separate branch/draft PR stacked on unmerged
+KR-007 `4537954`. Pure reducer, monotonic integration, transactional aggregate
+persistence, controlled policy inputs, reconciliation/clock uncertainty and owned
+emulator tests only. KR-003 remains open; no physical execution, enforcement
+acceptance, backend countdown, configured network sync, FCM/ack/outbox/controls,
+deployment, real use, distribution, merge or KR-009. Preserve all historical KR-007
+evidence. Room 2.8.5 is selected for this local slice after official release review;
+no production/support or battery acceptance follows.

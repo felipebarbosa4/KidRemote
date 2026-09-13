@@ -10,6 +10,8 @@ android {
 }
 java {toolchain {languageVersion=JavaLanguageVersion.of(17)}}
 dependencies {
+    implementation(project(":accounting-storage"))
+    implementation("androidx.room:room-runtime:2.8.5")
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.material3:material3")

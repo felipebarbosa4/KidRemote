@@ -1,5 +1,12 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-008 local accounting — OD-46
+
+- **Goal:** a persisted local reducer implements approved accounting/period/version semantics without double counting or free recovery allowance.
+- **Context:** clean `4537954`, existing Issue #8, child identity and approved ADR-0005/LOCAL-TIME. Branch `kr-008-local-accounting` targets unmerged `kr-007-local-enrollment`.
+- **Constraints:** canonical inputs through a local interface only; one aggregate ledger bound to existing identity/epoch; no per-package persistence, network sync/receipts, enforcement or physical device. No reinterpretation of KR-007 evidence.
+- **Done when:** controlled domain fixtures, actual Room transaction/migration/crash and owned-emulator results are retained with OBSERVED/INFERRED/UNSPECIFIED labels; CI passes; remaining physical/battery/KR-009 gaps stay explicit and Issue #8/new draft PR synchronized.
+
 ## KR-007 camera and identity-storage continuation — OD-45
 
 ### AC-7 local removal — OD-45, 2026-09-13
