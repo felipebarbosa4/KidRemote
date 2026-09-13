@@ -24,7 +24,8 @@ discarded merely because a read fails. No default allowance or enforcement capab
 
 Current camera/physical execution is UNRUN. Synthetic QR encoder/decoder and actual
 HTTP/storage/app tests are separate evidence, not camera permission/scan acceptance.
-Rotation, removal and OEM backup/transfer acceptance remain pending. Local Node gateway
+AC-6 rotation now has [real local SQL/HTTP/Android evidence](../../docs/test-plans/evidence/KR-007-ROTATION-2026-09-12.md).
+Removal and OEM backup/transfer acceptance remain pending. Local Node gateway
 is not an Edge deployment. Startup/runtime results will be recorded in KR-007 evidence.
 
 ## Local startup and bounded test
