@@ -1,5 +1,12 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-008 AC-2 local app-update — OD-46 extension
+
+- **Goal:** prove actual versioned Android replacement preserves identity-bound accounting, with no reset/replay and transactional migration.
+- **Context:** clean `609c0fd`, existing Issue #8 / draft PR #21, same branch; current Room schema 2 and existing legacy schema 1 fixture.
+- **Constraints:** owned emulator; same-signature lab APK v1→v2; no clear/uninstall inside the update window; no core redesign, physical execution, sync/receipts or enforcement. Preserve each attempt separately.
+- **Done when:** pre/post APK source/hash identities, real update/restart/migration/death/refusal results and remaining physical/KR-009 gaps are recorded; CI passes; Issue #8 / PR #21 synchronized.
+
 ## KR-008 local accounting — OD-46
 
 - **Goal:** a persisted local reducer implements approved accounting/period/version semantics without double counting or free recovery allowance.

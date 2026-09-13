@@ -15,3 +15,11 @@ test('Room storage stays aggregate-only, no destructive migration fallback or in
 test('accounting runtime is fixed to verified task AVD and keeps crash classifications',()=>{
  const s=read('tools/kr008/android-runtime.mjs');assert.match(s,/\['-s','emulator-5584'/);assert.match(s,/ro.kernel.qemu/);assert.match(s,/OWNER_UNVERIFIED/);assert.match(s,/EXPECTED_PROCESS_DEATH/);assert.doesNotMatch(s,/kill-server|devices -l|screencap|screenrecord|logcat|appops/);
 });
+test('update suite keeps replacement window intact and uses the unchanged validated migration',()=>{
+ const s=read('tools/kr008/update-runtime.mjs');const window=s.slice(s.indexOf("await stage(scenario==='CURRENT_SCHEMA'"),s.indexOf("evidence.overall='PASS_THIS_EMULATOR_ONLY'"));
+ assert.match(window,/install\('post-v2.apk'\)/);assert.doesNotMatch(window,/uninstall|pm','clear/);
+ assert.match(s,/INSTALL_FAILED_VERSION_DOWNGRADE/);assert.doesNotMatch(s,/'-d'|kill-server|logcat|screencap|appops/);
+ const t=read('apps/child-android/src/androidTest/java/dev/kidremote/child/accounting/AccountingUpdateTest.kt');
+ assert.match(t,/LedgerDatabase.MIGRATION_1_2.migrate\(db\)/);assert.match(t,/db.inTransaction\(\)/);assert.doesNotMatch(t,/fallbackToDestructiveMigration|queryUsageStats|UsageStatsManager/);
+ const build=read('tools/kr008/build-update.mjs');assert.match(build,/apksigner/);assert.match(build,/certificate/);
+});

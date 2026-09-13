@@ -116,3 +116,11 @@ acceptance, backend countdown, configured network sync, FCM/ack/outbox/controls,
 deployment, real use, distribution, merge or KR-009. Preserve all historical KR-007
 evidence. Room 2.8.5 is selected for this local slice after official release review;
 no production/support or battery acceptance follows.
+
+**OD-46 extension — APPROVED OWNER KR-008 AC-2 LOCAL APP-UPDATE ONLY:**
+from reporting head `609c0fd`, authorize versioned APK replacement on the existing
+owned emulator, identity/ledger preservation, existing schema migration/crash seams
+and refusal evidence. No KR-009 receipts/sync, enforcement, physical execution,
+battery acceptance or new clock recovery policy. Pre/post APKs may be laboratory
+builds with one signing identity and explicit version codes; legacy schema 1 remains
+a disclosed fixture, not a claim of a previously distributed application.

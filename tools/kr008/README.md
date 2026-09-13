@@ -25,3 +25,9 @@ KR008_APK_SOURCE=<source-commit> node tools/kr008/android-runtime.mjs
 ```
 
 The runner verifies AVD identity/API, targets only emulator-5584, installs only child test packages and emits aggregate result codes and APK hashes. Tests run in a deliberate order: restart and crash survivors depend on prior committed fixtures. Two kills are expected only with a matching durable marker plus instrumentation process-crash result; other failures remain failures. Each attempt gets a separate JSON report. Cleanup clears the exact task packages; stop the owned emulator afterwards. No logcat, screenshot, physical discovery or Usage Access grant is used.
+
+## Versioned APK update slice
+
+`build-update.mjs` retains the normal v2 debug APK/test APK, builds v1 with `-Pkr008UpdateVersion=1` in the same CI signing environment and verifies package/version/certificate/hash identities. It restores the normal v2 debug artifact after packaging the pair. No signing key is published. Both apps share the unchanged production accounting implementation; the legacy schema is an explicit local SQL fixture, not a historical released APK.
+
+Place the `kr008-update-apks` CI bundle in `apks-kr008-update-<source-prefix7>` within the existing owner directory. Run `update-runtime.mjs` with `KR006_RUNTIME_DIRECTORY` and full `KR008_UPDATE_SOURCE`. Each independent scenario may initialize clean synthetic test packages before preparing state. Between prepare, versioned replacement and final verification it never clears data or uninstalls. It retains enumerated results in a unique `kr008-update-*.json`, then clears test data and requires the owned emulator to be stopped separately. Migration interruption and expected downgrade refusal remain individually classified. See [app-update evidence](../../docs/test-plans/evidence/KR-008-UPDATE-2026-09-13.md).
