@@ -1,0 +1,26 @@
+{
+  "classification": "OBSERVED_COMPONENT_ONLY_NO_BACKEND",
+  "source": "6a316e585ac49969f3e87c0c61ecc1d662927473",
+  "hashes": {
+    "app-debug.apk": "514b4fd43d9caadaeacaaed3cbdba501733b9b415bc35d588f60719197a739e4",
+    "app-debug-androidTest.apk": "82b08632f152ebf87bc910c0925a29d8d4641bdecfd60fe410402fd625461ece",
+    "child-debug.apk": "7502d0ea78d013e6c97c76c22af293aec1f3c3e6278edaa77ae9a1772ee9197b",
+    "child-debug-androidTest.apk": "5cc670ca2ed86996ff0e870d9c4c0a4517fc0659f25eac1815e9df8340a804fb"
+  },
+  "result": "PASS",
+  "cleanup": "TASK_PARENT_DATA_CLEARED_FONT_RESTORED",
+  "codes": [
+    "ACTION_CHECK_0",
+    "ACTION_LAYOUT_FITS",
+    "ACTION_CHECK_1",
+    "ACTION_LAYOUT_FITS",
+    "ACTION_CHECK_2",
+    "ACTION_LAYOUT_FITS",
+    "ACTION_CHECK_3",
+    "ACTION_LAYOUT_FITS",
+    "ACTION_CHECK_4",
+    "ACTION_LAYOUT_FITS",
+    "CONTROL_KEYBOARD_FOCUS_ORDER_PASS",
+    "PARENT_LAYOUT_PASS"
+  ]
+}
