@@ -38,6 +38,8 @@ jobs:
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
           node tools/kr007/audit-child.mjs
+      - name: Verify OD-49 fixed loopback lab APK and release isolation
+        run: node tools/enforcement/product-oracle/build-lab.mjs
       - name: Build and verify KR-008 versioned update APK pair
         env:
           KR008_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -97,6 +99,7 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/Prerequisites.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
           pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
@@ -151,6 +154,8 @@ jobs:
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
+          ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1
           ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1
@@ -179,6 +184,8 @@ jobs:
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
+          ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
+          ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1
           ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1

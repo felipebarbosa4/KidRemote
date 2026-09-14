@@ -217,3 +217,11 @@ never assume spike permission transfer or overwrite installed state. No product 
 hooks, FCM, enforcement redesign, destructive operations or historical runner edits.
 Publish an immutable owner bundle/command only when transport, provenance and
 independent cleanup are actually ready; otherwise retain an explicit blocker.
+
+**OD-49 extension — device-free prerequisites and read-only inventory:** owner
+explicitly authorizes durable host journals, strict canonical callback/provenance
+adapters, a fixed loopback debug-only lab endpoint, and one immutable Windows
+read-only Samsung preflight bundle. No physical command is executed by the agent;
+no installation, settings/input, reverse tunnel, backend mutation or qualification
+belongs to the preflight. Product oracle remains BLOCKED until live prerequisites
+are evidenced. Release endpoint/security and historical verdicts remain unchanged.

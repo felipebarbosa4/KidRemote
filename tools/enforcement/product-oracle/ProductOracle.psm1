@@ -40,7 +40,8 @@ function Get-ProductFailure($ErrorRecord) {
 }
 function Invoke-ProductSlice([hashtable]$Ops) {
     # Ops are host transports, not product hooks. No raw transport or bearer output enters this journal.
-    $j=[PSCustomObject]@{scope='ONE_PRODUCT_VERTICAL_SLICE';attempt=[Guid]::NewGuid().ToString();status='INVALID';reason='NOT_STARTED';cleanup='NOT_REQUIRED';lockId=[Guid]::NewGuid().ToString();unlockId=[Guid]::NewGuid().ToString();independentPositive=$false;independentBlocked=$false;independentRestored=$false;corroborated=$false}
+    $attempt=if($Ops.ContainsKey('Attempt')){$Ops.Attempt}else{[Guid]::NewGuid().ToString()}
+    $j=[PSCustomObject]@{stage='BEGIN';expectedVersion=0;cleanupId=[Guid]::NewGuid().ToString();scope='ONE_PRODUCT_VERTICAL_SLICE';attempt=$attempt;status='INVALID';reason='NOT_STARTED';cleanup='NOT_REQUIRED';lockId=[Guid]::NewGuid().ToString();unlockId=[Guid]::NewGuid().ToString();independentPositive=$false;independentBlocked=$false;independentRestored=$false;corroborated=$false}
     $sent=$false;$lock=$null;$request=$null;$initial=$null;$primary=$null
     try {
         & $Ops.Preflight
@@ -51,7 +52,7 @@ function Invoke-ProductSlice([hashtable]$Ops) {
         Assert-ProductPositive $p (& $Ops.Fixture);$j.independentPositive=$true
         $request=New-ProductOperation $j.lockId $initial.device_id 'LOCK' $initial.version
         # Persist intent before an ambiguous HTTP write. A retry must use this same UUID/body.
-        & $Ops.Journal $j;$sent=$true;$lock=& $Ops.Operation $request
+        $j.stage='LOCK_ADMITTED';$j.expectedVersion=$request.expected_version;& $Ops.Journal $j;$sent=$true;$lock=& $Ops.Operation $request
         Assert-ProductAccepted $lock $request $initial.policy_epoch
         & $Ops.Sync
         $report=& $Ops.Report $lock.version $true
@@ -69,7 +70,7 @@ function Invoke-ProductSlice([hashtable]$Ops) {
         # Supporting telemetry cannot turn a contradicted fixture oracle into PASS.
         $j.corroborated=[bool](& $Ops.Status $j.lockId $lock.version)
         if(-not $j.corroborated){throw 'INVALID:STATUS_NOT_CORROBORATED'}
-    } catch {$primary=Get-ProductFailure $_}
+    } catch {$primary=Get-ProductFailure $_;$j.status=$primary.Split(':')[0];$j.reason=$primary.Split(':')[1];$j.stage='VERDICT';try{& $Ops.Journal $j}catch{}}
     finally {
         if($sent) {
             $j.cleanup='UNVERIFIED'
@@ -78,7 +79,7 @@ function Invoke-ProductSlice([hashtable]$Ops) {
                 if($null -eq $lock){$lock=& $Ops.Operation $request}
                 Assert-ProductAccepted $lock $request $initial.policy_epoch
                 $unlock=New-ProductOperation $j.unlockId $initial.device_id 'UNLOCK' $lock.version
-                & $Ops.Journal $j
+                $j.stage='UNLOCK_ADMITTED';$j.expectedVersion=$unlock.expected_version;& $Ops.Journal $j
                 try {$u=& $Ops.Operation $unlock}
                 catch {if($null -eq $primary){$primary=Get-ProductFailure $_};$u=& $Ops.Operation $unlock}
                 Assert-ProductAccepted $u $unlock $initial.policy_epoch
@@ -93,7 +94,7 @@ function Invoke-ProductSlice([hashtable]$Ops) {
         if($null -ne $primary){$j.status=$primary.Split(':')[0];$j.reason=$primary.Split(':')[1]}
         elseif($j.independentPositive -and $j.independentBlocked -and $j.independentRestored -and $j.corroborated -and $j.cleanup -eq 'VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT'){$j.status='PASS';$j.reason='ONE_INDEPENDENT_VERTICAL_SLICE'}
         else {$j.reason='INCOMPLETE_ORACLE'}
-        & $Ops.Journal $j
+        $j.stage='FINAL';& $Ops.Journal $j
     }
     return $j
 }
