@@ -23,7 +23,7 @@ class EnforcementRuntimeTest {
     val component=c.packageName+"/dev.kidremote.child.enforcement.ChildEnforcementService"
     val previous=shell("settings get secure enabled_accessibility_services")
     val enabled=shell("settings get secure accessibility_enabled")
-    fun waitFor(code:String,predicate:()->Boolean){val until=android.os.SystemClock.elapsedRealtime()+15000;while(!predicate()&&android.os.SystemClock.elapsedRealtime()<until)Thread.sleep(100);check(predicate()){code};i.sendStatus(0,Bundle().apply{putString("enforcement",code)})}
+    fun waitFor(code:String,predicate:()->Boolean){val until=android.os.SystemClock.elapsedRealtime()+15000;while(!predicate()&&android.os.SystemClock.elapsedRealtime()<until)Thread.sleep(100);if(!predicate()){i.sendStatus(0,Bundle().apply{putString("enforcement","WAIT_FAILED_"+code)});EnforcementRuntime.engine()?.read()?.ledger?.let{s->i.sendStatus(0,Bundle().apply{putString("enforcement",EnforcementRuntime.report(c,s).health)})}};check(predicate()){code};i.sendStatus(0,Bundle().apply{putString("enforcement",code)})}
     try {
         File(c.noBackupFilesDir,"sync-test-control").writeText("controlled")
         c.deleteDatabase(File(c.noBackupFilesDir,"accounting.db").absolutePath)
@@ -37,7 +37,7 @@ class EnforcementRuntimeTest {
         shell("appops set ${c.packageName} GET_USAGE_STATS allow")
         shell("settings put secure enabled_accessibility_services $component");shell("settings put secure accessibility_enabled 1")
         waitFor("SERVICE_CONNECTED"){EnforcementRuntime.engine()!=null}
-        shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
         waitFor("LOCK_ATTACHED_OBSERVED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         val engine=EnforcementRuntime.engine()!!
         waitFor("OBSERVATION_DURABLE_OFFLINE"){engine.read().ledger?.pendingAck?.let{JSONObject(it).getBoolean("restriction_applied")}==true}
@@ -46,13 +46,13 @@ class EnforcementRuntimeTest {
         // Safe-system route preserves desired state and detaches the overlay.
         c.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         waitFor("SAFE_SURFACE_DETACHED"){EnforcementRuntime.text().startsWith("Superfície de sistema")}
-        shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
         waitFor("ORDINARY_REENTRY_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         shell("settings put secure enabled_accessibility_services null")
         waitFor("SERVICE_DISCONNECTED_VISIBLE"){EnforcementRuntime.engine()==null}
         shell("settings put secure enabled_accessibility_services $component");shell("settings put secure accessibility_enabled 1")
         waitFor("SERVICE_RECONNECTED"){EnforcementRuntime.engine()!=null}
-        shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
         waitFor("OFFLINE_RESTRICTION_RESTORED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         val restored=EnforcementRuntime.engine()!!.read().ledger!!
         check(restored.usedMs>=before.usedMs&&restored.policy==before.policy&&restored.bonusSeconds==before.bonusSeconds)
