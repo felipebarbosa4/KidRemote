@@ -38,3 +38,10 @@ test('instrumentation APK absent version is recorded as absent; application pair
  assert.throws(()=>manifestIdentity("package: name='app' versionCode='invalid' versionName='x'"));
  assert.match(read('tools/kr008/build-update.mjs'),/pre.versionCode!==1\|\|post.versionCode!==2/);
 });
+
+test('recovery harness remains owned-emulator-only and release excludes writable kill hooks',()=>{
+ const runner=read('tools/kr008/recovery-runtime.mjs');assert.match(runner,/OWNER_UNVERIFIED/);assert.match(runner,/ro.kernel.qemu/);assert.match(runner,/EXPECTED_PROCESS_DEATH/);
+ assert.doesNotMatch(runner,/kill-server|devices -l|screencap|screenrecord|logcat|appops/);
+ const release=read('apps/child-android/src/release/java/dev/kidremote/child/accounting/AccountingFaults.kt');assert.doesNotMatch(release,/var |Process|killProcess/);
+ assert.match(read('tools/kr007/audit-child.mjs'),/setBeforeRecoveryCommit.*setAfterRecoveryCommit/);
+});

@@ -18,7 +18,13 @@ class RecoveryTest {
     private fun trusted(s:Ledger,utc:String="2026-09-14T04:00:00Z",sample:Sample=at(4000))=TrustedTime(s.policy.epoch,s.policy.zone,s.policy.zoneRevision,Instant.parse(utc).toEpochMilli(),sample)
     @Test fun completeSuffixClearsOnce(){val s=gap();val rs=listOf(Range(7,0,3000,yes));val n=Accounting.reconcile(s,rs,at(3000),true);assertEquals(3000,n.usedMs);assertEquals(0,n.recoveryThrough);assertEquals(Uncertainty.NONE,n.uncertainty);assertEquals(n,Accounting.reconcile(n,rs,at(3000),true))}
     @Test fun knownShorterEndpointCannotForgetGap(){val s=gap();val n=Accounting.reconcile(s,listOf(Range(7,0,1000,yes)),at(1000),true);assertEquals(s,n);assertTrue(n.restrictionRequired)}
-    @Test fun partialGapDoesNotCommitPartialUsageOrPeriod(){val s=gap();val n=Accounting.reconcile(s,listOf(Range(7,1000,2000,yes)),at(3000),true);assertEquals(s,n)}
+    @Test fun partialGapDoesNotCommitPartialUsageOrPeriod(){
+        val s=gap();val n=Accounting.reconcile(s,listOf(Range(7,1000,2000,yes)),at(3000),true);assertEquals(s,n)
+        val midnight=Accounting.resume(base().copy(anchorUtc=Instant.parse("2026-09-14T03:59:58Z").toEpochMilli()),at(4000))
+        assertEquals(midnight,Accounting.reconcile(midnight,listOf(Range(7,1000,3000,yes)),at(4000),true))
+        val full=Accounting.reconcile(midnight,listOf(Range(7,1000,4000,yes)),at(4000),true)
+        assertEquals("2026-09-14",full.date);assertEquals(2000,full.usedMs);assertEquals(2000,full.previousUsedMs);assertEquals(0,full.bonusSeconds)
+    }
     @Test fun contradictionPreservesEntireState(){val s=gap();val n=Accounting.reconcile(s,listOf(Range(7,1000,3000,yes),Range(7,2000,3000,yes.copy(keyguard=true))),at(3000),true);assertEquals(s,n)}
     @Test fun unprovedOrUnboundedEvidenceCannotClear(){val s=gap();assertEquals(s,Accounting.reconcile(s,listOf(Range(7,0,3000,yes)),at(3000),false));val far=49*3600000L;val n=Accounting.reconcile(s,listOf(Range(7,0,far,yes)),at(far),true);assertEquals(s.usedMs,n.usedMs);assertTrue(n.restrictionRequired);assertEquals(s.date,n.date)}
     @Test fun sameTrustedPeriodRetainsGap(){val s=gap();val n=Accounting.recoverTrustedTime(s,trusted(s,"2026-09-13T20:00:00Z",at(4000)));assertEquals(s.copy(recoveryThrough=4000),n)}

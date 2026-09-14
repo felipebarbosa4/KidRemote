@@ -38,8 +38,9 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
             recoveryThrough=maxOf(s.recoveryThrough,p.through),observedBoot=maxOf(s.observedBoot,p.observedBoot))
     }
     private fun intent(value:RecoveryIntent) {
-        val out=pending.startWrite()
-        try{out.write(value.encode());pending.finishWrite(out)}catch(e:Exception){pending.failWrite(out);throw e}
+        val bytes=value.encode();val out=pending.startWrite()
+        try{out.write(bytes);out.fd.sync();pending.finishWrite(out)}catch(e:Exception){pending.failWrite(out);throw e}
+        check(pending.readFully().contentEquals(bytes))
     }
     fun initialize(input:Policy,now:Sample,trustedUtc:Long):AccountingResult=synchronized(accountingLock) {
         try {

@@ -21,7 +21,7 @@ class AccountingRecoveryTest {
     private fun result(code:String){InstrumentationRegistry.getInstrumentation().sendStatus(0,android.os.Bundle().apply{putString("kr008",code)})}
     private fun ck(v:Boolean){if(!v)throw AssertionError("RECOVERY_ASSERTION")}
     private fun safe(action:()->Unit){try{action()}catch(error:Throwable){
-        val line=error.stackTrace.firstOrNull{it.className.startsWith("dev.kidremote.child.accounting.")}?.lineNumber?:0
+        val line=error.stackTrace.firstOrNull{it.className.startsWith("dev.kidremote.child.accounting.")&&it.methodName!="ck"}?.lineNumber?:0
         result("RECOVERY_FAILURE_LINE_"+maxOf(0,line));throw AssertionError("RECOVERY_RUNTIME_FAILED")
     }}
     private fun db()=Room.databaseBuilder(context,LedgerDatabase::class.java,file.absolutePath).addMigrations(LedgerDatabase.MIGRATION_1_2).build()
