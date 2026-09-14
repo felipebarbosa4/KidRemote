@@ -1,7 +1,8 @@
 Set-StrictMode -Version Latest
 # Native Windows only. DPAPI + current-user/SYSTEM ACL; no WSL, installed Node or SDK needed.
 function Write-LabPipeLine($Process,[string]$Text){
- # Bypass Framework StreamWriter's UTF-8 preamble; JSON framing must be byte-exact.
+ # Explicit UTF-8 payload. Framework may have emitted one BOM when creating its pipe;
+ # the private Node parser accepts only that single optional framing marker.
  $bytes=(New-Object Text.UTF8Encoding($false)).GetBytes($Text+"`n")
  $Process.StandardInput.BaseStream.Write($bytes,0,$bytes.Length);$Process.StandardInput.BaseStream.Flush()
 }

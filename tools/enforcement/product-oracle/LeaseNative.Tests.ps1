@@ -33,14 +33,15 @@ try{
    Copy-Item (Get-Command node.exe).Source (Join-Path $runtime 'node.exe')
    $source=Join-Path $bundle 'source';$scripts=Join-Path $source 'tools/enforcement/physical-lab';[void][IO.Directory]::CreateDirectory($scripts)
    $fake=@'
-import {createInterface} from 'node:readline';import {spawnSync} from 'node:child_process';
+import {createInterface} from 'node:readline';import {spawnSync} from 'node:child_process';import {parsePrivateFrame} from './lease.mjs';
 const r=createInterface({input:process.stdin});let started=false;
 r.on('line',line=>{if(line==='STOP'){process.stdout.write('STOPPED_DATA_RETAINED\n');r.close();process.stdin.destroy();return;}
- let c;try{c=JSON.parse(line);}catch{process.stdout.write(JSON.stringify({ready:false,code:'JSON_FRAME_'+line.charCodeAt(0)})+'\n');return;}const x=spawnSync(c.docker,['--host',c.host,'info','SAFE_FIXTURE'],{encoding:'utf8'});
+ let c;try{c=parsePrivateFrame(line);}catch{process.stdout.write(JSON.stringify({ready:false,code:'JSON_FRAME_'+line.charCodeAt(0)})+'\n');return;}const x=spawnSync(c.docker,['--host',c.host,'info','SAFE_FIXTURE'],{encoding:'utf8'});
  if(started||x.status!==0||x.stdout!=='NATIVE_FAKE_ONLY'||!c.secrets.database||c.source!=='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'){process.stdout.write('{"ready":false}\n');return;}
  started=true;process.stdout.write('{"ready":true,"jwt":"fixture.payload.signature"}\n');});
 '@
    [IO.File]::WriteAllText((Join-Path $scripts 'runtime.mjs'),$fake)
+   Copy-Item (Join-Path $PSScriptRoot '../physical-lab/lease.mjs') (Join-Path $scripts 'lease.mjs')
    # Public-source syntax check and structural-only framing diagnostic (no secret bytes).
    $null=Invoke-ReviewProcess (Join-Path $runtime 'node.exe') @('--check',(Join-Path $scripts 'runtime.mjs')) ''
    Write-Output 'NATIVE_PIPE_FIRST_START'

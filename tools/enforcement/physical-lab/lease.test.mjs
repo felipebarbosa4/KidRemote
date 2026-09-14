@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';import {randomUUID} from 'node:crypto';
-import {Lease,label,images} from './lease.mjs';
+import {Lease,label,images,parsePrivateFrame} from './lease.mjs';
 class Docker {
  constructor(){this.items={};this.volumes={};this.networks={};this.calls=[];this.number=1;this.schema='';this.data='';}
  call=(a,input,env={})=>{
@@ -37,3 +37,5 @@ test('partial state never recreates resources or overwrites attempt',()=>run(asy
 test('teardown admission failure deletes nothing; exact teardown excludes foreign resources',()=>run(async x=>{await x.lease.start();assert.throws(()=>x.lease.teardown(()=>{throw Error('journal disk failed');}));assert.equal(Object.keys(x.fake.items).length,4);x.fake.items.foreign={};let admission;assert.equal(x.lease.teardown(r=>admission=r),'EXACT_LEASE_REMOVED');assert.equal(admission.lease,x.config.id);assert.deepEqual(Object.keys(x.fake.items),['foreign']);assert.equal(Object.keys(x.fake.volumes).length,0);}));
 test('secrets absent in public state and command arguments',()=>run(async x=>{await x.lease.start();const publicBytes=readFileSync(x.config.state,'utf8')+JSON.stringify(x.fake.calls);for(const s of Object.values(x.config.secrets))assert.ok(!publicBytes.includes(s));}));
 test('owner runtime has no WSL chain and disposable harness unchanged',()=>{for(const f of ['tools/enforcement/product-oracle/BackendHost.psm1','tools/enforcement/physical-lab/runtime.mjs','tools/enforcement/physical-lab/lease.mjs'])assert.doesNotMatch(readFileSync(f,'utf8'),/wsl\.exe|wslpath|\/mnt\/c\/|WSLENV|\/usr\/bin\/node/);assert.match(readFileSync('tools/kr004/test-local-db.mjs','utf8'),/--tmpfs/);assert.doesNotMatch(readFileSync('tools/kr004/test-local-db.mjs','utf8'),/physical-lab/);});
+
+test('private JSON accepts one Framework BOM, not malformed or doubled framing',()=>{assert.deepEqual(parsePrivateFrame('\uFEFF{"synthetic":true}'),{synthetic:true});assert.deepEqual(parsePrivateFrame('{"synthetic":true}'),{synthetic:true});assert.throws(()=>parsePrivateFrame('\uFEFF\uFEFF{}'));assert.throws(()=>parsePrivateFrame('{truncated'));assert.throws(()=>parsePrivateFrame('x'.repeat(16385)),/BOUNDS/);});

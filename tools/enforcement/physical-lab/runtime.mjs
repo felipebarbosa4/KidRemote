@@ -1,6 +1,6 @@
 // Private stdin/stdout control pipe from native PowerShell. Never print raw errors/config.
 import {createInterface} from 'node:readline';
-import {Lease,dockerCall,startGateway,check} from './lease.mjs';
+import {Lease,dockerCall,startGateway,check,parsePrivateFrame} from './lease.mjs';
 import {health} from './health.mjs';
 import {createServer} from 'node:net';
 const lines=createInterface({input:process.stdin,crlfDelay:Infinity});let lease,gateway,started=false,closing=false;
@@ -9,7 +9,7 @@ async function stop(){if(closing)return;closing=true;try{if(gateway){gateway.kil
 lines.on('line',async line=>{
  try{
   if(line==='STOP'){await stop();return;}
-  check(!lease&&line.length<16384,'CONTROL_PROTOCOL');const c=JSON.parse(line);
+  check(!lease&&line.length<16384,'CONTROL_PROTOCOL');const c=parsePrivateFrame(line);
   if(process.platform==='win32')check(c.host==='npipe:////./pipe/dockerDesktopLinuxEngine','WINDOWS_NATIVE_ONLY');
   await freePort(47366);
   lease=new Lease({...c,call:dockerCall(c.docker,c.host)});const disposition=await lease.start();started=true;

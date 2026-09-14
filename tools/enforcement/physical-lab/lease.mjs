@@ -3,6 +3,7 @@ import {spawnSync, spawn} from 'node:child_process';
 import {readFileSync, readdirSync, writeFileSync, openSync, closeSync, fsyncSync, renameSync, existsSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
+export function parsePrivateFrame(text){check(typeof text==='string'&&text.length<=16384,'PRIVATE_FRAME_BOUNDS');return JSON.parse(text.replace(/^\uFEFF/,''));}
 export const label='org.kidremote.physical-lab';
 export const images={
  db:'supabase/postgres:17.6.1.136@sha256:f371b5f3f2ac0a05703f33d6e6134515fb2498cab708fb948a0aeb7481467c00',

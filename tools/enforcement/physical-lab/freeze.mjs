@@ -13,6 +13,7 @@ const sha=b=>createHash('sha256').update(b).digest('hex');
 const inputs={
  'lab-reference.apk':['apps/child-android/build/outputs/product-lab/668ab87a22591319afd43167d55ef9ac0909c1b3/child-physical-lab.apk','f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'],
  'fixture-reference.apk':['spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk','223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'],
+ 'runtime/node-LICENSE':['/tmp/od51-runtime-notices/node-LICENSE','4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18'],
  'runtime/node.exe':['/mnt/c/Program Files/nodejs/node.exe','63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088'],
  'runtime/apksigner.jar':['/mnt/c/Users/3feli/AppData/Local/Android/Sdk/build-tools/37.0.0/lib/apksigner.jar','2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'],
  'zxing-core.jar':['/home/felby/.gradle/caches/modules-2/files-2.1/com.google.zxing/core/3.5.4/955fcd6bcd0723ddfb8ee6ed502d5fdf0e9676a9/core-3.5.4.jar',null],
@@ -22,7 +23,7 @@ for(const [path,hash] of Object.values(inputs))if(hash&&sha(readFileSync(path))!
 const jbr='/mnt/c/Program Files/Android/Android Studio/jbr';
 if(sha(readFileSync(join(jbr,'bin/java.exe')))!=='7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a')throw Error('JAVA_PROVENANCE_MISMATCH');
 mkdirSync(dir,{recursive:true});writeFileSync(join(dir,'.incomplete'),'NOT_OWNER_READY',{flag:'wx'});
-function copy(from,to){mkdirSync(dirname(to),{recursive:true});copyFileSync(from,to);}
+function copy(from,to){mkdirSync(dirname(to),{recursive:true});if(/\.ps(m)?1$/i.test(to)){const b=readFileSync(from);writeFileSync(to,b.subarray(0,3).equals(Buffer.from([239,187,191]))?b:Buffer.concat([Buffer.from([239,187,191]),b]));}else copyFileSync(from,to);}
 const tracked=git(['ls-files','-z']).split('\0');for(const f of tracked){if(!f)continue;copy(f,join(dir,'source',f));}
 for(const [to,[from]] of Object.entries(inputs))copy(from,join(dir,to));
 function tree(from,to){for(const f of readdirSync(from)){const p=join(from,f),out=join(to,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())tree(p,out);else copy(p,out);}}
