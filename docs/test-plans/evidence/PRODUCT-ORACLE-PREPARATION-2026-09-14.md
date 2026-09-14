@@ -48,3 +48,14 @@ Current Samsung installed APK/state, product permissions, exact current configur
 ### Local build and audit result
 
 Debug/release Gradle build, unit-test and lint tasks SUCCESS in 24 seconds (372 tasks; 8 executed, 364 up-to-date). Existing JVM reports: child 84, parent 14 PASS. Child/parent merged-manifest, permission, privacy and release isolation audits PASS. Rebuilt debug child hash remains exactly `d2b3448b5c5574dc4ec693fc1e09386bae6ca1082e42c8c68f6c8c5d870b7f2f`. Three content-free recovery observer tests PASS. No new runtime evidence is inferred from cached JVM tasks or APK compilation.
+
+4. Additional independent host run: **64 synthetic assertions PASS** after adding explicit canonical LOCK rejection and simultaneous independent input leak/UNLOCK cleanup failure. The latter remains FAIL (`RESTRICTION_LEAKED_INPUT`) with cleanup UNVERIFIED; failure is never replaced by an INVALID cleanup result. This extends, rather than replaces, the earlier 58-check run.
+
+Host core source commit: `1d719a38a4d0a7c62cd7203eb37e3ecce010ca80`. Review-file SHA-256 values (not an owner bundle):
+
+| File under `tools/enforcement/product-oracle/` | SHA-256 |
+| --- | --- |
+| `ProductOracle.psm1` | `11fd825a879a8e0cca891338efa4403d9b1b65c51c35444c04cbb2995592b116` |
+| `ProductTransport.psm1` | `322bd7ea12a866b1db327c4ec57bd072a3afd39757022657e2b705fb43f63be3` |
+| `Start-ProductOracle.ps1` | `96e47ca03410953a2fa62d679f49695ce411e05d029de4ac154c72253c3c1c84` |
+| `provenance.json` | `d9764a2b12a4b1bd8afcbeb61f09ebf47ad335fcec120958f85bfe0cf4b4e942` |

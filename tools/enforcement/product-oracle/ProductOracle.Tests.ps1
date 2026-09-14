@@ -13,13 +13,14 @@ function Run($mode){
  Initial={ [pscustomobject]@{device_id='11111111-1111-1111-1111-111111111111';policy_epoch='epoch';version=1;sequence=1;period_key='2026-09-14';manual_lock=$false;restriction_required=$false;remaining_ms=600000;health='UNRESTRICTED_OBSERVED:NONE'} }
  StartFixture={};Pause={};Sync={}
  Fixture={Fixture (-not $state.locked) $state.taps}
- Tap={param($p) if(-not $state.locked -and $state.mode -ne 'positive'){$state.taps++};if($state.locked -and $state.mode -eq 'leak'){$state.taps++}}
+ Tap={param($p) if(-not $state.locked -and $state.mode -ne 'positive'){$state.taps++};if($state.locked -and $state.mode -in @('leak','leakcleanup')){$state.taps++}}
  BlockedFixture={if($state.mode -eq 'focus'){Fixture $true $state.taps}else{Fixture $false $state.taps}}
  Journal={param($j) $state.journal++;if($state.mode -eq 'journal' -and $state.journal -eq 1){throw 'INVALID:JOURNAL_WRITE'}}
  Operation={param($q)
    $state.requests.Add($q)
+   if($state.mode -eq 'lockreject' -and $q.kind -eq 'LOCK'){throw 'INVALID:CANONICAL_OPERATION_REJECTED'}
    if($q.kind -eq 'LOCK'){$state.locked=$true;if($state.mode -eq 'lockloss' -and $state.requests.Count -eq 1){throw 'INVALID:HTTP_RESPONSE_LOST'}}
-   else{if($state.mode -eq 'cleanup'){throw 'INVALID:UNLOCK_UNAVAILABLE'};if($state.mode -eq 'unlockloss' -and $state.requests.Count -eq 2){throw 'INVALID:HTTP_RESPONSE_LOST'};$state.locked=$false}
+   else{if($state.mode -in @('cleanup','leakcleanup')){throw 'INVALID:UNLOCK_UNAVAILABLE'};if($state.mode -eq 'unlockloss' -and $state.requests.Count -eq 2){throw 'INVALID:HTTP_RESPONSE_LOST'};$state.locked=$false}
    [pscustomobject]@{status='accepted';operation_id=$q.operation_id;device_id=$q.device_id;policy_epoch='epoch';version=$q.expected_version+1}
  }
  Report={param($v,$r) [pscustomobject]@{version=$v;sequence=$v;period_key='2026-09-14';restriction_required=$r;manual_lock=$r;health='OBSERVED:NONE';remaining_ms=600000}}
@@ -33,6 +34,8 @@ foreach($m in @('preflight','positive','journal')){$r=Run $m;Equal $r.result.sta
 foreach($m in @('leak','focus')){$r=Run $m;Equal $r.result.status 'FAIL';Equal $r.result.cleanup 'VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT';Equal $r.result.independentBlocked $false}
 $r=Run 'lockloss';Equal $r.result.status 'INVALID';Equal $r.result.cleanup 'VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT';Equal $r.state.requests[0].operation_id $r.state.requests[1].operation_id
 $r=Run 'unlockloss';Equal $r.result.status 'INVALID';Equal $r.result.cleanup 'VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT';Equal $r.state.requests[1].operation_id $r.state.requests[2].operation_id
+$r=Run 'lockreject';Equal $r.result.status 'INVALID';Equal $r.result.cleanup 'UNVERIFIED';Equal $r.state.requests[0].operation_id $r.state.requests[1].operation_id
+$r=Run 'leakcleanup';Equal $r.result.status 'FAIL';Equal $r.result.reason 'RESTRICTION_LEAKED_INPUT';Equal $r.result.cleanup 'UNVERIFIED'
 $r=Run 'cleanup';Equal $r.result.status 'INVALID';Equal $r.result.cleanup 'UNVERIFIED';Equal $r.result.independentRestored $false
 $expected=@{Branch='kr-product-enforcement-integration';Source=('a'*40);ChildHash=('b'*64);FixtureHash=('c'*64);Package='dev.kidremote.child.unassigned.debug';Service='dev.kidremote.child.unassigned.debug/dev.kidremote.child.enforcement.ChildEnforcementService';Manufacturer='samsung';Model='SM-X400';Android='16';Api='36';Build='BP4A.251205.006';Patch='2026-07-05';BatterySaver='DISABLED';AppStandby='ENABLED'}
 Assert-ProductProvenance $expected $expected
