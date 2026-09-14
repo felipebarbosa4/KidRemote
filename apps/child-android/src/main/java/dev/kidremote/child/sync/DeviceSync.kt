@@ -14,7 +14,7 @@ internal class DeviceSync(private val context:Context,private val sample:()->Sam
     private val api=EnrollmentApi()
     companion object {private val lock=Any()}
     private fun sendPending(id:JSONObject) {
-        val s=engine.read();if(s.storageFailure)error("LOCAL_STORAGE_UNAVAILABLE")
+        val s=engine.read();if(s.storageFailure)throw LocalStorageFailure()
         val pending=s.ledger?.pendingAck?:return
         val body=Wire.parse(pending)
         val r=api.request("/device/ack",body,id.getString("credential"),parse=Wire::parse)
@@ -22,14 +22,14 @@ internal class DeviceSync(private val context:Context,private val sample:()->Sam
         Wire.keys(r,setOf("code","report_sequence","received_at"))
         require(Wire.string(r,"code")=="ACKNOWLEDGED"&&Wire.number(r,"report_sequence")==s.ledger.reportSequence)
         Instant.parse(Wire.string(r,"received_at"))
-        check(!engine.confirmReport(s.ledger.reportSequence,sample()).storageFailure)
+        if(engine.confirmReport(s.ledger.reportSequence,sample()).storageFailure)throw LocalStorageFailure()
     }
     fun sync():AccountingResult=synchronized(lock) {
         val id=identity.read()?:error("IDENTITY_REQUIRED");check(!id.has("removal"))
         try {
             if(id.has("rotation"))api.contact(identity,id)
             if(id.optBoolean("accounting_initialized",false))sendPending(id)
-            val old=engine.read();if(old.storageFailure)error("LOCAL_STORAGE_UNAVAILABLE")
+            val old=engine.read();if(old.storageFailure)throw LocalStorageFailure()
             val after=old.ledger?.policy?.version?:0
             fun first()=api.request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",after),id.getString("credential"),id,{Wire.parse(SyncFaults.syncResponse(it))})
             var r=first()
@@ -63,7 +63,7 @@ internal class DeviceSync(private val context:Context,private val sample:()->Sam
             val result=engine.applySnapshot(policy,sample(),utc){s->JSONObject().put("protocol_version",1).put("device_id",id.getString("device_id")).put("policy_epoch",s.policy.epoch)
                 .put("applied_version",s.policy.version).put("report_sequence",s.reportSequence).put("period_key",s.periodKey).put("used_ms",s.usedMs).put("bonus_seconds",s.bonusSeconds).put("remaining_ms",s.remainingMs)
                 .put("manual_lock",s.policy.manualLock).put("restriction_required",s.restrictionRequired).put("restriction_applied",false).put("health","ENFORCEMENT_UNAVAILABLE").put("accounting_status",s.uncertainty.name).put("observed_at",Wire.string(r,"server_utc")).toString()}
-            check(!result.storageFailure);SyncProgress(context).clear();SyncFaults.persisted();sendPending(id);engine.read()
+            if(result.storageFailure)throw LocalStorageFailure();SyncProgress(context).clear();SyncFaults.persisted();sendPending(id);engine.read()
         }catch(e:DeviceRemoved){id.put("removal",e.removal);identity.save(id);throw e}
     }
     fun retryAck()=synchronized(lock){sendPending(identity.read()?:error("IDENTITY_REQUIRED"))}

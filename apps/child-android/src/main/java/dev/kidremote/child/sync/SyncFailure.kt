@@ -2,6 +2,7 @@ package dev.kidremote.child.sync
 import java.io.IOException
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+internal class LocalStorageFailure:IllegalStateException("LOCAL_STORAGE_UNAVAILABLE")
 internal class RetryableSync(val delayMs:Long=0):IOException("SYNC_RETRY")
 internal class RestartSnapshot:IOException("SNAPSHOT_RESTART_REQUIRED")
 internal object RetryTiming {

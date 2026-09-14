@@ -21,7 +21,7 @@ const record=row=>{evidence.stages.push(row);console.log(JSON.stringify(row))};
 const ok=(v,code)=>{if(!v)throw Error(code)};
 async function stage(method,death=false){
  await command(['shell','am','force-stop',app]);await guard();
- const recovery=new Set(['killAfterPageCheckpoint','restartThroughWorkManager','expiredSequenceRestarts','resumeDiscoversState','coalescedTriggers','outagePersistsRetry','networkRecoveryConverges','scheduledLostAckRetry','httpRetryAndAuthStop','corruptedRetryStops']);
+ const recovery=new Set(['killAfterPageCheckpoint','restartThroughWorkManager','expiredSequenceRestarts','resumeDiscoversState','coalescedTriggers','outagePersistsRetry','networkRecoveryConverges','scheduledLostAckRetry','workerDiscoversWithoutIntent','httpRetryAndAuthStop','corruptedRetryStops']);
  let networkState;
  if(method==='networkRecoveryConverges') {
   networkState={wifi:(await command(['shell','settings','get','global','wifi_on'])).trim(),data:(await command(['shell','settings','get','global','mobile_data'])).trim()};
@@ -92,6 +92,8 @@ try {
  await control('UNLOCK',{},219);await gatewayAvailable(false);try{await stage('outagePersistsRetry')}finally{await gatewayAvailable(true)}
  await stage('networkRecoveryConverges');
  added=await operation('ADD_TIME',{seconds:600,period_key:period},null);ok(added.status===200&&added.json.version===221,'SCHEDULED_GRANT_NOT_ACCEPTED');
+ await stage('workerDiscoversWithoutIntent');
+ added=await operation('ADD_TIME',{seconds:600,period_key:period},null);ok(added.status===200&&added.json.version===222,'RETRY_GRANT_NOT_ACCEPTED');
  await stage('scheduledLostAckRetry');await stage('httpRetryAndAuthStop');await stage('corruptedRetryStops');
  sql(`update private.device_credentials set created_at=clock_timestamp()-interval '91 days',expires_at=clock_timestamp()-interval '1 second' where device_id='${identity.device_id}';`);
  await stage('expiredRetainsLedger');

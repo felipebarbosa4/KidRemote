@@ -70,6 +70,7 @@ export async function testSync({http,sql,gatewayAvailable}) {
  perform public.accept_control(gen_random_uuid(),'${history.device_id}','SET_DAILY_LIMIT','{"daily_limit_seconds":3600}',0);
  for i in 1..105 loop perform public.accept_control(gen_random_uuid(),'${history.device_id}',case when i%2=1 then 'LOCK' else 'UNLOCK' end,'{}',i);end loop;end $bounded$;`);
  const bounded=(await sync(history)).json;ok(bounded.version===106&&bounded.operations.length===100&&!bounded.history_pruned&&bounded.operations.every((x,i)=>x.version===i+1),'FIRST_IMMUTABLE_PAGE');
+ ok(JSON.stringify((await sync(history)).json)===JSON.stringify(bounded),'DUPLICATE_FIRST_PAGE_IDENTICAL');
  const pageBody={protocol_version:1,after_version:0,cursor:bounded.next_cursor};
  const page=()=>send('/device/sync',pageBody,history.credential);
  sql(`set role authenticated;set "request.jwt.claim.sub"='${b.user}';select public.accept_control(gen_random_uuid(),'${history.device_id}','UNLOCK','{}',106);`);

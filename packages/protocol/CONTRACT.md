@@ -300,8 +300,11 @@ This supersedes only the latest-100 shortcut above. First configured request ret
 `after_version`; response adds `snapshot_id` and nullable `next_cursor`. The gateway
 copies canonical fields, lifecycle and ordered operation outcomes in its existing
 locked repeatable-read transaction into one private, RLS-protected temporary snapshot
-per device/epoch. Retention is five minutes; a new first request replaces that one
-sequence. Maximum 1,000 retained outcomes / 256 KiB server cache per device; at most
+per device/epoch. Cursor validity is five minutes; a new first request replaces that one
+sequence unless canonical version, initial cursor, epoch, current period/zone and
+credential generation still match a valid cache, in which case page 1 is identical.
+At most one cache slot remains per device until replacement or device deletion;
+expiry invalidates access and is not a background physical-deletion promise. Maximum 1,000 retained outcomes / 256 KiB server cache per device; at most
 100 outcomes / 64 KiB per response. `history_pruned` means older detail was omitted
 from this cache, never that omitted intents ran. Canonical version/high-water remains
 authoritative. Server command/idempotency history is unchanged.
@@ -320,16 +323,21 @@ checkpoint's sequence and starts a full fresh snapshot using the durable ledger.
 
 Lifecycle triggers coalesce through one coordinator. A group runs at most one initial
 and one follow-up sync. A bounded AtomicFile transport intent is separate from policy:
-identity binding, pending/stopped, attempt, boot and monotonic due/delay only. It does
+identity binding, pending/stopped and bounded stop reason, attempt, boot and
+monotonic due/delay only; a checksum and AtomicFile protect recovery writes. It does
 not contain bearer, cursor, policy or operations. One unique constrained periodic WorkManager
 recovery request (15-minute interval, five-minute initial delay) is durably enqueued
 before HTTP, closing the process-death seam between a worker and a later trigger; in-process retries use full jitter
 1 s exponential to 5 min. Retry-After seconds or an HTTP date relative to server Date
 forms a lower bound (bounded to 24 hours). WorkManager's own retry scheduling may
-run later. Reboot rebases a stored remaining retry delay without cross-boot elapsed
+run later. Each recovery execution also refreshes canonical state when there is no
+local pending intent, so a missed remote operation needs no push callback. Stopped
+authentication never polls. Reboot rebases a stored retry delay without cross-boot elapsed
 subtraction; this never supplies accounting time authority. 401/403 stop automatic
 retry and retain downloaded state; supported rotation/removal stays in KR-007.
-Explicit credential recovery may request another attempt. Corrupt transport state
+Explicit credential recovery may request another attempt. A successful approved
+local accounting recovery may release only a STORAGE stop, never an AUTH or
+PROTOCOL stop; becoming writable does not alter accounting uncertainty. Corrupt transport state
 stops scheduling and cannot erase policy. No foreground service or exact alarm is
 used; WorkManager is recovery, not a latency promise.
 

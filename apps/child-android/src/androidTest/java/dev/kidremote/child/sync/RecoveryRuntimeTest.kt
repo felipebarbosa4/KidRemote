@@ -67,6 +67,12 @@ class RecoveryRuntimeTest {
   try{File(folder,"network-ready").writeText("READY");until{raw().policy.version==220L&&raw().pendingAck==null&&!RetryStore(c).read().getBoolean("pending")}}finally{connectivity.unregisterNetworkCallback(callback)}
   ck(raw().usedMs==1000L);result("REAL_EMULATOR_NETWORK_RETURN_CALLBACK_CONVERGED_CONTROLLED_DUE")
  }
+ @Test fun workerDiscoversWithoutIntent()=safe {
+  ck(!RetryStore(c).read().getBoolean("pending"));val work=OneTimeWorkRequestBuilder<SyncWorker>().build();WorkManager.getInstance(c).enqueue(work).result.get()
+  until{WorkManager.getInstance(c).getWorkInfoById(work.id).get()?.state?.isFinished==true}
+  ck(WorkManager.getInstance(c).getWorkInfoById(work.id).get()!!.state==WorkInfo.State.SUCCEEDED&&raw().policy.version==221L&&raw().usedMs==1000L&&raw().pendingAck==null)
+  result("REAL_RECOVERY_WORK_DISCOVERS_NEW_STATE_WITHOUT_LOCAL_INTENT_OR_PUSH")
+ }
  @Test fun scheduledLostAckRetry()=safe {
   var withheld=false;SyncFaults.afterAckResponse={withheld=true;throw java.io.IOException("LOST_ACK")}
   try{SyncRecovery.request(c,true);until{withheld&&RetryStore(c).read().getInt("attempt")>0}}finally{SyncFaults.afterAckResponse=null}
@@ -76,20 +82,20 @@ class RecoveryRuntimeTest {
  }
  @Test fun httpRetryAndAuthStop()=safe {
   val old=raw()
-  for(code in listOf(429,503,401,403)){
+  for(code in listOf(429,503,401,403,200)){
    val socket=java.net.ServerSocket(0,1,java.net.InetAddress.getByName("127.0.0.1"));val count=AtomicInteger();val server=Thread{
-    try{socket.accept().use{client->val input=client.getInputStream().bufferedReader();var length=0;while(true){val line=input.readLine()?:break;if(line.isEmpty())break;if(line.startsWith("Content-Length:",true))length=line.substringAfter(':').trim().toInt()};repeat(length){input.read()};count.incrementAndGet();val body="{\"code\":\"CREDENTIAL_REVOKED\"}";client.getOutputStream().write("HTTP/1.1 $code Test\r\nContent-Type: application/json\r\nRetry-After: 60\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body".toByteArray())}}catch(_:Exception){}
+    try{socket.accept().use{client->val input=client.getInputStream().bufferedReader();var length=0;while(true){val line=input.readLine()?:break;if(line.isEmpty())break;if(line.startsWith("Content-Length:",true))length=line.substringAfter(':').trim().toInt()};repeat(length){input.read()};count.incrementAndGet();val body=if(code==200)"x".repeat(65537)else "{\"code\":\"CREDENTIAL_REVOKED\"}";client.getOutputStream().write("HTTP/1.1 $code Test\r\nContent-Type: application/json\r\nRetry-After: 60\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body".toByteArray())}}catch(_:Exception){}
    };server.start();SyncFaults.testEndpoint="http://127.0.0.1:"+socket.localPort
    try{SyncRecovery.request(c,true);until{val s=RetryStore(c).read();s.getInt("attempt")>0||s.getBoolean("stopped")};val s=RetryStore(c).read();ck(count.get()==1)
     if(code in listOf(429,503)){ck(s.getBoolean("pending")&&s.getLong("delay")>=60000)}else{ck(s.getBoolean("stopped")&&!s.getBoolean("pending"));repeat(10){SyncRecovery.request(c)};ck(SyncRecovery.run(c));ck(count.get()==1)}
     ck(raw()==old)
    }finally{SyncFaults.testEndpoint=null;socket.close();server.join(2000)}
   }
-  result("REAL_LOOPBACK_429_503_RETRY_AFTER_401_403_DURABLE_STOP_NO_SPIN")
+  result("REAL_LOOPBACK_RETRY_AFTER_AUTH_STOP_OVERSIZE_REJECTION")
  }
  @Test fun corruptedRetryStops()=safe {
-  val file=File(folder,"sync-retry");val old=file.readBytes();val ledger=raw();file.writeText("broken")
+  val file=File(folder,"sync-retry");val old=file.readBytes();val ledger=raw();val expected=RetryStore(c).read().toString();ck(file.renameTo(File(file.path+".bak")));ck(RetryStore(c).read().toString()==expected&&file.exists());file.writeText("broken")
   try{ck(runCatching{SyncRecovery.request(c)}.isFailure);ck(raw()==ledger)}finally{file.writeBytes(old)}
-  result("CORRUPT_TRANSPORT_INTENT_FAILS_CLOSED_POLICY_RETAINED")
+  result("ATOMICFILE_BACKUP_RECOVERS_CORRUPT_INTENT_FAILS_CLOSED")
  }
 }

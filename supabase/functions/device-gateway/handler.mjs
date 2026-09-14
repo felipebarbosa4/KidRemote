@@ -5,7 +5,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const exact = (x, keys) => object(x) && Object.keys(x).length === keys.length && keys.every(k => Object.hasOwn(x,k));
-const syncBody = b => (exact(b,['protocol_version','after_version']) || (exact(b,['protocol_version','after_version','cursor']) && typeof b.cursor==='string' && /^[a-f0-9-]{36}:[1-9]00$/.test(b.cursor) && UUID.test(b.cursor.split(':')[0]))) && integer(b.after_version);
+const syncBody = b => (exact(b,['protocol_version','after_version']) || (exact(b,['protocol_version','after_version','cursor']) && typeof b.cursor==='string' && b.cursor.length===40 && /^[a-f0-9-]{36}:[1-9]00$/.test(b.cursor) && UUID.test(b.cursor.split(':')[0]))) && integer(b.after_version);
 const reply = (status, code, value) => Response.json(value ?? {code}, {
   status, headers: {'cache-control':'no-store','x-content-type-options':'nosniff'},
 });

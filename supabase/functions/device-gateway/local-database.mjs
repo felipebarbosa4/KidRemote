@@ -26,6 +26,8 @@ export function databaseRepository(session) {
     }
     if(policy.policy_configured===true) {
      if(after_version>policy.version)throw Error('CURSOR_AHEAD');
+     const cached=JSON.parse(await query(`select coalesce((select s.payload from private.sync_snapshots s join public.households h on h.id='${scope.household_id}' where s.device_id='${scope.device_id}' and s.policy_epoch='${scope.policy_epoch}' and s.after_version=${after_version} and s.expires_at>clock_timestamp() and (s.payload->>'version')::bigint=${policy.version} and (s.payload->'credential_lifecycle'->>'generation')::bigint=${row.credential.generation} and s.payload->>'timezone_name'=h.timezone_name and s.payload->>'period_key'=h.timezone_revision::text||':'||to_char(clock_timestamp() at time zone h.timezone_name,'YYYY-MM-DD')),'null'::jsonb);`));
+     if(cached)return page(cached,0);
      const snapshot=JSON.parse(await query(`with t as (select clock_timestamp() as utc), h as (select * from public.households where id='${scope.household_id}'::uuid),
       ops as (select c.id,c.version,c.kind,c.period_key,s.status from public.commands c join public.operation_status s on s.operation_id=c.id where c.device_id='${scope.device_id}'::uuid and c.version>${after_version} and c.version<=${policy.version} order by c.version desc limit 1000)
       select jsonb_build_object('timezone_name',h.timezone_name,'timezone_revision',h.timezone_revision,'server_utc',t.utc,
