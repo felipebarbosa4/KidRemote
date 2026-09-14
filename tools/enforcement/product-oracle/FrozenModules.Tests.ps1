@@ -1,0 +1,20 @@
+Set-StrictMode -Version Latest
+$ErrorActionPreference='Stop'
+$root=Join-Path ([IO.Path]::GetTempPath()) ('od51-frozen-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
+$names=@('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','LivePreparation','LiveSlice','ProductOracle','ProductTransport')
+try{
+ # The freezer emits UTF-8 BOM for scripts so Windows PowerShell 5.1 reads UI labels correctly.
+ Copy-Item -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path -Destination (Join-Path $root 'tools') -Recurse
+ foreach($file in @(Get-ChildItem -LiteralPath (Join-Path $root 'tools') -Recurse -File|Where-Object{$_.Extension -in @('.ps1','.psm1')})){
+  $text=[IO.File]::ReadAllText($file.FullName,[Text.Encoding]::UTF8);[IO.File]::WriteAllText($file.FullName,$text,(New-Object Text.UTF8Encoding($true)))
+ }
+ $modules=Join-Path $root 'tools/enforcement/product-oracle'
+ foreach($name in $names){Import-Module (Join-Path $modules ($name+'.psm1')) -Force}
+ Import-Module (Join-Path $root 'tools/enforcement/update-review/Review.psm1') -Force
+ $e=$null;[void][Management.Automation.Language.Parser]::ParseFile((Join-Path $modules 'Run-ProductReplacement.ps1'),[ref]$null,[ref]$e)
+ if($e){throw 'FROZEN_ENTRYPOINT_PARSE_FAILED'}
+ Write-Output 'FROZEN_OWNER_MODULE_IMPORTS=13;ENTRYPOINT_PARSE=PASS;DEVICE=NOT_INVOKED'
+}finally{
+ foreach($name in $names+@('Review')){Remove-Module $name -Force -ErrorAction SilentlyContinue}
+ Remove-Item -LiteralPath $root -Recurse -Force
+}

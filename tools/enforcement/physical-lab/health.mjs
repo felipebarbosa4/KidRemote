@@ -22,6 +22,7 @@ async function parent(lease,email,password){
 }
 export async function health(lease){
  for(let i=0;i<45;i++){try{await wire(47361,'/health');await wire(47362,'/');await wire(47366,'/health');break;}catch(e){if(i===44)throw e;await sleep(1000);}}
+ check(lease.sql('show logging_collector;')==='off','DATABASE_FILE_LOGGING_NOT_DISABLED');
  const s=lease.secrets;
  const probe=await parent(lease,'product-lab-probe-'+lease.id+'@example.test',s.probePassword);
  let page=await wire(47362,'/rpc/parent_devices',{p_after:null},probe);check(page.protocol_version===1&&page.devices.length<=1,'PROBE_SCOPE');

@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 # OD-51: frozen files + native live host gate precede every device mutation.
 # Frozen entrypoint is copied to bundle root. No ADB/HTTP until manifest/tool validation.
-$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$reuse=$false;$hostFailureStage='UNSPECIFIED'
+$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$backendAttempted=$false;$reuse=$false;$hostFailureStage='UNSPECIFIED'
 try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $manifestPath).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'INVALID:BUNDLE_HASH'}
@@ -32,11 +32,11 @@ try{
  $temporary=Join-Path $directory 'temporary';[void][IO.Directory]::CreateDirectory($temporary)
  Write-Host 'Preparando backend local isolado; nenhuma substituição do tablet foi admitida ainda.'
  $wire={param($s,$p,$method,$body,$jwt) Invoke-LabWire $s $p $method $body $jwt}
- $h=@{backend=$null;serial=$null;live=$null;reuse=$false}
+ $h=@{backend=$null;backendAttempted=$false;serial=$null;live=$null;reuse=$false}
  $gate=@{
   Bundle={if($seen.Count -ne $m.files.Count){throw 'INVALID:BUNDLE_INCOMPLETE'}}
   Tools={if(-not(Test-Path -LiteralPath $Adb) -or -not(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'runtime/node.exe'))){throw 'INVALID:NATIVE_TOOLS'}}
-  Lease={$h.backend=Start-ProductBackend $sourceRoot $PSScriptRoot $source}
+  Lease={$h.backendAttempted=$true;$h.backend=Start-ProductBackend $sourceRoot $PSScriptRoot $source}
   LiveHealth={if(-not $h.backend.jwt){throw 'INVALID:LIVE_HEALTH'};$null=Get-OnlyLabChild $wire $h.backend.jwt}
   Ports={if($h.backend.process.HasExited){throw 'INVALID:OWN_BACKEND_EXITED'}}
   Artifacts={
@@ -54,7 +54,7 @@ try{
    if($h.reuse){& $h.live.ops.ReuseIdentityPermissions}
   }
  }
- try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse}
+ try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$backendAttempted=$h.backendAttempted;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse}
  $jwt=$backend.jwt
  if(-not $hostValidated){throw 'INVALID:INVALID_HOST_PREFLIGHT'}
  $prepared=if($reuse){Invoke-ReusePreparation $directory $live.ops}else{Invoke-ReplacementPreparation $directory $live.ops}
@@ -98,6 +98,7 @@ try{
    $reverseCleanup='OWN_REVERSE_REMOVED'
   }catch{$reverseCleanup='UNVERIFIED'}
  }
+ if($backendAttempted -and -not $backend){$backendCleanup='START_FAILED_PERSISTENT_STATE_REVIEW_REQUIRED'}
  if($backend){try{$backendCleanup=Stop-ProductBackend $backend}catch{$backendCleanup='UNVERIFIED'}}
  if($temporary){try{[IO.Directory]::Delete($temporary)}catch{$recovery='HOST_TEMP_REVIEW_REQUIRED'}}
  $jwt=$null;$serial=$null
