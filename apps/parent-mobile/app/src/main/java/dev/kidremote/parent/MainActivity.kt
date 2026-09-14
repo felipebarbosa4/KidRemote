@@ -150,7 +150,7 @@ internal fun pairingBitmap(text: String): android.graphics.Bitmap {
     return android.graphics.Bitmap.createBitmap(pixels,512,512,android.graphics.Bitmap.Config.ARGB_8888)
 }
 @Composable internal fun Action(label: String,enabled: Boolean,onClick:()->Unit) {
-    Button(onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {Text(label)}
+    Button(onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {Text(label,modifier=Modifier.fillMaxWidth(),textAlign=androidx.compose.ui.text.style.TextAlign.Center)}
 }
 
 @Composable internal fun ReportPresentation(d:DeviceSummary,age:Long) {

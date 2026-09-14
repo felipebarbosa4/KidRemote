@@ -37,7 +37,11 @@ export async function exerciseControls({command,run,guard,dir,windowsPath,app,ev
  const used=()=>sql(`select used_ms from public.device_state where device_id='${device}';`);
  const grant=()=>sql(`select coalesce(sum(seconds),0) from public.daily_grants where device_id='${device}';`);
  const control=(kind)=>{const v=sql(`select version from public.device_policies where device_id='${device}';`);if(!/^\d+$/.test(v))throw Error('VERSION_INVALID');sql(`set role authenticated;set "request.jwt.claim.sub"='${actor}';select public.accept_control('${randomUUID()}','${device}','${kind}','{}',${v});`)};
- await parent('limit',{value:3600});await sync(0,false,'initialize');await parent('report',{remaining:0,outcome:'persisted'});
+ await parent('limit',{value:3600});await sync(0,false,'initialize');
+ const font=(await command(['shell','settings','get','system','font_scale'])).trim();if(!/^\d+(\.\d+)?$/.test(font))throw Error('FONT_STATE_UNVERIFIED');
+ try{await command(['shell','settings','put','system','font_scale','2.0']);await parent('accessibility')}
+ finally{await command(['shell','settings','put','system','font_scale',font]);}
+await parent('report',{remaining:0,outcome:'persisted'});
  await parent('plus10');if(grant()!=='600')throw Error('PLUS10_NOT_EXACT');await sync(600000);await parent('report',{remaining:600000,outcome:'persisted'});
  await parent('loss');if(grant()!=='2400')throw Error('PLUS30_NOT_EXACT');await parent('retry');if(grant()!=='2400')throw Error('RETRY_DUPLICATED_GRANT');await sync(2400000);await parent('report',{remaining:2400000,outcome:'persisted'});
  await parent('lock');await sync(2400000,true);await parent('report',{remaining:2400000,manual:true,outcome:'persisted'});
@@ -49,9 +53,6 @@ export async function exerciseControls({command,run,guard,dir,windowsPath,app,ev
  try{await parent('outage',{},()=>restAvailable(false))}finally{restAvailable(true)}
  sql(`update public.device_state set received_at=clock_timestamp()-interval '1 hour' where device_id='${device}';`);
  await parent('stale');await parent('warm');await parent('healthFixtures');
- const font=(await command(['shell','settings','get','system','font_scale'])).trim();if(!/^\d+(\.\d+)?$/.test(font))throw Error('FONT_STATE_UNVERIFIED');
- try{await command(['shell','settings','put','system','font_scale','2.0']);await parent('accessibility')}
- finally{await command(['shell','settings','put','system','font_scale',font]);}
  const before=used();await parent('logout');if(used()!==before||before!=='3600000'||grant()!=='3000')throw Error('LOGOUT_CHANGED_CHILD');
  evidence.flow='REAL_COMPOSE_AUTH_POSTGRES_GATEWAY_ROOM_ACK';evidence.plus10=600;evidence.plus30=1800;evidence.replayGrantTotal=2400;evidence.usedMs=3600000;evidence.lockedAddition=600;evidence.finalBonus=3000;
  evidence.font='EMULATOR_2X_CRITICAL_ACTION_SEMANTICS_ONLY_RESTORED';evidence.physical='UNRUN';

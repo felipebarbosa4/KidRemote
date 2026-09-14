@@ -1,0 +1,68 @@
+{
+  "scope": "KR010_PARENT_CONTROLS_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [
+    {
+      "method": "createEnrollmentQr",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS",
+        "PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS"
+      ]
+    },
+    {
+      "method": "decodeRedeemAndRead",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_DECODER_REDEMPTION_PERSISTENCE_INITIAL_READ_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "limit",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LIMIT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "initialize",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "accessibility",
+      "result": "FAIL",
+      "codes": [
+        "ACTION_CHECK_0",
+        "ACTION_LAYOUT_WIDTH",
+        "PARENT_FAILURE_LINE_59"
+      ]
+    }
+  ],
+  "primary": "KR010_UI_STAGE_FAILED:step:accessibility",
+  "cleanup": "VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED",
+  "apkHashes": {
+    "app": "602ba0bfb70b3a016c3b644405daf630b6cacb0d09f09c96ccbf9349e9c607b9",
+    "test": "bc57f73832f0f679256af48a1609d830a80bf4a16f3b4594488b23447089923a",
+    "dev.kidremote.child.unassigned.debug": "7502d0ea78d013e6c97c76c22af293aec1f3c3e6278edaa77ae9a1772ee9197b",
+    "dev.kidremote.child.unassigned.debug.test": "5cc670ca2ed86996ff0e870d9c4c0a4517fc0659f25eac1815e9df8340a804fb"
+  },
+  "apkSource": "5cc3d437244a1e0b13aebf31c591c6c4ac1d9830",
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "overall": "NOT_PASSED"
+}
