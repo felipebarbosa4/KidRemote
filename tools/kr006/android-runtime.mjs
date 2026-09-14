@@ -46,7 +46,11 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
  const evidence={scope:controls?'KR010_PARENT_CONTROLS_EMULATOR_ONLY':enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
  const cameraStorage=enrollment&&process.env.KR007_CAMERA_STORAGE==='1';
- const apkDirectory=controls?'apks-kr010':process.env.KR007_REMOVAL_RUNTIME==='1'?'apks-kr007-removal':cameraStorage?'apks-kr007-camera':enrollment?(process.env.KR007_ROTATION_RUNTIME==='1'?'apks-kr007-rotation-ports':'apks-kr007'):'apks';
+ const apkDirectory=(controls||process.env.KR010_AUTH_REGRESSION==='1')?'apks-kr010-'+(process.env.KR010_APK_SOURCE??'').slice(0,7):process.env.KR007_REMOVAL_RUNTIME==='1'?'apks-kr007-removal':cameraStorage?'apks-kr007-camera':enrollment?(process.env.KR007_ROTATION_RUNTIME==='1'?'apks-kr007-rotation-ports':'apks-kr007'):'apks';
+ if(controls||process.env.KR010_AUTH_REGRESSION==='1') {
+  if(!/^[a-f0-9]{40}$/.test(process.env.KR010_APK_SOURCE??''))throw Error('KR010_APK_SOURCE_REQUIRED');
+  evidence.apkSource=process.env.KR010_APK_SOURCE;
+ }
  let primary,networkRestored=true;
  try {
   await guard();

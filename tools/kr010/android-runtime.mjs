@@ -41,6 +41,7 @@ export async function exerciseControls({command,run,guard,dir,windowsPath,app,ev
  await parent('plus10');if(grant()!=='600')throw Error('PLUS10_NOT_EXACT');await sync(600000);await parent('report',{remaining:600000,outcome:'persisted'});
  await parent('loss');if(grant()!=='2400')throw Error('PLUS30_NOT_EXACT');await parent('retry');if(grant()!=='2400')throw Error('RETRY_DUPLICATED_GRANT');await sync(2400000);await parent('report',{remaining:2400000,outcome:'persisted'});
  await parent('lock');await sync(2400000,true);await parent('report',{remaining:2400000,manual:true,outcome:'persisted'});
+ await parent('plus10');if(grant()!=='3000')throw Error('LOCKED_PLUS10_NOT_EXACT');await sync(3000000,true);await parent('report',{remaining:3000000,manual:true,outcome:'persisted'});
  await parent('limit',{value:0});await sync(0,true);await parent('report',{remaining:0,manual:true,outcome:'persisted'});
  await parent('unlock');await sync(0);await parent('report',{remaining:0,outcome:'persisted'});
  await parent('lock');control('UNLOCK');await sync(0);await parent('report',{remaining:0,outcome:'superseded'});
@@ -51,7 +52,7 @@ export async function exerciseControls({command,run,guard,dir,windowsPath,app,ev
  const font=(await command(['shell','settings','get','system','font_scale'])).trim();if(!/^\d+(\.\d+)?$/.test(font))throw Error('FONT_STATE_UNVERIFIED');
  try{await command(['shell','settings','put','system','font_scale','2.0']);await parent('accessibility')}
  finally{await command(['shell','settings','put','system','font_scale',font]);}
- const before=used();await parent('logout');if(used()!==before||before!=='3600000'||grant()!=='2400')throw Error('LOGOUT_CHANGED_CHILD');
- evidence.flow='REAL_COMPOSE_AUTH_POSTGRES_GATEWAY_ROOM_ACK';evidence.plus10=600;evidence.plus30=1800;evidence.replayGrantTotal=2400;evidence.usedMs=3600000;
+ const before=used();await parent('logout');if(used()!==before||before!=='3600000'||grant()!=='3000')throw Error('LOGOUT_CHANGED_CHILD');
+ evidence.flow='REAL_COMPOSE_AUTH_POSTGRES_GATEWAY_ROOM_ACK';evidence.plus10=600;evidence.plus30=1800;evidence.replayGrantTotal=2400;evidence.usedMs=3600000;evidence.lockedAddition=600;evidence.finalBonus=3000;
  evidence.font='EMULATOR_2X_CRITICAL_ACTION_SEMANTICS_ONLY_RESTORED';evidence.physical='UNRUN';
 }

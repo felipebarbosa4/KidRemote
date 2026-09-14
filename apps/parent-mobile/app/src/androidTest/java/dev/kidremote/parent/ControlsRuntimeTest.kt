@@ -46,7 +46,7 @@ class ControlsRuntimeTest {
      ck(File(context.noBackupFilesDir,"control-release").delete());click("Atualizar relatório");ck(report()==before);ck(model.state.message.isNotEmpty());text("Dados mantidos com o horário do último relatório. Use Atualizar para tentar novamente.")}
    "stale"->{ck(model.state.devices.single().freshness(0).contains("offline"));ck(ui.onAllNodes(hasText("Online")).fetchSemanticsNodes().isEmpty())}
    "conflict"->{File(context.noBackupFilesDir,"control-ready").writeText("READY");repeat(300){if(!File(context.noBackupFilesDir,"control-release").exists())Thread.sleep(100)};ck(File(context.noBackupFilesDir,"control-release").delete());click("Solicitar desbloqueio");ck(model.state.control!!.status=="rejected");text("Conflito: atualize e revise antes de uma nova solicitação")}
-   "warm"->{click("Voltar aos dispositivos");val start=android.os.SystemClock.elapsedRealtime();click("Atualizar dispositivos");text("Dispositivo Android");text(reportedTime(report().remainingMs));
+   "warm"->{click("Voltar aos dispositivos");val start=android.os.SystemClock.elapsedRealtime();click("Atualizar dispositivos");ui.onNodeWithText("Dispositivo Android").assertIsDisplayed();ui.onNodeWithText(reportedTime(report().remainingMs)).assertIsDisplayed();
      result("WARM_LIST_MS_"+(android.os.SystemClock.elapsedRealtime()-start))}
    "healthFixtures"->{
      // Pure presentation fixtures only; do not claim these flags were produced by an adapter.
@@ -54,11 +54,12 @@ class ControlsRuntimeTest {
      for((health,label) in scenarios){ui.runOnUiThread{ui.activity.setContent{androidx.compose.material3.MaterialTheme{ReportPresentation(d.copy(report=d.report!!.copy(health=health)),0)}}};text(label)}
    }
    "accessibility"->{for(label in listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário")){
+     result("ACTION_CHECK_"+listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário").indexOf(label))
      val node=ui.onNode(hasText(label) and hasClickAction());node.performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(androidx.compose.ui.unit.Dp(48f));
-     val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>();ui.onNodeWithText(label,useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)};ck(layouts.none{it.hasVisualOverflow})
+     val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>();ui.onNodeWithText(label,useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)};result("ACTION_LAYOUT_"+if(layouts.any{it.didOverflowHeight})"HEIGHT" else if(layouts.any{it.didOverflowWidth})"WIDTH" else "FITS");ck(layouts.none{it.hasVisualOverflow})
     }}
    "logout"->{click("Sair e limpar dados locais");ck(model.state.devices.isEmpty()&&model.state.control==null);ck(SessionVault(context).read()==null);ck(SessionVault(context,"parent-control",strict=true).read()==null);text("Entrar")}
    else->error("UNKNOWN_STEP")
   };result("PARENT_"+step.uppercase()+"_PASS")
- }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className==javaClass.name}?.lineNumber?:0;result("PARENT_FAILURE_LINE_"+line.coerceAtLeast(0));throw AssertionError("CONTROL_RUNTIME_FAILED")}}
+ }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className==javaClass.name&&it.methodName!="ck"}?.lineNumber?:0;result("PARENT_FAILURE_LINE_"+line.coerceAtLeast(0));throw AssertionError("CONTROL_RUNTIME_FAILED")}}
 }

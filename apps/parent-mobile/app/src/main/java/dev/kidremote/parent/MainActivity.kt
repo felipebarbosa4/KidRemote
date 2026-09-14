@@ -39,6 +39,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun ParentScreen(model: ParentModel) {
     val state=model.state
+    val scroll=rememberScrollState()
+    LaunchedEffect(state.screen,state.selected){scroll.scrollTo(0)}
     LaunchedEffect(state.screen) {
         if(ControlFaults.automatic(model.getApplication())&&state.screen in setOf(Screen.DEVICES,Screen.DETAIL))while(true){
             kotlinx.coroutines.delay(15000);if(!model.state.loading)model.refreshDevices()
@@ -50,7 +52,7 @@ class MainActivity : ComponentActivity() {
     var timezone by remember { mutableStateOf(java.util.TimeZone.getDefault().id) }
     LaunchedEffect(state.screen) { password=""; link=""; if(state.screen==Screen.LOGIN) email="" }
     Surface(Modifier.fillMaxSize()) {
-        Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
+        Column(Modifier.safeDrawingPadding().verticalScroll(scroll).padding(24.dp),
             verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("KidRemote · laboratório local",style=MaterialTheme.typography.headlineSmall)
             Text(when(state.screen) { Screen.LOGIN->"Entrar"; Screen.SIGNUP->"Criar conta"; Screen.VERIFY->"Verificar e-mail"
@@ -86,7 +88,7 @@ class MainActivity : ComponentActivity() {
                     Action("Confirmar e abrir dispositivos",!state.loading) {model.setup(timezone)}
                 }
                 Screen.DEVICES -> {
-                    if(state.deviceCount==0) Text("Nenhum dispositivo cadastrado.")
+                    if(state.deviceCount==0) Text(if(state.listAfter==null)"Nenhum dispositivo cadastrado." else "Fim desta lista de dispositivos.")
                     state.devices.forEach { device ->
                         OutlinedCard(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
@@ -132,6 +134,7 @@ class MainActivity : ComponentActivity() {
             }
             if(state.screen in setOf(Screen.DEVICES,Screen.DETAIL)) {
                 state.control?.let { op ->
+                    Text("Solicitação: "+(state.devices.find{it.id==op.request.device}?.nickname?:"outro dispositivo da casa"))
                     Text(op.text())
                     if(op.retryable||op.status in setOf("accepted","pending"))Action("Repetir mesma solicitação",!state.loading){model.retryControl()}
                 }
