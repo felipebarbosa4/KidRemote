@@ -4,21 +4,23 @@ Import-Module (Join-Path $PSScriptRoot 'ReadOnly.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Journal.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1') -Force
 
-function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[string]$Temporary,[Security.SecureString]$Jwt){
- $java='C:\Program Files\Android\Android Studio\jbr\bin\java.exe'
- $jar=Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools\37.0.0\lib\apksigner.jar'
+function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[string]$Temporary,[Security.SecureString]$Jwt,[bool]$Reuse=$false,$SavedDevice=$null,[string]$Directory=''){
+ $java=Join-Path $Bundle 'runtime\jbr\bin\java.exe'
+ $jar=Join-Path $Bundle 'runtime\apksigner.jar'
  $apk=Join-Path $Bundle 'lab-reference.apk'
  $run={param($e,$a,$inputText) Invoke-ReviewProcess $e $a $inputText}
  $read={param($a) Invoke-InventoryAdb $Adb $Serial $a}.GetNewClosure()
  $wire={param($s,$p,$m,$b,$j) Invoke-LabWire $s $p $m $b $j}
- $s=@{new=$false;device=$null;reverse=$false;reverseAttempted=$false}
+ $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false}
  $action={param($name) $null=Invoke-ReplacementAdb $Adb $Serial $name $apk $run}.GetNewClosure()
  $ops=@{}
  $ops.HostReady={
   $r=& $run $java @('--enable-native-access=ALL-UNNAMED','-jar',$jar,'verify','--verbose','--print-certs',$apk) ''
   if($r.stderr.Trim() -or (Convert-ReviewSigner $r.stdout) -cne '638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb'){throw 'INVALID:LAB_SIGNER'}
-  if($null -ne (Get-OnlyLabChild $wire $Jwt)){throw 'INVALID:NEW_HOUSEHOLD_NOT_EMPTY'}
+  if(-not $Reuse -and $null -ne (Get-OnlyLabChild $wire $Jwt)){throw 'INVALID:NEW_HOUSEHOLD_NOT_EMPTY'}
  }.GetNewClosure()
  $ops.Configuration={
   $i=Invoke-ReadOnlyInventory $read
@@ -83,6 +85,30 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $ops.Recovery={param($stage,$changed)
   # No policy is configured before the final preparation stage. Never reinstall old bytes.
   if($stage -ceq 'POLICY_ADMITTED' -and $s.new){& $action OpenAccessibility;Write-Host 'LAB RECOVERY: se houver restrição, desative manualmente somente a Acessibilidade do KidRemote. Resultado permanece INVALID.'}
+ }.GetNewClosure()
+ $ops.ReuseIdentityPermissions={
+  $i=Invoke-ReadOnlyInventory $read;$d=Get-OnlyLabChild $wire $Jwt
+  if($null -eq $SavedDevice -or $null -eq $d -or $d.id -cne $SavedDevice.id -or $d.policy_epoch -cne $SavedDevice.policy_epoch -or $i.accessibility -cne 'ENABLED' -or $i.usageAccess -cne 'ENABLED'){throw 'INVALID:REUSE_IDENTITY_OR_PERMISSIONS'}
+  $s.device=$d
+ }.GetNewClosure()
+ $ops.Resume={& $action OpenChild}.GetNewClosure()
+ $ops.Normalize={param($eventId)
+  $d=Get-OnlyLabChild $wire $Jwt
+  if($d.id -cne $SavedDevice.id -or $d.policy_epoch -cne $SavedDevice.policy_epoch -or -not $d.policy_configured){throw 'INVALID:REUSE_POLICY'}
+  # A fresh expected-version canonical UNLOCK cannot silently leave a previous lab lock.
+  $q=New-ProductOperation $eventId $d.id UNLOCK $d.version
+  $r=Invoke-StableLabOperation $wire $Jwt $q;Assert-ProductAccepted $r $q $d.policy_epoch
+  & $action OpenChild
+  $timer=[Diagnostics.Stopwatch]::StartNew();$current=$null
+  do{try{$current=Get-LabDevice $wire $Jwt $d.id $d.policy_epoch}catch{if($_.Exception.Message -cne 'INVALID:REPORT_STALE_OR_CONCURRENT'){throw}};if($current -and $current.version -eq $r.version){break};Start-Sleep -Milliseconds 500}while($timer.Elapsed.TotalSeconds -lt 30)
+  if(-not $current -or $current.version -ne $r.version -or $current.report.manual_lock){throw 'INVALID:REUSE_UNLOCK_UNVERIFIED'}
+  if($current.report.remaining_ms -le 180000){
+   $grant=[Guid]::NewGuid().ToString();$null=Add-ProductJournal $Directory $grant ALLOWANCE_ADMITTED OD51_FIXED_SCOPE
+   $q=@{protocol_version=1;operation_id=$grant;device_id=$d.id;kind='ADD_TIME';payload=@{seconds=600;period_key=$current.report.period_key};expected_version=$null}
+   $added=Invoke-StableLabOperation $wire $Jwt $q
+   if($added.status -cne 'accepted' -or $added.operation_id -cne $grant -or $added.device_id -cne $d.id -or $added.policy_epoch -cne $d.policy_epoch -or $added.version -ne $current.version+1){throw 'INVALID:REUSE_ALLOWANCE_RESULT'}
+   & $action OpenChild
+  }
  }.GetNewClosure()
  return @{ops=$ops;state=$s;wire=$wire;read=$read;action=$action}
 }

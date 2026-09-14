@@ -76,8 +76,9 @@ export class Lease {
   this.create('rest',{PGRST_DB_URI:`postgres://authenticator:${this.secrets.database}@${db}:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:this.secrets.jwt,PGRST_LOG_LEVEL:'crit'},['47362:3000']);
   this.record.complete=true;this.save();return 'CREATED';
  }
+ status(){this.inspect();return {lease:this.id,source:this.source,schema:this.schema.hash,complete:this.record.complete,persistence:'TASK_OWNED_SYNTHETIC'};}
  stop(){this.inspect();for(const id of Object.values(this.record.containers).reverse())this.call(['stop',id]);return 'STOPPED_DATA_RETAINED';}
- teardown(admit){this.inspect();admit({stage:'TEARDOWN_ADMITTED',lease:this.id,source:this.source,schema:this.schema.hash});this.inspect();for(const id of Object.values(this.record.containers).reverse())this.call(['rm','-f',id]);this.call(['volume','rm',this.record.volume]);this.call(['network','rm',this.record.network]);return 'EXACT_LEASE_REMOVED';}
+ teardown(admit){this.inspect();admit({stage:'TEARDOWN_ADMITTED',lease:this.id,source:this.source,schema:this.schema.hash});this.inspect();for(const id of Object.values(this.record.containers).reverse())this.call(['rm','-f',id]);this.call(['volume','rm',this.record.volume]);this.call(['network','rm',this.record.network]);this.record.complete=false;this.record.tornDown=true;this.save();return 'EXACT_LEASE_REMOVED';}
 }
 export async function startGateway(lease,docker,host){
  const p=spawn(process.execPath,[resolve(lease.root,'tools/kr007/local-gateway.mjs')],{stdio:['pipe','pipe','pipe'],windowsHide:true});let ready=false;p.stdout.on('data',b=>{if(b.toString().includes('LOCAL_ENROLLMENT_GATEWAY_READY'))ready=true;});p.stderr.resume();p.on('error',()=>{});
