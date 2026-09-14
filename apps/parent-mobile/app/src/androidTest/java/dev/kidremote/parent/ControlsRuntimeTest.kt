@@ -3,6 +3,11 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.input.key.Key
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -24,7 +29,10 @@ class ControlsRuntimeTest {
  private fun open(){waitReady();if(model.state.screen==Screen.SETUP){ui.onNode(hasText("Fuso IANA") and hasSetTextAction()).performTextReplacement("Etc/UTC");click("Confirmar e abrir dispositivos")};ck(model.state.screen==Screen.DEVICES);click("Abrir Dispositivo Android");ck(model.state.screen==Screen.DETAIL)}
  private fun report()=model.state.devices.single().report!!
  @Test fun step(){try{
-  val args=InstrumentationRegistry.getArguments();val step=args.getString("step")!!;open()
+  val args=InstrumentationRegistry.getArguments();val step=args.getString("step")!!
+  if(step=="layout")ui.runOnUiThread {ui.activity.setContent{androidx.compose.material3.MaterialTheme {
+    Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {for(label in listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário"))Action(label,true){}}
+  }}} else open()
   when(step){
    "limit"->{input(args.getString("value")!!);click("Salvar limite diário");ck(model.state.control?.status=="accepted");text("Solicitação aceita · aguardando dispositivo")}
    "report"->{val expected=args.getString("remaining")!!.toLong();ck(report().remainingMs==expected);text(reportedTime(expected));ck(!report().restrictionApplied);text(model.state.devices.single().healthText());
@@ -54,11 +62,13 @@ class ControlsRuntimeTest {
      val d=model.state.devices.single();val scenarios=listOf("UPDATE_REQUIRED" to "Atualize o aplicativo do dispositivo","PERMISSION_REQUIRED" to "Permissão necessária no dispositivo")
      for((health,label) in scenarios){ui.runOnUiThread{ui.activity.setContent{androidx.compose.material3.MaterialTheme{ReportPresentation(d.copy(report=d.report!!.copy(health=health)),0)}}};text(label)}
    }
-   "accessibility"->{for(label in listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário")){
+   "accessibility","layout"->{for(label in listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário")){
      result("ACTION_CHECK_"+listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário").indexOf(label))
      val node=ui.onNode(hasText(label) and hasClickAction());node.performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(androidx.compose.ui.unit.Dp(48f));
      val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>();ui.onNodeWithText(label,useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)};result("ACTION_LAYOUT_"+if(layouts.any{it.didOverflowHeight})"HEIGHT" else if(layouts.any{it.didOverflowWidth})"WIDTH" else "FITS");ck(layouts.none{it.hasVisualOverflow})
     }
+    // Keyboard traversal must leave touch mode; native buttons correctly avoid touch-mode keyboard focus.
+    InstrumentationRegistry.getInstrumentation().setInTouchMode(false);ui.waitForIdle()
     val first=ui.onNode(hasText("+10 min") and hasClickAction())
     first.performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus){it()}
     first.assertIsFocused().performKeyInput{pressKey(Key.Tab)}

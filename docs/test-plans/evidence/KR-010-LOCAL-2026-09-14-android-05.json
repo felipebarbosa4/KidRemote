@@ -1,0 +1,76 @@
+{
+  "scope": "KR010_PARENT_CONTROLS_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [
+    {
+      "method": "createEnrollmentQr",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS",
+        "PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS"
+      ]
+    },
+    {
+      "method": "decodeRedeemAndRead",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_DECODER_REDEMPTION_PERSISTENCE_INITIAL_READ_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "limit",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LIMIT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "initialize",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "accessibility",
+      "result": "FAIL",
+      "codes": [
+        "ACTION_CHECK_0",
+        "ACTION_LAYOUT_FITS",
+        "ACTION_CHECK_1",
+        "ACTION_LAYOUT_FITS",
+        "ACTION_CHECK_2",
+        "ACTION_LAYOUT_FITS",
+        "ACTION_CHECK_3",
+        "ACTION_LAYOUT_FITS",
+        "ACTION_CHECK_4",
+        "ACTION_LAYOUT_FITS",
+        "PARENT_FAILURE_LINE_64"
+      ]
+    }
+  ],
+  "primary": "KR010_UI_STAGE_FAILED:step:accessibility",
+  "cleanup": "VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED",
+  "apkHashes": {
+    "app": "514b4fd43d9caadaeacaaed3cbdba501733b9b415bc35d588f60719197a739e4",
+    "test": "d1cc8e3533c179f3a825306468d7dd4f39040a17113c474f1e695e1e255bff5f",
+    "dev.kidremote.child.unassigned.debug": "7502d0ea78d013e6c97c76c22af293aec1f3c3e6278edaa77ae9a1772ee9197b",
+    "dev.kidremote.child.unassigned.debug.test": "5cc670ca2ed86996ff0e870d9c4c0a4517fc0659f25eac1815e9df8340a804fb"
+  },
+  "apkSource": "6216ce382c739c2d70ebe9ecc9dc0d906a177d95",
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "overall": "NOT_PASSED"
+}
