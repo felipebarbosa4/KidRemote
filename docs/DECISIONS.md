@@ -242,3 +242,19 @@ test a same-signer lab update on an owned emulator only. No physical command,
 destructive replacement, release signing change or secret disclosure. If not found,
 stop for owner choice between a side-by-side package and separately authorized
 destructive reinstall after state/risk review. Neither alternative is preselected.
+
+**OD-50 — APPROVED OWNER DESTRUCTIVE SAMSUNG LAB REPLACEMENT / ONE PRODUCT SLICE:**
+from `45eda78b7c4d45f3ddb3971b134feea26d7e7f1f`, owner chooses option B for
+the dedicated Samsung SM-X400 / Android 16 API 36 / BP4A.251205.006 / patch
+2026-07-05 only. A future pinned runner may uninstall only
+`dev.kidremote.child.unassigned.debug` and lose its private data, then install
+the approved source-668ab87 physical-lab APK. Old provenance must match before
+uninstall; preserve historical evidence, not the two unknown files. Permit
+fixed loopback ADB reverse, task-owned canonical backend, real pairing, app/fixture
+and relevant Settings launches, genuine owner consent and bounded independent
+fixture input. Leave the lab app, identity and permissions after successful
+canonical Unlock/independent restored-input cleanup. Manual Accessibility-disable
+recovery is separate and never changes the original verdict. No agent physical
+execution in preparation, factory reset, root, bootloader/safe-mode changes,
+unrelated data changes, arbitrary navigation/security changes, FCM or merge.
+Only freeze one command if complete device-free validation supports readiness.

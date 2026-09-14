@@ -1,5 +1,30 @@
 # OD-49 product oracle prerequisites
 
+## OD-50 replacement preparation (current)
+
+The owner now explicitly authorizes future destructive replacement of only the
+old child package on the exact dedicated Samsung configuration; old data need not
+be preserved. [OD-50 evidence](../../../docs/test-plans/evidence/PRODUCT-REPLACEMENT-PREPARATION-2026-09-14.md)
+records the preparation and concrete blockers. **No physical operation occurred.**
+
+`Replacement.psm1`/`ReplacementAdb.psm1` add fixed package/hash/signature admission,
+durable stages and fail-closed transport. `EnrollmentHost`, `LivePreparation` and
+`LiveSlice` connect the existing Auth/pairing/canonical APIs and independent fixture;
+these candidates are not a validated complete physical runner. `HostQr.java` is a
+host-only private-pipe display helper, never product code. `BackendHost` reuses the
+existing disposable backend and its explicit stdin STOP lifecycle.
+
+**PRODUCT_PHYSICAL_ORACLE remains BLOCKED.** `Run-ProductReplacement.ps1` stops
+unconditionally before imports/ADB/backend. The real Windows→WSL supervisor test
+failed; native execution became unavailable in the validation session. The current
+disposable backend also removes server enrollment on cleanup, so it cannot yet
+deliver the requested reusable normal test identity. No owner bundle/command is
+published; no tests or manifest flag may silently bypass the entrypoint gate.
+
+The prior read-only modules below remain strictly read-only. Their historical
+no-install policy describes those bundles, not a revocation of the new OD-50
+owner authorization.
+
 **PRODUCT_PHYSICAL_ORACLE = BLOCKED.** The independent oracle remains ordinary-fixture input counter + usable focus. Product attachment, desired/applied state, ACK and parent status only corroborate. The qualification entrypoint still rejects before ADB/HTTP. No qualification command is published.
 
 ## Read-only inventory (separate bundle)

@@ -28,6 +28,8 @@ jobs:
           node --test tools/kr008/*.test.mjs
           node --test tools/kr009/*.test.mjs
           node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --sync-test
+      - name: Test OD-50 task-owned backend supervisor stop without a device
+        run: node tools/enforcement/product-oracle/backend-stdio-test.mjs docker unix:///var/run/docker.sock
       - name: Build parent with preinstalled SDK only
         run: |
           test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"
@@ -101,6 +103,8 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/Replacement.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/update-review/Review.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/Prerequisites.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/ProductOracle.Tests.ps1
@@ -157,6 +161,8 @@ jobs:
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/enforcement/product-oracle/Replacement.Tests.ps1
+          ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
           ./tools/enforcement/update-review/Review.Tests.ps1
           ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
           ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1
@@ -185,9 +191,14 @@ jobs:
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
+      - name: Test OD-50 native fake ADB (no device)
+        shell: powershell
+        run: ./tools/enforcement/product-oracle/ReplacementNative.Tests.ps1
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
+          ./tools/enforcement/product-oracle/Replacement.Tests.ps1
+          ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
           ./tools/enforcement/update-review/Review.Tests.ps1
           ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
           ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1

@@ -92,7 +92,7 @@ Eq ((Get-LabReverseArguments) -join ' ') 'reverse tcp:47366 tcp:47366'
 $script:signupEmail=$null
 $authWire={param($service,$path,$method,$body,$jwt)
  switch($path){
- '/signup' {$script:signupEmail=$body.email;return @{}}
+ '/signup' {Eq ($body.password.Length -le 72) $true;$script:signupEmail=$body.email;return @{}}
  '/api/v1/messages' {return [pscustomobject]@{messages=@([pscustomobject]@{ID='test-mail';To=@([pscustomobject]@{Address=$script:signupEmail})})}}
  '/api/v1/message/test-mail' {return [pscustomobject]@{HTML='<a href="http://127.0.0.1:47361/verify?token=abcdef&amp;type=signup">Verify</a>'}}
  '/verify' {if($body.token_hash -cne 'abcdef'){throw 'AUTH_TOKEN'};return [pscustomobject]@{access_token='synthetic.token.signature'}}
