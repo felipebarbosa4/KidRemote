@@ -225,3 +225,11 @@ read-only Samsung preflight bundle. No physical command is executed by the agent
 no installation, settings/input, reverse tunnel, backend mutation or qualification
 belongs to the preflight. Product oracle remains BLOCKED until live prerequisites
 are evidenced. Release endpoint/security and historical verdicts remain unchanged.
+
+**OD-49 extension — signer/private-state read-only update review:** owner reports
+matching Samsung configuration and installed child v1 hash `3ff9962e...`, with
+product permissions not verified enabled. Authorizes one additional read-only
+handoff: temporary installed APK pull + local SDK apksigner, and content-free
+run-as existence/size inventory. No install/update, permissions, launch/input,
+backend, reverse or data erasure. SAFE_DATA_PRESERVING_UPDATE_REVIEW is technical
+eligibility for review only, never authorization to perform an update.
