@@ -24,6 +24,8 @@ function Invoke-InventoryAdb([string]$Adb,[string]$Serial,[string[]]$Arguments){
   if(-not $p.WaitForExit(10000)){$p.Kill();throw 'INVALID:ADB_TIMEOUT'}
   $raw=$o.GetAwaiter().GetResult();$err=$e.GetAwaiter().GetResult()
   if($line -eq 'devices'){$err=($err -split '\r?\n'|Where-Object{$_ -and $_ -notin @('* daemon not running; starting now at tcp:5037','* daemon started successfully')}) -join "`n"}
+  # AOSP displayPackageFilePath returns 1 with empty streams for an absent package.
+  if($p.ExitCode -eq 1 -and $line -match ('^shell pm path '+$pkg+'$') -and -not $raw.Trim() -and -not $err.Trim()){return ''}
   if($p.ExitCode -ne 0 -or $err.Trim() -or $raw.Length -gt 262144){throw 'INVALID:ADB_READ_REJECTED'}
   return $raw
  }catch{throw 'INVALID:ADB_READ_FAILED'}finally{$p.Dispose()}

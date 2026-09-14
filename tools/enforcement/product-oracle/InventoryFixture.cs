@@ -16,7 +16,8 @@ class InventoryFixture {
   else if(line=="getprop ro.build.version.security_patch")Console.WriteLine("2026-07-05");
   else if(line=="settings --user current get global low_power")Console.WriteLine("0");
   else if(line=="settings --user current get global app_standby_enabled")Console.WriteLine("1");
-  else if(line.StartsWith("pm path dev.kidremote.") || line.StartsWith("pm list packages -u dev.kidremote."))Console.WriteLine("");
+  else if(line.StartsWith("pm path dev.kidremote."))return 1;
+  else if(line.StartsWith("pm list packages -u dev.kidremote."))Console.WriteLine("");
   else return 9;
   return 0;
  }
