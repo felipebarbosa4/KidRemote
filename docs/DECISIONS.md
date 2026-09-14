@@ -124,3 +124,18 @@ and refusal evidence. No KR-009 receipts/sync, enforcement, physical execution,
 battery acceptance or new clock recovery policy. Pre/post APKs may be laboratory
 builds with one signing identity and explicit version codes; legacy schema 1 remains
 a disclosed fixture, not a claim of a previously distributed application.
+
+**OD-46 extension — APPROVED OWNER KR-008 AC-7 LOCAL RECOVERY (OD-04/OD-05):**
+from `82e3d05`, implement the approved conservative MVP recovery without reopening
+OD-04/OD-05. Unreconstructible usage is never estimated/forgiven: retain durable
+used time, policy/version, bonus, period and manual lock; remain uncertain and
+restrict ordinary use. Clear uncertainty only (A) when valid bounded evidence fully
+covers the missing suffix and the recovered aggregate commits atomically, or (B)
+when trusted time establishes a strictly newer household period: advance once to
+that period, used=0, no old bonus, preserve recurring policy/manual lock and persist
+the new boot/monotonic/UTC anchor atomically. Skipped dates grant no accumulated
+allowances; repeated deliveries, device RTC/zone edits and storage becoming writable
+are not recovery authority. Storage failure still requires A/B after health returns.
+No manual reset/parent override, KR-009 sync/receipts/FCM, enforcement, physical work,
+battery acceptance or further policy choice is authorized. Trust inputs are local
+validated fixtures/interfaces in this slice, not invented network evidence.

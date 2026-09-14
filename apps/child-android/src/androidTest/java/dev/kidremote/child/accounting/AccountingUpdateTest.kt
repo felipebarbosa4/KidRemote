@@ -126,7 +126,7 @@ class AccountingUpdateTest {
             checkSafe(engine.read().ledger==before&&engine.read().restrictionRequired)
             val covered=listOf(Range(7,0,120000,yes),Range(7,120000,125000,yes.copy(permitted=false)))
             val recovered=engine.reconcile(covered,now(125000),true).ledger!!
-            checkSafe(recovered==before.copy(uncertainty=Uncertainty.NONE,cursor=125000,uptime=125000))
+            checkSafe(recovered==before.copy(uncertainty=Uncertainty.NONE,cursor=125000,uptime=125000,recoveryThrough=0))
             checkSafe(engine.reconcile(covered,now(125000),true).ledger==recovered)
             val unlocked=engine.acceptPolicy(before.policy.copy(version=8,manualLock=false),now(125000)).ledger!!
             val n=engine.reconcile(listOf(Range(7,0,126000,yes)),now(126000),true).ledger!!

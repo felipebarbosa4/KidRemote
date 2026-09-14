@@ -32,6 +32,7 @@ class AccountingRuntimeTest {
     private fun policy(epoch:String)=Policy(epoch,2,"Etc/UTC",1,"2026-09-13",3600,600,true)
     private fun prepare():Ledger {
         context.deleteDatabase(file.absolutePath)
+        android.util.AtomicFile(File(context.noBackupFilesDir,"accounting-write-intent")).delete()
         val id=identity();IdentityStore(context).save(id)
         val policy=policy(id.getString("policy_epoch")).copy(manualLock=false)
         ChildAccounting(context).use { engine->
