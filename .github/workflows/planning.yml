@@ -91,6 +91,8 @@ jobs:
           persist-credentials: false
       - name: Validate repository planning
         run: node tools/validate.mjs
+      - name: Test content-free host recovery observer
+        run: python3 -B -m unittest discover -s tools/enforcement -p 'test_*.py'
       - name: Test evidence ingestion and least-privilege rejection
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device

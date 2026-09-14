@@ -59,6 +59,18 @@ try {
  }
  await command(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && touch no_backup/sync-test-control"']);
  await guard();ok((await run(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && cat > no_backup/sync-handoff"'],JSON.stringify(identity))).code===0,'IDENTITY_HANDOFF_FAILED');
+ if(process.env.KR_ENFORCEMENT_RECOVERY==='1') {
+  await control('LOCK',{},1);
+  const result=await new Promise(resolve=>{
+   const child=spawn('python3',['tools/enforcement/host-recovery.py',process.env.KR009_APK_SOURCE,'no-restart','network'],{stdio:['ignore','pipe','pipe']});
+   let output='';child.stdout.on('data',x=>{if(output.length<100000)output+=x});child.stderr.on('data',()=>{});
+   child.on('error',()=>resolve(null));child.on('close',code=>{try{resolve(code===0?JSON.parse(output.split('\n').find(x=>x.startsWith('{'))):null)}catch{resolve(null)}});
+  });
+  ok(result!==null,'HOST_RECOVERY_RESULT_UNAVAILABLE');record({method:'hostObservedNetworkRecovery',...result});
+  ok(result.result==='PASS_AUTOMATIC_RECOVERY'&&result.verification.codes.includes('RECOVERED_OBSERVED_ACK_SENT'),'HOST_RECOVERY_NOT_VERIFIED');
+  ok((await readStatus()).json.find(x=>x.version===2).status==='applied','RECOVERED_LOCK_ACK_NOT_APPLIED');
+  evidence.overall='PASS_AUTOMATIC_RECOVERY_PARENT_ROOM_ADAPTER_ACK_EMULATOR';return;
+ }
  if(process.env.KR_ENFORCEMENT_RUNTIME==='1') {
   await control('LOCK',{},1);await stage('networkLock');
   ok((await readStatus()).json.find(x=>x.version===2).status==='applied','OBSERVED_LOCK_ACK_NOT_APPLIED');

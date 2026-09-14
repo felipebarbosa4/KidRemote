@@ -195,3 +195,14 @@ exactly one future owner-operated short physical integration handoff only if exi
 independent oracle tooling can safely support it without weakened proof, capture,
 settings changes or destructive operations; otherwise report the exact blocker.
 KR-003 and all physical acceptance gates remain open.
+
+**OD-49 extension — host-observed normal process-death diagnosis:**
+from `fabfbdc3ca755624504ca945b988b4ae78c112bd`, owner authorizes only isolation
+of automatic AccessibilityService recovery on the existing owned emulator/PR #24.
+First use the unchanged APK/self-kill seam and a bounded host observation window,
+without instrumentation restart, app reopen, force-stop, permission toggles or data
+clear during that window. App-reopen is a separate control. Preserve the two old
+NOT_PASSED attempts. Modify product/harness only for an evidenced defect; no new
+lifecycle architecture. Any confirmation uses independent clean attempts. Physical
+oracle assessment is conditional on demonstrated automatic recovery; no physical
+execution, FCM, deployment, permission-transfer assumption or weakened oracle.
