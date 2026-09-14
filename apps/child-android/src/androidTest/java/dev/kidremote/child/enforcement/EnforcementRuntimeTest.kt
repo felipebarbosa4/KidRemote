@@ -16,7 +16,8 @@ import java.util.UUID
 class EnforcementRuntimeTest {
  @Test fun serviceLifecycle()=exercise(false)
  @Test fun networkLock()=exercise(true)
- private fun exercise(network:Boolean){
+ @Test fun killWhileRestricted()=exercise(false,true)
+ private fun exercise(network:Boolean,death:Boolean=false){
     val i=InstrumentationRegistry.getInstrumentation();val c=i.targetContext
     val automation=i.getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
     fun shell(command:String)=ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).bufferedReader().use{it.readText().trim()}
@@ -77,6 +78,14 @@ class EnforcementRuntimeTest {
         waitFor("SAFE_SURFACE_DETACHED"){EnforcementRuntime.text().startsWith("Superfície de sistema")}
         shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -a android.settings.SETTINGS");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("ORDINARY_REENTRY_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
+        if(death){
+            val saved=engine.read().ledger!!
+            val record=JSONObject().put("pid",android.os.Process.myPid()).put("epoch",saved.policy.epoch).put("version",saved.policy.version).put("used",saved.usedMs).put("bonus",saved.bonusSeconds).put("period",saved.periodKey)
+            File(c.noBackupFilesDir,"enforcement-death-state").outputStream().use{it.write(record.toString().toByteArray());it.fd.sync()}
+            File(c.noBackupFilesDir,"enforcement-crash").outputStream().use{it.write("EXPECTED_PRODUCT_ENFORCEMENT_KILL".toByteArray());it.fd.sync()}
+            i.sendStatus(0,Bundle().apply{putString("enforcement","EXPECTED_PRODUCT_ENFORCEMENT_KILL")})
+            android.os.Process.killProcess(android.os.Process.myPid());Thread.sleep(10000);error("KILL_DID_NOT_TERMINATE")
+        }
         shell("settings put secure enabled_accessibility_services null")
         waitFor("SERVICE_DISCONNECTED_VISIBLE"){EnforcementRuntime.engine()==null}
         waitFor("DISCONNECT_OBSERVATION_DURABLE"){ChildAccounting(c).use{it.read().ledger?.lastAdapterObservation?.let{r->JSONObject(r).optString("health")=="SERVICE_DISCONNECTED"}==true}}
@@ -98,5 +107,25 @@ class EnforcementRuntimeTest {
         if(enabled=="null")shell("settings delete secure accessibility_enabled") else shell("settings put secure accessibility_enabled $enabled")
         shell("appops set ${c.packageName} GET_USAGE_STATS default")
     }
+ }
+ @Test fun restartAfterDeath(){
+    val i=InstrumentationRegistry.getInstrumentation();val c=i.targetContext
+    val automation=i.getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+    fun shell(command:String)=ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(command)).bufferedReader().use{it.readText().trim()}
+    check(shell("getprop ro.kernel.qemu")=="1"&&shell("getprop ro.boot.qemu.avd_name")=="kr006_e03b4820193b4132b1fcf7950eeed7fe")
+    fun waitFor(code:String,p:()->Boolean){val until=android.os.SystemClock.elapsedRealtime()+15000;while(!p()&&android.os.SystemClock.elapsedRealtime()<until)Thread.sleep(100);check(p()){code};i.sendStatus(0,Bundle().apply{putString("enforcement",code)})}
+    try {
+        val before=JSONObject(File(c.noBackupFilesDir,"enforcement-death-state").readText())
+        check(before.getInt("pid")!=android.os.Process.myPid())
+        waitFor("NEW_PROCESS_SERVICE_CONNECTED"){EnforcementRuntime.engine()!=null}
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -a android.settings.SETTINGS");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
+        waitFor("PROCESS_DEATH_RESTRICTION_REOBSERVED"){EnforcementRuntime.text().startsWith("Restrição observada")}
+        val state=EnforcementRuntime.engine()!!.read().ledger!!
+        check(state.policy.epoch==before.getString("epoch")&&state.policy.version==before.getLong("version")&&state.usedMs==before.getLong("used")&&state.bonusSeconds==before.getLong("bonus")&&state.periodKey==before.getString("period")&&state.policy.manualLock&&state.uncertainty!=Uncertainty.NONE)
+        i.sendStatus(0,Bundle().apply{putString("enforcement","PROCESS_DEATH_LEDGER_NO_RESET_OR_REPLAY")})
+        val id=IdentityStore(c).read()!!
+        id.put("removal",JSONObject().put("protocol_version",1).put("code","DEVICE_REVOKED").put("device_id",id.getString("device_id")).put("policy_epoch",id.getString("policy_epoch")));IdentityStore(c).save(id)
+        waitFor("RESTART_REMOVAL_DETACHED"){!EnforcementRuntime.text().startsWith("Restrição observada")}
+    }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className.contains("EnforcementRuntimeTest")}?.lineNumber?:0;throw AssertionError("ENFORCEMENT_RUNTIME_FAILED_LINE_$line")}
  }
 }

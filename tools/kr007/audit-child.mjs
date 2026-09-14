@@ -25,7 +25,7 @@ for(const variant of ['debug','release']){
  if(/GOTRUE_JWT_SECRET|service_role|POSTGRES_PASSWORD|LabControlReceiver|LabTimerStore|EnforcementTrace|recordLatencyOnce|DeviceAdminReceiver|MediaProjectionManager/.test(dex))throw Error('CHILD_PRIVILEGE_ISOLATION');
  if(variant==='release'&&/UsageStatsManager/.test(dex))throw Error('CHILD_RELEASE_USAGE_LAB_ADAPTER');
  if(variant==='release'&&/http:\/\/(?:10\.0\.2\.2|127\.0\.0\.1)/.test(dex))throw Error('CHILD_RELEASE_LAB_ENDPOINT');
- if(variant==='release'&&/setTestEndpoint|setAfterPage|sync-test-control|setBeforeRecoveryCommit|setAfterRecoveryCommit|EXPECTED_KILL_RECOVERY|setAfterPersist|setAfterAckResponse|setTransformSyncResponse|KR009_EXPECTED_KILL/.test(dex))throw Error('CHILD_RELEASE_RECOVERY_FAULT');
+ if(variant==='release'&&/setTestEndpoint|setAfterPage|sync-test-control|setBeforeRecoveryCommit|setAfterRecoveryCommit|EXPECTED_KILL_RECOVERY|setAfterPersist|setAfterAckResponse|setTransformSyncResponse|KR009_EXPECTED_KILL|EXPECTED_PRODUCT_ENFORCEMENT_KILL|enforcement-death-state|enforcement-crash/.test(dex))throw Error('CHILD_RELEASE_RECOVERY_FAULT');
  if(variant==='release'&&/setBeforeIdentitySave|INJECTED_RESPONSE_LOSS/.test(dex))throw Error('CHILD_RELEASE_TEST_FAULT');
  if(variant==='release'&&/cameraCounts|getCameraCounts/.test(dex))throw Error('CHILD_RELEASE_CAMERA_COUNTERS');
  if(variant==='release'&&/setAfterRotationResponse|getAfterRotationResponse/.test(dex))throw Error('CHILD_RELEASE_ROTATION_FAULT');
