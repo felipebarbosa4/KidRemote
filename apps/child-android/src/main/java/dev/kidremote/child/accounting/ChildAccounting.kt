@@ -100,10 +100,10 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
         if(!identity.read()!!.optBoolean("accounting_initialized",false))initialize(input,now,trustedUtc){queued(it)}
         else update(now){check(it.pendingAck==null);queued(SyncMerge.accept(it,input,now,trustedUtc))}.also{attached=!it.storageFailure}
     }
-    fun queueObservation(now:Sample,accept:(Ledger)->Boolean,receipt:(Ledger)->String):AccountingResult=synchronized(accountingLock) {
+    fun queueObservation(now:Sample,accept:(Ledger)->Boolean,observation:String,receipt:(Ledger)->String):AccountingResult=synchronized(accountingLock) {
         val current=read()
-        if(current.storageFailure||current.ledger==null||current.ledger.pendingAck!=null||!accept(current.ledger))return@synchronized current
-        update(now){s->check(accept(s));val next=s.copy(reportSequence=Math.addExact(s.reportSequence,1));next.copy(pendingAck=receipt(next))}
+        if(current.storageFailure||current.ledger==null||!accept(current.ledger))return@synchronized current
+        update(now){s->check(accept(s));val observed=s.copy(lastAdapterObservation=observation);if(s.pendingAck!=null)observed else {val next=observed.copy(reportSequence=Math.addExact(s.reportSequence,1));next.copy(pendingAck=receipt(next))}}
     }
     fun confirmReport(sequence:Long,now:Sample)=synchronized(accountingLock) {
         update(now){check(it.reportSequence==sequence&&it.pendingAck!=null);it.copy(pendingAck=null)}.also{attached=!it.storageFailure}

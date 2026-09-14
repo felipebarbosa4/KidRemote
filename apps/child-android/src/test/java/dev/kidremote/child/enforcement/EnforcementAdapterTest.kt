@@ -18,4 +18,6 @@ class EnforcementAdapterTest {
  @Test fun safeSurfaceIsNotApplied(){val s=change(state(),lock=true);assertFalse(EnforcementObservation(EnforcementTarget.from(s),false,"SAFE_SURFACE_AVAILABLE").applied(s));assertEquals(SurfaceDisposition.SAFE_SYSTEM,SurfacePolicy.classify("com.android.settings","child"))}
  @Test fun unknownIsFailOpen(){assertEquals(SurfaceDisposition.UNKNOWN_FAIL_OPEN,SurfacePolicy.classify(null,"child"))}
  @Test fun ownOverlayEventKeepsOrdinary(){assertEquals(SurfaceDisposition.ORDINARY_APP,SurfaceEventResolver.resolve(SurfaceDisposition.ORDINARY_APP,SurfacePolicy.observe("child","child"),true,true))}
+ @Test fun boundedObservationRoundtrip(){val s=state().copy(lastAdapterObservation="bounded-health-fixture");assertEquals(s,LedgerCodec.decode(LedgerCodec.encode(s)));assertThrows(IllegalArgumentException::class.java){LedgerCodec.encode(s.copy(lastAdapterObservation="x".repeat(513)))}}
+ @Test fun oldV3RetainsLedgerWithoutRestoringApplication(){val s=state();val body=LedgerCodec.encode(s).dropLast(9).toByteArray();java.nio.ByteBuffer.wrap(body).putInt(3);val encoded=java.io.ByteArrayOutputStream().also{it.write(body);java.io.DataOutputStream(it).writeLong(java.util.zip.CRC32().apply{update(body)}.value)}.toByteArray();assertEquals(s,LedgerCodec.decode(encoded));assertNull(LedgerCodec.decode(encoded).lastAdapterObservation)}
 }

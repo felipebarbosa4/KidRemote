@@ -22,7 +22,7 @@ internal object EnforcementRuntime {
         try {
             val id=dev.kidremote.child.IdentityStore(c).read()?:return
             if(id.has("removal"))return
-            val result=e.queueObservation(AndroidAccountingClock.sample(c,true),value::matches){s->
+            val result=e.queueObservation(AndroidAccountingClock.sample(c,true),value::matches,org.json.JSONObject().put("epoch",value.target?.epoch).put("version",value.target?.version).put("period",value.target?.period).put("required",value.target?.required).put("attached",value.attached).put("health",value.health).toString()){s->
                 org.json.JSONObject().put("protocol_version",1).put("device_id",id.getString("device_id")).put("policy_epoch",s.policy.epoch)
                     .put("applied_version",s.policy.version).put("report_sequence",s.reportSequence).put("period_key",s.periodKey)
                     .put("used_ms",s.usedMs).put("bonus_seconds",s.bonusSeconds).put("remaining_ms",s.remainingMs)

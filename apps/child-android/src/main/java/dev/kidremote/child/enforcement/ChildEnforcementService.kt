@@ -50,7 +50,7 @@ class ChildEnforcementService:AccessibilityService(),EnforcementAdapter {
                     val usage=ops.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,android.os.Process.myUid(),packageName)==android.app.AppOpsManager.MODE_ALLOWED
                     usable=!result.storageFailure&&next!=null&&EnforcementRuntime.consented(this)&&usage
                     val observed=observation
-                    if(observed!=lastQueued&&observed.target==next&&result.ledger?.pendingAck==null){
+                    if(observed!=lastQueued&&observed.target==next){
                         EnforcementRuntime.persist(this,engine,observed);lastQueued=observed
                     }
                 }

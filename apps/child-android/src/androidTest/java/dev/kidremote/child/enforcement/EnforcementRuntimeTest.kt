@@ -40,7 +40,7 @@ class EnforcementRuntimeTest {
         shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("LOCK_ATTACHED_OBSERVED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         val engine=EnforcementRuntime.engine()!!
-        waitFor("OBSERVATION_DURABLE_OFFLINE"){engine.read().ledger?.pendingAck?.let{JSONObject(it).getBoolean("restriction_applied")}==true}
+        waitFor("OBSERVATION_DURABLE_OFFLINE"){engine.read().ledger?.lastAdapterObservation?.let{JSONObject(it).getBoolean("attached")}==true}
         val before=engine.read().ledger!!
         check(before.policy.manualLock&&before.bonusSeconds==600L)
         // Safe-system route preserves desired state and detaches the overlay.
