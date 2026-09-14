@@ -17,6 +17,6 @@ function Invoke-ReusePreparation([string]$Directory,[hashtable]$Ops){
 # The gate is separately injectable. No preparation callback is invoked on host failure.
 function Invoke-ProductHostGate([hashtable]$Ops){
  try{foreach($stage in @('Bundle','Tools','Lease','LiveHealth','Ports','Artifacts','Journal','ReadOnlyTarget')){& $Ops[$stage]}}
- catch{throw 'INVALID:INVALID_HOST_PREFLIGHT'}
+ catch{$e=New-Object Exception('INVALID:INVALID_HOST_PREFLIGHT');$e.Data['hostStage']=$stage;throw $e}
 }
 Export-ModuleMember -Function Invoke-ReusePreparation,Invoke-ProductHostGate

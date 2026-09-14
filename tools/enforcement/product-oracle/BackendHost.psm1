@@ -21,7 +21,7 @@ function Write-LabProtected([string]$Path,$Value){
  $encoded=ConvertFrom-SecureString $secure;$secure.Dispose()
  $f=[IO.File]::Open(($Path+'.tmp'),[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
  try{$b=[Text.Encoding]::UTF8.GetBytes($encoded);$f.Write($b,0,$b.Length);$f.Flush($true)}finally{$f.Dispose()}
- if(Test-Path -LiteralPath $Path){[IO.File]::Replace(($Path+'.tmp'),$Path,$null)}else{[IO.File]::Move(($Path+'.tmp'),$Path)}
+ if(Test-Path -LiteralPath $Path){[IO.File]::Replace(($Path+'.tmp'),$Path,[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move(($Path+'.tmp'),$Path)}
 }
 function Read-LabProtected([string]$Path){
  if(Test-Path -LiteralPath ($Path+'.tmp')){throw 'INVALID:PARTIAL_PROTECTED_LEASE'}

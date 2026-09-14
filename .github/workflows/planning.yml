@@ -50,6 +50,8 @@ jobs:
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
           node tools/kr007/audit-child.mjs
+      - name: Verify host QR private-pipe BOM and payload bounds
+        run: node tools/enforcement/physical-lab/qr-test.mjs
       - name: Verify OD-49 fixed loopback lab APK and release isolation
         run: node tools/enforcement/product-oracle/build-lab.mjs
       - name: Build and verify KR-008 versioned update APK pair

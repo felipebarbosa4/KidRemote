@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 # OD-51: frozen files + native live host gate precede every device mutation.
 # Frozen entrypoint is copied to bundle root. No ADB/HTTP until manifest/tool validation.
-$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$reuse=$false
+$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$reuse=$false;$hostFailureStage='UNSPECIFIED'
 try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $manifestPath).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'INVALID:BUNDLE_HASH'}
@@ -76,6 +76,7 @@ try{
   }
  }
 }catch{
+ if($_.Exception.Data.Contains('hostStage')){$hostFailureStage=[string]$_.Exception.Data['hostStage']}
  $reason=[string]$_.Exception.Message;if(-not $hostValidated){$reason='INVALID:INVALID_HOST_PREFLIGHT'};if($reason -cnotmatch '^INVALID:[A-Z0-9_]+$'){$reason='INVALID:HOST_OR_TRANSPORT_FAILURE'}
  if($null -eq $primary){$primary=[pscustomobject]@{status='INVALID';reason=$reason;cleanup='UNVERIFIED'}}
  if($directory){try{$j=Read-ProductJournal $directory;if(-not $j.verdict){$meta=[IO.File]::ReadAllText((Join-Path $directory 'provenance'))|ConvertFrom-Json;$null=Add-ProductJournal $directory $meta.attempt VERDICT INVALID;if(-not ($j.rows|Where-Object{$_.stage -in @('UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','POLICY_ADMITTED','LOCK_ADMITTED')})){$null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP NOT_REQUIRED}}}catch{}}
@@ -101,7 +102,7 @@ try{
  if($temporary){try{[IO.Directory]::Delete($temporary)}catch{$recovery='HOST_TEMP_REVIEW_REQUIRED'}}
  $jwt=$null;$serial=$null
 }
-$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
+$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;hostFailureStage=$hostFailureStage;hostFailureAction=$(if(-not $hostValidated){'Host preflight failed before tablet mutation. Check the named stage; Docker Desktop must be running. Preserve this attempt and paste only this sanitized JSON.'}else{'NONE'});reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
 # Result contains only typed verdict/state and task UUIDs, never credentials or raw device output.
 $json=$result|ConvertTo-Json -Depth 8
 if($directory){$p=Join-Path $directory 'result.txt';$f=[IO.File]::Open($p,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);try{$b=[Text.Encoding]::UTF8.GetBytes($json);$f.Write($b,0,$b.Length);$f.Flush($true)}finally{$f.Dispose()}}
