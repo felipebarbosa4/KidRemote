@@ -1,0 +1,25 @@
+{
+  "classification": "OBSERVED",
+  "attempt": "http-02",
+  "result": "PASS",
+  "note": "550 SQL and 83 KR-009 HTTP assertions; 100 replays, real pagination and earlier regressions; cleanup verified.",
+  "allowlistedResults": [
+    "DATABASE_TEST_PASS=01_rls.test.sql:assertions=243",
+    "DATABASE_TEST_PASS=02_constraints.test.sql:assertions=45",
+    "DATABASE_TEST_PASS=03_atomic_control.test.sql:assertions=57",
+    "DATABASE_TEST_PASS=04_concurrent_control.test.sql:assertions=44",
+    "DATABASE_TEST_PASS=05_pairing.test.sql:assertions=62",
+    "DATABASE_TEST_PASS=06_pairing_races.test.sql:assertions=36",
+    "DATABASE_TEST_PASS=07_parent_bootstrap.test.sql:assertions=9",
+    "DATABASE_TEST_PASS=08_rotation.test.sql:assertions=25",
+    "DATABASE_TEST_PASS=09_sync_ack.test.sql:assertions=23",
+    "DATABASE_TEST_PASS=10_sync_pages.test.sql:assertions=6",
+    "KR009_REAL_HTTP_PASS:assertions=83:replays=100:storage=POSTGRES:auth=REAL:push=NONE",
+    "AUTH_SERVICE_LOG_SECRET_SCAN_PASS",
+    "ENROLLMENT_GATEWAY_CLEANUP_VERIFIED",
+    "AUTH_SERVICE_CLEANUP_VERIFIED",
+    "CLEANUP=VERIFIED_TASK_CONTAINER_REMOVED",
+    "TASK_NETWORK_REMOVED"
+  ],
+  "source": "working tree after 750916d, before first extension commit"
+}

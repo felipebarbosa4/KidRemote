@@ -6,4 +6,7 @@ internal object SyncFaults {
     fun syncResponse(text:String)=transformSyncResponse?.invoke(text)?:text
     fun persisted(){afterPersist?.invoke()}
     fun ackResponse(){afterAckResponse?.invoke()}
+ var afterPage:((Int)->Unit)?=null
+ fun pagePersisted(page:Int){afterPage?.invoke(page)}
+ fun automaticAllowed(context:android.content.Context)=!java.io.File(context.noBackupFilesDir,"sync-test-control").exists()
 }

@@ -46,6 +46,7 @@ try {
    if(exists&&!(await command(['uninstall',pkg])).includes('Success'))throw Error('FIXTURE_UNINSTALL_FAILED');
   }
   await install('pre-v1.apk');await install('update-test.apk');
+  await command(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && touch no_backup/sync-test-control"']);
   await stage(scenario==='CURRENT_SCHEMA'?'prepareCurrent':'prepareLegacy');
   await install('post-v2.apk');record({method:'install-r-v1-to-v2',result:'PASS_DATA_RETAINING_APK_REPLACEMENT'});
   await stage('verifyReplacement');

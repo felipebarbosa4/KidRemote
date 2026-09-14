@@ -37,6 +37,7 @@ try {
   if(exists)ok((await command(['uninstall',packages[i]])).includes('Success'),'OWN_UNINSTALL_FAILED');
   ok((await command(['install','-r','-t',windows(path)])).includes('Success'),'OWN_INSTALL_FAILED');
  }
+ await command(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && touch no_backup/sync-test-control"']);
  await guard();ok((await run(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && cat > no_backup/sync-handoff"'],JSON.stringify(identity))).code===0,'IDENTITY_HANDOFF_FAILED');
  await stage('prepareIdentityAndUsage');
  await control('LOCK',{},1);await stage('lockPersisted');

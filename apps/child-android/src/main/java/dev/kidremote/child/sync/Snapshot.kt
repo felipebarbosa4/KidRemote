@@ -35,13 +35,15 @@ internal object Wire {
     fun string(o:JSONObject,k:String)= (o.get(k) as? String?:error("INVALID_STRING"))
     fun bool(o:JSONObject,k:String)= (o.get(k) as? Boolean?:error("INVALID_BOOLEAN"))
     fun policy(o:JSONObject,id:JSONObject):Policy {
-        keys(o,setOf("protocol_version","kind","device_id","policy_epoch","version","policy_configured","daily_limit_seconds","manual_lock","enforcement_available","timezone_name","timezone_revision","server_utc","period_key","bonus_seconds","operations","history_pruned","credential_lifecycle"))
+        keys(o,setOf("protocol_version","kind","device_id","policy_epoch","version","policy_configured","daily_limit_seconds","manual_lock","enforcement_available","timezone_name","timezone_revision","server_utc","period_key","bonus_seconds","operations","history_pruned","credential_lifecycle","snapshot_id","next_cursor"))
         require(number(o,"protocol_version")==1L&&string(o,"kind")=="CONFIGURED_SNAPSHOT"&&bool(o,"policy_configured")&&!bool(o,"enforcement_available"))
         require(string(o,"device_id")==id.getString("device_id")&&string(o,"policy_epoch")==id.getString("policy_epoch"))
         val lifecycle=o.getJSONObject("credential_lifecycle");keys(lifecycle,setOf("generation","expires_at","rotate_after","rotation_due"));require(number(lifecycle,"generation")>0);Instant.parse(string(lifecycle,"expires_at"));Instant.parse(string(lifecycle,"rotate_after"));bool(lifecycle,"rotation_due")
         val zone=string(o,"timezone_name");val revision=number(o,"timezone_revision");val utc=Instant.parse(string(o,"server_utc"))
         val date=utc.atZone(ZoneId.of(zone)).toLocalDate();require(date.year in 1..9999&&string(o,"period_key")=="$revision:$date")
         val p=Policy(id.getString("policy_epoch"),number(o,"version"),zone,revision,date.toString(),number(o,"daily_limit_seconds"),number(o,"bonus_seconds"),bool(o,"manual_lock"));p.validate();require(p.version>0)
+        java.util.UUID.fromString(string(o,"snapshot_id"))
+        if(!o.isNull("next_cursor"))require(Regex("[a-f0-9-]{36}:[1-9]00").matches(string(o,"next_cursor"))&&string(o,"next_cursor").startsWith(string(o,"snapshot_id")+":"))
         bool(o,"history_pruned");val ops=o.getJSONArray("operations");require(ops.length()<=100);var last=0L
         for(i in 0 until ops.length()) {
             val v=ops.getJSONObject(i);keys(v,setOf("operation_id","version","kind","period_key","status"));java.util.UUID.fromString(string(v,"operation_id"))

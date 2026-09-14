@@ -5,6 +5,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const exact = (x, keys) => object(x) && Object.keys(x).length === keys.length && keys.every(k => Object.hasOwn(x,k));
+const syncBody = b => (exact(b,['protocol_version','after_version']) || (exact(b,['protocol_version','after_version','cursor']) && typeof b.cursor==='string' && /^[a-f0-9-]{36}:[1-9]00$/.test(b.cursor) && UUID.test(b.cursor.split(':')[0]))) && integer(b.after_version);
 const reply = (status, code, value) => Response.json(value ?? {code}, {
   status, headers: {'cache-control':'no-store','x-content-type-options':'nosniff'},
 });
@@ -74,7 +75,7 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
             !UUID.test(d.policy_epoch)) return reply(401,'UNAUTHORIZED');
         if (d.revoked_at != null) {
           if (url.pathname !== '/device/sync') return reply(403,'DEVICE_REVOKED');
-          if (!exact(body,['protocol_version','after_version']) || !integer(body.after_version)) return reply(400,'INVALID_PAYLOAD');
+          if (!syncBody(body)) return reply(400,'INVALID_PAYLOAD');
           // Only the matched device's revocation authorizes local removal, never rotation retirement.
           return reply(403,null,{protocol_version:1,code:'DEVICE_REVOKED',device_id:d.id,policy_epoch:d.policy_epoch});
         }
@@ -85,9 +86,10 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
           household_id:d.household_id,policy_epoch:d.policy_epoch});
 
         if (url.pathname === '/device/sync') {
-          if (!exact(body,['protocol_version','after_version']) || !integer(body.after_version))
+          if (!syncBody(body))
             return reply(400,'INVALID_PAYLOAD');
-          return reply(200,null,await records.sync(scope,{after_version:body.after_version}));
+          const result=await records.sync(scope,{after_version:body.after_version,cursor:body.cursor});
+          return reply(result.code==='SNAPSHOT_RESTART_REQUIRED'?410:200,null,result);
         }
         if (url.pathname === '/device/ack') {
           if(records.report) {

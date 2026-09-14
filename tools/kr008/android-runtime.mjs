@@ -24,6 +24,7 @@ try {
   if(exists&&!(await command(['uninstall',packages[i]])).includes('Success'))throw Error('OWN_UNINSTALL_FAILED');
   if(!(await command(['install','-r','-t',windows(path)])).includes('Success'))throw Error('OWN_INSTALL_FAILED');
  }
+ await command(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && touch no_backup/sync-test-control"']);
  for(const method of ['preparePersistence','restartAndReconcile','migrationAndRefusedDowngrade','crashBeforeCommit','afterUncommittedCrash','crashAfterCommit','afterCommittedCrash','writeFailureAndCorruption','concurrentSuffixAndIdentityBoundary','missingDatabaseAndSignals']) {
   await command(['shell','am','force-stop',app]);await guard();
   const r=await run(['shell','am','instrument','-w','-r','-e','class','dev.kidremote.child.accounting.AccountingRuntimeTest#'+method,app+'.test/androidx.test.runner.AndroidJUnitRunner']);

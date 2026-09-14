@@ -154,3 +154,15 @@ Samsung action, enforcement adapter/acceptance, distribution, real-family use,
 deployment, merge, later issue or closure of KR-003/KR-008 physical gates follows.
 Preserve historical evidence and earlier stacked PRs; classify each failed/partial
 attempt independently and clean up only task-owned backend/emulator resources.
+
+**OD-47 extension — APPROVED OWNER LOCAL PAGINATION AND PUSH-INDEPENDENT RECOVERY:**
+from `750916dd4f75f3a3beea8e64f4939d0ab9343389`, continue the same KR-009 branch/
+draft PR #22: consistent bounded immutable snapshot pagination; process restart,
+resume, live network recovery and bounded WorkManager recovery with durable retry,
+coalescing, documented full-jitter backoff and Retry-After. Preserve original OD-47
+and all previous evidence. Existing KR-007 credential/removal and KR-008 A/B rules
+remain authoritative. No FCM/provider/project/address selection/dispatch, foreground
+service, enforcement, physical/Samsung action, deployment, merge or next issue.
+Use actual local PostgreSQL/HTTP/Android persistence and controlled scheduler clocks;
+no emulator result establishes OS scheduling latency. Preserve every failed/partial
+attempt and clean only task-owned resources.

@@ -12,6 +12,8 @@ android {
 }
 java {toolchain {languageVersion=JavaLanguageVersion.of(17)}}
 dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
+    androidTestImplementation("androidx.work:work-testing:2.11.2")
     implementation(project(":accounting-storage"))
     implementation("androidx.room:room-runtime:2.8.5")
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))

@@ -1,0 +1,11 @@
+{
+  "classification": "OBSERVED",
+  "attempt": "node-02",
+  "result": "PASS",
+  "note": "82/82 affected Node tests.",
+  "allowlistedResults": [
+    "# pass 82",
+    "# fail 0"
+  ],
+  "source": "working tree after 750916d, before first extension commit"
+}

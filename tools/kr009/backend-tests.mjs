@@ -69,8 +69,28 @@ export async function testSync({http,sql,gatewayAvailable}) {
  sql(`set role authenticated;set "request.jwt.claim.sub"='${b.user}';do $bounded$ begin
  perform public.accept_control(gen_random_uuid(),'${history.device_id}','SET_DAILY_LIMIT','{"daily_limit_seconds":3600}',0);
  for i in 1..105 loop perform public.accept_control(gen_random_uuid(),'${history.device_id}',case when i%2=1 then 'LOCK' else 'UNLOCK' end,'{}',i);end loop;end $bounded$;`);
- const bounded=(await sync(history)).json;ok(bounded.version===106&&bounded.operations.length===100&&bounded.history_pruned===true&&bounded.operations.every((x,i)=>x.version===i+7),'BOUNDED_CONSISTENT_WINDOW');
- const current=(await sync(history,106)).json;ok(current.operations.length===0&&!current.history_pruned&&current.version===106,'CURRENT_CURSOR_CONVERGENCE_WITHOUT_PAGES');
+ const bounded=(await sync(history)).json;ok(bounded.version===106&&bounded.operations.length===100&&!bounded.history_pruned&&bounded.operations.every((x,i)=>x.version===i+1),'FIRST_IMMUTABLE_PAGE');
+ const pageBody={protocol_version:1,after_version:0,cursor:bounded.next_cursor};
+ const page=()=>send('/device/sync',pageBody,history.credential);
+ sql(`set role authenticated;set "request.jwt.claim.sub"='${b.user}';select public.accept_control(gen_random_uuid(),'${history.device_id}','UNLOCK','{}',106);`);
+ const second=await page();ok(second.status===200&&second.json.version===106&&second.json.manual_lock===bounded.manual_lock&&second.json.operations.length===6&&second.json.operations.every((x,i)=>x.version===i+101)&&second.json.next_cursor===null,'NEW_COMMIT_CANNOT_CONTAMINATE_PAGE');
+ ok(JSON.stringify((await page()).json)===JSON.stringify(second.json),'DUPLICATE_PAGE_IDENTICAL');
+ ok((await send('/device/sync',pageBody,sibling.credential)).status===410,'FOREIGN_CURSOR_RESTART_NO_DATA');
+ for(const cursor of ['bad',bounded.snapshot_id+':101',bounded.snapshot_id+':1000'])ok((await send('/device/sync',{...pageBody,cursor},history.credential)).status===400,'MALFORMED_CURSOR_REJECTED');
+ ok((await send('/device/sync',{...pageBody,after_version:1},history.credential)).status===410,'CURSOR_ANCHOR_MISMATCH');
+ ok((await send('/device/sync',{...pageBody,page_size:101},history.credential)).status===400,'CALLER_PAGE_SIZE_DENIED');
+ ok((await send('/device/sync',{protocol_version:1,after_version:0,padding:'x'.repeat(65536)},history.credential)).status===400,'REQUEST_64K_BOUND');
+ ok(Buffer.byteLength(JSON.stringify(bounded))<=65536&&Buffer.byteLength(JSON.stringify(second.json))<=65536,'RESPONSE_64K_BOUND');
+ sql(`update private.sync_snapshots set expires_at=clock_timestamp()-interval '1 second' where device_id='${history.device_id}';`);
+ const expiredPage=await page();ok(expiredPage.status===410&&expiredPage.json.code==='SNAPSHOT_RESTART_REQUIRED','EXPIRED_EXPLICIT_RESTART');
+ const restarted=(await sync(history)).json;ok(restarted.version===107&&restarted.snapshot_id!==bounded.snapshot_id,'FULL_RESTART_NEW_SNAPSHOT');
+ ok((await page()).status===410,'REPLACED_SNAPSHOT_CURSOR_REJECTED');
+ const current=(await sync(history,107)).json;ok(current.operations.length===0&&!current.history_pruned&&current.version===107,'CURRENT_HIGHWATER_CONVERGENCE');
+ sql(`set role authenticated;set "request.jwt.claim.sub"='${b.user}';do $pruned$ begin for i in 107..1106 loop perform public.accept_control(gen_random_uuid(),'${history.device_id}',case when i%2=1 then 'LOCK' else 'UNLOCK' end,'{}',i);end loop;end $pruned$;`);
+ const pruned=(await sync(history)).json;ok(pruned.version===1107&&pruned.history_pruned&&pruned.operations[0].version===108,'PRUNED_AUTHORITATIVE_SNAPSHOT');
+ let lastPage=pruned,total=lastPage.operations.length,pages=1;
+ while(lastPage.next_cursor){lastPage=(await send('/device/sync',{protocol_version:1,after_version:0,cursor:lastPage.next_cursor},history.credential)).json;ok(lastPage.version===1107&&lastPage.snapshot_id===pruned.snapshot_id&&lastPage.operations.length<=100,'PAGE_SNAPSHOT_BOUND');total+=lastPage.operations.length;pages++;}
+ ok(total===1000&&pages===10&&lastPage.operations.at(-1).version===1107,'BOUNDED_HISTORY_HIGHWATER');
  ok((await send('/parent/devices/'+foreign.device_id+'/operations',undefined,a.token,'GET')).json.length===0,'FOREIGN_STATUS_RLS_EMPTY');
  const live=await enroll(a);const setup=await op('SET_DAILY_LIMIT',{daily_limit_seconds:3600},0,randomUUID(),live.device_id);ok(setup.status===200,'RUNTIME_CANONICAL_SETUP');
  console.log('KR009_REAL_HTTP_PASS:assertions='+count+':replays=100:storage=POSTGRES:auth=REAL:push=NONE');

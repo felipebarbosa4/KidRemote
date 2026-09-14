@@ -293,3 +293,46 @@ and recorded failed/rejected outcomes; applied additionally needs an actual obse
 adapter receipt and report, which this slice never fabricates. Admission failure
 returns rejected/failed explicitly and is not a committed operation. Only latest
 report/retry digest is retained; unlimited receipt/event history is not added.
+
+## OD-47 extension: local pages and recovery
+
+This supersedes only the latest-100 shortcut above. First configured request retains
+`after_version`; response adds `snapshot_id` and nullable `next_cursor`. The gateway
+copies canonical fields, lifecycle and ordered operation outcomes in its existing
+locked repeatable-read transaction into one private, RLS-protected temporary snapshot
+per device/epoch. Retention is five minutes; a new first request replaces that one
+sequence. Maximum 1,000 retained outcomes / 256 KiB server cache per device; at most
+100 outcomes / 64 KiB per response. `history_pruned` means older detail was omitted
+from this cache, never that omitted intents ran. Canonical version/high-water remains
+authoritative. Server command/idempotency history is unchanged.
+
+Later request is exactly `{protocol_version:1,after_version:N,cursor:"snapshot-uuid:offset"}`.
+Offset is a page boundary 100..900; authenticated device/epoch, original N, snapshot
+identity and expiry must all match. Every later response reuses the frozen canonical
+fields/outcomes/time/version; newer commits and report status changes cannot leak in.
+Duplicate cursor reads are identical while retained. Invalid syntax/extra page-size
+fields return 400. Expired/replaced/missing/foreign sequences return the same bounded
+410 `SNAPSHOT_RESTART_REQUIRED`, without device metadata. No cursor replaces device
+authentication. The client restarts once immediately on 410, then uses bounded retry.
+It validates all pages before the existing Room policy/ACK transaction and persists
+only a minimal page checkpoint, never operation history. Process death discards that
+checkpoint's sequence and starts a full fresh snapshot using the durable ledger.
+
+Lifecycle triggers coalesce through one coordinator. A group runs at most one initial
+and one follow-up sync. A bounded AtomicFile transport intent is separate from policy:
+identity binding, pending/stopped, attempt, boot and monotonic due/delay only. It does
+not contain bearer, cursor, policy or operations. A unique constrained WorkManager
+recovery request is durably enqueued before HTTP; in-process retries use full jitter
+1 s exponential to 5 min. Retry-After seconds or an HTTP date relative to server Date
+forms a lower bound (bounded to 24 hours). WorkManager's own retry scheduling may
+run later. Reboot rebases a stored remaining retry delay without cross-boot elapsed
+subtraction; this never supplies accounting time authority. 401/403 stop automatic
+retry and retain downloaded state; supported rotation/removal stays in KR-007.
+Explicit credential recovery may request another attempt. Corrupt transport state
+stops scheduling and cannot erase policy. No foreground service or exact alarm is
+used; WorkManager is recovery, not a latency promise.
+
+WorkManager 2.11.2 was checked against the [official release notes](https://developer.android.com/jetpack/androidx/releases/work).
+[Work request documentation](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+explains constraints, initial delays and inexact minimum retry backoff. No FCM SDK,
+provider address or physical/background delivery acceptance is selected by this slice.
