@@ -1,0 +1,84 @@
+{
+  "scope": "KR008_LOCAL_RECOVERY_EMULATOR",
+  "source": "bd9c356e0550e507d388d3e959f0f180d869f095",
+  "stages": [
+    {
+      "method": "completeAndIncompleteRecovery",
+      "result": "PASS",
+      "codes": [
+        "ROOM_COMPLETE_SUFFIX_ONLY_ONCE_PARTIAL_CONTRADICTION_RESTRICTED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareStorageFailure",
+      "result": "PASS",
+      "codes": [
+        "ROOM_WRITE_ABORT_PRESERVED_LEDGER_DURABLE_INTENT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartStorageRecovery",
+      "result": "PASS",
+      "codes": [
+        "WRITABLE_RESTART_STAYS_UNCERTAIN_UNTIL_FULL_SUFFIX"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "trustedPeriodRecovery",
+      "result": "PASS",
+      "codes": [
+        "TRUSTED_NEW_PERIOD_ONCE_REBOOT_SKIPPED_DATES_LOCK_POLICY_PRESERVED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killBeforeRecoveryCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_RECOVERY_BEFORE_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterRecoveryRollback",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_KILL_ROLLED_BACK_NO_HYBRID_INTENT_RESTRICTS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterRecoveryCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_RECOVERY_AFTER_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterRecoveryCommit",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_COMMIT_SURVIVES_KILL_COMPLETE_ANCHOR_IDENTITY_NO_SECOND_RESET"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "corruptRecoveryFailsClosed",
+      "result": "PASS",
+      "codes": [
+        "CORRUPT_INPUT_INTENT_FAIL_CLOSED_AGGREGATE_TABLE_ONLY"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "acb67201128ff46f2c9891120929a9daacf334d9baa4cb921cb41d91c86e1d6c",
+    "child-debug-androidTest.apk": "127802830a2a9323b6df434b457fc2794297e5bc4b89201aa2f378485fd8b5b2"
+  },
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED"
+}

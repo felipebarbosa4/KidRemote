@@ -28,3 +28,5 @@ provider registration or dispatcher here. Full KR-009 FCM/notification, backgrou
 scheduling, capacity/latency and physical acceptance remain open.
 
 [Observed SQL/HTTP/Android results, exact APK identities, independent failures and cleanup](../../docs/test-plans/evidence/KR-009-LOCAL-2026-09-13.md). This local exception demonstrates AC-1/2 and parts of AC-3/4/7/8/9; the full issue remains open.
+
+[OD-47 pagination/recovery extension results and independent partial attempts](../../docs/test-plans/evidence/KR-009-PAGES-2026-09-13.md): frozen authenticated pages, bounded history, durable coalescing/retry and actual local Worker/resume/network convergence. Dispatch controls and physical/provider/performance gaps are explicit.

@@ -1,0 +1,174 @@
+{
+  "scope": "KR008_REAL_APK_UPDATE_EMULATOR",
+  "manifest": {
+    "source": "bd9c356e0550e507d388d3e959f0f180d869f095",
+    "checkout": "462d07830b33eb5f57ea9b37e39a2e3b20e776c6",
+    "baseline": "609c0fd7fc1d114c7f36dba5451f4f0023714628",
+    "apks": {
+      "pre-v1.apk": {
+        "sha256": "694f7a389f75c8c93b9b31932f4b5bfc3584bb103adb8ff0857f4f9cab23d8e7",
+        "package": "dev.kidremote.child.unassigned.debug",
+        "versionCode": 1,
+        "versionName": "0.0.1-local",
+        "certificate": "42920c9d6823f5a18a5311c20c747dc094fb8b5c8de86f5134c110ec160c8069"
+      },
+      "post-v2.apk": {
+        "sha256": "acb67201128ff46f2c9891120929a9daacf334d9baa4cb921cb41d91c86e1d6c",
+        "package": "dev.kidremote.child.unassigned.debug",
+        "versionCode": 2,
+        "versionName": "0.0.2-local",
+        "certificate": "42920c9d6823f5a18a5311c20c747dc094fb8b5c8de86f5134c110ec160c8069"
+      },
+      "update-test.apk": {
+        "sha256": "127802830a2a9323b6df434b457fc2794297e5bc4b89201aa2f378485fd8b5b2",
+        "package": "dev.kidremote.child.unassigned.debug.test",
+        "versionCode": null,
+        "versionName": "",
+        "certificate": "42920c9d6823f5a18a5311c20c747dc094fb8b5c8de86f5134c110ec160c8069"
+      }
+    }
+  },
+  "stages": [
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "prepareCurrent",
+      "result": "PASS",
+      "codes": [
+        "PRE_UPDATE_V1_SCHEMA2_PREPARED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "install-r-v1-to-v2",
+      "result": "PASS_DATA_RETAINING_APK_REPLACEMENT"
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "verifyReplacement",
+      "result": "PASS",
+      "codes": [
+        "APK_V2_REPLACED_V1_UID_IDENTITY_AND_AGGREGATE_UNCHANGED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "currentSchemaNeedsNoMigration",
+      "result": "PASS",
+      "codes": [
+        "CURRENT_SCHEMA_UPDATE_NO_MIGRATION_NO_RESET"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "reconcileAfterUpdate",
+      "result": "PASS",
+      "codes": [
+        "POST_UPDATE_COVERED_INTERVAL_ZERO_DUPLICATE_SUFFIX_COUNTED_ONCE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "apk-downgrade-without-override",
+      "result": "EXPECTED_REFUSAL",
+      "hostExit": 1
+    },
+    {
+      "scenario": "CURRENT_SCHEMA",
+      "method": "verifyRefusedApkDowngrade",
+      "result": "PASS",
+      "codes": [
+        "APK_DOWNGRADE_REFUSED_V2_IDENTITY_DATA_AND_AGGREGATE_SCHEMA_INTACT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "prepareLegacy",
+      "result": "PASS",
+      "codes": [
+        "PRE_UPDATE_V1_LEGACY_SCHEMA1_PREPARED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "install-r-v1-to-v2",
+      "result": "PASS_DATA_RETAINING_APK_REPLACEMENT"
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "verifyReplacement",
+      "result": "PASS",
+      "codes": [
+        "APK_V2_REPLACED_V1_UID_IDENTITY_AND_AGGREGATE_UNCHANGED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "refuseMissingMigration",
+      "result": "PASS",
+      "codes": [
+        "ROOM_MISSING_PATH_REFUSED_SCHEMA_AND_DATA_RETAINED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "killDuringMigration",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_DURING_MIGRATION"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "verifyMigrationRollback",
+      "result": "PASS",
+      "codes": [
+        "MIGRATION_PROCESS_DEATH_ROLLED_BACK_SCHEMA_AND_LEDGER"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "completeMigrationAndReopen",
+      "result": "PASS",
+      "codes": [
+        "ONE_COMMITTED_MIGRATION_AFTER_ROLLBACK_REOPEN_NO_REPLAY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "reconcileAfterUpdate",
+      "result": "PASS",
+      "codes": [
+        "POST_UPDATE_COVERED_INTERVAL_ZERO_DUPLICATE_SUFFIX_COUNTED_ONCE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "apk-downgrade-without-override",
+      "result": "EXPECTED_REFUSAL",
+      "hostExit": 1
+    },
+    {
+      "scenario": "LEGACY_SCHEMA_MIGRATION",
+      "method": "verifyRefusedApkDowngrade",
+      "result": "PASS",
+      "codes": [
+        "APK_DOWNGRADE_REFUSED_V2_IDENTITY_DATA_AND_AGGREGATE_SCHEMA_INTACT"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED"
+}

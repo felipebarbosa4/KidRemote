@@ -15,16 +15,18 @@ const report=join(dir,'kr009-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+
 const evidence={scope:'KR009_LOCAL_SYNC_ACK_EMULATOR',source:process.env.KR009_APK_SOURCE??'UNSPECIFIED',stages:[],hashes:{},overall:'NOT_PASSED',cleanup:'UNVERIFIED'};
 function run(args,input){return new Promise(resolve=>{const p=spawn(adb,['-s','emulator-5584',...args],{stdio:[input===undefined?'ignore':'pipe','pipe','pipe']});let out='';const timer=setTimeout(()=>p.kill(),180000);p.stdout.on('data',x=>{if(out.length<1000000)out+=x});p.stderr.on('data',x=>{if(out.length<1000000)out+=x});p.on('error',()=>resolve({code:-1,out:''}));p.on('close',code=>{clearTimeout(timer);resolve({code,out})});if(input!==undefined)p.stdin.end(input)});}
 async function guard(){const name=await run(['emu','avd','name']);if(name.code!==0||name.out.trim().split(/\r?\n/)[0].trim()!==owner.AvdName)throw Error('AVD_IDENTITY_UNVERIFIED');const q=await run(['shell','getprop','ro.kernel.qemu']);if(q.code!==0||q.out.trim()!=='1')throw Error('NOT_EMULATOR');}
-async function command(args){await guard();const r=await run(args);if(r.code!==0){const code=r.out.match(/INSTALL_FAILED_[A-Z_]+|DELETE_FAILED_[A-Z_]+/)?.[0]??'UNSPECIFIED';throw Error('TARGETED_COMMAND_FAILED:'+args[0]+':'+code);}return r.out;}
+async function command(args){evidence.lastCommand=args.slice(0,3).join(' ');await guard();const r=await run(args);if(r.code!==0){const code=r.out.match(/INSTALL_FAILED_[A-Z_]+|DELETE_FAILED_[A-Z_]+/)?.[0]??'UNSPECIFIED';throw Error('TARGETED_COMMAND_FAILED:'+args[0]+':'+code);}return r.out;}
 let primary;
 const record=row=>{evidence.stages.push(row);console.log(JSON.stringify(row))};
 const ok=(v,code)=>{if(!v)throw Error(code)};
 async function stage(method,death=false){
+ evidence.activeStage=method;
  await command(['shell','am','force-stop',app]);await guard();
  const recovery=new Set(['killAfterPageCheckpoint','restartThroughWorkManager','expiredSequenceRestarts','resumeDiscoversState','coalescedTriggers','outagePersistsRetry','networkRecoveryConverges','scheduledLostAckRetry','workerDiscoversWithoutIntent','httpRetryAndAuthStop','corruptedRetryStops']);
  let networkState;
  if(method==='networkRecoveryConverges') {
   networkState={wifi:(await command(['shell','settings','get','global','wifi_on'])).trim(),data:(await command(['shell','settings','get','global','mobile_data'])).trim()};
+  evidence.networkState=networkState;
   ok(['0','1'].includes(networkState.wifi)&&['0','1'].includes(networkState.data),'NETWORK_STATE_UNVERIFIED');
   await command(['shell','svc','wifi','disable']);await command(['shell','svc','data','disable']);
  }
