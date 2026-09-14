@@ -42,12 +42,12 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
         try{out.write(bytes);out.fd.sync();pending.finishWrite(out)}catch(e:Exception){pending.failWrite(out);throw e}
         check(pending.readFully().contentEquals(bytes))
     }
-    fun initialize(input:Policy,now:Sample,trustedUtc:Long):AccountingResult=synchronized(accountingLock) {
+    fun initialize(input:Policy,now:Sample,trustedUtc:Long,prepare:(Ledger)->Ledger={it}):AccountingResult=synchronized(accountingLock) {
         try {
             val bound=epoch();require(input.epoch==bound)
             val value=identity.read()!!
             if(value.optBoolean("accounting_initialized",false))return@synchronized read()
-            val created=Accounting.start(input,now,trustedUtc)
+            val created=prepare(Accounting.start(input,now,trustedUtc)).also{it.validate()}
             value.put("accounting_initialized",true);identity.save(value)
             val state=db().runInTransaction(Callable {
                 check(db().ledger().read()==null&&!pending.baseFile.exists())
@@ -90,6 +90,18 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
     fun acceptPolicy(input:Policy,now:Sample)=synchronized(accountingLock) { update(now){Accounting.snapshot(if(attached)it else Accounting.resume(it,now),input,now)}.also{attached=!it.storageFailure} }
     fun reconcile(ranges:List<Range>,through:Sample,coverageProven:Boolean)=synchronized(accountingLock) { update(through){Accounting.reconcile(it,ranges,through,coverageProven)}.also{attached=!it.storageFailure} }
     fun recoverTrustedTime(input:TrustedTime)=synchronized(accountingLock) { update(input.at){Accounting.recoverTrustedTime(if(attached)it else Accounting.resume(it,input.at),input)}.also{attached=!it.storageFailure} }
+    fun applySnapshot(input:Policy,now:Sample,trustedUtc:Long,receipt:(Ledger)->String):AccountingResult=synchronized(accountingLock) {
+        fun queued(s:Ledger):Ledger {
+            check(s.pendingAck==null)
+            val next=s.copy(reportSequence=Math.addExact(s.reportSequence,1))
+            return next.copy(pendingAck=receipt(next)).also{it.validate()}
+        }
+        if(!identity.read()!!.optBoolean("accounting_initialized",false))initialize(input,now,trustedUtc){queued(it)}
+        else update(now){check(it.pendingAck==null);queued(SyncMerge.accept(it,input,now,trustedUtc))}.also{attached=!it.storageFailure}
+    }
+    fun confirmReport(sequence:Long,now:Sample)=synchronized(accountingLock) {
+        update(now){check(it.reportSequence==sequence&&it.pendingAck!=null);it.copy(pendingAck=null)}.also{attached=!it.storageFailure}
+    }
     override fun close()=synchronized(accountingLock){database?.close();database=null;attached=false}
 }
 internal object AndroidAccountingClock {

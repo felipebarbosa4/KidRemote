@@ -142,7 +142,7 @@ internal class EnrollmentApi {
         store.save(identity)
         return initial(identity)
     }
-    fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null):JSONObject {
+    fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null,parse:(String)->JSONObject={JSONObject(it)}):JSONObject {
         check(Backend.endpoint.isNotEmpty())
         val c=URL(Backend.endpoint+path).openConnection() as HttpURLConnection
         try {
@@ -164,12 +164,13 @@ internal class EnrollmentApi {
             check(c.responseCode==200){"ENROLLMENT_UNAVAILABLE"}
             val bytes=c.inputStream.use{input->val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(4096)
                 while(true){val n=input.read(buffer);if(n<0)break;check(out.size()+n<=65536);out.write(buffer,0,n)};out.toByteArray()}
-            return JSONObject(String(bytes,Charsets.UTF_8))
+            return parse(String(bytes,Charsets.UTF_8))
         }finally{c.disconnect()}
     }
     fun redeem(q:JSONObject)=request("/pairing/redeem",JSONObject().put("qr",q).put("metadata",JSONObject().put("platform","android").put("os_major",android.os.Build.VERSION.RELEASE.substringBefore('.').toInt()).put("agent_version","0.0.1-local").put("nickname","Dispositivo Android")))
     fun initial(identity:JSONObject):JSONObject {
-        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"),identity)
+        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"),identity,dev.kidremote.child.sync.Wire::parse)
+        if(r.optString("kind")=="CONFIGURED_SNAPSHOT"){dev.kidremote.child.sync.Wire.policy(r,identity);return r}
         check(r.getInt("protocol_version")==1&&r.getString("kind")=="ENROLLMENT_BOOTSTRAP"&&r.getString("device_id")==identity.getString("device_id")&&r.getString("policy_epoch")==identity.getString("policy_epoch"))
         check(!r.getBoolean("policy_configured")&&r.isNull("daily_limit_seconds")&&!r.getBoolean("enforcement_available"))
         return r
@@ -193,7 +194,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         if(saved==null){if(store.pending.exists())throw IllegalStateException("INTERRUPTED_PAIRING");EnrollmentState()}
         else if(saved.has("removal"))removedState()
         else {
-            try{api.contact(store,saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
+            try{val contact=api.contact(store,saved);if(contact.optString("kind")=="CONFIGURED_SNAPSHOT"){val result=dev.kidremote.child.sync.DeviceSync(getApplication()).use{it.sync()};return@run EnrollmentState(paired=true,message=if(result.restrictionRequired)"Política persistida; restrição necessária. Enforcement não disponível." else "Política persistida. Enforcement não disponível.")};EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
             catch(e:DeviceRemoved){
                 saved.put("removal",e.removal);store.save(saved)
                 removedState()

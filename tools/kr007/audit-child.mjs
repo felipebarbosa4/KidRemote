@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {backupResourcePath} from './backup-resource.mjs';
 const root='apps/child-android/build/';
 let count=0;for(const f of readdirSync(root+'test-results/testDebugUnitTest'))if(f.endsWith('.xml')){const s=readFileSync(root+'test-results/testDebugUnitTest/'+f,'utf8');if(/<(?:failure|error|skipped)\b/.test(s))throw Error('CHILD_TEST_FAILURE');count+=(s.match(/<testcase\b/g)||[]).length;}
-if(count!==52)throw Error('CHILD_TEST_COUNT');
+if(count!==62)throw Error('CHILD_TEST_COUNT');
 for(const variant of ['debug','release']){
  const manifest=readFileSync(root+`intermediates/merged_manifests/${variant}/process${variant==='debug'?'Debug':'Release'}Manifest/AndroidManifest.xml`,'utf8');
  const id='dev.kidremote.child.unassigned'+(variant==='debug'?'.debug':'');
@@ -25,7 +25,7 @@ for(const variant of ['debug','release']){
  if(/GOTRUE_JWT_SECRET|service_role|POSTGRES_PASSWORD|LabControlReceiver|DeviceAdminReceiver|MediaProjectionManager/.test(dex))throw Error('CHILD_PRIVILEGE_ISOLATION');
  if(variant==='release'&&/UsageStatsManager/.test(dex))throw Error('CHILD_RELEASE_USAGE_LAB_ADAPTER');
  if(variant==='release'&&/http:\/\/(?:10\.0\.2\.2|127\.0\.0\.1)/.test(dex))throw Error('CHILD_RELEASE_LAB_ENDPOINT');
- if(variant==='release'&&/setBeforeRecoveryCommit|setAfterRecoveryCommit|EXPECTED_KILL_RECOVERY/.test(dex))throw Error('CHILD_RELEASE_RECOVERY_FAULT');
+ if(variant==='release'&&/setBeforeRecoveryCommit|setAfterRecoveryCommit|EXPECTED_KILL_RECOVERY|setAfterPersist|setAfterAckResponse|setTransformSyncResponse|KR009_EXPECTED_KILL/.test(dex))throw Error('CHILD_RELEASE_RECOVERY_FAULT');
  if(variant==='release'&&/setBeforeIdentitySave|INJECTED_RESPONSE_LOSS/.test(dex))throw Error('CHILD_RELEASE_TEST_FAULT');
  if(variant==='release'&&/cameraCounts|getCameraCounts/.test(dex))throw Error('CHILD_RELEASE_CAMERA_COUNTERS');
  if(variant==='release'&&/setAfterRotationResponse|getAfterRotationResponse/.test(dex))throw Error('CHILD_RELEASE_ROTATION_FAULT');
