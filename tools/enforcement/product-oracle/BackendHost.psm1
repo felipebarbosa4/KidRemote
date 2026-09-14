@@ -55,7 +55,9 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
   $stage='PRIVATE_SESSION';$jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
   return @{process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
  }catch{
-  if($p){try{$p.StandardInput.WriteLine('STOP');$p.StandardInput.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$_.InvocationInfo.ScriptLineNumber)
+  $failureType=$_.Exception.GetType().Name;$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
+  if($p -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
+  if($p){try{$p.StandardInput.WriteLine('STOP');$p.StandardInput.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic)
  }
 }
 function Save-ProductLabDevice($Backend,$Device){

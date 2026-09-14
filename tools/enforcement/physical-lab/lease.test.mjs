@@ -18,7 +18,7 @@ class Docker {
   if(a[0]==='inspect')return JSON.stringify([this.items[a[1]]]);
   if(a[0]==='start'||a[0]==='stop'){this.items[a[1]].State.Running=a[0]==='start';return a[1];}
   if(a[0]==='exec'){if(a.includes('/proc/1/comm'))return 'postgres';
-   if(input==='select 1;')return '1';if(input?.startsWith('select count(*) from pg_tables'))return '0';
+   if(input?.startsWith("select 1 where current_setting('listen_addresses')"))return '1';if(input?.startsWith('select count(*) from pg_tables'))return '0';
    if(input?.includes('create schema lab_runtime'))this.schema=input.match(/values\('([a-f0-9]+)','([a-f0-9]+)'\)/).slice(1).join(':');
    if(input?.startsWith('select source'))return this.schema;return '';
   }

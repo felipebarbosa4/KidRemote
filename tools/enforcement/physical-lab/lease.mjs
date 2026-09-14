@@ -50,7 +50,7 @@ export class Lease {
    ...ports.flatMap(p=>['-p','127.0.0.1:'+p]),...Object.keys(vars).flatMap(k=>['-e',k]),images[kind]];
   const id=this.call(args,undefined,Object.fromEntries(Object.entries(vars).map(([k,v])=>[k,String(v)])));check(/^[a-f0-9]{64}$/.test(id),'LEASE_CONTAINER_ID');this.record.containers[kind]=id;this.save();this.inspect();this.call(['start',id]);
  }
- async readyDb(fresh=false){for(let i=0;i<90;i++){try{if((!fresh||this.call(['exec',this.record.containers.db,'cat','/proc/1/comm'])==='postgres')&&this.sql('select 1;')==='1')return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
+ async readyDb(){for(let i=0;i<90;i++){try{if(this.sql("select 1 where current_setting('listen_addresses') <> '';")==='1')return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
  async start(){
   check(!existsSync(this.state+'.tmp'),'PARTIAL_HOST_STATE');
   check(this.call(['info','--format','{{.OSType}}'])==='linux','LINUX_DOCKER_REQUIRED');
@@ -63,7 +63,7 @@ export class Lease {
   this.save();
   this.record.network=this.call(['network','create','--driver','bridge','--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1','--opt','com.docker.network.bridge.enable_ip_masquerade=false',...this.tags(),this.network]);this.save();
   this.record.volume=this.call(['volume','create',...this.tags(),this.volume]);this.save();
-  this.create('db',{POSTGRES_PASSWORD:this.secrets.database});await this.readyDb(true);
+  this.create('db',{POSTGRES_PASSWORD:this.secrets.database});await this.readyDb();
   check(this.sql("select count(*) from pg_tables where schemaname in ('public','private');")==='0','NEW_DATABASE_NOT_EMPTY');
   for(const f of this.schema.files)this.sql(readFileSync(resolve(this.root,'supabase/migrations',f),'utf8'));
   this.sql(`set log_statement='none'; alter role supabase_auth_admin password '${this.secrets.database}'; alter role authenticator password '${this.secrets.database}'; create schema lab_runtime; revoke all on schema lab_runtime from public; create table lab_runtime.identity(source text not null,schema_hash text not null); insert into lab_runtime.identity values('${this.source}','${this.schema.hash}');`);
