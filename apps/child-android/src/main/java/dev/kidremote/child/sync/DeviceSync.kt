@@ -42,11 +42,11 @@ internal class DeviceSync(private val context:Context,private val sample:()->Sam
             for(restart in 0..1) {
                 try {
                     Wire.policy(r,id)
-                    val fixed=JSONObject(r.toString()).apply{remove("operations");remove("next_cursor")}.toString()
+                    val fixed=JSONObject(r.toString()).apply{remove("operations");remove("next_cursor")}
                     var current=r;var last=0L
                     for(page in 0..9) {
                         Wire.policy(current,id)
-                        check(JSONObject(current.toString()).apply{remove("operations");remove("next_cursor")}.toString()==fixed)
+                        check(Wire.same(JSONObject(current.toString()).apply{remove("operations");remove("next_cursor")},fixed))
                         val ops=current.getJSONArray("operations")
                         for(i in 0 until ops.length()){val v=ops.getJSONObject(i).getLong("version");check(v>last);last=v}
                         SyncProgress(context).checkpoint(Wire.number(r,"version"),page)

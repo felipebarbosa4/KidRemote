@@ -30,6 +30,11 @@ internal object Wire {
             val out=value(0);require(out is JSONObject&&r.peek()==JsonToken.END_DOCUMENT);return out
         }
     }
+    fun same(a:Any?,b:Any?):Boolean=when(a) {
+        is JSONObject->b is JSONObject&&a.keys().asSequence().toSet()==b.keys().asSequence().toSet()&&a.keys().asSequence().all{same(a.get(it),b.get(it))}
+        is JSONArray->b is JSONArray&&a.length()==b.length()&&(0 until a.length()).all{same(a.get(it),b.get(it))}
+        else->a==b
+    }
     fun keys(o:JSONObject,keys:Set<String>){require(o.keys().asSequence().toSet()==keys)}
     fun number(o:JSONObject,k:String)= (o.get(k) as? Long?:error("INVALID_NUMBER"))
     fun string(o:JSONObject,k:String)= (o.get(k) as? String?:error("INVALID_STRING"))
