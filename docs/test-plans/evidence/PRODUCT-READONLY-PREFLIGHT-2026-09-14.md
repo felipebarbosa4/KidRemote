@@ -37,3 +37,25 @@ Current Samsung configuration, installed APK/version/signing/state and product p
 **PRODUCT_PHYSICAL_ORACLE=BLOCKED.** Only inventory can become ready; its classifications are review outcomes, never enforcement PASS or install authorization. Read-only duration is an unmeasured estimate: approximately 30–90 seconds normally, bounded by per-read 10-second timeouts (roughly five minutes worst case). Paste only the sanitized JSON; never serial/raw dumpsys/screenshots. No cleanup settings/device operations are needed because the bundle performs no physical mutations. Host result files, including invalid attempts, are preserved separately.
 
 5. Staged whitespace check reported one trailing space in Journal.psm1 before the implementation commit. The shell sequence still committed; the space is corrected in a separate follow-up commit. This is retained as a failed check, not a runtime failure.
+
+## Immutable read-only owner bundle — prepared, NOT EXECUTED
+
+Source: `668ab87a22591319afd43167d55ef9ac0909c1b3` on `kr-product-enforcement-integration`.
+Owner directory: `%LOCALAPPDATA%\KidRemote\product-preflight\668ab87a22591319afd43167d55ef9ac0909c1b3`.
+Only three files exist; hashes independently verified on Windows and read-only file attributes set. This host-only verification did not invoke the preflight or ADB.
+
+| File | SHA-256 |
+| --- | --- |
+| `bundle.json` | `2878b8477ed05b277ef58eec4935c3972c066299dc99de3a9cebf33ae516d4fb` |
+| `ReadOnly.psm1` | `4ea9804ed97f70168e5a50ebd17e0c2ec0231dab02bc235955682db0148d8640` |
+| `ReadOnly-Preflight.ps1` | `bb2fdb45df3f96c87105e308cfbde6ddc24afbd8cf5a920787e28332b4ab7ea9` |
+
+Manifest pins exact historical configuration, user 0, expected package names, read-only behavior and source. It contains no APK, token, device serial, canonical control module or tunnel helper. Owner command is solely for inventory and must never be described as a qualification run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\KidRemote\product-preflight\668ab87a22591319afd43167d55ef9ac0909c1b3\ReadOnly-Preflight.ps1" -Adb "C:\platform-tools\adb.exe" -ExpectedManifestHash "2878b8477ed05b277ef58eec4935c3972c066299dc99de3a9cebf33ae516d4fb"
+```
+
+This is the only future owner command supplied. It requires the already-authorized target/ADB connection, makes no permission changes, and stops INVALID if selection/authorization is ambiguous. Paste only its emitted sanitized JSON (also preserved in the owner-local result directory). Do not paste raw ADB output or serials. No keypress, screenshot, launch, input, setup, installation or qualification is requested.
+
+The lab APK was separately rebuilt from this clean source (`sourceWorkingTreeChanged=false`), with the same `f6d2a240...` SHA-256 listed above. Frozen artifact/provenance: `apps/child-android/build/outputs/product-lab/668ab87a22591319afd43167d55ef9ac0909c1b3/`. It is **not included in the preflight bundle and not installed**. Release endpoint-isolation DEX check PASS. No task-owned backend, emulator, reverse mapping or physical resource was started, so no device cleanup operation was performed.
