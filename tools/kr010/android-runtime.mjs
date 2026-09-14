@@ -47,7 +47,7 @@ export async function exerciseControls({command,run,guard,dir,windowsPath,app,ev
  await parent('conflict',{},()=>control('LOCK'));await sync(0,true);await parent('invalid');
  try{await parent('outage',{},()=>restAvailable(false))}finally{restAvailable(true)}
  sql(`update public.device_state set received_at=clock_timestamp()-interval '1 hour' where device_id='${device}';`);
- await parent('stale');
+ await parent('stale');await parent('warm');await parent('healthFixtures');
  const font=(await command(['shell','settings','get','system','font_scale'])).trim();if(!/^\d+(\.\d+)?$/.test(font))throw Error('FONT_STATE_UNVERIFIED');
  try{await command(['shell','settings','put','system','font_scale','2.0']);await parent('accessibility')}
  finally{await command(['shell','settings','put','system','font_scale',font]);}

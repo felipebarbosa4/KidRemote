@@ -22,6 +22,17 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     private val lock = Any()
     private var epoch = 0
     private var access: String? = null
+    private var renewAt=0L
+    private fun renewal(session:JSONObject)=android.os.SystemClock.elapsedRealtime()+((session.optLong("expires_in",300).coerceIn(60,86400)-30)*1000)
+    private fun sessionAccess():String {
+        val generation=synchronized(lock){epoch}
+        val current=synchronized(lock){access}?:error("NO_SESSION")
+        if(android.os.SystemClock.elapsedRealtime()<renewAt)return current
+        val session=api.refresh(vault.read()?:error("NO_SESSION"));val token=session.getString("access_token")
+        check(api.confirmed(token))
+        synchronized(lock){check(epoch==generation&&session.getJSONObject("user").getString("id")==account);vault.save(session.getString("refresh_token"));access=token;renewAt=renewal(session)}
+        return token
+    }
     init { restore() }
     fun navigate(screen: Screen) { if (!state.loading) state = AuthState(screen) }
     private fun work(action: (Int) -> AuthState) {
@@ -41,11 +52,15 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
             // Recovery privilege is memory-only: process restart returns to login,
             // never converts an unfinished password reset into a normal restored session.
             if (recovery) vault.clear() else vault.save(session.getString("refresh_token"))
-            access=token
+            access=token;renewAt=renewal(session)
             account=session.getJSONObject("user").getString("id")
         }
-        val pending=if(recovery)null else requestVault.read()?.let(::storedRequest)?.takeIf{it.account==account}?.let{ControlResult(it,"failed",retryable=true)}
-        return AuthState(if (recovery) Screen.RESET else Screen.SETUP,control=pending,pairingSession=pairingIdFile.takeIf{it.exists()}?.readText()?.takeIf{it.matches(Regex("[0-9a-f-]{36}"))})
+        val pending=if(recovery)null else requestVault.read()?.let(::storedControl)?.takeIf{it.request.account==account}
+        val base=AuthState(if (recovery) Screen.RESET else Screen.SETUP,control=pending,pairingSession=pairingIdFile.takeIf{it.exists()}?.readText()?.takeIf{it.matches(Regex("[0-9a-f-]{36}"))})
+        if(recovery)return base
+        // Existing households open their actual list; initial setup still requires explicit timezone.
+        return try{if(api.householdExists(token)){val rows=api.devices(token);base.copy(screen=Screen.DEVICES,devices=rows,deviceCount=rows.size,readAtElapsed=android.os.SystemClock.elapsedRealtime())}else base}
+        catch(_:Exception){base.copy(message="Não foi possível carregar a casa. Tente novamente.")}
     }
     fun restore() = work { generation ->
         val saved=vault.read()
@@ -59,18 +74,18 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     }
     fun recover(email: String) = work { api.recover(email); reduce(state,Event.RECOVERY_SENT) }
     fun reset(password: String) = work {
-        val token=synchronized(lock) { access } ?: error("NO_SESSION")
+        val token=sessionAccess()
         api.updatePassword(token,password)
         synchronized(lock) { vault.clear(); access=null }
         AuthState(message="Senha alterada. Entre novamente.")
     }
     fun setup(timezone: String) = work {
-        val token=synchronized(lock) { access } ?: error("NO_SESSION")
+        val token=sessionAccess()
         api.setup(token,timezone)
         val rows=api.devices(token);state.copy(screen=Screen.DEVICES,loading=false,deviceCount=rows.size,devices=rows,readAtElapsed=android.os.SystemClock.elapsedRealtime())
     }
     fun refreshDevices() = work {
-        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val token=sessionAccess()
         val rows=api.devices(token,state.listAfter).map{retainNewer(state.devices.find{old->old.id==it.id},it)}
         val result=state.control?.let { api.status(token,it) }
         state.copy(loading=false,deviceCount=rows.size,devices=rows,control=result,readAtElapsed=android.os.SystemClock.elapsedRealtime())
@@ -89,15 +104,17 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     fun setDailyLimit(text:String){val n=parseDailyLimit(text);if(n==null){state=state.copy(message="Valor inválido. Informe de 0 a 86400 segundos.");return};control(ControlKind.SET_DAILY_LIMIT,n)}
     fun retryControl(){if(!state.loading)state.control?.takeIf{it.retryable||it.status in setOf("accepted","pending")}?.request?.let(::submit)}
     private fun submit(q:ControlRequest)=work { generation ->
-        val token=try{synchronized(lock){check(epoch==generation&&account==q.account);requestVault.save(q.stored());access}?:error("NO_SESSION")}
+        val token=try{synchronized(lock){check(epoch==generation&&account==q.account);requestVault.save(q.stored())};sessionAccess()}
         catch(_:Exception){return@work state.copy(loading=false,control=ControlResult(q,"failed",retryable=true),message="Não foi possível salvar a solicitação. Nenhum novo envio foi iniciado.")}
         val result=try{ControlResult(q,"accepted",api.operation(token,q))}catch(e:ApiFailure){
             ControlResult(q,if(e.status in 400..499&&e.status!=429)"rejected" else "failed",retryable=e.status==429||e.status>=500,code=e.code)
         }catch(_:Exception){ControlResult(q,"failed",retryable=true)}
+        try{synchronized(lock){check(epoch==generation);requestVault.save(result.stored())}}
+        catch(_:Exception){return@work state.copy(loading=false,control=ControlResult(q,"failed",retryable=true),message="Resultado ainda não salvo. Repetir usa a mesma solicitação.")}
         state.copy(loading=false,control=result,message="")
     }
     fun createPairing() = work {
-        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val token=sessionAccess()
         val r=api.pair(token);check(r.getString("result")=="CREATED")
         val q=r.getJSONObject("qr");val session=q.getString("session_id")
         pairingIdFile.writeText(session) // nonsecret recovery reference; server still checks current membership
@@ -107,7 +124,7 @@ class ParentModel(application: Application) : AndroidViewModel(application) {
     }
     fun clearPairingQr(){state=state.copy(qr=null)}
     fun finishPairing(revoke: Boolean=false)=work {
-        val token=synchronized(lock){access}?:error("NO_SESSION")
+        val token=sessionAccess()
         val id=state.pairingSession?:error("NO_SESSION")
         val r=api.cancel(token,id,revoke).getString("result")
         val rows=api.devices(token)

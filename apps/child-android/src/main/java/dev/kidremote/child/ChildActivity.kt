@@ -10,6 +10,8 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -29,9 +31,9 @@ class ChildActivity:ComponentActivity() {
     override fun onCreate(state:Bundle?) {
         super.onCreate(state);window.setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE)
         model=ViewModelProvider(this)[EnrollmentModel::class.java]
-        setContent {MaterialTheme {Surface(Modifier.fillMaxSize()){Column(Modifier.safeDrawingPadding().padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        setContent {MaterialTheme(colorScheme=lightColorScheme()) {Surface(Modifier.fillMaxSize()){Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("KidRemote Child · laboratório local",style=MaterialTheme.typography.titleLarge)
-            Text(model.state.message);Text("Sem contato, uma remoção remota ainda não foi recebida. A última política válida e a contabilidade permanecem armazenadas.");Text("Nenhum bloqueio ou proteção está ativo neste aplicativo.")
+            Text(model.state.message);if(model.state.localReasons.isNotEmpty())Text(model.state.localReasons);Text("Sem contato, uma remoção remota ainda não foi recebida. A última política válida e a contabilidade permanecem armazenadas.");Text("Nenhum bloqueio ou proteção está ativo neste aplicativo.")
             if(model.state.loading)CircularProgressIndicator()
             if(cameraMessage.isNotEmpty())Text(cameraMessage)
             if(!model.state.paired&&!model.state.loading&&!model.state.recovery)Button(onClick={if(ContextCompat.checkSelfPermission(this@ChildActivity,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)scanning=true else permission.launch(Manifest.permission.CAMERA)}){Text("Escanear QR do responsável")}

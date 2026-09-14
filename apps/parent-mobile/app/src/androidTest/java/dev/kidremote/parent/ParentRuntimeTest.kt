@@ -60,7 +60,13 @@ class ParentRuntimeTest {
         throw AssertionError("LOCAL_EMAIL_ACTION_MISSING")
     }
     private fun login(email: String, pass: String) { field("E-mail sintético",email);field("Senha",pass);click("Entrar") }
-    private fun emptyList() { waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos");waitText("Nenhum dispositivo cadastrado.") }
+    private fun openList() {
+        val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
+        ui.waitUntil(30000){!model.state.loading}
+        if(model.state.screen==Screen.SETUP){field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")}
+        waitText("MY DEVICES")
+    }
+    private fun emptyList() {openList();waitText("Nenhum dispositivo cadastrado.")}
     private fun cleared() {
         checkThat(!File(target.noBackupFilesDir,"parent-session").exists(),"SESSION_FILE_REMAINS")
         checkThat(!KeyStore.getInstance("AndroidKeyStore").apply{load(null)}.containsAlias("parent-session-v1"),"SESSION_KEY_REMAINS")
@@ -137,13 +143,13 @@ class ParentRuntimeTest {
         result("PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS")
     }
     @Test fun parentSeesEnrollment() = safe("PARENT_ENROLLED_LIST_FAILED") {
-        waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos")
+        openList()
         waitText("Dispositivo Android");waitText("Pareado · configuração incompleta · proteção não verificada")
         val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]
         ui.runOnIdle {checkThat(model.state.devices.size==1,"NOT_EXACTLY_ONE_DEVICE")}
         result("PARENT_ACTUAL_ENROLLED_LIST_PASS")
     }
-    private fun openExistingList() {waitText("Preparar sua casa");field("Fuso IANA","Etc/UTC");click("Confirmar e abrir dispositivos");waitText("Controles e enforcement não estão disponíveis nesta etapa.")}
+    private fun openExistingList() {openList();waitText("Pareamento não confirma permissões ou proteção. Enforcement indisponível neste laboratório.")}
     private fun exportNewQr() {
         click("Criar QR de pareamento");waitText("QR de uso único. Não compartilhe. Expira em até cinco minutos.")
         val model=androidx.lifecycle.ViewModelProvider(ui.activity)[ParentModel::class.java]

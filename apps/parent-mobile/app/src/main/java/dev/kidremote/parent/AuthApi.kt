@@ -44,6 +44,7 @@ internal class AuthApi {
     fun updatePassword(token: String, password: String) { request("/user", JSONObject().put("password",password),token,method="PUT") }
     fun logout(token: String) { request("/logout?scope=local",JSONObject(),token) }
     fun confirmed(token: String): Boolean = !JSONObject(request("/user",bearer=token)).isNull("email_confirmed_at")
+    fun householdExists(token:String)=JSONArray(request("/households?select=id&limit=1",bearer=token,rest=true)).length()==1
     fun setup(token: String, timezone: String): Int {
         request("/rpc/bootstrap_household",JSONObject().put("p_timezone",timezone),token,rest=true)
         check(JSONArray(request("/households?select=id",bearer=token,rest=true)).length() == 1)
@@ -108,4 +109,11 @@ internal fun storedRequest(text:String):ControlRequest {
         if(r.isNull("expected_version"))null else r.safeLong("expected_version"),
         if(kind==ControlKind.ADD_TIME)p.getString("period_key")else null,
         when(kind){ControlKind.ADD_TIME->p.safeLong("seconds",1800).toInt();ControlKind.SET_DAILY_LIMIT->p.safeLong("daily_limit_seconds",86400).toInt();else->null})
+}
+
+internal fun ControlResult.stored():String=JSONObject(request.stored()).put("result",JSONObject().put("status",status).put("version",version?:JSONObject.NULL).put("retryable",retryable).put("code",code)).toString()
+internal fun storedControl(text:String):ControlResult {
+    val request=storedRequest(text);val r=JSONObject(text).optJSONObject("result")?:return ControlResult(request,"failed",retryable=true)
+    val status=r.getString("status");check(status in setOf("accepted","pending","persisted","superseded","expired_for_period","failed","rejected"))
+    return ControlResult(request,status,if(r.isNull("version"))null else r.safeLong("version"),r.getBoolean("retryable"),r.getString("code"))
 }

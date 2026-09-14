@@ -1,0 +1,243 @@
+{
+  "scope": "KR010_PARENT_CONTROLS_EMULATOR_ONLY",
+  "avd": "kr006_e03b4820193b4132b1fcf7950eeed7fe",
+  "serial": "emulator-5584",
+  "stages": [
+    {
+      "method": "createEnrollmentQr",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "EMULATOR_BACKEND_CONNECTIVITY_PASS",
+        "SIGNUP_VERIFICATION_PENDING_PASS",
+        "UNVERIFIED_APP_LOGIN_DENIED",
+        "REAL_EMAIL_CONFIRMATION_PASS",
+        "LOGIN_HOUSEHOLD_EMPTY_LIST_PASS",
+        "ACTIVITY_RECREATION_PASS",
+        "PARENT_AUTH_CREATE_DISPLAY_CANCEL_FRESH_QR_PASS"
+      ]
+    },
+    {
+      "method": "decodeRedeemAndRead",
+      "step": "",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_DECODER_REDEMPTION_PERSISTENCE_INITIAL_READ_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "limit",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LIMIT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "initialize",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "plus10",
+      "result": "PASS",
+      "codes": [
+        "PARENT_PLUS10_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "loss",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LOSS_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "retry",
+      "result": "PASS",
+      "codes": [
+        "PARENT_RETRY_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "lock",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LOCK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "limit",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LIMIT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "unlock",
+      "result": "PASS",
+      "codes": [
+        "PARENT_UNLOCK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "lock",
+      "result": "PASS",
+      "codes": [
+        "PARENT_LOCK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "report",
+      "result": "PASS",
+      "codes": [
+        "PARENT_REPORT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "conflict",
+      "result": "PASS",
+      "codes": [
+        "PARENT_CONFLICT_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "sync",
+      "result": "PASS",
+      "codes": [
+        "CHILD_REAL_ROOM_SYNC_ACK_PASS"
+      ]
+    },
+    {
+      "method": "step",
+      "step": "invalid",
+      "result": "FAIL",
+      "codes": [
+        "PARENT_FAILURE_LINE_21"
+      ]
+    }
+  ],
+  "primary": "KR010_UI_STAGE_FAILED:step:invalid",
+  "cleanup": "VERIFIED_SYNTHETIC_APP_AND_TEST_DATA_CLEARED",
+  "apkHashes": {
+    "app": "53b0aa386f78ae23476c2c2ca3abb6026f4f712d04561c90a4db0c23d719d87e",
+    "test": "489a2769d39ec9b2704e952a514d62230e59ecfbf77f9bdc6524df21e5cacfdd",
+    "dev.kidremote.child.unassigned.debug": "622157f72405cac794d5ed849132697d7ffb0fd9875357b52192e7a03b049696",
+    "dev.kidremote.child.unassigned.debug.test": "5cc670ca2ed86996ff0e870d9c4c0a4517fc0659f25eac1815e9df8340a804fb"
+  },
+  "ro.build.version.sdk": "36",
+  "ro.build.version.release": "16",
+  "ro.build.fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+  "overall": "NOT_PASSED",
+  "apk_source": "38341b4080629b460a9a7d0de048e42928bec74e",
+  "classification": "OBSERVED"
+}
