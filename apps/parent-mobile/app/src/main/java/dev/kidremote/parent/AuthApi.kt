@@ -79,8 +79,7 @@ internal class AuthApi {
             check(r.getString("device_id")==current.request.device)
             val version=r.safeLong("version");check(current.version==null||version==current.version)
             var status=r.getString("status");check(status in setOf("pending","persisted","applied","superseded","expired_for_period","failed","rejected"))
-            // This local stack has no enforcement adapter; never invent observed application.
-            if(status=="applied")status="persisted"
+            // Applied is derived by the scoped server view from an observed adapter report.
             return current.copy(status=status,version=version,retryable=false,code="")
         }
         return current // Window omission cannot fabricate an outcome.

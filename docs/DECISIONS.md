@@ -179,3 +179,19 @@ retain independent failures. No screenshots, physical/Samsung action, enforcemen
 FCM/provider, deployment, distribution, real-family use, merge or further issue.
 KR-003/008/009 and physical KR-010 criteria stay open. Preserve earlier PRs/evidence
 and clean only task-owned resources after validation.
+
+**OD-49 — APPROVED OWNER BOUNDED PRODUCT ENFORCEMENT INTEGRATION:**
+from `e007eb23331d5b1cc924f9b67ab9fb0329e39414`, authorize repository-local
+integration of the existing KR-003 consumer Accessibility candidate with the actual
+KR-007/008/009/010 child/accounting/sync/parent stack, on a new draft branch stacked
+on `kr-010-local-parent-controls`, referencing existing Issues #3/#10. Reuse the
+candidate boundary and safe-system-surface semantics; exclude all lab-only control,
+trace/counter/capture code from release. Desired persistence and actual observed
+adapter application remain separate, with truthful durable ACK/health. Validate on
+the existing task-owned emulator only. Preserve all physical history/verdicts and
+A/B recovery. No physical execution, production acceptance, FCM, deployment, Play,
+distribution, merge or new enforcement design. After local validation, prepare
+exactly one future owner-operated short physical integration handoff only if existing
+independent oracle tooling can safely support it without weakened proof, capture,
+settings changes or destructive operations; otherwise report the exact blocker.
+KR-003 and all physical acceptance gates remain open.
