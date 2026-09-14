@@ -1,0 +1,16 @@
+{
+  "scope": "KR009_LOCAL_SYNC_ACK_EMULATOR",
+  "source": "255babbcd8f39635ffe67906b9820bc30cedf77d",
+  "stages": [],
+  "hashes": {
+    "child-debug.apk": "8c2a90773a02744708f7bb48eff3a6f385ab10295166830dd33cce06c394acd4"
+  },
+  "overall": "NOT_PASSED",
+  "cleanup": "UNVERIFIED",
+  "error": "TARGETED_COMMAND_FAILED",
+  "followup": {
+    "observed": "Targeted install reproduced INSTALL_FAILED_UPDATE_INCOMPATIBLE. pm list packages omitted retained uninstalled task packages; pm list packages -u found both. Explicit uninstall of only these two task packages succeeded. No instrumentation ran. Original cleanup remains UNVERIFIED at attempt end.",
+    "subsequent_cleanup": "VERIFIED_OWN_APP_AND_TEST_PACKAGES_UNINSTALLED",
+    "harness_source": "153871ea74cc83cb224ac1b18a3370fec5ab489f"
+  }
+}

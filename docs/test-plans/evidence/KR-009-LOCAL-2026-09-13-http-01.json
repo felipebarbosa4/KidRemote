@@ -1,0 +1,23 @@
+{
+  "scope": "KR009_LOCAL_DEVELOPMENT_ATTEMPT",
+  "attempt": "http-01",
+  "result": "PARTIAL",
+  "note": "Incorrect test-mode keep flag entered developer wait before KR-009 HTTP tests. Exact owned runner interrupted and cleanup verified.",
+  "observedAllowlistedResults": [
+    "DATABASE_TEST_PASS=01_rls.test.sql:assertions=243",
+    "DATABASE_TEST_PASS=02_constraints.test.sql:assertions=45",
+    "DATABASE_TEST_PASS=03_atomic_control.test.sql:assertions=57",
+    "DATABASE_TEST_PASS=04_concurrent_control.test.sql:assertions=44",
+    "DATABASE_TEST_PASS=05_pairing.test.sql:assertions=62",
+    "DATABASE_TEST_PASS=06_pairing_races.test.sql:assertions=36",
+    "DATABASE_TEST_PASS=07_parent_bootstrap.test.sql:assertions=9",
+    "DATABASE_TEST_PASS=08_rotation.test.sql:assertions=25",
+    "DATABASE_TEST_PASS=09_sync_ack.test.sql:assertions=21",
+    "PAIRING_DATABASE_PROTOCOL_HTTP_PASS:assertions=28:pairingSQL=REAL:gatewayStorage=STUB:AuthEdge=UNRUN",
+    "ENROLLMENT_GATEWAY_CLEANUP_VERIFIED",
+    "AUTH_SERVICE_CLEANUP_VERIFIED",
+    "CLEANUP=VERIFIED_TASK_CONTAINER_REMOVED",
+    "TASK_NETWORK_REMOVED"
+  ],
+  "source": "working tree leading to 255babb; not a separately built APK"
+}

@@ -15,7 +15,7 @@ const report=join(dir,'kr009-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+
 const evidence={scope:'KR009_LOCAL_SYNC_ACK_EMULATOR',source:process.env.KR009_APK_SOURCE??'UNSPECIFIED',stages:[],hashes:{},overall:'NOT_PASSED',cleanup:'UNVERIFIED'};
 function run(args,input){return new Promise(resolve=>{const p=spawn(adb,['-s','emulator-5584',...args],{stdio:[input===undefined?'ignore':'pipe','pipe','pipe']});let out='';const timer=setTimeout(()=>p.kill(),180000);p.stdout.on('data',x=>{if(out.length<1000000)out+=x});p.stderr.on('data',x=>{if(out.length<1000000)out+=x});p.on('error',()=>resolve({code:-1,out:''}));p.on('close',code=>{clearTimeout(timer);resolve({code,out})});if(input!==undefined)p.stdin.end(input)});}
 async function guard(){const name=await run(['emu','avd','name']);if(name.code!==0||name.out.trim().split(/\r?\n/)[0].trim()!==owner.AvdName)throw Error('AVD_IDENTITY_UNVERIFIED');const q=await run(['shell','getprop','ro.kernel.qemu']);if(q.code!==0||q.out.trim()!=='1')throw Error('NOT_EMULATOR');}
-async function command(args){await guard();const r=await run(args);if(r.code!==0)throw Error('TARGETED_COMMAND_FAILED');return r.out;}
+async function command(args){await guard();const r=await run(args);if(r.code!==0){const code=r.out.match(/INSTALL_FAILED_[A-Z_]+|DELETE_FAILED_[A-Z_]+/)?.[0]??'UNSPECIFIED';throw Error('TARGETED_COMMAND_FAILED:'+args[0]+':'+code);}return r.out;}
 let primary;
 const record=row=>{evidence.stages.push(row);console.log(JSON.stringify(row))};
 const ok=(v,code)=>{if(!v)throw Error(code)};
@@ -33,7 +33,7 @@ try {
  await guard();ok((await command(['shell','getprop','ro.build.version.sdk'])).trim()==='36','API_MISMATCH');
  for(const [i,file] of ['child-debug.apk','child-debug-androidTest.apk'].entries()) {
   const path=join(dir,'apks-kr009-'+process.env.KR009_APK_SOURCE.slice(0,7),file);evidence.hashes[file]=createHash('sha256').update(readFileSync(path)).digest('hex');
-  const exists=(await command(['shell','pm','list','packages',packages[i]])).replaceAll('\r','').trim().split('\n').includes('package:'+packages[i]);
+  const exists=(await command(['shell','pm','list','packages','-u',packages[i]])).replaceAll('\r','').trim().split('\n').includes('package:'+packages[i]);
   if(exists)ok((await command(['uninstall',packages[i]])).includes('Success'),'OWN_UNINSTALL_FAILED');
   ok((await command(['install','-r','-t',windows(path)])).includes('Success'),'OWN_INSTALL_FAILED');
  }

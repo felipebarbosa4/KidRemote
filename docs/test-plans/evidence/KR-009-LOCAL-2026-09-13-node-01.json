@@ -1,0 +1,12 @@
+{
+  "scope": "KR009_LOCAL_DEVELOPMENT_ATTEMPT",
+  "attempt": "node-01",
+  "result": "FAIL",
+  "note": "Static assertion still required old shared-only lock; updated to assert exclusive device serialization and credential/household shared locks.",
+  "observedAllowlistedResults": [
+    "# tests 69",
+    "# pass 68",
+    "# fail 1"
+  ],
+  "source": "working tree leading to 255babb; not a separately built APK"
+}
