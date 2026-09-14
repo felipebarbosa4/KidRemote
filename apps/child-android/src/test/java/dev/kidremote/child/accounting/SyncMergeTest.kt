@@ -16,5 +16,10 @@ class SyncMergeTest {
  @Test fun yesterdayBonusCannotCarry(){val s=old().copy(policy=old().policy.copy(bonusSeconds=600),bonusSeconds=600,uncertainty=Uncertainty.HISTORY,recoveryThrough=3000);val next=utc+86400000;val n=SyncMerge.accept(s,s.policy.copy(version=2,bonusDate="2026-09-14",bonusSeconds=0),at(4000),next);assertEquals("2026-09-14",n.date);assertEquals(0,n.bonusSeconds);assertEquals(0,n.usedMs)}
  @Test fun samePeriodSyncCannotForgiveGap(){val s=Accounting.resume(old(),at(3000));val n=SyncMerge.accept(s,s.policy.copy(version=2,bonusSeconds=1800),at(4000),utc+4000);assertEquals(s.usedMs,n.usedMs);assertTrue(n.restrictionRequired);assertEquals(Uncertainty.HISTORY,n.uncertainty)}
  @Test fun wrongEpochDenied(){val s=old();assertThrows(IllegalArgumentException::class.java){SyncMerge.accept(s,s.policy.copy(epoch="foreign",version=2),at(1000),utc)}}
- @Test fun pendingReceiptCodecSurvives(){val s=old().copy(reportSequence=8,pendingAck="minimal-fixture");assertEquals(s,LedgerCodec.decode(LedgerCodec.encode(s)))}
+ @Test fun pendingReceiptCodecSurvives(){
+  val s=old().copy(reportSequence=8,pendingAck="minimal-fixture");assertEquals(s,LedgerCodec.decode(LedgerCodec.encode(s)))
+  val body=LedgerCodec.encode(old()).dropLast(17).toByteArray();java.nio.ByteBuffer.wrap(body).putInt(2)
+  val legacy=java.io.ByteArrayOutputStream().also{it.write(body);java.io.DataOutputStream(it).writeLong(java.util.zip.CRC32().apply{update(body)}.value)}.toByteArray()
+  assertEquals(old(),LedgerCodec.decode(legacy))
+ }
 }

@@ -65,6 +65,13 @@ export async function testSync({http,sql,gatewayAvailable}) {
  const removed=await sync();ok(removed.status===403&&removed.json.code==='DEVICE_REVOKED','TYPED_REMOVAL');
  ok((await sync({...d,credential:randomBytes(32).toString('base64url')})).status===401,'UNKNOWN_GENERIC');
  ok(!JSON.stringify(snapshot).includes(d.credential),'NO_SNAPSHOT_SECRET');
+ const history=await enroll(b);
+ sql(`set role authenticated;set "request.jwt.claim.sub"='${b.user}';do $bounded$ begin
+ perform public.accept_control(gen_random_uuid(),'${history.device_id}','SET_DAILY_LIMIT','{"daily_limit_seconds":3600}',0);
+ for i in 1..105 loop perform public.accept_control(gen_random_uuid(),'${history.device_id}',case when i%2=1 then 'LOCK' else 'UNLOCK' end,'{}',i);end loop;end $bounded$;`);
+ const bounded=(await sync(history)).json;ok(bounded.version===106&&bounded.operations.length===100&&bounded.history_pruned===true&&bounded.operations.every((x,i)=>x.version===i+7),'BOUNDED_CONSISTENT_WINDOW');
+ const current=(await sync(history,106)).json;ok(current.operations.length===0&&!current.history_pruned&&current.version===106,'CURRENT_CURSOR_CONVERGENCE_WITHOUT_PAGES');
+ ok((await send('/parent/devices/'+foreign.device_id+'/operations',undefined,a.token,'GET')).json.length===0,'FOREIGN_STATUS_RLS_EMPTY');
  const live=await enroll(a);const setup=await op('SET_DAILY_LIMIT',{daily_limit_seconds:3600},0,randomUUID(),live.device_id);ok(setup.status===200,'RUNTIME_CANONICAL_SETUP');
  console.log('KR009_REAL_HTTP_PASS:assertions='+count+':replays=100:storage=POSTGRES:auth=REAL:push=NONE');
  return {identity:live,operation:(kind,payload,expected)=>op(kind,payload,expected,randomUUID(),live.device_id),ownSync:()=>sync(live),readStatus:()=>send('/parent/devices/'+live.device_id+'/operations',undefined,a.token,'GET')};

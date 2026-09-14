@@ -51,6 +51,7 @@ try {
  ok((await readStatus()).json.find(x=>x.version===5).status==='persisted','RESTART_ACK_NOT_PERSISTED');
  added=await operation('ADD_TIME',{seconds:1800,period_key:period},null);ok(added.status===200&&added.json.version===6,'PLUS30_NOT_ACCEPTED');
  await stage('loseAckResponse');
+ ok((await readStatus()).json.find(x=>x.version===6).status==='persisted','LOST_ACK_NOT_COMMITTED');
  const before=sql(`select report_sequence::text||':'||received_at::text from public.device_state where device_id='${identity.device_id}';`);
  await stage('retryLostAckAfterRestart');
  ok(sql(`select report_sequence::text||':'||received_at::text from public.device_state where device_id='${identity.device_id}';`)===before,'LOST_ACK_CHANGED_FRESHNESS_OR_SEQUENCE');

@@ -48,7 +48,7 @@ class SyncRuntimeTest {
    {it.put("protocol_version",2)},{it.put("device_id","90000000-0000-4000-8000-000000000099")},
    {it.put("policy_epoch","90000000-0000-4000-8000-000000000099")},{it.put("daily_limit_seconds","3600")},
    {it.put("bonus_seconds",-1)},{it.put("unexpected",true)})
-  for(edit in edits){SyncFaults.transformSyncResponse={edit(JSONObject(it)).toString()};try{ck(runCatching{sync()}.isFailure);ck(raw()==old)}finally{SyncFaults.transformSyncResponse=null}}
+  for(edit in edits){var transformed=false;SyncFaults.transformSyncResponse={transformed=true;edit(JSONObject(it)).toString()};try{ck(runCatching{sync()}.isFailure&&transformed);ck(raw()==old)}finally{SyncFaults.transformSyncResponse=null}}
   SyncFaults.transformSyncResponse={it.dropLast(1)+",\"protocol_version\":1}"}
   try{ck(runCatching{sync()}.isFailure);ck(raw()==old)}finally{SyncFaults.transformSyncResponse=null}
   result("REAL_HTTP_MUTATED_BEFORE_VALIDATION_SCHEMA_NUMBERS_DUPLICATES_RETAIN_POLICY")
@@ -66,8 +66,9 @@ class SyncRuntimeTest {
   sync();ck(raw().bonusSeconds==600L&&raw().usedMs==1000L);result("PROCESS_RESTART_RESENDS_DURABLE_ACK_NO_GRANT_REPLAY")
  }
  @Test fun loseAckResponse()=safe {
-  SyncFaults.afterAckResponse={throw java.io.IOException("INJECTED_ACK_RESPONSE_LOSS")}
-  try{ck(runCatching{sync()}.isFailure)}finally{SyncFaults.afterAckResponse=null}
+  var withheld=false
+  SyncFaults.afterAckResponse={withheld=true;throw java.io.IOException("INJECTED_ACK_RESPONSE_LOSS")}
+  try{ck(runCatching{sync()}.isFailure&&withheld)}finally{SyncFaults.afterAckResponse=null}
   val s=raw();ck(s.policy.version==6L&&s.bonusSeconds==2400L&&s.pendingAck!=null&&s.usedMs==1000L);mark()
   result("REAL_COMMITTED_ACK_HTTP_RESPONSE_WITHHELD_PENDING_RETAINED")
  }
