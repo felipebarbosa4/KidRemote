@@ -18,3 +18,9 @@ installed on the owned emulator and source-specific `apks-kr009-<prefix>` APKs.
 Without the flag, the existing KR-009 suite runs unchanged. No physical runner is
 provided: the existing Samsung oracle is bound to spike package/hash and ARM/CLEAR;
 its permission and oracle calibration do not transfer to this product service.
+
+`emulator-service.py <full-source-sha> death` retains an intentional kill and a
+separate restart-instrumentation stage. This scenario currently has two preserved
+NOT_PASSED attempts: service reconnection was not observed within 15 seconds. It is
+not an automatic-restart acceptance test that has passed. The host always restores
+its emulator settings and clears only owned test data, including after expected death.
