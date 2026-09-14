@@ -233,3 +233,12 @@ handoff: temporary installed APK pull + local SDK apksigner, and content-free
 run-as existence/size inventory. No install/update, permissions, launch/input,
 backend, reverse or data erasure. SAFE_DATA_PRESERVING_UPDATE_REVIEW is technical
 eligibility for review only, never authorization to perform an update.
+
+**OD-49 extension — bounded historical signing recovery:** owner confirms the
+installed certificate differs from the lab and two other durable files remain.
+Authorizes metadata-only search of known local Android/task-owned build locations;
+if the original signing key is found, reference it without modifying/copying it and
+test a same-signer lab update on an owned emulator only. No physical command,
+destructive replacement, release signing change or secret disclosure. If not found,
+stop for owner choice between a side-by-side package and separately authorized
+destructive reinstall after state/risk review. Neither alternative is preselected.
