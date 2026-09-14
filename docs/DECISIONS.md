@@ -206,3 +206,14 @@ NOT_PASSED attempts. Modify product/harness only for an evidenced defect; no new
 lifecycle architecture. Any confirmation uses independent clean attempts. Physical
 oracle assessment is conditional on demonstrated automatic recovery; no physical
 execution, FCM, deployment, permission-transfer assumption or weakened oracle.
+
+**OD-49 extension — independent product oracle preparation only:**
+from `5675a3881dd08ae4c2433470a809adc4b4711d47`, owner authorizes a bounded
+Windows host driver using canonical LOCK/UNLOCK and the separate ordinary fixture's
+input/focus oracle. Product attachment/ACK/status are corroboration only. Validate
+host failures and useful owned-emulator cases; do not execute any physical command.
+Verify exact Samsung configuration/provenance and read existing product permissions;
+never assume spike permission transfer or overwrite installed state. No product lab
+hooks, FCM, enforcement redesign, destructive operations or historical runner edits.
+Publish an immutable owner bundle/command only when transport, provenance and
+independent cleanup are actually ready; otherwise retain an explicit blocker.

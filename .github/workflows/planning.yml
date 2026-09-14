@@ -97,6 +97,7 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
           pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
           pwsh -NoProfile -File tools/kr003/UiAutomationTransport.Tests.ps1
@@ -150,6 +151,7 @@ jobs:
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
@@ -177,6 +179,7 @@ jobs:
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
+          ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
