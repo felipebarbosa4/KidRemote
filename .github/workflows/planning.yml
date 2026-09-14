@@ -26,7 +26,8 @@ jobs:
           node --test tools/kr006/*.test.mjs
           node --test tools/kr007/*.test.mjs
           node --test tools/kr008/*.test.mjs
-          node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --enrollment-test
+          node --test tools/kr009/*.test.mjs
+          node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --sync-test
       - name: Build parent with preinstalled SDK only
         run: |
           test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"

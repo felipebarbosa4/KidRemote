@@ -1,0 +1,26 @@
+{
+  "scope": "KR009_LOCAL_DEVELOPMENT_ATTEMPT",
+  "attempt": "http-03",
+  "result": "FAIL",
+  "note": "Observed HTTP status 0 timeout for changed-payload conflict; PostgREST 14 custom 40001 retry loop documented by vendor.",
+  "observedAllowlistedResults": [
+    "DATABASE_TEST_PASS=01_rls.test.sql:assertions=243",
+    "DATABASE_TEST_PASS=02_constraints.test.sql:assertions=45",
+    "DATABASE_TEST_PASS=03_atomic_control.test.sql:assertions=57",
+    "DATABASE_TEST_PASS=04_concurrent_control.test.sql:assertions=44",
+    "DATABASE_TEST_PASS=05_pairing.test.sql:assertions=62",
+    "DATABASE_TEST_PASS=06_pairing_races.test.sql:assertions=36",
+    "DATABASE_TEST_PASS=07_parent_bootstrap.test.sql:assertions=9",
+    "DATABASE_TEST_PASS=08_rotation.test.sql:assertions=25",
+    "DATABASE_TEST_PASS=09_sync_ack.test.sql:assertions=21",
+    "PAIRING_DATABASE_PROTOCOL_HTTP_PASS:assertions=28:pairingSQL=REAL:gatewayStorage=STUB:AuthEdge=UNRUN",
+    "REAL_AUTH_POSTGREST_TESTS_PASS:assertions=44:autoConfirm=false:externalSMTP=false",
+    "REAL_ENROLLMENT_HTTP_DB_PASS:assertions=38:parentCreationFixture=SQL_ROLE:deviceRead=REAL_TRANSACTION",
+    "REAL_ROTATION_HTTP_DB_PASS:assertions=27:concurrentIdentical=20:storage=POSTGRES:loss=REAL_RESPONSE_DISCARDED_AT_CALLER",
+    "KR009_CONFLICT_HTTP_STATUS=0:code=UNSPECIFIED",
+    "ENROLLMENT_GATEWAY_CLEANUP_VERIFIED",
+    "CLEANUP=VERIFIED_TASK_CONTAINER_REMOVED",
+    "TASK_NETWORK_REMOVED"
+  ],
+  "source": "working tree leading to 255babb; not a separately built APK"
+}

@@ -1,0 +1,133 @@
+{
+  "scope": "KR009_LOCAL_SYNC_ACK_EMULATOR",
+  "source": "153871ea74cc83cb224ac1b18a3370fec5ab489f",
+  "stages": [
+    {
+      "method": "prepareIdentityAndUsage",
+      "result": "PASS",
+      "codes": [
+        "REAL_IDENTITY_HTTP_SNAPSHOT_ROOM_ACK_INITIALIZED_NONZERO_USE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "lockPersisted",
+      "result": "PASS",
+      "codes": [
+        "LOCK_PERSISTED_ACKNOWLEDGED_NO_ENFORCEMENT_CLAIM"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "UNLOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "SET_DAILY_LIMIT",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "zeroUnlockAndReordered",
+      "result": "PASS",
+      "codes": [
+        "UNLOCK_ZERO_LOWER_LIMIT_DUPLICATE_OLDER_SNAPSHOT_NO_ROLLBACK"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "malformedSnapshotRetainsPolicy",
+      "result": "PASS",
+      "codes": [
+        "REAL_HTTP_MUTATED_BEFORE_VALIDATION_SCHEMA_NUMBERS_DUPLICATES_RETAIN_POLICY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterGrantPersistence",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "KR009_EXPECTED_KILL_AFTER_PERSIST"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartResendsPendingAck",
+      "result": "PASS",
+      "codes": [
+        "PROCESS_RESTART_RESENDS_DURABLE_ACK_NO_GRANT_REPLAY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "loseAckResponse",
+      "result": "PASS",
+      "codes": [
+        "REAL_COMMITTED_ACK_HTTP_RESPONSE_WITHHELD_PENDING_RETAINED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "retryLostAckAfterRestart",
+      "result": "PASS",
+      "codes": [
+        "LOST_ACK_RETRY_IDENTICAL_SEQUENCE_AFTER_PROCESS_RESTART"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "offlinePreservesLedger",
+      "result": "PASS",
+      "codes": [
+        "GATEWAY_OUTAGE_RETAINS_LEDGER_IDENTITY_NO_PENDING_ERASURE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "explicitRestartConverges",
+      "result": "PASS",
+      "codes": [
+        "EXPLICIT_SYNC_AFTER_OUTAGE_RESTART_WITHOUT_PUSH_CONVERGED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "yesterdayGrantNotCredited",
+      "result": "PASS",
+      "codes": [
+        "YESTERDAY_GRANT_NO_TODAY_CREDIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "expiredRetainsLedger",
+      "result": "PASS",
+      "codes": [
+        "EXPIRED_AUTH_RETAINS_DOWNLOADED_POLICY_ACCOUNTING"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "revokedRetainsUntilExplicitRemoval",
+      "result": "PASS",
+      "codes": [
+        "VALIDATED_REVOCATION_PRESERVES_LEDGER_UNTIL_EXPLICIT_CLEAR"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "eb4dc45216f41cb7979267fcf37bbaf746c77680cd55344f502163da0574a2f9",
+    "child-debug-androidTest.apk": "aec9808fd0dd75509e4da6b8d978cd20af5ea8dbb331a2891859ec922b4173d1"
+  },
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED",
+  "harness_source": "153871e plus retained-package detection/error-code fix; Android APK and tests unchanged"
+}

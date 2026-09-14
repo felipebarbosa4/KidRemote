@@ -8,7 +8,7 @@ const images={
  mail:'axllent/mailpit:v1.31.1@sha256:98b916bd3c8d61f7633a52d3ea2f58d00620cb01ca57ab59edde68c347a95365',
 };
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep,runtime=false,enrollment=false,enrollmentRuntime=false,gatewayConfig}) {
+export async function runParentAuth({sql,call,env,name,label,token,network,databaseHost,windows,keep,runtime=false,enrollment=false,enrollmentRuntime=false,sync=false,syncRuntime=false,gatewayConfig}) {
  const resources=[];let primary,gateway;
  const secrets=new Set();
  const jwt=randomBytes(48).toString('hex'), password=randomBytes(32).toString('hex');
@@ -107,6 +107,10 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    if(enrollment) {
     const {testEnrollment}=await import('../kr007/backend-tests.mjs');await testEnrollment({http,sql});
     const {testRotation}=await import('../kr007/rotation-tests.mjs');await testRotation({http,sql});
+   }
+   if(sync) {
+    const {testSync}=await import('../kr009/backend-tests.mjs');const fixture=await testSync({http,sql,gatewayAvailable});
+    if(syncRuntime){const {testSyncRuntime}=await import('../kr009/android-runtime.mjs');await testSyncRuntime({...fixture,sql,gatewayAvailable});}
    }
    if(enrollmentRuntime) {
     const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql,gatewayAvailable});

@@ -1,0 +1,12 @@
+{
+  "scope": "KR009_LOCAL_DEVELOPMENT_ATTEMPT",
+  "attempt": "node-02",
+  "result": "PASS",
+  "note": "Affected Node suites passed after lock assertion and new boundary tests.",
+  "observedAllowlistedResults": [
+    "# tests 82",
+    "# pass 82",
+    "# fail 0"
+  ],
+  "source": "working tree leading to 255babb; not a separately built APK"
+}

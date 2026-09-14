@@ -1,0 +1,10 @@
+begin;
+select no_plan();
+select has_table('private','sync_snapshots','bounded private snapshot cache exists');
+select col_is_pk('private','sync_snapshots','device_id','one sequence per device');
+select ok(not has_table_privilege('anon','private.sync_snapshots','SELECT'),'anonymous cannot read pages');
+select ok(not has_table_privilege('authenticated','private.sync_snapshots','SELECT'),'parent cannot read private page cache');
+select ok(has_table_privilege('service_role','private.sync_snapshots','SELECT,INSERT,UPDATE,DELETE'),'gateway owns cache operations');
+select ok((select count(*)=1 from pg_constraint where conrelid='private.sync_snapshots'::regclass and contype='c' and pg_get_constraintdef(oid) like '%262144%' and pg_get_constraintdef(oid) like '%1000%'),'payload and history bounded in database');
+select * from finish();
+rollback;

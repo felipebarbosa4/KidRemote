@@ -139,3 +139,30 @@ are not recovery authority. Storage failure still requires A/B after health retu
 No manual reset/parent override, KR-009 sync/receipts/FCM, enforcement, physical work,
 battery acceptance or further policy choice is authorized. Trust inputs are local
 validated fixtures/interfaces in this slice, not invented network evidence.
+
+**OD-47 — APPROVED OWNER BOUNDED KR-009 LOCAL CONTROL/SYNC/ACK EXCEPTION:**
+from KR-008 reporting head `cde74f626c9e1c4525562e041338f9f051a2973d`, authorize
+one local-only branch/draft PR stacked on `kr-008-local-accounting`, reusing Issue #9.
+Implement authenticated parent LOCK/UNLOCK/+600/+1800/SET_DAILY_LIMIT through the
+existing atomic/idempotent KR-004 transaction, consistent own-device configured
+sync, existing KR-008 transactional accounting/pending ACK, and authenticated
+minimal device report with honest server-visible status. Prove convergence without
+push using real isolated PostgreSQL/gateway and the existing task-owned emulator,
+including restart, response loss, tenant denial and corruption regressions.
+KR-008 A/B recovery remains approved unchanged. No FCM/provider setup, physical or
+Samsung action, enforcement adapter/acceptance, distribution, real-family use,
+deployment, merge, later issue or closure of KR-003/KR-008 physical gates follows.
+Preserve historical evidence and earlier stacked PRs; classify each failed/partial
+attempt independently and clean up only task-owned backend/emulator resources.
+
+**OD-47 extension — APPROVED OWNER LOCAL PAGINATION AND PUSH-INDEPENDENT RECOVERY:**
+from `750916dd4f75f3a3beea8e64f4939d0ab9343389`, continue the same KR-009 branch/
+draft PR #22: consistent bounded immutable snapshot pagination; process restart,
+resume, live network recovery and bounded WorkManager recovery with durable retry,
+coalescing, documented full-jitter backoff and Retry-After. Preserve original OD-47
+and all previous evidence. Existing KR-007 credential/removal and KR-008 A/B rules
+remain authoritative. No FCM/provider/project/address selection/dispatch, foreground
+service, enforcement, physical/Samsung action, deployment, merge or next issue.
+Use actual local PostgreSQL/HTTP/Android persistence and controlled scheduler clocks;
+no emulator result establishes OS scheduling latency. Preserve every failed/partial
+attempt and clean only task-owned resources.

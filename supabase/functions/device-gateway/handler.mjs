@@ -5,6 +5,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const integer = n => Number.isSafeInteger(n) && n >= 0;
 const object = x => x !== null && typeof x === 'object' && !Array.isArray(x);
 const exact = (x, keys) => object(x) && Object.keys(x).length === keys.length && keys.every(k => Object.hasOwn(x,k));
+const syncBody = b => (exact(b,['protocol_version','after_version']) || (exact(b,['protocol_version','after_version','cursor']) && typeof b.cursor==='string' && b.cursor.length===40 && /^[a-f0-9-]{36}:[1-9]00$/.test(b.cursor) && UUID.test(b.cursor.split(':')[0]))) && integer(b.after_version);
 const reply = (status, code, value) => Response.json(value ?? {code}, {
   status, headers: {'cache-control':'no-store','x-content-type-options':'nosniff'},
 });
@@ -74,7 +75,7 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
             !UUID.test(d.policy_epoch)) return reply(401,'UNAUTHORIZED');
         if (d.revoked_at != null) {
           if (url.pathname !== '/device/sync') return reply(403,'DEVICE_REVOKED');
-          if (!exact(body,['protocol_version','after_version']) || !integer(body.after_version)) return reply(400,'INVALID_PAYLOAD');
+          if (!syncBody(body)) return reply(400,'INVALID_PAYLOAD');
           // Only the matched device's revocation authorizes local removal, never rotation retirement.
           return reply(403,null,{protocol_version:1,code:'DEVICE_REVOKED',device_id:d.id,policy_epoch:d.policy_epoch});
         }
@@ -85,11 +86,22 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
           household_id:d.household_id,policy_epoch:d.policy_epoch});
 
         if (url.pathname === '/device/sync') {
-          if (!exact(body,['protocol_version','after_version']) || !integer(body.after_version))
+          if (!syncBody(body))
             return reply(400,'INVALID_PAYLOAD');
-          return reply(200,null,await records.sync(scope,{after_version:body.after_version}));
+          const result=await records.sync(scope,{after_version:body.after_version,cursor:body.cursor});
+          return reply(result.code==='SNAPSHOT_RESTART_REQUIRED'?410:200,null,result);
         }
         if (url.pathname === '/device/ack') {
+          if(records.report) {
+            const keys=['protocol_version','device_id','policy_epoch','applied_version','report_sequence','period_key','used_ms','bonus_seconds','remaining_ms','manual_lock','restriction_required','restriction_applied','health','accounting_status','observed_at'];
+            if(!exact(body,keys)||!['applied_version','report_sequence','used_ms','bonus_seconds','remaining_ms'].every(k=>integer(body[k]))||
+              !['manual_lock','restriction_required','restriction_applied'].every(k=>typeof body[k]==='boolean')||
+              !['device_id','policy_epoch','period_key','health','accounting_status','observed_at'].every(k=>typeof body[k]==='string'))return reply(400,'INVALID_PAYLOAD');
+            if(body.device_id!==scope.device_id||body.policy_epoch!==scope.policy_epoch)return reply(403,'TARGET_DENIED');
+            const r=await records.report(body);
+            return reply(r.code==='ACKNOWLEDGED'?200:r.code==='UNAUTHORIZED'?401:r.code?.endsWith('CONFLICT')?409:400,null,r);
+          }
+
           if (!exact(body,['protocol_version','command_id','policy_epoch','snapshot_version','outcome','observed_enforcement']) ||
               !UUID.test(body.command_id) || !UUID.test(body.policy_epoch) ||
               !integer(body.snapshot_version) ||

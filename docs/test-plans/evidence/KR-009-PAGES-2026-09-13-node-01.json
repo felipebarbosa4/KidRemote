@@ -1,0 +1,11 @@
+{
+  "classification": "OBSERVED",
+  "attempt": "node-01",
+  "result": "FAIL",
+  "note": "81/82; new SQL plan was not recognized by the existing synthetic no_plan runner. New suite aligned to repository no_plan convention.",
+  "allowlistedResults": [
+    "# pass 81",
+    "# fail 1"
+  ],
+  "source": "working tree after 750916d, before first extension commit"
+}

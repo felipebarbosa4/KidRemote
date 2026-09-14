@@ -1,0 +1,11 @@
+{
+  "classification": "OBSERVED",
+  "attempt": "http-01",
+  "result": "FAIL",
+  "note": "New private cache made the existing all-table RLS inventory fail. Enabled RLS on the new table and explicitly incremented inventory 16 to 17, keeping original assertion digest normalization.",
+  "allowlistedResults": [
+    "CLEANUP=VERIFIED_TASK_CONTAINER_REMOVED",
+    "TASK_NETWORK_REMOVED"
+  ],
+  "source": "working tree after 750916d, before first extension commit"
+}

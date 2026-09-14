@@ -1,0 +1,12 @@
+{
+  "classification": "OBSERVED",
+  "emulator": "exact owner-manifest API-36 AVD emulator-5584",
+  "process": 8176,
+  "result": "STOPPED_PROCESS_ABSENT_PORTS_INACTIVE",
+  "avd": "PRESERVED",
+  "app_test_data": "CLEARED_BY_EACH_SUCCESSFUL_HARNESS",
+  "backend": "GATEWAY_AUTH_DATABASE_CONTAINERS_AND_NETWORK_REMOVED",
+  "docker_label_filtered_resources": 0,
+  "historical_evidence": "PRESERVED",
+  "physical_actions": "NONE"
+}

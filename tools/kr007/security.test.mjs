@@ -26,7 +26,7 @@ test('child credentials are wrapped and backup/transfer excluded, release has no
  assert.doesNotMatch(read('apps/child-android/src/release/java/dev/kidremote/child/Backend.kt'),/http|10\.0\.2\.2/);
 });
 test('database gateway holds transaction locks; no storage stub or caller scope selection',()=>{
- const s=read('supabase/functions/device-gateway/local-database.mjs');assert.match(s,/repeatable read/);assert.match(s,/for share of c,v,h/);assert.match(s,/policy_configured!==false/);assert.doesNotMatch(s,/STUB_|body\.device/);
+ const s=read('supabase/functions/device-gateway/local-database.mjs');assert.match(s,/repeatable read/);assert.match(s,/for update of v for share of c,h/);assert.match(s,/policy_configured!==false/);assert.doesNotMatch(s,/STUB_|body\.device/);
  const server=read('tools/kr007/local-gateway.mjs');assert.match(server,/server.listen\(47366,'127.0.0.1'/);assert.match(server,/47361\/user/);assert.match(server,/email_confirmed_at/);assert.doesNotMatch(server,/console.*(?:req|authorization|credential)/);
 });
 test('fresh runtime reinstall is restricted to task packages after emulator guard; absent apps do not fail cleanup',()=>{

@@ -31,11 +31,11 @@ class ChildActivity:ComponentActivity() {
         model=ViewModelProvider(this)[EnrollmentModel::class.java]
         setContent {MaterialTheme {Surface(Modifier.fillMaxSize()){Column(Modifier.safeDrawingPadding().padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("KidRemote Child · laboratório local",style=MaterialTheme.typography.titleLarge)
-            Text(model.state.message);Text("Sem contato, uma remoção remota ainda não foi recebida. Este aplicativo ainda não armazena limites configurados para uso offline.");Text("Nenhum bloqueio ou proteção está ativo neste aplicativo.")
+            Text(model.state.message);Text("Sem contato, uma remoção remota ainda não foi recebida. A última política válida e a contabilidade permanecem armazenadas.");Text("Nenhum bloqueio ou proteção está ativo neste aplicativo.")
             if(model.state.loading)CircularProgressIndicator()
             if(cameraMessage.isNotEmpty())Text(cameraMessage)
             if(!model.state.paired&&!model.state.loading&&!model.state.recovery)Button(onClick={if(ContextCompat.checkSelfPermission(this@ChildActivity,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)scanning=true else permission.launch(Manifest.permission.CAMERA)}){Text("Escanear QR do responsável")}
-            Button(onClick={model.restore()},enabled=!model.state.loading){Text("Verificar identidade e contato")}
+            Button(onClick={model.restore(true)},enabled=!model.state.loading){Text("Verificar identidade e contato")}
             if(model.state.removed)Button(onClick={model.clearRemoved()}){Text("Limpar identidade removida; usar novo QR")}
             if(model.state.recovery&&!model.state.removed&&model.state.pairingRecovery)Button(onClick={model.acknowledgeFreshQr()}){Text("Responsável revogou; usar novo QR")}
             if(scanning) {
@@ -68,6 +68,7 @@ class ChildActivity:ComponentActivity() {
         },ContextCompat.getMainExecutor(this))
     }
     private fun stopCamera(){scanning=false;camera?.unbindAll()}
+    override fun onResume(){super.onResume();if(dev.kidremote.child.sync.SyncFaults.automaticAllowed(this)){dev.kidremote.child.sync.SyncRecovery.notify(this);model.restore()}}
     override fun onPause(){stopCamera();super.onPause()}
     override fun onDestroy(){analyzer.shutdownNow();super.onDestroy()}
 }

@@ -5,6 +5,7 @@ import {Readable} from 'node:stream';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import {createPairing,createPairingHandler} from '../../supabase/functions/pairing/protocol.mjs';
 import {createDeviceHandler} from '../../supabase/functions/device-gateway/handler.mjs';
+import {createControlHandler} from '../../supabase/functions/control/handler.mjs';
 import {databaseRepository} from '../../supabase/functions/device-gateway/local-database.mjs';
 let input='';process.stdin.on('data',c=>input+=c);
 process.stdin.on('end',async()=>{
@@ -36,12 +37,19 @@ async function start(c) {
  const salt=randomBytes(32);
  const pairing=createPairingHandler(adapter,async()=>createHash('sha256').update(salt).update('loopback-lab').digest('hex'));
  const device=createDeviceHandler(databaseRepository(session));
+ const control=createControlHandler({
+  verify:async authorization=>{const r=await fetch('http://127.0.0.1:47361/user',{headers:{authorization},signal:AbortSignal.timeout(5000)});return r.ok&&Boolean((await r.json()).email_confirmed_at)},
+  rpc:async(authorization,body)=>{const r=await fetch('http://127.0.0.1:47362/rpc/parent_operation',{method:'POST',headers:{authorization,'content-type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(10000)});return {ok:r.ok,value:await r.json()}},
+  read:async(authorization,id)=>{const r=await fetch('http://127.0.0.1:47362/operation_status?device_id=eq.'+id+'&order=version.desc&limit=100',{headers:{authorization},signal:AbortSignal.timeout(5000)});if(!r.ok)throw Error('READ_DENIED');return r.json()}
+ });
  const reply=(status,body)=>Response.json(body,{status,headers:{'cache-control':'no-store','x-content-type-options':'nosniff'}});
  const server=createServer(async(req,res)=>{
   try {
    const url=new URL(req.url,'http://127.0.0.1');let response;
    if(req.method==='GET'&&url.pathname==='/health'&&!url.search)response=reply(200,{scope:'LOCAL_ENROLLMENT_ONLY'});
-   else if(req.method==='POST'&&url.pathname==='/parent/pairing-sessions'&&!url.search) {
+   else if(/^\/parent\/devices\/[a-f0-9-]{36}\/operations$/.test(url.pathname)) {
+    response=await control(new Request('http://127.0.0.1'+req.url,{method:req.method,headers:req.headers,...(req.method==='POST'?{body:Readable.toWeb(req),duplex:'half'}:{})}));
+   } else if(req.method==='POST'&&url.pathname==='/parent/pairing-sessions'&&!url.search) {
     let n=0;for await(const b of req){n+=b.length;if(n>2)break;}
     if(n>2)response=reply(400,{result:'INVALID'});
     else {
@@ -57,7 +65,7 @@ async function start(c) {
       response=reply(result.result==='CREATED'?200:result.result==='RATE_LIMITED'?429:403,result);
      }
     }
-   } else if(req.method==='POST'&&!url.search&&['/pairing/redeem','/device/sync','/device/credentials/rotate'].includes(url.pathname)) {
+   } else if(req.method==='POST'&&!url.search&&['/pairing/redeem','/device/sync','/device/ack','/device/credentials/rotate'].includes(url.pathname)) {
     const r=new Request('http://127.0.0.1'+req.url,{method:req.method,headers:req.headers,body:Readable.toWeb(req),duplex:'half'});
     response=await (url.pathname==='/pairing/redeem'?pairing:device)(r);
    } else response=reply(404,{result:'UNSUPPORTED_OPERATION'});

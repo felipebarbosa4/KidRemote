@@ -142,9 +142,9 @@ internal class EnrollmentApi {
         store.save(identity)
         return initial(identity)
     }
-    fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null):JSONObject {
+    fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null,parse:(String)->JSONObject={JSONObject(it)}):JSONObject {
         check(Backend.endpoint.isNotEmpty())
-        val c=URL(Backend.endpoint+path).openConnection() as HttpURLConnection
+        val c=URL(dev.kidremote.child.sync.SyncFaults.endpoint(Backend.endpoint)+path).openConnection() as HttpURLConnection
         try {
             c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.instanceFollowRedirects=false;c.useCaches=false;c.doOutput=true
             c.setRequestProperty("Content-Type","application/json");if(credential!=null)c.setRequestProperty("Authorization","Bearer $credential")
@@ -161,15 +161,19 @@ internal class EnrollmentApi {
                 throw SecurityException("DEVICE_REVOKED")
             }
             if(c.responseCode==401)throw SecurityException("CREDENTIAL_REJECTED")
+            if(c.responseCode==410&&path=="/device/sync")throw dev.kidremote.child.sync.RestartSnapshot()
+            if(c.responseCode in listOf(429,503))throw dev.kidremote.child.sync.RetryableSync(dev.kidremote.child.sync.RetryTiming.retryAfter(c.getHeaderField("Retry-After"),c.getHeaderField("Date")))
+            if(c.responseCode>=500)throw dev.kidremote.child.sync.RetryableSync()
             check(c.responseCode==200){"ENROLLMENT_UNAVAILABLE"}
             val bytes=c.inputStream.use{input->val out=java.io.ByteArrayOutputStream();val buffer=ByteArray(4096)
                 while(true){val n=input.read(buffer);if(n<0)break;check(out.size()+n<=65536);out.write(buffer,0,n)};out.toByteArray()}
-            return JSONObject(String(bytes,Charsets.UTF_8))
+            return parse(String(bytes,Charsets.UTF_8))
         }finally{c.disconnect()}
     }
     fun redeem(q:JSONObject)=request("/pairing/redeem",JSONObject().put("qr",q).put("metadata",JSONObject().put("platform","android").put("os_major",android.os.Build.VERSION.RELEASE.substringBefore('.').toInt()).put("agent_version","0.0.1-local").put("nickname","Dispositivo Android")))
     fun initial(identity:JSONObject):JSONObject {
-        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"),identity)
+        val r=request("/device/sync",JSONObject().put("protocol_version",1).put("after_version",0),identity.getString("credential"),identity,dev.kidremote.child.sync.Wire::parse)
+        if(r.optString("kind")=="CONFIGURED_SNAPSHOT"){dev.kidremote.child.sync.Wire.policy(r,identity);return r}
         check(r.getInt("protocol_version")==1&&r.getString("kind")=="ENROLLMENT_BOOTSTRAP"&&r.getString("device_id")==identity.getString("device_id")&&r.getString("policy_epoch")==identity.getString("policy_epoch"))
         check(!r.getBoolean("policy_configured")&&r.isNull("daily_limit_seconds")&&!r.getBoolean("enforcement_available"))
         return r
@@ -188,18 +192,14 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
             main.post{state=next}
         }
     }
-    fun restore()=run {
+    fun restore(explicitRecovery:Boolean=false)=run {
         val saved=store.read()
         if(saved==null){if(store.pending.exists())throw IllegalStateException("INTERRUPTED_PAIRING");EnrollmentState()}
         else if(saved.has("removal"))removedState()
         else {
-            try{api.contact(store,saved);EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")}
-            catch(e:DeviceRemoved){
-                saved.put("removal",e.removal);store.save(saved)
-                removedState()
-            }
-            catch(_:SecurityException){EnrollmentState(message="Credencial não aceita. Remoção não confirmada; identidade local preservada. Procure o responsável. Enforcement não ativo.",recovery=true)}
-            catch(_:Exception){EnrollmentState(paired=true,message="Identidade armazenada; contato não confirmado. Enforcement não ativo. Tente verificar novamente.")}
+            dev.kidremote.child.sync.SyncRecovery.request(getApplication(),explicitRecovery)
+            val result=dev.kidremote.child.accounting.ChildAccounting(getApplication()).use{it.read()}
+            EnrollmentState(paired=true,message=if(result.ledger!=null)"Política local preservada; sincronização solicitada. Enforcement não disponível." else "Identidade armazenada; sincronização solicitada. Enforcement não ativo; configuração incompleta.")
         }
     }
     fun decoded(text:String)=run {
@@ -209,7 +209,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         val marker=android.util.AtomicFile(store.pending);val out=marker.startWrite();try{out.write(byteArrayOf(1));marker.finishWrite(out)}catch(e:Exception){marker.failWrite(out);throw e}
         val identity=api.redeem(qr);check(identity.getString("result")=="REDEEMED")
         EnrollmentFaults.beforeIdentitySave()
-        store.save(identity);api.initial(identity)
+        store.save(identity);api.initial(identity);dev.kidremote.child.sync.SyncRecovery.notify(getApplication())
         EnrollmentState(paired=true,message="Pareado. Leitura autenticada concluída. Enforcement não ativo; configuração incompleta.")
     }
     private fun removedState()=EnrollmentState(message="Removido pelo responsável. Pareamento encerrado; limpe a identidade local para usar um novo QR. Enforcement não ativo.",recovery=true,removed=true)

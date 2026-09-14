@@ -1,0 +1,28 @@
+{
+  "source": "153871ea74cc83cb224ac1b18a3370fec5ab489f",
+  "checkout": "f6dd4bb659ff7792e7a6cd4d43bbf21dd6d06d59",
+  "baseline": "609c0fd7fc1d114c7f36dba5451f4f0023714628",
+  "apks": {
+    "pre-v1.apk": {
+      "sha256": "6de427f76b2e09a6c727f670ac8afe894f0e92057141654833fa0da610cbf3f0",
+      "package": "dev.kidremote.child.unassigned.debug",
+      "versionCode": 1,
+      "versionName": "0.0.1-local",
+      "certificate": "e6e9dc9dc8b201800541c29d893ac8ce08c60d54a0756701be6557c229e57a31"
+    },
+    "post-v2.apk": {
+      "sha256": "eb4dc45216f41cb7979267fcf37bbaf746c77680cd55344f502163da0574a2f9",
+      "package": "dev.kidremote.child.unassigned.debug",
+      "versionCode": 2,
+      "versionName": "0.0.2-local",
+      "certificate": "e6e9dc9dc8b201800541c29d893ac8ce08c60d54a0756701be6557c229e57a31"
+    },
+    "update-test.apk": {
+      "sha256": "aec9808fd0dd75509e4da6b8d978cd20af5ea8dbb331a2891859ec922b4173d1",
+      "package": "dev.kidremote.child.unassigned.debug.test",
+      "versionCode": null,
+      "versionName": "",
+      "certificate": "e6e9dc9dc8b201800541c29d893ac8ce08c60d54a0756701be6557c229e57a31"
+    }
+  }
+}

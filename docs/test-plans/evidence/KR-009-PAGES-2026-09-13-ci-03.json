@@ -1,0 +1,17 @@
+{
+  "classification": "OBSERVED",
+  "source": "ea55ece934de425515228b3d39c005d37ebfa5df",
+  "run": 34800371501,
+  "result": "FAILURE",
+  "jobsPassed": 4,
+  "failedJob": "KR-006 local Auth and parent APK",
+  "failure": "KR009_HTTP_FAILED:DUPLICATE_FIRST_PAGE_IDENTICAL",
+  "sqlAssertionsPassed": 550,
+  "androidRuntime": "UNRUN",
+  "note": "Byte-string equality wrongly depended on JSON object-key order. Semantic equality is required; client frozen-field comparison corrected too. No protocol field/validation requirement was removed.",
+  "cleanupMarkers": [
+    "ENROLLMENT_GATEWAY_CLEANUP_VERIFIED",
+    "CLEANUP=VERIFIED_TASK_CONTAINER_REMOVED",
+    "TASK_NETWORK_REMOVED"
+  ]
+}

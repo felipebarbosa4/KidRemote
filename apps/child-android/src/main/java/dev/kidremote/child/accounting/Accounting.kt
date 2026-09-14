@@ -24,7 +24,7 @@ enum class Uncertainty { NONE, HISTORY, CLOCK, STORAGE }
 data class Ledger(val policy:Policy,val date:String,val usedMs:Long,val bonusSeconds:Long,
     val boot:Long,val cursor:Long,val uptime:Long,val anchorElapsed:Long,val anchorUtc:Long,
     val signals:Signals,val uncertainty:Uncertainty=Uncertainty.NONE,
-    val previousDate:String?=null,val previousUsedMs:Long=0,val recoveryThrough:Long=0,val observedBoot:Long=boot) {
+    val previousDate:String?=null,val previousUsedMs:Long=0,val recoveryThrough:Long=0,val observedBoot:Long=boot,val reportSequence:Long=0,val pendingAck:String?=null) {
     val periodKey get()="${policy.zoneRevision}:$date"
     val remainingMs get()=maxOf(0,(policy.dailyLimitSeconds+bonusSeconds)*1000-usedMs)
     val restrictionRequired get()=policy.manualLock||remainingMs==0L||uncertainty!=Uncertainty.NONE||!signals.permitted
@@ -33,6 +33,7 @@ data class Ledger(val policy:Policy,val date:String,val usedMs:Long,val bonusSec
         require(usedMs>=0&&previousUsedMs>=0&&bonusSeconds in 0..86400&&policy.dailyLimitSeconds+bonusSeconds<=86400)
         require(boot>=0&&cursor>=0&&uptime>=0&&uptime<=cursor&&anchorElapsed>=0&&anchorElapsed<=cursor)
         require(observedBoot>=boot&&recoveryThrough>=0&&(uncertainty!=Uncertainty.NONE||recoveryThrough==0L))
+        require(reportSequence in 0..9007199254740991L&&(pendingAck==null||pendingAck.length in 1..2048&&reportSequence>0))
         Instant.ofEpochMilli(anchorUtc)
     }
 }

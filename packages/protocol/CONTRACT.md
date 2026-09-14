@@ -236,3 +236,112 @@ or application. Architecture still requires retaining the last valid downloaded 
 on outage/expiry until a valid newer policy/removal. Implementing/testing that store
 and ordered snapshot acceptance belongs to later sync work (KR-009; accounting KR-008).
 AC-7 remains partial until that dependency exists; no dummy policy cache/test is substituted.
+
+## OD-47 KR-009 local configured sync/ack
+
+This extends the historical enrollment-only boundary above. It is a local gateway,
+not a deployed Edge function. FCM/push-registration/dispatcher remain unsupported.
+
+`POST /parent/devices/{id}/operations` accepts exactly the operation envelope above;
+body device ID must equal path, and actor is always the verified parent JWT subject.
+All four kinds retain KR-004's existing transaction and preconditions. Its known
+business conflicts pass through an invoker-rights `parent_operation` wrapper to
+HTTP 409; `accept_control` is unchanged. This avoids PostgREST 14's documented
+[custom 40001 retry loop](https://supabase.com/docs/guides/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions-77326b).
+Unknown failures stay generic; raw DB errors are not returned. Response `accepted`
+means commit only. `GET` on the same own-device path returns at most 100 operation
+statuses under parent RLS, including server report receipt time and enforcement health.
+Foreign/missing reads both return an empty result.
+
+Configured own sync keeps request `{protocol_version:1, after_version:N}`. Response
+has exactly protocol_version, kind=`CONFIGURED_SNAPSHOT`, device_id, policy_epoch,
+version, policy_configured=true, daily_limit_seconds, manual_lock,
+enforcement_available=false, timezone_name, timezone_revision, server_utc,
+period_key, bonus_seconds, operations, history_pruned and credential_lifecycle.
+Credential lifecycle is the existing generation/expires_at/rotate_after/rotation_due.
+Operations contain operation_id/version/kind/period_key/status, sorted by version,
+bounded to the newest 100 after the cursor through this snapshot. `history_pruned`
+means older detail was omitted from this response window (not that server rows were
+erased). There is no multi-page history API in this slice. Canonical state/high-water
+convergence works despite omitted detail; no intermediate enforcement is inferred.
+Policy, dated sum, outcome window and server UTC use one locked repeatable-read
+transaction. Unconfigured version-zero bootstrap remains unchanged.
+
+Child validates exact schema, own identity/epoch, numbers, zone and period before
+settling measured use and merging only newer canonical fields. Duplicate JSON keys
+and unknown fields/types are rejected. Existing approved A/B recovery is reused;
+same-period sync does not forgive missing use. The existing ledger codec version 3
+adds report_sequence and one immutable pending ACK in the same Room payload/transaction;
+SQL schema 2 and migration validation remain unchanged. Older codecs are readable.
+Process restart sends the pending ACK first with the original sequence/body; the
+next report may describe the newly observed uncertainty. No second policy/identity
+store or event history is introduced.
+
+`POST /device/ack` has exactly protocol_version, device_id, policy_epoch,
+applied_version (durable canonical version, not adapter success), report_sequence,
+period_key, used_ms, bonus_seconds, remaining_ms, manual_lock, restriction_required,
+restriction_applied=false, health=`ENFORCEMENT_UNAVAILABLE`, accounting_status
+(NONE/HISTORY/CLOCK/STORAGE), observed_at (snapshot UTC; explanatory only).
+IDs must match the authenticated credential. Server checks version, period, canonical
+limit/lock/grants and aggregate consistency. A higher sequence replaces the latest
+minimal report; same sequence + identical report returns the original receipt/time;
+changed or older sequence conflicts. Receipt time, never observed_at, controls freshness.
+This local protocol rejects applied=true: no enforcement adapter exists.
+
+The RLS status projection distinguishes pending, persisted, superseded, expired grant
+and recorded failed/rejected outcomes; applied additionally needs an actual observed
+adapter receipt and report, which this slice never fabricates. Admission failure
+returns rejected/failed explicitly and is not a committed operation. Only latest
+report/retry digest is retained; unlimited receipt/event history is not added.
+
+## OD-47 extension: local pages and recovery
+
+This supersedes only the latest-100 shortcut above. First configured request retains
+`after_version`; response adds `snapshot_id` and nullable `next_cursor`. The gateway
+copies canonical fields, lifecycle and ordered operation outcomes in its existing
+locked repeatable-read transaction into one private, RLS-protected temporary snapshot
+per device/epoch. Cursor validity is five minutes; a new first request replaces that one
+sequence unless canonical version, initial cursor, epoch, current period/zone and
+credential generation still match a valid cache, in which case page 1 is identical.
+At most one cache slot remains per device until replacement or device deletion;
+expiry invalidates access and is not a background physical-deletion promise. Maximum 1,000 retained outcomes / 256 KiB server cache per device; at most
+100 outcomes / 64 KiB per response. `history_pruned` means older detail was omitted
+from this cache, never that omitted intents ran. Canonical version/high-water remains
+authoritative. Server command/idempotency history is unchanged.
+
+Later request is exactly `{protocol_version:1,after_version:N,cursor:"snapshot-uuid:offset"}`.
+Offset is a page boundary 100..900; authenticated device/epoch, original N, snapshot
+identity and expiry must all match. Every later response reuses the frozen canonical
+fields/outcomes/time/version; newer commits and report status changes cannot leak in.
+Duplicate cursor reads are identical while retained. Invalid syntax/extra page-size
+fields return 400. Expired/replaced/missing/foreign sequences return the same bounded
+410 `SNAPSHOT_RESTART_REQUIRED`, without device metadata. No cursor replaces device
+authentication. The client restarts once immediately on 410, then uses bounded retry.
+It validates all pages before the existing Room policy/ACK transaction and persists
+only a minimal page checkpoint, never operation history. Process death discards that
+checkpoint's sequence and starts a full fresh snapshot using the durable ledger.
+
+Lifecycle triggers coalesce through one coordinator. A group runs at most one initial
+and one follow-up sync. A bounded AtomicFile transport intent is separate from policy:
+identity binding, pending/stopped and bounded stop reason, attempt, boot and
+monotonic due/delay only; a checksum and AtomicFile protect recovery writes. It does
+not contain bearer, cursor, policy or operations. One unique constrained periodic WorkManager
+recovery request (15-minute interval, five-minute initial delay) is durably enqueued
+before HTTP, closing the process-death seam between a worker and a later trigger; in-process retries use full jitter
+1 s exponential to 5 min. Retry-After seconds or an HTTP date relative to server Date
+forms a lower bound (bounded to 24 hours). WorkManager's own retry scheduling may
+run later. Each recovery execution also refreshes canonical state when there is no
+local pending intent, so a missed remote operation needs no push callback. Stopped
+authentication never polls. Reboot rebases a stored retry delay without cross-boot elapsed
+subtraction; this never supplies accounting time authority. 401/403 stop automatic
+retry and retain downloaded state; supported rotation/removal stays in KR-007.
+Explicit credential recovery may request another attempt. A successful approved
+local accounting recovery may release only a STORAGE stop, never an AUTH or
+PROTOCOL stop; becoming writable does not alter accounting uncertainty. Corrupt transport state
+stops scheduling and cannot erase policy. No foreground service or exact alarm is
+used; WorkManager is recovery, not a latency promise.
+
+WorkManager 2.11.2 was checked against the [official release notes](https://developer.android.com/jetpack/androidx/releases/work).
+[Work request documentation](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
+explains constraints, initial delays and inexact minimum retry backoff. No FCM SDK,
+provider address or physical/background delivery acceptance is selected by this slice.

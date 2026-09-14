@@ -1,0 +1,11 @@
+{
+  "classification": "OBSERVED",
+  "ownedEmulatorProcess": 30608,
+  "shutdown": "owner-manifest helper Stop; initial immediate exit check UNVERIFIED while shutdown completed; subsequent check VERIFIED process absent and ports 5584/5585 inactive",
+  "appAndTestData": "CLEARED_BY_SUCCESSFUL_HARNESSES",
+  "radios": "successful network test restored recorded Wi-Fi/mobile-data settings",
+  "backend": "GATEWAY_AUTH_DATABASE_CONTAINERS_NETWORK_REMOVED",
+  "remainingLabelFilteredDockerResources": 0,
+  "avdAndHistoricalArtifacts": "PRESERVED",
+  "physicalActions": "NONE"
+}
