@@ -90,6 +90,16 @@ export function createDeviceHandler(repository, clock = () => Date.now()) {
           return reply(200,null,await records.sync(scope,{after_version:body.after_version}));
         }
         if (url.pathname === '/device/ack') {
+          if(records.report) {
+            const keys=['protocol_version','device_id','policy_epoch','applied_version','report_sequence','period_key','used_ms','bonus_seconds','remaining_ms','manual_lock','restriction_required','restriction_applied','health','accounting_status','observed_at'];
+            if(!exact(body,keys)||!['applied_version','report_sequence','used_ms','bonus_seconds','remaining_ms'].every(k=>integer(body[k]))||
+              !['manual_lock','restriction_required','restriction_applied'].every(k=>typeof body[k]==='boolean')||
+              !['device_id','policy_epoch','period_key','health','accounting_status','observed_at'].every(k=>typeof body[k]==='string'))return reply(400,'INVALID_PAYLOAD');
+            if(body.device_id!==scope.device_id||body.policy_epoch!==scope.policy_epoch)return reply(403,'TARGET_DENIED');
+            const r=await records.report(body);
+            return reply(r.code==='ACKNOWLEDGED'?200:r.code==='UNAUTHORIZED'?401:r.code?.endsWith('CONFLICT')?409:400,null,r);
+          }
+
           if (!exact(body,['protocol_version','command_id','policy_epoch','snapshot_version','outcome','observed_enforcement']) ||
               !UUID.test(body.command_id) || !UUID.test(body.policy_epoch) ||
               !integer(body.snapshot_version) ||

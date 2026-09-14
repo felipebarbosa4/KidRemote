@@ -139,3 +139,18 @@ are not recovery authority. Storage failure still requires A/B after health retu
 No manual reset/parent override, KR-009 sync/receipts/FCM, enforcement, physical work,
 battery acceptance or further policy choice is authorized. Trust inputs are local
 validated fixtures/interfaces in this slice, not invented network evidence.
+
+**OD-47 — APPROVED OWNER BOUNDED KR-009 LOCAL CONTROL/SYNC/ACK EXCEPTION:**
+from KR-008 reporting head `cde74f626c9e1c4525562e041338f9f051a2973d`, authorize
+one local-only branch/draft PR stacked on `kr-008-local-accounting`, reusing Issue #9.
+Implement authenticated parent LOCK/UNLOCK/+600/+1800/SET_DAILY_LIMIT through the
+existing atomic/idempotent KR-004 transaction, consistent own-device configured
+sync, existing KR-008 transactional accounting/pending ACK, and authenticated
+minimal device report with honest server-visible status. Prove convergence without
+push using real isolated PostgreSQL/gateway and the existing task-owned emulator,
+including restart, response loss, tenant denial and corruption regressions.
+KR-008 A/B recovery remains approved unchanged. No FCM/provider setup, physical or
+Samsung action, enforcement adapter/acceptance, distribution, real-family use,
+deployment, merge, later issue or closure of KR-003/KR-008 physical gates follows.
+Preserve historical evidence and earlier stacked PRs; classify each failed/partial
+attempt independently and clean up only task-owned backend/emulator resources.

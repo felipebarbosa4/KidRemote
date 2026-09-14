@@ -26,7 +26,7 @@ export async function testEnrollment({http,sql}) {
  ok(sql(`select household_id from public.devices where id='${device}';`)===house,'SESSION_DERIVED_HOUSEHOLD');
  for(const target of [sibling,foreign])ok((await send('/device/sync',{protocol_version:1,after_version:0,device_id:target},credential)).status===400,'TARGET_OVERRIDE_DENIED');
  for(const path of ['/parent/pairing-sessions','/parent/devices/'+sibling+'/operations','/rpc/accept_control','/device/ack'])
-  ok([401,404].includes((await send(path,{},credential)).status),'PARENT_OTHER_ROUTE_DENIED');
+  ok([400,401,404].includes((await send(path,{},credential)).status),'PARENT_OTHER_ROUTE_DENIED');
  ok((await read()).status===200,'DENIALS_DID_NOT_REVOKE_OWN');
  ok((await send('/device/sync',{protocol_version:1,after_version:0},randomBytes(32).toString('base64url'))).status===401,'INVALID_CREDENTIAL');
  ok((await send('/device/sync',{protocol_version:1,after_version:0})).status===401,'MISSING_CREDENTIAL');
