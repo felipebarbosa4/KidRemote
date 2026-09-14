@@ -6,7 +6,7 @@ function Read-ProductJournal([string]$Directory){
  try{$meta=$metaRaw|ConvertFrom-Json}catch{throw 'INVALID:JOURNAL_PROVENANCE'}
  if($meta.source -cnotmatch '^[a-f0-9]{40}$' -or $meta.attempt -cnotmatch '^[a-f0-9-]{36}$' -or $meta.scope -cne 'ONE_PRODUCT_SLICE'){throw 'INVALID:JOURNAL_PROVENANCE'}
  foreach($k in @('bundle','child','fixture')){if($meta.$k -cnotmatch '^[a-f0-9]{64}$'){throw 'INVALID:JOURNAL_PROVENANCE'}}
- $rows=@();$previous=Get-JHash $metaRaw;$verdict=$null;$cleanup='UNVERIFIED' 
+ $rows=@();$previous=Get-JHash $metaRaw;$verdict=$null;$cleanup='UNVERIFIED'
  foreach($file in @(Get-ChildItem -LiteralPath $Directory -Filter '*.json'|Sort-Object Name)){
   if($file.Name -cne ('{0:d6}.json' -f $rows.Count)){throw 'INVALID:JOURNAL_SEQUENCE'}
   try{$raw=[IO.File]::ReadAllText($file.FullName);$envelope=$raw|ConvertFrom-Json;if($envelope.sha256 -cne (Get-JHash $envelope.payload)){throw 'checksum'};$r=$envelope.payload|ConvertFrom-Json}catch{throw 'INVALID:JOURNAL_CORRUPT'}
