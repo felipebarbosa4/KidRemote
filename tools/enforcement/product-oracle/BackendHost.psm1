@@ -13,7 +13,7 @@ function Start-ProductBackend([string]$SourceRoot){
  $linuxDocker='/mnt/c/'+$docker.Substring(3).Replace('\','/')
  $p=New-Object Diagnostics.Process;$p.StartInfo.FileName=$wsl;$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
  $p.StartInfo.RedirectStandardInput=$true;$p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
- $args=@('-d','Ubuntu-24.04','--exec','/usr/bin/env','KR_PRODUCT_LAB_STDIN=1','/usr/bin/node',$linux,$linuxDocker,'npipe:////./pipe/dockerDesktopLinuxEngine','--enrollment-dev')
+ $args=@('-d','Ubuntu-24.04','--exec','/usr/bin/env','KR_PRODUCT_LAB_STDIN=1','/home/felby/.nvm/versions/node/v22.23.1/bin/node',$linux,$linuxDocker,'npipe:////./pipe/dockerDesktopLinuxEngine','--enrollment-dev')
  $p.StartInfo.Arguments=($args|ForEach-Object{'"'+$_+'"'}) -join ' '
  try{
   [void]$p.Start();$stderr=$p.StandardError.ReadToEndAsync();$line=$p.StandardOutput.ReadLineAsync();$timer=[Diagnostics.Stopwatch]::StartNew()
