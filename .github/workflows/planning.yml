@@ -9,6 +9,16 @@ concurrency:
   group: planning-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  physical-lab-lease:
+    name: OD-51 real persistent synthetic lab lease (no device)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: node --test tools/enforcement/physical-lab/lease.test.mjs
+      - run: node tools/enforcement/physical-lab/live-test.mjs docker
   parent-foundation:
     name: KR-006 local Auth and parent APK
     runs-on: ubuntu-latest
@@ -191,6 +201,9 @@ jobs:
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
+      - name: Test native lab lease model without WSL or device
+        shell: powershell
+        run: node --test tools/enforcement/physical-lab/lease.test.mjs
       - name: Test OD-50 native fake ADB (no device)
         shell: powershell
         run: ./tools/enforcement/product-oracle/ReplacementNative.Tests.ps1

@@ -258,3 +258,21 @@ recovery is separate and never changes the original verdict. No agent physical
 execution in preparation, factory reset, root, bootloader/safe-mode changes,
 unrelated data changes, arbitrary navigation/security changes, FCM or merge.
 Only freeze one command if complete device-free validation supports readiness.
+
+**OD-51 — APPROVED OWNER PERSISTENT SYNTHETIC PHYSICAL-LAB LEASE:** from
+`54df5a0dacd2b6b0266f18a4f99325749b61a94c`, owner authorizes one Windows-native
+runner with an exactly owned, versioned, loopback-only persistent synthetic backend.
+Retain enrolled identity, lab APK, genuine permissions and backend data after verified
+canonical Unlock and independent restored input. Reuse must verify the same lease,
+source/schema, installed provenance and permissions; never silently replace identity.
+Keep disposable CI databases unchanged. Protect locally generated secrets; explicit
+teardown may delete only the verified lease's synthetic resources and must be journaled.
+Windows PowerShell must call native Docker directly, without WSLInterop, repair, sudo,
+host configuration changes or runtime downloads during qualification. Mandatory live
+host/backend/hash/journal/read-only device preflight precedes every OD-50 destructive
+admission. Failure is INVALID_HOST_PREFLIGHT with no device mutation. First native host
+execution may be this in-run preflight; no separate owner command is required. Readiness
+means READY_FOR_ONE_OWNER_RUN only after complete device-free/native CI validation and
+immutable bundle freezing, never physical acceptance. Independent fixture input/focus
+remains the oracle; original verdict and cleanup are separate. No agent Samsung action,
+FCM, merge, deployment or production persistence is authorized.
