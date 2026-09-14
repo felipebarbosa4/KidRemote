@@ -8,7 +8,7 @@ import org.json.JSONObject
 import dev.kidremote.child.enforcement.EnforcementRuntime
 import java.time.Instant
 
-/** Explicit single-flight sync; pending ACK survives restart. No push, timer or enforcement adapter. */
+/** Explicit single-flight sync; pending ACK survives restart. Adapter observations are separate from desired persistence; no push. */
 internal class DeviceSync(private val context:Context,private val sample:()->Sample={EnforcementRuntime.sample(context)}):AutoCloseable {
     private val identity=IdentityStore(context)
     private val shared=EnforcementRuntime.engine()

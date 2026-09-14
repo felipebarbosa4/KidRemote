@@ -54,6 +54,8 @@ class EnforcementRuntimeTest {
             fun policy(manual:Boolean,limit:Long,bonus:Long){val old=engine.read().ledger!!;check(!engine.acceptPolicy(old.policy.copy(version=old.policy.version+1,manualLock=manual,dailyLimitSeconds=limit,bonusSeconds=bonus,bonusDate=old.date),AndroidAccountingClock.sample(c,true)).storageFailure)}
             policy(false,3600,0)
             waitFor("UNLOCK_POSITIVE_DETACHED"){EnforcementRuntime.text().startsWith("Sobreposição local ausente")}
+            val model=dev.kidremote.child.EnrollmentModel(c.applicationContext as android.app.Application)
+            waitFor("CHILD_UI_USES_LIVE_LEDGER"){model.state.paired&&!model.state.localReasons.contains("Contabilidade incerta")&&model.state.message.contains("estado atual do adaptador")}
             policy(false,0,0)
             waitFor("ZERO_REQUIRES_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
             policy(true,0,0);policy(false,0,0)
@@ -77,6 +79,7 @@ class EnforcementRuntimeTest {
         waitFor("ORDINARY_REENTRY_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         shell("settings put secure enabled_accessibility_services null")
         waitFor("SERVICE_DISCONNECTED_VISIBLE"){EnforcementRuntime.engine()==null}
+        waitFor("DISCONNECT_OBSERVATION_DURABLE"){ChildAccounting(c).use{it.read().ledger?.lastAdapterObservation?.let{r->JSONObject(r).optString("health")=="SERVICE_DISCONNECTED"}==true}}
         shell("settings put secure enabled_accessibility_services $component");shell("settings put secure accessibility_enabled 1")
         waitFor("SERVICE_RECONNECTED"){EnforcementRuntime.engine()!=null}
         shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -a android.settings.SETTINGS");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")

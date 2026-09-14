@@ -118,6 +118,6 @@ class ChildEnforcementService:AccessibilityService(),EnforcementAdapter {
     override fun onInterrupt(){interrupted=true;apply()}
     override fun onUnbind(intent:Intent?):Boolean {shutdown();return super.onUnbind(intent)}
     override fun onDestroy(){shutdown();super.onDestroy()}
-    private fun shutdown(){if(!connected)return;connected=false;main.removeCallbacks(tick);unregisterReceiver(screen);detach();publish("SERVICE_DISCONNECTED");EnforcementRuntime.disconnect(this);worker.execute{engine.close()};worker.shutdown();}
+    private fun shutdown(){if(!connected)return;connected=false;main.removeCallbacks(tick);unregisterReceiver(screen);detach();publish("SERVICE_DISCONNECTED");val stopped=observation;EnforcementRuntime.disconnect(this);worker.execute{EnforcementRuntime.persist(this,engine,stopped);engine.close()};worker.shutdown();}
     private fun dp(n:Int)=(n*resources.displayMetrics.density).toInt()
 }
