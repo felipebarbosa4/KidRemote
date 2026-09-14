@@ -1,7 +1,10 @@
 # OD-51 persistent native laboratory preparation — 2026-09-14
 
-**Preparation in progress; no frozen owner command yet.** This document records new
-attempts independently; it does not revise OD-50 or historical Samsung verdicts.
+**Readiness is conditional on a successful current-source CI run and an immutable
+manifest.** The final source/manifest hash and READY_FOR_ONE_OWNER_RUN publication
+are recorded on [PR #24](https://github.com/felipebarbosa4/KidRemote/pull/24). Without
+that matching publication/manifest this preparation remains BLOCKED. This document
+records attempts independently; it does not revise historical Samsung verdicts.
 No physical command, emulator action, WSLInterop repair, sudo, host configuration
 change, FCM, deployment or merge occurred.
 
@@ -93,3 +96,71 @@ emergency/recovery safety, battery/OEM acceptance and full KR-003 remain unprove
 First-run logical owner actions: scan QR, camera permission if requested, Usage Access,
 product consent, Accessibility enable (at most five logical actions). Matching reuse:
 zero setup actions. No extra visual confirmation. Duration estimates are not measurements.
+
+## Subsequent native diagnosis and confirmation
+
+- CI `34907287994` (source `0fd01ce`) real lease **12 checks PASS**, exact task teardown
+  verified. Native startup still failed with a syntax-class failure in the child
+  private pipe. No raw exception body/configuration was emitted.
+- CI `34907556636` (source `190e309`) preserved a second syntax-class failure after
+  byte-oriented writes alone did not remove the marker already emitted at pipe
+  creation. It is not counted as a passed framing test.
+- CI `34907715108` (source `1e43d65`) isolated **JSON_FRAME_65279**, one leading
+  UTF-8 BOM. The .NET Framework Process implementation constructs the stdin writer
+  using Console.InputEncoding and enables AutoFlush. No console/host configuration
+  was changed: the private parser now accepts exactly one optional BOM and still
+  rejects duplicate markers, malformed JSON and oversized input. Host QR rendering
+  strips the same framing marker before encoding the actual QR payload.
+  [Microsoft reference source](https://raw.githubusercontent.com/microsoft/referencesource/main/System/services/monitoring/system/diagnosticts/Process.cs).
+- CI `34907885944` (source `2695f33`) advanced past native startup, then FAILED at
+  protected-file replacement: PowerShell 5.1 bound a null backup filename as an
+  illegal empty path. The atomic replace now passes an explicit NullString; no
+  delete-then-write or weakened durability fallback was introduced. The failed
+  attempt and its partial-write behavior remain independent.
+- CI `34908064750` (source `898dd49`) Windows job **PASS**: 12 native PS5.1 DPAPI,
+  private-pipe/fake-Docker, concurrent-run rejection, saved-identity and second-start
+  checks; PS7 repeats 5 DPAPI/lock checks. Host gate/reuse **43 checks PASS** on each.
+  Existing native fake ADB **6 checks PASS**. Real lease job **12 checks PASS** with
+  PostgreSQL/Auth/gateway, identity/epoch/credential reuse and exact cleanup. The
+  whole run was later superseded by final validation changes; completed job results
+  are not promoted into an overall workflow PASS.
+- Current lease model has **9 tests** (including strict private BOM framing).
+  Host QR has **5 checks**: normal/BOM equivalence, PNG/dimensions and empty/oversized
+  bounds. Owner script files are frozen with UTF-8 BOM for Windows PowerShell 5.1;
+  imports of all **13** owner modules and entrypoint syntax are tested without devices.
+  A final privacy guard additionally requires PostgreSQL's file logging collector
+  to be off; container log retention is disabled and validated on every reuse.
+
+All superseded workflows are retained as CANCELLED/partial, never pooled into one
+passing run. The authoritative complete CI run must match the frozen source commit.
+The final owner bundle contains the existing Windows Node/JBR distributions, local
+SDK apksigner, host QR helper, all relevant source and both reference APKs. Every
+file is hashed; the Node license is included. No executable download, Node install,
+SDK install or WSL entry occurs during the owner run. Pinned Docker image acquisition,
+if needed, is confined to the native host preflight before any tablet mutation.
+
+## Owner-run interpretation and cleanup
+
+READY_FOR_ONE_OWNER_RUN means a safe attempt with all device mutations gated behind
+live host readiness. It does not mean the exact PC or Samsung path has already passed.
+Expected first setup is approximately 5–12 minutes with cached images; image pulls
+may extend host-only preparation. Matching reuse is estimated at 1–3 minutes with
+zero repeated setup actions. These are **INFERRED estimates**, not measured latency.
+
+PASS requires positive fixture input, canonical Lock, blocked independent input/focus,
+consistent product corroboration, canonical Unlock and independently restored input.
+Usable fixture input/focus under restriction is FAIL. Ambiguity or failed prerequisites
+is INVALID; host-gate failure is INVALID_HOST_PREFLIGHT and admits no device mutation.
+Original verdict is immutable. Failed canonical restoration offers the separate manual
+product-Accessibility recovery path, without converting the verdict to PASS.
+
+CI lease containers/volume/network are removed only after exact ownership verification.
+No new local Docker/emulator resource was started in this preparation. The previously
+reported OD-50 supervisor residual-resource inventory on the owner PC remains
+**UNSPECIFIED**; it was not repaired or silently cleaned. The new live gate rejects
+conflicting ports/resources before device mutation rather than adopting them.
+Future successful runs deliberately retain synthetic database data/enrollment and the
+lab APK/permissions, while stopping services and removing the attempt's own reverse.
+A partial backend start is reported as persistent-state review required, not as proof
+that no backend resource was created. The owner should paste only the final sanitized
+JSON, never protected lease files, tokens, QR data, copied APK bytes or raw ADB output.
