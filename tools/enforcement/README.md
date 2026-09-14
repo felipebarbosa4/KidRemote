@@ -24,3 +24,25 @@ separate restart-instrumentation stage. This scenario currently has two preserve
 NOT_PASSED attempts: service reconnection was not observed within 15 seconds. It is
 not an automatic-restart acceptance test that has passed. The host always restores
 its emulator settings and clears only owned test data, including after expected death.
+
+OD-49 host diagnosis extension: `host-recovery.py <full-source-sha> no-restart`
+uses the same task-owned emulator and immutable source-specific APK directory.
+It opens the product only during setup, runs the existing self-kill through
+`am instrument --no-restart`, then observes up to 60 seconds without instrumentation
+or app/service/permission intervention. A new PID alone is insufficient: the known
+Accessibility service metadata and exact component's received system binding must
+agree. Only then may verification attach without restarting the process.
+
+Omitting `no-restart` retains the old instrumentation lifecycle as a separate
+diagnostic control. App reopen occurs only after the automatic window failed and
+is classified separately. Cleanup runs after observation/verification, never inside
+the automatic window. All attempts retain independent sanitized JSON; raw OS dumps
+and credentials are not exported. Times start when the expected-death command
+returns and are polling observations, not callback latency or an acceptance SLA.
+
+The real backend harness supports `KR_ENFORCEMENT_RECOVERY=1` with the existing
+KR-009 source/runtime variables. It seeds authenticated identity/Lock, invokes the
+host in `network` mode, and verifies the observed post-recovery ACK through the
+parent status API. Standalone fixture confirmations do not claim network evidence.
+See the separate PRODUCT-RECOVERY-HOST evidence report; historical NOT_PASSED
+instrumentation attempts remain unchanged.
