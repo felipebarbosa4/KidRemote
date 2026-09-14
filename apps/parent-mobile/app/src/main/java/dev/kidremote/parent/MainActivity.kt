@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 class MainActivity : ComponentActivity() {
+    override fun onResume(){super.onResume();val m=ViewModelProvider(this)[ParentModel::class.java];if(ControlFaults.automatic(this)&&m.state.screen in setOf(Screen.DEVICES,Screen.DETAIL)&&!m.state.loading)m.refreshDevices()}
     override fun onStop(){ViewModelProvider(this)[ParentModel::class.java].clearPairingQr();super.onStop()}
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +39,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun ParentScreen(model: ParentModel) {
     val state=model.state
+    LaunchedEffect(state.screen) {
+        if(ControlFaults.automatic(model.getApplication())&&state.screen in setOf(Screen.DEVICES,Screen.DETAIL))while(true){
+            kotlinx.coroutines.delay(15000);if(!model.state.loading)model.refreshDevices()
+        }
+    }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var link by remember { mutableStateOf("") }
@@ -48,7 +54,7 @@ class MainActivity : ComponentActivity() {
             verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("KidRemote · laboratório local",style=MaterialTheme.typography.headlineSmall)
             Text(when(state.screen) { Screen.LOGIN->"Entrar"; Screen.SIGNUP->"Criar conta"; Screen.VERIFY->"Verificar e-mail"
-                Screen.RECOVER->"Recuperar senha"; Screen.RESET->"Nova senha"; Screen.SETUP->"Preparar sua casa"; Screen.DEVICES->"MY DEVICES" },
+                Screen.RECOVER->"Recuperar senha"; Screen.RESET->"Nova senha"; Screen.SETUP->"Preparar sua casa"; Screen.DEVICES->"MY DEVICES"; Screen.DETAIL->"Dispositivo" },
                 style=MaterialTheme.typography.titleLarge)
             if(!BackendConfig.enabled) Text("Backend de distribuição não configurado. Esta versão não permite uso real.")
             if(state.loading) { CircularProgressIndicator(); Text("Aguarde…") }
@@ -81,7 +87,18 @@ class MainActivity : ComponentActivity() {
                 }
                 Screen.DEVICES -> {
                     if(state.deviceCount==0) Text("Nenhum dispositivo cadastrado.")
-                    state.devices.forEach { Text(it.nickname);Text(if(it.revoked) "Revogado" else "Pareado · configuração incompleta · proteção não verificada") }
+                    state.devices.forEach { device ->
+                        OutlinedCard(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                                Text(device.nickname,style=MaterialTheme.typography.titleLarge)
+                                device.model?.let{Text(it)}
+                                ReportPresentation(device,android.os.SystemClock.elapsedRealtime()-state.readAtElapsed)
+                                Action("Abrir ${device.nickname}",!state.loading){model.openDevice(device.id)}
+                            }
+                        }
+                    }
+                    if(state.devices.size==50)Action("Próxima página",!state.loading){model.nextPage()}
+                    if(state.listAfter!=null)Action("Primeira página",!state.loading){model.firstPage()}
                     Action("Atualizar dispositivos",!state.loading){model.refreshDevices()}
                     Action("Criar QR de pareamento",!state.loading&&state.qr==null){model.createPairing()}
                     state.qr?.let { payload ->
@@ -90,8 +107,35 @@ class MainActivity : ComponentActivity() {
                     }
                     if(state.pairingSession!=null) Action("Cancelar ou verificar QR",!state.loading){model.finishPairing()}
                     if(state.incompleteRecovery) Action("Revogar pareamento incompleto",!state.loading){model.finishPairing(true)}
-                    Text("Controles e enforcement não estão disponíveis nesta etapa.")
+                    Text("Pareamento não confirma permissões ou proteção. Enforcement indisponível neste laboratório.")
                 }
+                Screen.DETAIL -> {
+                    Action("Voltar aos dispositivos",!state.loading){model.backToDevices()}
+                    val d=state.devices.find{it.id==state.selected}
+                    if(d==null)Text("Dispositivo indisponível. Atualize a lista.") else {
+                        Text(d.nickname,style=MaterialTheme.typography.headlineMedium)
+                        ReportPresentation(d,android.os.SystemClock.elapsedRealtime()-state.readAtElapsed)
+                        val enabled=!state.loading&&!d.revoked&&state.control?.retryable!=true
+                        Action("+10 min",enabled&&d.configured){model.control(ControlKind.ADD_TIME,600)}
+                        Action("+30 min",enabled&&d.configured){model.control(ControlKind.ADD_TIME,1800)}
+                        Action("Solicitar bloqueio",enabled&&d.configured){model.control(ControlKind.LOCK)}
+                        Action("Solicitar desbloqueio",enabled&&d.configured){model.control(ControlKind.UNLOCK)}
+                        Text("Desbloquear remove apenas o bloqueio manual. Adicionar tempo não remove o bloqueio manual.")
+                        var limit by remember(d.id,d.dailyLimit){mutableStateOf(d.dailyLimit?.toString()?:"")}
+                        Text("Limite diário recorrente: ${d.dailyLimit?.let{"$it segundos"}?:"não definido"}")
+                        OutlinedTextField(limit,{limit=it},label={Text("Limite diário em segundos (0–86400)")},
+                            keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number),modifier=Modifier.fillMaxWidth(),enabled=enabled)
+                        Action("Salvar limite diário",enabled){model.setDailyLimit(limit)}
+                    }
+                    Action("Atualizar relatório",!state.loading){model.refreshDevices()}
+                }
+            }
+            if(state.screen in setOf(Screen.DEVICES,Screen.DETAIL)) {
+                state.control?.let { op ->
+                    Text(op.text())
+                    if(op.retryable||op.status in setOf("accepted","pending"))Action("Repetir mesma solicitação",!state.loading){model.retryControl()}
+                }
+                if(state.message.isNotEmpty())Text("Dados mantidos com o horário do último relatório. Use Atualizar para tentar novamente.")
             }
             if(state.screen!=Screen.LOGIN) TextButton({password="";email="";link="";model.logout()}) {Text("Sair e limpar dados locais")}
         }
@@ -102,6 +146,15 @@ internal fun pairingBitmap(text: String): android.graphics.Bitmap {
     val pixels=IntArray(512*512){if(m[it%512,it/512]) android.graphics.Color.BLACK else android.graphics.Color.WHITE}
     return android.graphics.Bitmap.createBitmap(pixels,512,512,android.graphics.Bitmap.Config.ARGB_8888)
 }
-@Composable private fun Action(label: String,enabled: Boolean,onClick:()->Unit) {
+@Composable internal fun Action(label: String,enabled: Boolean,onClick:()->Unit) {
     Button(onClick,enabled=enabled,modifier=Modifier.fillMaxWidth().heightIn(min=56.dp)) {Text(label)}
+}
+
+@Composable internal fun ReportPresentation(d:DeviceSummary,age:Long) {
+    Text(reportedTime(d.report?.remainingMs),style=MaterialTheme.typography.headlineLarge)
+    Text("Último tempo informado; não é uma contagem ao vivo")
+    Text(d.freshness(age))
+    d.report?.let{Text("Relatório recebido: ${it.receivedAt}")}
+    d.reasons().forEach{Text(it)}
+    Text(d.healthText())
 }

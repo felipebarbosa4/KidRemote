@@ -94,6 +94,7 @@ export async function testSync({http,sql,gatewayAvailable}) {
  while(lastPage.next_cursor){lastPage=(await send('/device/sync',{protocol_version:1,after_version:0,cursor:lastPage.next_cursor},history.credential)).json;ok(lastPage.version===1107&&lastPage.snapshot_id===pruned.snapshot_id&&lastPage.operations.length<=100,'PAGE_SNAPSHOT_BOUND');total+=lastPage.operations.length;pages++;}
  ok(total===1000&&pages===10&&lastPage.operations.at(-1).version===1107,'BOUNDED_HISTORY_HIGHWATER');
  ok((await send('/parent/devices/'+foreign.device_id+'/operations',undefined,a.token,'GET')).json.length===0,'FOREIGN_STATUS_RLS_EMPTY');
+ const {testParentPresentation}=await import('../kr010/backend-tests.mjs');await testParentPresentation({http,own:a.token,foreign:b.token,device:d.device_id});
  const live=await enroll(a);const setup=await op('SET_DAILY_LIMIT',{daily_limit_seconds:3600},0,randomUUID(),live.device_id);ok(setup.status===200,'RUNTIME_CANONICAL_SETUP');
  console.log('KR009_REAL_HTTP_PASS:assertions='+count+':replays=100:storage=POSTGRES:auth=REAL:push=NONE');
  return {identity:live,operation:(kind,payload,expected)=>op(kind,payload,expected,randomUUID(),live.device_id),ownSync:()=>sync(live),readStatus:()=>send('/parent/devices/'+live.device_id+'/operations',undefined,a.token,'GET')};

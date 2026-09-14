@@ -110,7 +110,10 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
    }
    if(sync) {
     const {testSync}=await import('../kr009/backend-tests.mjs');const fixture=await testSync({http,sql,gatewayAvailable});
-    if(syncRuntime){const {testSyncRuntime}=await import('../kr009/android-runtime.mjs');await testSyncRuntime({...fixture,sql,gatewayAvailable});}
+    if(syncRuntime){
+     if(process.env.KR010_RUNTIME==='1'){const {testAndroidRuntime}=await import('./android-runtime.mjs');await testAndroidRuntime({restAvailable,sql,enrollment:true,controls:true,gatewayAvailable});}
+     else {const {testSyncRuntime}=await import('../kr009/android-runtime.mjs');await testSyncRuntime({...fixture,sql,gatewayAvailable});}
+    }
    }
    if(enrollmentRuntime) {
     const {testEnrollmentRuntime}=await import('../kr007/android-runtime.mjs');await testEnrollmentRuntime({restAvailable,sql,gatewayAvailable});

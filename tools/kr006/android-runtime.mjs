@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const app='dev.kidremote.parent.unassigned.debug';
 const test=app+'.test';
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
-export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gatewayAvailable}) {
+export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gatewayAvailable,controls=false}) {
  const dir=process.env.KR006_RUNTIME_DIRECTORY;
  if(!dir || !/^\/mnt\/c\/Users\/3feli\/AppData\/Local\/KidRemote\/kr006-runtime\/[a-f0-9-]{36}$/.test(dir))throw Error('RUNTIME_DIRECTORY_REQUIRED');
  const state=JSON.parse(readFileSync(join(dir,'owner.json'),'utf8').replace(/^\uFEFF/,''));
@@ -43,10 +43,10 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
   if(await installed(pkg))if(!(await command(['uninstall',pkg])).includes('Success'))throw Error('OWN_PACKAGE_REINSTALL_FAILED');
   if(!(await command(['install','-r','-t',windowsPath(path)])).includes('Success'))throw Error('APK_INSTALL_FAILED');
  }
- const evidence={scope:enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
+ const evidence={scope:controls?'KR010_PARENT_CONTROLS_EMULATOR_ONLY':enrollment?'KR007_ENROLLMENT_EMULATOR_ONLY':'KR006_EMULATOR_ONLY',avd:state.AvdName,serial,stages:[],primary:'UNRUN',cleanup:'UNRUN',apkHashes:{}};
  const report=join(dir,'results-'+new Date().toISOString().replaceAll(/[:.]/g,'-')+'.json');
  const cameraStorage=enrollment&&process.env.KR007_CAMERA_STORAGE==='1';
- const apkDirectory=process.env.KR007_REMOVAL_RUNTIME==='1'?'apks-kr007-removal':cameraStorage?'apks-kr007-camera':enrollment?(process.env.KR007_ROTATION_RUNTIME==='1'?'apks-kr007-rotation-ports':'apks-kr007'):'apks';
+ const apkDirectory=controls?'apks-kr010':process.env.KR007_REMOVAL_RUNTIME==='1'?'apks-kr007-removal':cameraStorage?'apks-kr007-camera':enrollment?(process.env.KR007_ROTATION_RUNTIME==='1'?'apks-kr007-rotation-ports':'apks-kr007'):'apks';
  let primary,networkRestored=true;
  try {
   await guard();
@@ -58,7 +58,7 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
   }
   // Only this dedicated task AVD and these two synthetic packages; never another app/profile.
   for(const pkg of [app,test]) {if(!(await command(['shell','pm','clear',pkg])).includes('Success'))throw Error('FRESH_RUNTIME_STATE_UNVERIFIED');}
-  for(const method of [...(cameraStorage?['httpFailureIsRetryable']:[]),'enrollAndPersist','restoreAndLogout','restartLoggedOutAndRecover','networkFailureAndRecovery']) {
+  for(const method of controls?[]:[...(cameraStorage?['httpFailureIsRetryable']:[]),'enrollAndPersist','restoreAndLogout','restartLoggedOutAndRecover','networkFailureAndRecovery']) {
    await command(['shell','am','force-stop',app]);
    if(method==='networkFailureAndRecovery'){restAvailable(false);networkRestored=false;}
    await guard();
@@ -79,8 +79,11 @@ export async function testAndroidRuntime({restAvailable,sql,enrollment=false,gat
    if(!passed)throw Error('ANDROID_RUNTIME_STAGE_FAILED:'+method);
   }
   const count=sql("select count(*) from public.household_members m join auth.users u on u.id=m.user_id where u.email like 'kr006-runtime-%@example.test';");
-  if(count.trim()!=='1')throw Error('RUNTIME_SOLE_HOUSEHOLD_COUNT_FAILED');
-  if(enrollment) {
+  if(!controls&&count.trim()!=='1')throw Error('RUNTIME_SOLE_HOUSEHOLD_COUNT_FAILED');
+  if(controls) {
+   const {exerciseControls}=await import('../kr010/android-runtime.mjs');
+   await exerciseControls({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh,apkDirectory,gatewayAvailable,restAvailable});
+  } else if(enrollment) {
    const {exerciseEnrollment}=await import('../kr007/android-runtime.mjs');
    await exerciseEnrollment({command,run,guard,dir,windowsPath,app,test,evidence,sql,installFresh,apkDirectory,cameraStorage,gatewayAvailable});
   }

@@ -10,9 +10,9 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-internal class SessionVault(context: Context) {
-    private val file = File(context.noBackupFilesDir,"parent-session")
-    private val alias = "parent-session-v1"
+internal class SessionVault(context: Context, name: String = "parent-session", private val strict: Boolean = false) {
+    private val file = File(context.noBackupFilesDir,name)
+    private val alias = "$name-v1"
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         (store.getKey(alias,null) as? SecretKey)?.let { return it }
@@ -29,13 +29,13 @@ internal class SessionVault(context: Context) {
         catch (e: Exception) { atomic.failWrite(out); throw e }
     }
     @Synchronized fun read(): String? {
-        if (!file.exists()) return null
+        if (!file.exists() && !File(file.path+".bak").exists()) return null
         return try {
             check(file.length() <= 8192)
-            val data=file.readBytes(); check(data.size > 28)
+            val data=android.util.AtomicFile(file).readFully(); check(data.size > 28)
             val cipher=Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,data.copyOfRange(0,12))) }
             String(cipher.doFinal(data.copyOfRange(12,data.size)),Charsets.UTF_8)
-        } catch (_: Exception) { clear(); null }
+        } catch (e: Exception) { if(strict) throw IllegalStateException("REQUEST_STORAGE_INVALID"); clear(); null }
     }
     @Synchronized fun clear() {
         android.util.AtomicFile(file).delete()
