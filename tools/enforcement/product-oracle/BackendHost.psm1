@@ -55,12 +55,12 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
   $stage='PRIVATE_READINESS';$line=$p.StandardOutput.ReadLineAsync()
   if(-not $line.Wait(600000)){throw 'INVALID:BACKEND_START_TIMEOUT'}
   $raw=$line.GetAwaiter().GetResult();if(-not $raw -or $raw.Length -gt 8192){throw 'INVALID:BACKEND_START_FAILED'};$ready=$raw|ConvertFrom-Json;$raw=$null
-  if(-not $ready.ready){throw 'INVALID:LIVE_BACKEND_PREFLIGHT_FAILED'}
+  if(-not $ready.ready){$reason='LIVE_BACKEND_PREFLIGHT_FAILED';if($ready.PSObject.Properties.Name -contains 'code' -and $ready.code -cmatch '^[A-Z0-9_]{1,80}$'){$reason=$ready.code};throw ('INVALID:'+$reason)}
   if($ready.jwt -cnotmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'){throw 'INVALID:LAB_SESSION_SCHEMA'}
   $stage='PRIVATE_SESSION';$jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
   return @{process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
  }catch{
-  $failureType=$_.Exception.GetType().Name;$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
+  $failureType=$_.Exception.GetType().Name;if($_.Exception.Message -cmatch '^INVALID:[A-Z0-9_]{1,100}$'){$failureType=$_.Exception.Message.Substring(8)};$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
   if($p -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
   if($p){try{Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic)
  }

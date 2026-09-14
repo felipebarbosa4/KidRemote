@@ -36,11 +36,13 @@ try{
 import {createInterface} from 'node:readline';import {spawnSync} from 'node:child_process';
 const r=createInterface({input:process.stdin});let started=false;
 r.on('line',line=>{if(line==='STOP'){process.stdout.write('STOPPED_DATA_RETAINED\n');r.close();process.stdin.destroy();return;}
- const c=JSON.parse(line);const x=spawnSync(c.docker,['--host',c.host,'info','SAFE_FIXTURE'],{encoding:'utf8'});
+ let c;try{c=JSON.parse(line);}catch{process.stdout.write(JSON.stringify({ready:false,code:'JSON_FRAME_'+line.charCodeAt(0)})+'\n');return;}const x=spawnSync(c.docker,['--host',c.host,'info','SAFE_FIXTURE'],{encoding:'utf8'});
  if(started||x.status!==0||x.stdout!=='NATIVE_FAKE_ONLY'||!c.secrets.database||c.source!=='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'){process.stdout.write('{"ready":false}\n');return;}
  started=true;process.stdout.write('{"ready":true,"jwt":"fixture.payload.signature"}\n');});
 '@
    [IO.File]::WriteAllText((Join-Path $scripts 'runtime.mjs'),$fake)
+   # Public-source syntax check and structural-only framing diagnostic (no secret bytes).
+   $null=Invoke-ReviewProcess (Join-Path $runtime 'node.exe') @('--check',(Join-Path $scripts 'runtime.mjs')) ''
    Write-Output 'NATIVE_PIPE_FIRST_START'
    $b=Start-ProductBackend $source $bundle ('a'*40);$leaseId=$b.local.id;Check ($null -ne $b.jwt)
    $caught=$false;try{$other=Start-ProductBackend $source $bundle ('a'*40)}catch{$caught=$true};Check $caught
