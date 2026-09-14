@@ -37,7 +37,7 @@ class EnforcementRuntimeTest {
         shell("appops set ${c.packageName} GET_USAGE_STATS allow")
         shell("settings put secure enabled_accessibility_services $component");shell("settings put secure accessibility_enabled 1")
         waitFor("SERVICE_CONNECTED"){EnforcementRuntime.engine()!=null}
-        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("LOCK_ATTACHED_OBSERVED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         val engine=EnforcementRuntime.engine()!!
         waitFor("OBSERVATION_DURABLE_OFFLINE"){engine.read().ledger?.pendingAck?.let{JSONObject(it).getBoolean("restriction_applied")}==true}
@@ -46,13 +46,13 @@ class EnforcementRuntimeTest {
         // Safe-system route preserves desired state and detaches the overlay.
         c.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         waitFor("SAFE_SURFACE_DETACHED"){EnforcementRuntime.text().startsWith("Superfície de sistema")}
-        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("ORDINARY_REENTRY_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         shell("settings put secure enabled_accessibility_services null")
         waitFor("SERVICE_DISCONNECTED_VISIBLE"){EnforcementRuntime.engine()==null}
         shell("settings put secure enabled_accessibility_services $component");shell("settings put secure accessibility_enabled 1")
         waitFor("SERVICE_RECONNECTED"){EnforcementRuntime.engine()!=null}
-        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("input keyevent KEYCODE_HOME")
+        shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("OFFLINE_RESTRICTION_RESTORED"){EnforcementRuntime.text().startsWith("Restrição observada")}
         val restored=EnforcementRuntime.engine()!!.read().ledger!!
         check(restored.usedMs>=before.usedMs&&restored.policy==before.policy&&restored.bonusSeconds==before.bonusSeconds)
