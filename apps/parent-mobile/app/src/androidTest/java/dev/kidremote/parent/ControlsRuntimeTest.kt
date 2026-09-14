@@ -2,6 +2,7 @@ package dev.kidremote.parent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -57,8 +58,15 @@ class ControlsRuntimeTest {
      result("ACTION_CHECK_"+listOf("+10 min","+30 min","Solicitar bloqueio","Solicitar desbloqueio","Salvar limite diário").indexOf(label))
      val node=ui.onNode(hasText(label) and hasClickAction());node.performScrollTo().assertIsDisplayed().assertHeightIsAtLeast(androidx.compose.ui.unit.Dp(48f));
      val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>();ui.onNodeWithText(label,useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)};result("ACTION_LAYOUT_"+if(layouts.any{it.didOverflowHeight})"HEIGHT" else if(layouts.any{it.didOverflowWidth})"WIDTH" else "FITS");ck(layouts.none{it.hasVisualOverflow})
-    }}
-   "logout"->{click("Sair e limpar dados locais");ck(model.state.devices.isEmpty()&&model.state.control==null);ck(SessionVault(context).read()==null);ck(SessionVault(context,"parent-control",strict=true).read()==null);text("Entrar")}
+    }
+    val first=ui.onNode(hasText("+10 min") and hasClickAction())
+    first.performScrollTo().performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.RequestFocus){it()}
+    first.assertIsFocused().performKeyInput{pressKey(Key.Tab)}
+    ui.onNode(hasText("+30 min") and hasClickAction()).assertIsFocused().performKeyInput{pressKey(Key.Tab)}
+    ui.onNode(hasText("Solicitar bloqueio") and hasClickAction()).assertIsFocused()
+    result("CONTROL_KEYBOARD_FOCUS_ORDER_PASS")
+   }
+   "logout"->{click("Sair e limpar dados locais");ck(model.state.devices.isEmpty()&&model.state.control==null);ck(SessionVault(context).read()==null);ck(SessionVault(context,"parent-control",strict=true).read()==null);ui.onNode(hasText("Entrar") and hasClickAction()).assertExists()}
    else->error("UNKNOWN_STEP")
   };result("PARENT_"+step.uppercase()+"_PASS")
  }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className==javaClass.name&&it.methodName!="ck"}?.lineNumber?:0;result("PARENT_FAILURE_LINE_"+line.coerceAtLeast(0));throw AssertionError("CONTROL_RUNTIME_FAILED")}}
