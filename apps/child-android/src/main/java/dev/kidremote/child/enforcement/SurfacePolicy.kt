@@ -69,4 +69,3 @@ object SurfaceEventResolver {
         observation.disposition
     }
 }
-

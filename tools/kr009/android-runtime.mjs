@@ -30,7 +30,7 @@ async function stage(method,death=false){
   ok(['0','1'].includes(networkState.wifi)&&['0','1'].includes(networkState.data),'NETWORK_STATE_UNVERIFIED');
   await command(['shell','svc','wifi','disable']);await command(['shell','svc','data','disable']);
  }
- const execution=run(['shell','am','instrument','-w','-r','-e','class','dev.kidremote.child.sync.'+(recovery.has(method)?'RecoveryRuntimeTest':'SyncRuntimeTest')+'#'+method,app+'.test/androidx.test.runner.AndroidJUnitRunner']);
+ const execution=run(['shell','am','instrument','-w','-r','-e','class',(method==='networkLock'?'dev.kidremote.child.enforcement.EnforcementRuntimeTest':'dev.kidremote.child.sync.'+(recovery.has(method)?'RecoveryRuntimeTest':'SyncRuntimeTest'))+'#'+method,app+'.test/androidx.test.runner.AndroidJUnitRunner']);
  if(method==='expiredSequenceRestarts') {
   let ready=false;for(let n=0;n<300;n++){await guard();const check=await run(['exec-out','run-as',app,'cat','no_backup/page-ready']);if(check.code===0&&check.out.trim()==='READY'){ready=true;break};await new Promise(r=>setTimeout(r,100));}
   ok(ready,'PAGE_EXPIRY_SEAM_NOT_REACHED');
@@ -42,7 +42,7 @@ async function stage(method,death=false){
   finally{await command(['shell','svc','wifi',networkState.wifi==='1'?'enable':'disable']);await command(['shell','svc','data',networkState.data==='1'?'enable':'disable']);}
  }
  const r=await execution;
- const codes=[...r.out.matchAll(/kr009=([A-Z0-9_]+)/g)].map(m=>m[1]);
+ const codes=[...r.out.matchAll(/(?:kr009|enforcement)=([A-Z0-9_]+)/g)].map(m=>m[1]);
  let passed=r.code===0&&/OK \(1 test\)/.test(r.out)&&!/FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed/.test(r.out);
  if(death){const marker=(await command(['exec-out','run-as',app,'cat','no_backup/sync-crash'])).trim();passed=marker===(method==='killAfterPageCheckpoint'?'KR009_EXPECTED_KILL_AFTER_PAGE':'KR009_EXPECTED_KILL_AFTER_PERSIST')&&codes.includes(marker)&&/Process crashed/.test(r.out)}
  record({method,result:passed?(death?'EXPECTED_PROCESS_DEATH':'PASS'):'FAIL',codes,hostExit:r.code});ok(passed,'SYNC_ANDROID_STAGE_FAILED:'+method);
@@ -59,6 +59,11 @@ try {
  }
  await command(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && touch no_backup/sync-test-control"']);
  await guard();ok((await run(['shell','run-as',app,'sh','-c','"mkdir -p no_backup && cat > no_backup/sync-handoff"'],JSON.stringify(identity))).code===0,'IDENTITY_HANDOFF_FAILED');
+ if(process.env.KR_ENFORCEMENT_RUNTIME==='1') {
+  await control('LOCK',{},1);await stage('networkLock');
+  ok((await readStatus()).json.find(x=>x.version===2).status==='applied','OBSERVED_LOCK_ACK_NOT_APPLIED');
+  evidence.overall='PASS_ACTUAL_PARENT_SERVER_ROOM_ADAPTER_ACK_EMULATOR';return;
+ }
  await stage('prepareIdentityAndUsage');
  await control('LOCK',{},1);await stage('lockPersisted');
  ok((await readStatus()).json.find(x=>x.version===2).status==='persisted','LOCK_NOT_PERSISTED');
