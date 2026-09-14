@@ -9,4 +9,6 @@ internal object SyncFaults {
  var afterPage:((Int)->Unit)?=null
  fun pagePersisted(page:Int){afterPage?.invoke(page)}
  fun automaticAllowed(context:android.content.Context)=!java.io.File(context.noBackupFilesDir,"sync-test-control").exists()
+ var testEndpoint:String?=null
+ fun endpoint(base:String):String=testEndpoint?.also{require(Regex("http://127\\.0\\.0\\.1:[0-9]{1,5}").matches(it))}?:base
 }

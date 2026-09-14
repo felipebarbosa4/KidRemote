@@ -18,13 +18,17 @@ import org.json.JSONObject
 /** Durable transport intent only. Canonical policy, identity and ACK stay in their existing stores. */
 internal class RetryStore(context:Context) {
  private val file=AtomicFile(File(context.noBackupFilesDir,"sync-retry"))
- fun read():JSONObject {
-  if(!file.baseFile.exists())return JSONObject().put("format",1).put("pending",false).put("stopped",false).put("attempt",0).put("boot",-1).put("due",0).put("delay",0).put("identity","")
+ companion object{private val lock=Any()}
+ fun read():JSONObject = synchronized(lock) {
+  if(!file.baseFile.exists())return@synchronized JSONObject().put("format",1).put("pending",false).put("stopped",false).put("attempt",0).put("boot",-1).put("due",0).put("delay",0).put("identity","")
   val bytes=file.openRead().use{it.readBytes()};check(bytes.size<=1024)
-  val s=JSONObject(String(bytes));check(s.length()==8&&s.getInt("format")==1&&s.getInt("attempt") in 0..30&&s.getLong("due")>=0&&s.getLong("delay") in 0..86400000)
-  s.getBoolean("pending");s.getBoolean("stopped");s.getString("identity");s.getInt("boot");return s
+  val envelope=String(bytes);check(envelope.length>9&&envelope[8]=='\n')
+  val text=envelope.substring(9);check(envelope.substring(0,8)==checksum(text))
+  val s=JSONObject(text);check(s.length()==8&&s.getInt("format")==1&&s.getInt("attempt") in 0..30&&s.getLong("due")>=0&&s.getLong("delay") in 0..86400000)
+  s.getBoolean("pending");s.getBoolean("stopped");s.getString("identity");s.getInt("boot");s
  }
- fun save(s:JSONObject){val out=file.startWrite();try{out.write(s.toString().toByteArray());file.finishWrite(out)}catch(e:Exception){file.failWrite(out);throw e}}
+ private fun checksum(text:String)=java.util.zip.CRC32().apply{update(text.toByteArray())}.value.toString(16).padStart(8,'0')
+ fun save(s:JSONObject)=synchronized(lock){val text=s.toString();val out=file.startWrite();try{out.write((checksum(text)+"\n"+text).toByteArray());file.finishWrite(out)}catch(e:Exception){file.failWrite(out);throw e}}
 }
 internal object SyncRecovery {
  private val gate=Any()
@@ -45,8 +49,8 @@ internal object SyncRecovery {
    if(s.getInt("boot")!=boot(c)){s.put("boot",boot(c)).put("due",SystemClock.elapsedRealtime()+s.getLong("delay"))}
    s.put("pending",true);store.save(s)
    // Persist recovery work before attempting HTTP. Only one recovery work item is retained.
-   WorkManager.getInstance(c).enqueueUniqueWork("child-sync-recovery",ExistingWorkPolicy.KEEP,
-    OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).setInitialDelay(5,TimeUnit.MINUTES).build()).result.get()
+   WorkManager.getInstance(c).enqueueUniquePeriodicWork("child-sync-recovery",ExistingPeriodicWorkPolicy.KEEP,
+    PeriodicWorkRequestBuilder<SyncWorker>(15,TimeUnit.MINUTES).setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).setInitialDelay(5,TimeUnit.MINUTES).build()).result.get()
    if(active){follow=true;return}
    timer?.cancel(false);timer=executor.schedule({run(c)},remaining(c,s),TimeUnit.MILLISECONDS)
   }
@@ -54,8 +58,10 @@ internal object SyncRecovery {
  fun run(context:Context):Boolean {
   val c=context.applicationContext
   synchronized(gate){if(active){follow=true;return false};active=true;follow=false}
+  var finalPass=false
   try {
    for(pass in 0..1) {
+    finalPass=pass==1
     val state=synchronized(gate){val store=RetryStore(c);store.read().also{if(it.getInt("boot")!=boot(c)){it.put("boot",boot(c)).put("due",SystemClock.elapsedRealtime()+it.getLong("delay"));store.save(it)}}}
     if(!state.getBoolean("pending")||state.getBoolean("stopped"))return true
     if(remaining(c,state)>0){schedule(c,remaining(c,state));return false}
@@ -72,7 +78,7 @@ internal object SyncRecovery {
     synchronized(gate){if(!follow||pass==1)return true;follow=false;val s=RetryStore(c).read().put("pending",true);RetryStore(c).save(s)}
    }
    return true
-  }finally{synchronized(gate){active=false;follow=false}}
+  }finally{synchronized(gate){active=false;if(follow&&!finalPass){val s=RetryStore(c).read();if(s.getBoolean("pending")&&!s.getBoolean("stopped"))schedule(c,remaining(c,s))};follow=false}}
  }
  private fun schedule(c:Context,delay:Long){synchronized(gate){timer?.cancel(false);timer=executor.schedule({run(c)},delay,TimeUnit.MILLISECONDS)}}
 }
@@ -82,8 +88,10 @@ class SyncWorker(context:Context,parameters:WorkerParameters):Worker(context,par
 class ChildApplication:Application() {
  override fun onCreate(){super.onCreate();if(!SyncFaults.automaticAllowed(this))return
   // Callback is process-local. WorkManager supplies durable best-effort recovery.
-  getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(object:ConnectivityManager.NetworkCallback(){override fun onAvailable(network:Network){recover()}})
+  getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(NetworkRecovery(this))
   recover()
  }
  private fun recover(){SyncRecovery.notify(this)}
 }
+
+internal class NetworkRecovery(private val context:Context):ConnectivityManager.NetworkCallback(){override fun onAvailable(network:Network){SyncRecovery.notify(context)}}

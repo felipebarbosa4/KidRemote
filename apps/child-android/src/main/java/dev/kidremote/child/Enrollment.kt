@@ -144,7 +144,7 @@ internal class EnrollmentApi {
     }
     fun request(path:String,body:JSONObject,credential:String?=null,identity:JSONObject?=null,parse:(String)->JSONObject={JSONObject(it)}):JSONObject {
         check(Backend.endpoint.isNotEmpty())
-        val c=URL(Backend.endpoint+path).openConnection() as HttpURLConnection
+        val c=URL(dev.kidremote.child.sync.SyncFaults.endpoint(Backend.endpoint)+path).openConnection() as HttpURLConnection
         try {
             c.requestMethod="POST";c.connectTimeout=10000;c.readTimeout=10000;c.instanceFollowRedirects=false;c.useCaches=false;c.doOutput=true
             c.setRequestProperty("Content-Type","application/json");if(credential!=null)c.setRequestProperty("Authorization","Bearer $credential")

@@ -21,10 +21,28 @@ const record=row=>{evidence.stages.push(row);console.log(JSON.stringify(row))};
 const ok=(v,code)=>{if(!v)throw Error(code)};
 async function stage(method,death=false){
  await command(['shell','am','force-stop',app]);await guard();
- const r=await run(['shell','am','instrument','-w','-r','-e','class','dev.kidremote.child.sync.SyncRuntimeTest#'+method,app+'.test/androidx.test.runner.AndroidJUnitRunner']);
+ const recovery=new Set(['killAfterPageCheckpoint','restartThroughWorkManager','expiredSequenceRestarts','resumeDiscoversState','coalescedTriggers','outagePersistsRetry','networkRecoveryConverges','scheduledLostAckRetry','httpRetryAndAuthStop','corruptedRetryStops']);
+ let networkState;
+ if(method==='networkRecoveryConverges') {
+  networkState={wifi:(await command(['shell','settings','get','global','wifi_on'])).trim(),data:(await command(['shell','settings','get','global','mobile_data'])).trim()};
+  ok(['0','1'].includes(networkState.wifi)&&['0','1'].includes(networkState.data),'NETWORK_STATE_UNVERIFIED');
+  await command(['shell','svc','wifi','disable']);await command(['shell','svc','data','disable']);
+ }
+ const execution=run(['shell','am','instrument','-w','-r','-e','class','dev.kidremote.child.sync.'+(recovery.has(method)?'RecoveryRuntimeTest':'SyncRuntimeTest')+'#'+method,app+'.test/androidx.test.runner.AndroidJUnitRunner']);
+ if(method==='expiredSequenceRestarts') {
+  let ready=false;for(let n=0;n<300;n++){await guard();const check=await run(['exec-out','run-as',app,'cat','no_backup/page-ready']);if(check.code===0&&check.out.trim()==='READY'){ready=true;break};await new Promise(r=>setTimeout(r,100));}
+  ok(ready,'PAGE_EXPIRY_SEAM_NOT_REACHED');
+  sql(`update private.sync_snapshots set expires_at=clock_timestamp()-interval '1 second' where device_id='${identity.device_id}';`);
+  await command(['shell','run-as',app,'touch','no_backup/page-release']);
+ }
+ if(networkState) {
+  try{let ready=false;for(let n=0;n<300;n++){await guard();const check=await run(['exec-out','run-as',app,'cat','no_backup/network-ready']);if(check.code===0&&check.out.trim()==='READY'){ready=true;break};await new Promise(r=>setTimeout(r,100));};ok(ready,'NETWORK_SEAM_NOT_REACHED')}
+  finally{await command(['shell','svc','wifi',networkState.wifi==='1'?'enable':'disable']);await command(['shell','svc','data',networkState.data==='1'?'enable':'disable']);}
+ }
+ const r=await execution;
  const codes=[...r.out.matchAll(/kr009=([A-Z0-9_]+)/g)].map(m=>m[1]);
  let passed=r.code===0&&/OK \(1 test\)/.test(r.out)&&!/FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed/.test(r.out);
- if(death){const marker=(await command(['exec-out','run-as',app,'cat','no_backup/sync-crash'])).trim();passed=marker==='KR009_EXPECTED_KILL_AFTER_PERSIST'&&codes.includes(marker)&&/Process crashed/.test(r.out)}
+ if(death){const marker=(await command(['exec-out','run-as',app,'cat','no_backup/sync-crash'])).trim();passed=marker===(method==='killAfterPageCheckpoint'?'KR009_EXPECTED_KILL_AFTER_PAGE':'KR009_EXPECTED_KILL_AFTER_PERSIST')&&codes.includes(marker)&&/Process crashed/.test(r.out)}
  record({method,result:passed?(death?'EXPECTED_PROCESS_DEATH':'PASS'):'FAIL',codes,hostExit:r.code});ok(passed,'SYNC_ANDROID_STAGE_FAILED:'+method);
 }
 async function control(kind,payload,expected){const r=await operation(kind,payload,expected);ok(r.status===200&&r.json.version===expected+1,'PARENT_OPERATION_FAILED');record({method:kind,result:'ACCEPTED_NOT_APPLIED'});}
@@ -66,6 +84,15 @@ try {
  insert into public.daily_grants select id,device_id,household_id,period_key,600 from public.commands where id='${late}';update public.device_policies set version=8 where device_id='${identity.device_id}';commit;`);
  await stage('yesterdayGrantNotCredited');
  ok((await readStatus()).json.find(x=>x.version===8).status==='expired_for_period','OLD_GRANT_OUTCOME_INCORRECT');
+ const actor=sql(`select actor_user_id from public.commands where device_id='${identity.device_id}' and version=1;`);ok(/^[a-f0-9-]{36}$/.test(actor),'ACTOR_FIXTURE_INVALID');
+ const append=(from,to)=>sql(`set role authenticated;set "request.jwt.claim.sub"='${actor}';do $pages$ begin for i in ${from}..${to} loop perform public.accept_control(gen_random_uuid(),'${identity.device_id}',case when i%2=0 then 'LOCK' else 'UNLOCK' end,'{}',i);end loop;end $pages$;`);
+ append(8,112);await stage('killAfterPageCheckpoint',true);await stage('restartThroughWorkManager');
+ append(113,217);await stage('expiredSequenceRestarts');
+ await control('LOCK',{},218);await stage('resumeDiscoversState');await stage('coalescedTriggers');
+ await control('UNLOCK',{},219);await gatewayAvailable(false);try{await stage('outagePersistsRetry')}finally{await gatewayAvailable(true)}
+ await stage('networkRecoveryConverges');
+ added=await operation('ADD_TIME',{seconds:600,period_key:period},null);ok(added.status===200&&added.json.version===221,'SCHEDULED_GRANT_NOT_ACCEPTED');
+ await stage('scheduledLostAckRetry');await stage('httpRetryAndAuthStop');await stage('corruptedRetryStops');
  sql(`update private.device_credentials set created_at=clock_timestamp()-interval '91 days',expires_at=clock_timestamp()-interval '1 second' where device_id='${identity.device_id}';`);
  await stage('expiredRetainsLedger');
  sql(`update private.device_credentials set expires_at=clock_timestamp()+interval '1 day' where device_id='${identity.device_id}';update public.devices set revoked_at=clock_timestamp() where id='${identity.device_id}';`);

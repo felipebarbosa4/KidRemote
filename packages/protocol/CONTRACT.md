@@ -321,8 +321,9 @@ checkpoint's sequence and starts a full fresh snapshot using the durable ledger.
 Lifecycle triggers coalesce through one coordinator. A group runs at most one initial
 and one follow-up sync. A bounded AtomicFile transport intent is separate from policy:
 identity binding, pending/stopped, attempt, boot and monotonic due/delay only. It does
-not contain bearer, cursor, policy or operations. A unique constrained WorkManager
-recovery request is durably enqueued before HTTP; in-process retries use full jitter
+not contain bearer, cursor, policy or operations. One unique constrained periodic WorkManager
+recovery request (15-minute interval, five-minute initial delay) is durably enqueued
+before HTTP, closing the process-death seam between a worker and a later trigger; in-process retries use full jitter
 1 s exponential to 5 min. Retry-After seconds or an HTTP date relative to server Date
 forms a lower bound (bounded to 24 hours). WorkManager's own retry scheduling may
 run later. Reboot rebases a stored remaining retry delay without cross-boot elapsed
