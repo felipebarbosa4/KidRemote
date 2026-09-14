@@ -34,6 +34,8 @@ try:
    marker=run(['exec-out','run-as',app,'cat','no_backup/enforcement-crash']).stdout.strip()
    assert marker=='EXPECTED_PRODUCT_ENFORCEMENT_KILL' and marker in codes and 'Process crashed' in output
    row['result']='EXPECTED_PROCESS_DEATH'
+   own=run(['shell','dumpsys','package',app]).stdout
+   e['afterKill']={'packageStopped':re.search(r'stopped=(true|false)',own).group(1) if re.search(r'stopped=(true|false)',own) else 'UNSPECIFIED','serviceStillEnabled':app+'/dev.kidremote.child.enforcement.ChildEnforcementService' in run(['shell','settings','get','secure','enabled_accessibility_services']).stdout}
   else:
    assert r.returncode==0 and 'OK (1 test)' in output and not re.search(r'FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed',output)
    row['result']='PASS'

@@ -100,7 +100,7 @@ class EnforcementRuntimeTest {
         i.sendStatus(0,Bundle().apply{putString("enforcement","LEDGER_AND_UNCERTAINTY_PRESERVED")})
         // Validated removal envelope, same existing identity store (no automatic replacement).
         val id=IdentityStore(c).read()!!;id.put("removal",JSONObject().put("protocol_version",1).put("code","DEVICE_REVOKED").put("device_id",id.getString("device_id")).put("policy_epoch",epoch));IdentityStore(c).save(id)
-        waitFor("REMOVAL_CLEARS_ACTIVE_ADAPTER"){!EnforcementRuntime.text().startsWith("Restrição observada")}
+        waitFor("REMOVAL_CLEARS_ACTIVE_ADAPTER"){!EnforcementRuntime.sample(c).signals.blocked&&!EnforcementRuntime.text().startsWith("Restrição observada")}
     }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className.contains("EnforcementRuntimeTest")}?.lineNumber?:0;throw AssertionError("ENFORCEMENT_RUNTIME_FAILED_LINE_$line")}
     finally {
         if(previous=="null")shell("settings delete secure enabled_accessibility_services") else shell("settings put secure enabled_accessibility_services $previous")
@@ -117,6 +117,7 @@ class EnforcementRuntimeTest {
     try {
         val before=JSONObject(File(c.noBackupFilesDir,"enforcement-death-state").readText())
         check(before.getInt("pid")!=android.os.Process.myPid())
+        shell("am start -W -n ${c.packageName}/dev.kidremote.child.ChildActivity")
         waitFor("NEW_PROCESS_SERVICE_CONNECTED"){EnforcementRuntime.engine()!=null}
         shell("input keyevent KEYCODE_WAKEUP");shell("wm dismiss-keyguard");shell("am start -W -a android.settings.SETTINGS");shell("am start -W -n dev.kidremote.spike.ordinary/.FixtureActivity")
         waitFor("PROCESS_DEATH_RESTRICTION_REOBSERVED"){EnforcementRuntime.text().startsWith("Restrição observada")}
@@ -125,7 +126,7 @@ class EnforcementRuntimeTest {
         i.sendStatus(0,Bundle().apply{putString("enforcement","PROCESS_DEATH_LEDGER_NO_RESET_OR_REPLAY")})
         val id=IdentityStore(c).read()!!
         id.put("removal",JSONObject().put("protocol_version",1).put("code","DEVICE_REVOKED").put("device_id",id.getString("device_id")).put("policy_epoch",id.getString("policy_epoch")));IdentityStore(c).save(id)
-        waitFor("RESTART_REMOVAL_DETACHED"){!EnforcementRuntime.text().startsWith("Restrição observada")}
+        waitFor("RESTART_REMOVAL_DETACHED"){!EnforcementRuntime.sample(c).signals.blocked&&!EnforcementRuntime.text().startsWith("Restrição observada")}
     }catch(e:Throwable){val line=e.stackTrace.firstOrNull{it.className.contains("EnforcementRuntimeTest")}?.lineNumber?:0;throw AssertionError("ENFORCEMENT_RUNTIME_FAILED_LINE_$line")}
  }
 }
