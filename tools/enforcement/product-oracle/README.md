@@ -1,31 +1,41 @@
-# OD-49 product oracle prerequisites
+# Product oracle and dedicated synthetic physical lab
 
-## OD-50 replacement preparation (current)
+## OD-51 current native runner
 
-The owner now explicitly authorizes future destructive replacement of only the
-old child package on the exact dedicated Samsung configuration; old data need not
-be preserved. [OD-50 evidence](../../../docs/test-plans/evidence/PRODUCT-REPLACEMENT-PREPARATION-2026-09-14.md)
-records the preparation and concrete blockers. **No physical operation occurred.**
+`Run-ProductReplacement.ps1` uses native Windows PowerShell, a frozen native Node
+runtime and native Docker Desktop. It never enters WSL. The separate
+`../physical-lab` lease retains its exactly owned synthetic PostgreSQL volume and
+parent/device identity across normal stop/restart; the disposable KR-004 harness
+is unchanged. DPAPI/current-user ACL protects local credentials, and an exclusive
+host lock prevents concurrent runners. Source/schema/resource mismatch or partial
+state stops for review. Service log retention is disabled; technical readiness is
+checked without capturing service content.
 
-`Replacement.psm1`/`ReplacementAdb.psm1` add fixed package/hash/signature admission,
-durable stages and fail-closed transport. `EnrollmentHost`, `LivePreparation` and
-`LiveSlice` connect the existing Auth/pairing/canonical APIs and independent fixture;
-these candidates are not a validated complete physical runner. `HostQr.java` is a
-host-only private-pipe display helper, never product code. `BackendHost` reuses the
-existing disposable backend and its explicit stdin STOP lifecycle.
+Every device mutation follows the in-command host/backend/artifact/journal/read-only
+target gate. A host failure is `INVALID_HOST_PREFLIGHT`, with zero device mutation.
+The first successful setup uses OD-50 exact old provenance before replacement,
+real product pairing and genuine Android consent. A verified subsequent lease/device/
+APK/permission match uses `Reuse.psm1`: no uninstall, install, QR or consent prompt.
+Canonical Unlock and, if needed, one dated +10 grant prepare positive allowance;
+accounting uncertainty is never reset or bypassed.
 
-**PRODUCT_PHYSICAL_ORACLE remains BLOCKED.** `Run-ProductReplacement.ps1` stops
-unconditionally before imports/ADB/backend. The real Windows→WSL supervisor test
-failed; native execution became unavailable in the validation session. The current
-disposable backend also removes server enrollment on cleanup, so it cannot yet
-deliver the requested reusable normal test identity. No owner bundle/command is
-published; no tests or manifest flag may silently bypass the entrypoint gate.
+`ProductOracle.psm1` remains the independent input-counter/usable-focus oracle.
+Product attachment/Room/ACK/status corroborate only. Canonical Unlock plus independent
+restored input is required for successful cleanup. Stop retains synthetic enrollment;
+no implicit destructive reset. An explicit separately verified lease teardown journals
+admission and deletes only its own containers/volume/network. Failed/partial journals
+remain immutable and cannot be silently resumed or replaced.
 
-The prior read-only modules below remain strictly read-only. Their historical
-no-install policy describes those bundles, not a revocation of the new OD-50
-owner authorization.
+Owner publication is conditional on all current-source CI and device-free checks,
+then `../physical-lab/freeze.mjs` freezes all source/runtime/APK hashes. The immutable
+manifest says `READY_FOR_ONE_OWNER_RUN` only for a safe attempt, never physical PASS.
+See [current evidence](../../../docs/test-plans/evidence/PRODUCT-PERSISTENT-LAB-2026-09-14.md)
+for the actual readiness verdict, failures and immutable bundle identity.
 
-**PRODUCT_PHYSICAL_ORACLE = BLOCKED.** The independent oracle remains ordinary-fixture input counter + usable focus. Product attachment, desired/applied state, ACK and parent status only corroborate. The qualification entrypoint still rejects before ADB/HTTP. No qualification command is published.
+The [OD-50 preparation](../../../docs/test-plans/evidence/PRODUCT-REPLACEMENT-PREPARATION-2026-09-14.md)
+remains historical: its failed Windows→WSL supervisor, disposable enrollment limitation
+and BLOCKED verdict are not rewritten. Prior read-only bundles stay read-only;
+`Start-ProductOracle.ps1` is the historical blocked entrypoint, not the new runner.
 
 ## Read-only inventory (separate bundle)
 

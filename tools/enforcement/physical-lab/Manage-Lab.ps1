@@ -15,7 +15,7 @@ try{
  $docker=Join-Path $env:LOCALAPPDATA 'Programs/DockerDesktop/resources/bin/docker.exe';if(-not(Test-Path $docker)){$docker='C:\Program Files\Docker\Docker\resources\bin\docker.exe'}
  $c=@{root=(Join-Path $Bundle 'source');state=(Join-Path $root 'resources.json');source=$local.source;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine';action=$Action;confirmLease=$ConfirmLease}
  $p=New-Object Diagnostics.Process;$p.StartInfo.FileName=Join-Path $Bundle 'runtime/node.exe';$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true;$p.StartInfo.RedirectStandardInput=$true;$p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
- $script=Join-Path $Bundle 'source/tools/enforcement/physical-lab/admin.mjs';$p.StartInfo.Arguments='"'+$script+'"';[void]$p.Start();$out=$p.StandardOutput.ReadToEndAsync();$err=$p.StandardError.ReadToEndAsync();$p.StandardInput.WriteLine(($c|ConvertTo-Json -Depth 8 -Compress));$p.StandardInput.Close();$c=$null
+ $script=Join-Path $Bundle 'source/tools/enforcement/physical-lab/admin.mjs';$p.StartInfo.Arguments='"'+$script+'"';[void]$p.Start();$out=$p.StandardOutput.ReadToEndAsync();$err=$p.StandardError.ReadToEndAsync();& (Get-Module BackendHost) {param($p,$c) Write-LabPipeLine $p ($c|ConvertTo-Json -Depth 8 -Compress)} $p $c;$p.StandardInput.BaseStream.Close();$c=$null
  if(-not $p.WaitForExit(180000) -or $p.ExitCode -ne 0){throw 'INVALID:LAB_ADMIN_FAILED_CLOSED'}
  Write-Output ($out.GetAwaiter().GetResult())
 }finally{if($guard){$guard.Dispose()};$local=$null}

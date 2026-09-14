@@ -51,7 +51,7 @@ function Invoke-ReviewProcess([string]$Executable,[string[]]$Arguments,[string]$
  $p.StartInfo.Arguments=($Arguments|ForEach-Object{'"'+$_+'"'}) -join ' '
  try{
   [void]$p.Start();$o=$p.StandardOutput.ReadToEndAsync();$e=$p.StandardError.ReadToEndAsync()
-  if($InputText){$p.StandardInput.Write($InputText)};$p.StandardInput.Close()
+  if($InputText){$bytes=(New-Object Text.UTF8Encoding($false)).GetBytes($InputText);$p.StandardInput.BaseStream.Write($bytes,0,$bytes.Length);$p.StandardInput.BaseStream.Flush();$bytes=$null};$p.StandardInput.BaseStream.Close()
   if(-not $p.WaitForExit(60000)){$p.Kill();throw 'READ_ONLY_REVIEW_INVALID'}
   $out=$o.GetAwaiter().GetResult();$err=$e.GetAwaiter().GetResult()
   if($p.ExitCode -ne 0 -or $out.Length -gt 65536 -or $err.Length -gt 65536){throw 'READ_ONLY_REVIEW_INVALID'}

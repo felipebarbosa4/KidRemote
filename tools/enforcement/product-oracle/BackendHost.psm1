@@ -1,5 +1,10 @@
 Set-StrictMode -Version Latest
 # Native Windows only. DPAPI + current-user/SYSTEM ACL; no WSL, installed Node or SDK needed.
+function Write-LabPipeLine($Process,[string]$Text){
+ # Bypass Framework StreamWriter's UTF-8 preamble; JSON framing must be byte-exact.
+ $bytes=(New-Object Text.UTF8Encoding($false)).GetBytes($Text+"`n")
+ $Process.StandardInput.BaseStream.Write($bytes,0,$bytes.Length);$Process.StandardInput.BaseStream.Flush()
+}
 function Protect-LabDirectory([string]$Path){
  if($env:OS -cne 'Windows_NT'){throw 'INVALID:NATIVE_WINDOWS_REQUIRED'}
  [void][IO.Directory]::CreateDirectory($Path)
@@ -46,7 +51,7 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
   $script=Join-Path $SourceRoot 'tools\enforcement\physical-lab\runtime.mjs';if($script.Contains('"')){throw 'INVALID:SOURCE_PATH'};$p.StartInfo.Arguments='"'+$script+'"'
   [void]$p.Start();$err=$p.StandardError.ReadToEndAsync()
   $config=@{root=$SourceRoot;state=(Join-Path $root 'resources.json');source=$Source;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine'}
-  $p.StandardInput.WriteLine(($config|ConvertTo-Json -Depth 8 -Compress));$config=$null
+  Write-LabPipeLine $p ($config|ConvertTo-Json -Depth 8 -Compress);$config=$null
   $stage='PRIVATE_READINESS';$line=$p.StandardOutput.ReadLineAsync()
   if(-not $line.Wait(600000)){throw 'INVALID:BACKEND_START_TIMEOUT'}
   $raw=$line.GetAwaiter().GetResult();if(-not $raw -or $raw.Length -gt 8192){throw 'INVALID:BACKEND_START_FAILED'};$ready=$raw|ConvertFrom-Json;$raw=$null
@@ -57,7 +62,7 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
  }catch{
   $failureType=$_.Exception.GetType().Name;$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
   if($p -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
-  if($p){try{$p.StandardInput.WriteLine('STOP');$p.StandardInput.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic)
+  if($p){try{Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic)
  }
 }
 function Save-ProductLabDevice($Backend,$Device){
@@ -69,7 +74,7 @@ function Stop-ProductBackend($Backend){
  if($null -eq $Backend){return 'NOT_STARTED'}
  $p=$Backend.process
  try{
-  $p.StandardInput.WriteLine('STOP');$p.StandardInput.Close()
+  Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close()
   if(-not $p.WaitForExit(60000)){throw 'INVALID:BACKEND_STOP_TIMEOUT'}
   $text=$Backend.stdout.GetAwaiter().GetResult();$err=$Backend.stderr.GetAwaiter().GetResult()
   if($p.ExitCode -ne 0 -or $err.Trim() -or $text.Trim() -cne 'STOPPED_DATA_RETAINED'){throw 'INVALID:BACKEND_STOP_UNVERIFIED'}
