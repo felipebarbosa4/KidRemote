@@ -1,0 +1,36 @@
+{
+  "source": "36d4b399f4ace373776cfb0343e9838f2702f074",
+  "build": "local build-05",
+  "apks": {
+    "app-debug.apk": "e33d0c04208d18da3fc5612652eb2c6b9451f1abeb074b64b23f241b21293aed",
+    "app-debug-androidTest.apk": "5be7e38b6de855f628a76592ee26b9c143a0c81d985faac086e8009857e7d1dc",
+    "child-debug.apk": "7502d0ea78d013e6c97c76c22af293aec1f3c3e6278edaa77ae9a1772ee9197b",
+    "child-debug-androidTest.apk": "5cc670ca2ed86996ff0e870d9c4c0a4517fc0659f25eac1815e9df8340a804fb"
+  },
+  "identities": {
+    "app-debug.apk": {
+      "package": "dev.kidremote.parent.unassigned.debug",
+      "versionCode": "1",
+      "versionName": "0.0.1-local",
+      "signerSha256": "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb"
+    },
+    "app-debug-androidTest.apk": {
+      "package": "dev.kidremote.parent.unassigned.debug.test",
+      "versionCode": "UNSPECIFIED_TEST_PACKAGE",
+      "versionName": "UNSPECIFIED_TEST_PACKAGE",
+      "signerSha256": "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb"
+    },
+    "child-debug.apk": {
+      "package": "dev.kidremote.child.unassigned.debug",
+      "versionCode": "2",
+      "versionName": "0.0.2-local",
+      "signerSha256": "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb"
+    },
+    "child-debug-androidTest.apk": {
+      "package": "dev.kidremote.child.unassigned.debug.test",
+      "versionCode": "UNSPECIFIED_TEST_PACKAGE",
+      "versionName": "UNSPECIFIED_TEST_PACKAGE",
+      "signerSha256": "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb"
+    }
+  }
+}

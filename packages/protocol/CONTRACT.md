@@ -345,3 +345,30 @@ WorkManager 2.11.2 was checked against the [official release notes](https://deve
 [Work request documentation](https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work)
 explains constraints, initial delays and inexact minimum retry backoff. No FCM SDK,
 provider address or physical/background delivery acceptance is selected by this slice.
+
+## OD-48 local parent presentation
+
+`POST /rest/rpc/parent_devices` (local PostgREST `/rpc/parent_devices`) accepts an
+optional UUID `p_after`, parent JWT only. This invoker-rights SQL function reads
+existing RLS-protected devices/policy/latest ACK/household in one statement snapshot.
+It returns protocol version, server UTC and at most 50 rows ordered by device UUID;
+a full page offers the next page, an empty page ends traversal. Each page is a new
+read, not an immutable history sequence. Nickname/model presentation is bounded to
+128 characters. No private credential, receipt digest or command history is exposed.
+Report values are labelled with server receipt time; no parent countdown is derived.
+Current canonical version/household period supplies operation preconditions, while
+remaining/manual reasons come only from the last ACK, never desired-state optimism.
+
+The parent submits the unchanged KR-009 operation envelope. A single latest retry
+request (no bearer) is Keystore-wrapped under noBackup, account/epoch bound and cleared
+on logout; retries reuse its ID/payload/preconditions. A new intentional action gets
+a new UUID. Uncertain requests require retry/discovery before another action. The
+existing operation-status GET resolves pending/persisted/superseded/expired/rejected.
+This local UI never labels persistence as enforcement application. Server admission
+conflicts are visible and are not silently retried with new payload/version.
+
+List/detail refresh explicitly, on resume and every 15 seconds while open; only
+freshness ages locally. No FCM or parent background scheduler is added. Last-known
+rows remain timestamped in memory across backend failures; logout clears that cache.
+Process restart restores authentication and the latest request, then rereads reports;
+no second durable device-policy cache is introduced on the parent.

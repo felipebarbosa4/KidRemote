@@ -179,7 +179,7 @@ internal class EnrollmentApi {
         return r
     }
 }
-data class EnrollmentState(val loading:Boolean=false,val paired:Boolean=false,val message:String="Não pareado. Enforcement não disponível.",val recovery:Boolean=false,val removed:Boolean=false,val pairingRecovery:Boolean=false)
+data class EnrollmentState(val loading:Boolean=false,val paired:Boolean=false,val message:String="Não pareado. Enforcement não disponível.",val recovery:Boolean=false,val removed:Boolean=false,val pairingRecovery:Boolean=false,val localReasons:String="")
 class EnrollmentModel(application:Application):AndroidViewModel(application) {
     var state by mutableStateOf(EnrollmentState());private set
     private val store=IdentityStore(application);private val api=EnrollmentApi();private val executor=Executors.newSingleThreadExecutor();private val main=Handler(Looper.getMainLooper())
@@ -199,7 +199,14 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         else {
             dev.kidremote.child.sync.SyncRecovery.request(getApplication(),explicitRecovery)
             val result=dev.kidremote.child.accounting.ChildAccounting(getApplication()).use{it.read()}
-            EnrollmentState(paired=true,message=if(result.ledger!=null)"Política local preservada; sincronização solicitada. Enforcement não disponível." else "Identidade armazenada; sincronização solicitada. Enforcement não ativo; configuração incompleta.")
+            EnrollmentState(paired=true,localReasons=buildList {
+                if(result.storageFailure)add("Falha no armazenamento · estado local não confirmado.")
+                result.ledger?.let { ledger ->
+                    if(ledger.policy.manualLock)add("Bloqueio manual solicitado pelo responsável.")
+                    if(ledger.remainingMs==0L)add("Tempo esgotado. Peça tempo adicional ao responsável.")
+                    if(ledger.uncertainty!=dev.kidremote.child.accounting.Uncertainty.NONE)add("Contabilidade incerta · dispositivo precisa de atenção.")
+                }
+            }.joinToString("\n"),message=if(result.ledger!=null)"Política local preservada; sincronização solicitada. Enforcement não disponível." else "Identidade armazenada; sincronização solicitada. Enforcement não ativo; configuração incompleta.")
         }
     }
     fun decoded(text:String)=run {

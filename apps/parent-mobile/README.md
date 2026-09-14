@@ -146,3 +146,17 @@ Mailpit v1.31.1 follows its [official release](https://github.com/axllent/mailpi
 All three images are digest-pinned in the runner. APIs follow the
 [Auth source contract](https://github.com/supabase/auth/blob/master/README.md).
 No parent JWT is forged; confirmation comes only from the captured email.
+
+## OD-48 KR-010 local controls
+
+The historical bootstrap-only statements above describe previous evidence. The local
+parent now has MY DEVICES/detail, real latest ACK remaining/reasons/freshness/health,
++10/+30/Lock/Unlock and explicit recurring limit (0–86400 seconds). It reuses
+KR-009 operations/status and one bounded invoker/RLS read of existing data. Desired
+state never optimistically replaces reported time/lock reasons. No enforcement
+adapter exists: persistence is not protection applied. One encrypted retry request
+survives process restart; a retry reuses the operation UUID. Logout clears it.
+
+Empty/list pairing remains the existing QR path, without camera changes. Last-known
+rows stay visible during backend error. Actual physical accessibility, enforcement,
+FCM, performance acceptance and distribution remain unverified/unauthorized.

@@ -166,3 +166,16 @@ service, enforcement, physical/Samsung action, deployment, merge or next issue.
 Use actual local PostgreSQL/HTTP/Android persistence and controlled scheduler clocks;
 no emulator result establishes OS scheduling latency. Preserve every failed/partial
 attempt and clean only task-owned resources.
+
+**OD-48 — APPROVED OWNER BOUNDED KR-010 LOCAL PARENT EXPERIENCE:**
+from KR-009 reporting head `a3c6335e19d58a3b4ddcd04422bf9d70fbf96d29`, authorize
+`kr-010-local-parent-controls`, a draft PR targeting `kr-009-local-sync`, and existing
+Issue #10. Implement light-mode Compose list/detail, timestamped real reports,
+unique/retry-stable +600/+1800/LOCK/UNLOCK/explicit daily-limit requests through
+existing Auth/RLS/KR-009, honest pending/persisted/unavailable enforcement status,
+and reuse pairing. Only minimal truthful child presentation is allowed. Validate
+real local backend/owned-emulator flows, semantics/accessibility and regressions;
+retain independent failures. No screenshots, physical/Samsung action, enforcement,
+FCM/provider, deployment, distribution, real-family use, merge or further issue.
+KR-003/008/009 and physical KR-010 criteria stay open. Preserve earlier PRs/evidence
+and clean only task-owned resources after validation.
