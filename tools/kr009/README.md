@@ -26,3 +26,5 @@ host/device clocks. No physical signal accuracy/performance acceptance follows.
 The retained push outbox still receives rows inside KR-004 acceptance; it has no
 provider registration or dispatcher here. Full KR-009 FCM/notification, background
 scheduling, capacity/latency and physical acceptance remain open.
+
+[Observed SQL/HTTP/Android results, exact APK identities, independent failures and cleanup](../../docs/test-plans/evidence/KR-009-LOCAL-2026-09-13.md). This local exception demonstrates AC-1/2 and parts of AC-3/4/7/8/9; the full issue remains open.

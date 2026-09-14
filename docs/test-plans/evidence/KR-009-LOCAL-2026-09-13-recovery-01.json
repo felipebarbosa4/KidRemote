@@ -1,0 +1,85 @@
+{
+  "scope": "KR008_LOCAL_RECOVERY_EMULATOR",
+  "source": "153871ea74cc83cb224ac1b18a3370fec5ab489f",
+  "stages": [
+    {
+      "method": "completeAndIncompleteRecovery",
+      "result": "PASS",
+      "codes": [
+        "ROOM_COMPLETE_SUFFIX_ONLY_ONCE_PARTIAL_CONTRADICTION_RESTRICTED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareStorageFailure",
+      "result": "PASS",
+      "codes": [
+        "ROOM_WRITE_ABORT_PRESERVED_LEDGER_DURABLE_INTENT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartStorageRecovery",
+      "result": "PASS",
+      "codes": [
+        "WRITABLE_RESTART_STAYS_UNCERTAIN_UNTIL_FULL_SUFFIX"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "trustedPeriodRecovery",
+      "result": "PASS",
+      "codes": [
+        "TRUSTED_NEW_PERIOD_ONCE_REBOOT_SKIPPED_DATES_LOCK_POLICY_PRESERVED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killBeforeRecoveryCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_RECOVERY_BEFORE_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterRecoveryRollback",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_KILL_ROLLED_BACK_NO_HYBRID_INTENT_RESTRICTS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterRecoveryCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_RECOVERY_AFTER_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterRecoveryCommit",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_COMMIT_SURVIVES_KILL_COMPLETE_ANCHOR_IDENTITY_NO_SECOND_RESET"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "corruptRecoveryFailsClosed",
+      "result": "PASS",
+      "codes": [
+        "CORRUPT_INPUT_INTENT_FAIL_CLOSED_AGGREGATE_TABLE_ONLY"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "eb4dc45216f41cb7979267fcf37bbaf746c77680cd55344f502163da0574a2f9",
+    "child-debug-androidTest.apk": "aec9808fd0dd75509e4da6b8d978cd20af5ea8dbb331a2891859ec922b4173d1"
+  },
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED",
+  "context": "KR-009 shared persistence regression; original KR-008 evidence unchanged"
+}
