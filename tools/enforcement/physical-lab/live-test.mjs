@@ -15,7 +15,7 @@ try{
  const after=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);ok(after.device_id===before.device_id&&after.policy_epoch===before.policy_epoch,'ENROLLMENT_SURVIVES_RESTART');
  const page=await wire(47362,'/rpc/parent_devices',{p_after:null},jwt);ok(page.devices.length===1&&page.devices[0].id===d.device_id,'NO_DUPLICATE_CHILD');
  ok(lease.sql(`select count(*) from private.device_credentials where device_id='${d.device_id}';`)==='1','SAME_CREDENTIAL');
- for(const id of Object.values(lease.record.containers)){const logs=lease.call(['logs',id]);for(const secret of [...Object.values(config.secrets),jwt,d.credential])check(!logs.includes(secret),'SECRET_IN_SERVICE_LOG');}ok(true,'SECRET_LOG_SCAN');
+ for(const id of Object.values(lease.record.containers)){const x=JSON.parse(lease.call(['inspect',id]))[0];check(x.HostConfig.LogConfig.Type==='none','LOG_RETENTION_NOT_DISABLED');}ok(true,'SERVICE_LOG_RETENTION_DISABLED');
  console.log('PHYSICAL_LAB_LIVE_CHECKS='+passed);
 } catch(e){console.error('LAB_LIVE_FAILED:'+(/^[A-Z0-9_]+$/.test(e.message)?e.message:'UNCLASSIFIED'));process.exitCode=1;}
 finally{await stopGateway();try{lease.teardown(r=>{console.log('CI_EXACT_LEASE_TEARDOWN_ADMITTED');});console.log('CI_EXACT_LEASE_TEARDOWN_VERIFIED');rmSync(dir,{recursive:true});}catch{console.error('CI_LEASE_CLEANUP_UNVERIFIED');process.exitCode=1;}}

@@ -21,7 +21,7 @@ try{
   Installed={[pscustomobject]@{package='dev.kidremote.child.unassigned.debug';sha256='f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56';signer='638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb';version=2;versionName='0.0.2-local-physical-lab';serviceRegistered=$true}}
   ReuseIdentityPermissions={$s.verified=$true}.GetNewClosure()
  }
- foreach($stage in @('Reverse','Resume','Normalize')){$k=$stage;$ops[$k]={param($id) if(-not $s.verified){throw 'missing gate'};$s.actions+=,$k;Check ($id -match '^[a-f0-9-]{36}$')}.GetNewClosure()}
+ foreach($stage in @('Reverse','Resume','Normalize')){$k=$stage;$ops[$k]={param($id) if(-not $s.verified){throw 'missing gate'};$s.actions+=,$k;if($id -notmatch '^[a-f0-9-]{36}$'){throw 'EVENT_ID_INVALID'}}.GetNewClosure()}
  foreach($stage in @('Uninstall','Install','Enroll','Consent')){$ops[$stage]={throw 'REUSE_MUST_NOT_CALL_SETUP'}}
  $r=Invoke-ReusePreparation $dir $ops
  Check ($r.status -ceq 'PREPARED_NOT_PASS' -and $r.ownerSetupActions -eq 0)

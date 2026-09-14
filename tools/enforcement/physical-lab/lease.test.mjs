@@ -13,11 +13,11 @@ class Docker {
   if(a[0]==='create'){
    const id=(this.number++).toString(16).padStart(64,'0'),kind=Object.entries(images).find(([,v])=>v===a.at(-1))[0];const ports={};
    a.forEach((v,i)=>{if(v==='-p'){const p=a[i+1].split(':');ports[p[2]+'/tcp']=[{HostIp:p[0],HostPort:p[1]}];}});
-   this.items[id]={Id:id,Name:'/'+a[a.indexOf('--name')+1],Config:{Labels:tags(),Image:a.at(-1)},HostConfig:{NetworkMode:a[a.indexOf('--network')+1],RestartPolicy:{Name:'no'},Privileged:false,PortBindings:ports},Mounts:kind==='db'?[{Type:'volume',Name:Object.keys(this.volumes)[0],Destination:'/var/lib/postgresql/data'}]:[],State:{Running:false}};return id;
+   this.items[id]={Id:id,Name:'/'+a[a.indexOf('--name')+1],Config:{Labels:tags(),Image:a.at(-1)},HostConfig:{NetworkMode:a[a.indexOf('--network')+1],RestartPolicy:{Name:'no'},LogConfig:{Type:'none'},Privileged:false,PortBindings:ports},Mounts:kind==='db'?[{Type:'volume',Name:Object.keys(this.volumes)[0],Destination:'/var/lib/postgresql/data'}]:[],State:{Running:false}};return id;
   }
   if(a[0]==='inspect')return JSON.stringify([this.items[a[1]]]);
   if(a[0]==='start'||a[0]==='stop'){this.items[a[1]].State.Running=a[0]==='start';return a[1];}
-  if(a[0]==='exec'){
+  if(a[0]==='exec'){if(a.includes('/proc/1/comm'))return 'postgres';
    if(input==='select 1;')return '1';if(input?.startsWith('select count(*) from pg_tables'))return '0';
    if(input?.includes('create schema lab_runtime'))this.schema=input.match(/values\('([a-f0-9]+)','([a-f0-9]+)'\)/).slice(1).join(':');
    if(input?.startsWith('select source'))return this.schema;return '';

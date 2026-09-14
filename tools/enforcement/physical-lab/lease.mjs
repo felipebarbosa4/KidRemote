@@ -35,7 +35,7 @@ export class Lease {
   const v=JSON.parse(this.call(['volume','inspect',r.volume]))[0];this.owned(v.Labels);check(v.Name===this.volume&&v.Driver==='local'&&Object.keys(v.Options??{}).length===0,'LEASE_VOLUME_MISMATCH');
   for(const [kind,id] of Object.entries(r.containers)){
    const x=JSON.parse(this.call(['inspect',id]))[0];this.owned(x.Config.Labels);
-   check(x.Id===id&&x.Name==='/'+this.name+'-'+kind&&x.Config.Image===images[kind]&&x.HostConfig.NetworkMode===this.network&&x.HostConfig.RestartPolicy.Name==='no'&&!x.HostConfig.Privileged,'LEASE_CONTAINER_MISMATCH');
+   check(x.Id===id&&x.Name==='/'+this.name+'-'+kind&&x.Config.Image===images[kind]&&x.HostConfig.NetworkMode===this.network&&x.HostConfig.RestartPolicy.Name==='no'&&x.HostConfig.LogConfig.Type==='none'&&!x.HostConfig.Privileged,'LEASE_CONTAINER_MISMATCH');
    const ports={db:{},auth:{'9999/tcp':[{HostIp:'127.0.0.1',HostPort:'47361'}]},rest:{'3000/tcp':[{HostIp:'127.0.0.1',HostPort:'47362'}]},mail:{'8025/tcp':[{HostIp:'127.0.0.1',HostPort:'47365'}]}};
    check(JSON.stringify(x.HostConfig.PortBindings??{})===JSON.stringify(ports[kind]),'LEASE_PORT_MISMATCH');
    const mounts=x.Mounts??[];
@@ -45,12 +45,12 @@ export class Lease {
  }
  sql(input){return this.call(['exec','-i',this.record.containers.db,'psql','-X','-qAt','-v','ON_ERROR_STOP=1','-v','VERBOSITY=sqlstate','-U','supabase_admin','-d','postgres'],input);}
  create(kind,vars,ports=[]){
-  const args=['create','--name',this.name+'-'+kind,...this.tags(),'--network',this.network,'--restart','no',
+  const args=['create','--name',this.name+'-'+kind,...this.tags(),'--network',this.network,'--restart','no','--log-driver','none',
    ...(kind==='db'?['--mount','type=volume,source='+this.volume+',target=/var/lib/postgresql/data']:kind==='mail'?['--tmpfs','/data:rw']:[]),
    ...ports.flatMap(p=>['-p','127.0.0.1:'+p]),...Object.keys(vars).flatMap(k=>['-e',k]),images[kind]];
   const id=this.call(args,undefined,Object.fromEntries(Object.entries(vars).map(([k,v])=>[k,String(v)])));check(/^[a-f0-9]{64}$/.test(id),'LEASE_CONTAINER_ID');this.record.containers[kind]=id;this.save();this.inspect();this.call(['start',id]);
  }
- async readyDb(fresh=false){for(let i=0;i<90;i++){try{if((!fresh||this.call(['logs',this.record.containers.db]).includes('PostgreSQL init process complete; ready for start up.'))&&this.sql('select 1;')==='1')return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
+ async readyDb(fresh=false){for(let i=0;i<90;i++){try{if((!fresh||this.call(['exec',this.record.containers.db,'cat','/proc/1/comm'])==='postgres')&&this.sql('select 1;')==='1')return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
  async start(){
   check(!existsSync(this.state+'.tmp'),'PARTIAL_HOST_STATE');
   check(this.call(['info','--format','{{.OSType}}'])==='linux','LINUX_DOCKER_REQUIRED');
