@@ -16,6 +16,11 @@ internal object EnforcementRuntime {
     fun connect(s:ChildEnforcementService,e:ChildAccounting){service=s;session=e;observation=EnforcementObservation(null,false,"ADAPTER_PENDING");checked=SystemClock.elapsedRealtime()}
     fun disconnect(s:ChildEnforcementService){if(service===s){service=null;session=null;observation=EnforcementObservation(null,false,"SERVICE_DISCONNECTED");checked=SystemClock.elapsedRealtime()}}
     fun engine():ChildAccounting?=session
+    fun sample(c:Context):Sample {
+        val usage=c.getSystemService(android.app.AppOpsManager::class.java).checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,android.os.Process.myUid(),c.packageName)==android.app.AppOpsManager.MODE_ALLOWED
+        val s=AndroidAccountingClock.sample(c,consented(c)&&usage&&session!=null)
+        return s.copy(signals=s.signals.copy(blocked=observation.attached))
+    }
     fun heartbeat(){checked=SystemClock.elapsedRealtime()}
     fun publish(c:Context,value:EnforcementObservation){observation=value;checked=SystemClock.elapsedRealtime()}
     fun persist(c:Context,e:ChildAccounting,value:EnforcementObservation){

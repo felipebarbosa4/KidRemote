@@ -9,7 +9,7 @@ import dev.kidremote.child.enforcement.EnforcementRuntime
 import java.time.Instant
 
 /** Explicit single-flight sync; pending ACK survives restart. No push, timer or enforcement adapter. */
-internal class DeviceSync(private val context:Context,private val sample:()->Sample={AndroidAccountingClock.sample(context,EnforcementRuntime.engine()!=null)}):AutoCloseable {
+internal class DeviceSync(private val context:Context,private val sample:()->Sample={EnforcementRuntime.sample(context)}):AutoCloseable {
     private val identity=IdentityStore(context)
     private val shared=EnforcementRuntime.engine()
     private val engine:ChildAccounting=shared?:ChildAccounting(context)

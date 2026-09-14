@@ -44,7 +44,7 @@ class ChildEnforcementService:AccessibilityService(),EnforcementAdapter {
             try {
                 val id=IdentityStore(this).read()
                 if(id!=null&&!id.has("removal")&&id.optBoolean("accounting_initialized",false)) {
-                    val result=engine.sample(AndroidAccountingClock.sample(this,true))
+                    val result=engine.sample(EnforcementRuntime.sample(this))
                     next=result.ledger?.let(EnforcementTarget::from)
                     val ops=getSystemService(android.app.AppOpsManager::class.java)
                     val usage=ops.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,android.os.Process.myUid(),packageName)==android.app.AppOpsManager.MODE_ALLOWED

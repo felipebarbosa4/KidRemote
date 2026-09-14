@@ -13,8 +13,8 @@ data class Policy(val epoch:String,val version:Long,val zone:String,val zoneRevi
         require(dailyLimitSeconds in 0..86400&&bonusSeconds in 0..86400&&dailyLimitSeconds+bonusSeconds<=86400)
     }
 }
-data class Signals(val interactive:Boolean,val keyguard:Boolean,val permitted:Boolean,val awake:Boolean=true) {
-    val eligible get()=interactive&&!keyguard&&permitted&&awake
+data class Signals(val interactive:Boolean,val keyguard:Boolean,val permitted:Boolean,val awake:Boolean=true,val blocked:Boolean=false) {
+    val eligible get()=interactive&&!keyguard&&permitted&&awake&&!blocked
 }
 data class Sample(val boot:Long,val elapsed:Long,val uptime:Long,val signals:Signals)
 data class Range(val boot:Long,val start:Long,val end:Long,val signals:Signals)
