@@ -45,8 +45,31 @@ class EnforcementRuntimeTest {
         val engine=EnforcementRuntime.engine()!!
         waitFor("OBSERVATION_DURABLE_OFFLINE"){engine.read().ledger?.lastAdapterObservation?.let{JSONObject(it).getBoolean("attached")}==true}
         if(network){dev.kidremote.child.sync.DeviceSync(c).use{check(!it.sync().storageFailure)};i.sendStatus(0,Bundle().apply{putString("enforcement","REAL_PARENT_LOCK_ROOM_ADAPTER_ACK_SENT")})}
-        val before=engine.read().ledger!!
+        var before=engine.read().ledger!!
         check(before.policy.manualLock&&before.bonusSeconds==(if(network)0L else 600L))
+        if(!network){
+            // Local canonical/time fixtures, explicitly not authenticated network evidence.
+            val t=AndroidAccountingClock.sample(c,true)
+            check(!engine.recoverTrustedTime(TrustedTime(epoch,"Etc/UTC",1,utc+86400000,t)).storageFailure)
+            fun policy(manual:Boolean,limit:Long,bonus:Long){val old=engine.read().ledger!!;check(!engine.acceptPolicy(old.policy.copy(version=old.policy.version+1,manualLock=manual,dailyLimitSeconds=limit,bonusSeconds=bonus,bonusDate=old.date),AndroidAccountingClock.sample(c,true)).storageFailure)}
+            policy(false,3600,0)
+            waitFor("UNLOCK_POSITIVE_DETACHED"){EnforcementRuntime.text().startsWith("Sobreposição local ausente")}
+            policy(false,0,0)
+            waitFor("ZERO_REQUIRES_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
+            policy(true,0,0);policy(false,0,0)
+            check(engine.read().ledger!!.restrictionRequired)
+            i.sendStatus(0,Bundle().apply{putString("enforcement","UNLOCK_ZERO_STILL_REQUIRED")})
+            policy(false,0,600)
+            waitFor("PLUS10_CLEARS_EXPIRY_DETACHED"){EnforcementRuntime.text().startsWith("Sobreposição local ausente")}
+            policy(false,0,2400)
+            check(engine.read().ledger!!.bonusSeconds==2400L)
+            policy(true,0,2400)
+            waitFor("PLUS30_MANUAL_LOCK_ATTACHED"){EnforcementRuntime.text().startsWith("Restrição observada")}
+            val locked=engine.read().ledger!!
+            check(engine.acceptPolicy(locked.policy.copy(version=1,manualLock=false),AndroidAccountingClock.sample(c,true)).ledger!!.restrictionRequired)
+            i.sendStatus(0,Bundle().apply{putString("enforcement","STALE_UNLOCK_REJECTED")})
+            before=engine.read().ledger!!
+        }
         // Safe-system route preserves desired state and detaches the overlay.
         c.startActivity(Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         waitFor("SAFE_SURFACE_DETACHED"){EnforcementRuntime.text().startsWith("Superfície de sistema")}
