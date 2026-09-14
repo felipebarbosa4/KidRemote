@@ -29,33 +29,33 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
  $node=Join-Path $Bundle 'runtime\node.exe'
  if(-not(Test-Path -LiteralPath $docker) -or -not(Test-Path -LiteralPath $node)){throw 'INVALID:START_DOCKER_DESKTOP_AND_RETRY_BEFORE_REPLACEMENT'}
  $root=Join-Path $env:LOCALAPPDATA 'KidRemote\physical-lab';Protect-LabDirectory $root
- $guard=$null;$p=$null
+ $guard=$null;$p=$null;$stage='LEASE_LOCK'
  try{
   $guard=[IO.File]::Open((Join-Path $root 'runner.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
-  $secretFile=Join-Path $root 'lease.dpapi'
+  $stage='PROTECTED_STATE';$secretFile=Join-Path $root 'lease.dpapi'
   if(-not(Test-Path -LiteralPath $secretFile)){
    if(Test-Path -LiteralPath (Join-Path $root 'resources.json')){throw 'INVALID:LEASE_SECRETS_MISSING'}
    $new=[ordered]@{format=1;id=[Guid]::NewGuid().ToString();source=$Source;device=$null;secrets=@{}}
    foreach($k in @('database','jwt','parentPassword','probePassword')){$bytes=New-Object byte[] 32;$rng=[Security.Cryptography.RandomNumberGenerator]::Create();try{$rng.GetBytes($bytes)}finally{$rng.Dispose()};$v=([BitConverter]::ToString($bytes)).Replace('-','').ToLowerInvariant();if($k.EndsWith('Password')){$v+='aA1!'};$new.secrets[$k]=$v}
    Write-LabProtected $secretFile $new;$new=$null
   }
-  $local=Read-LabProtected $secretFile
+  $stage='PROTECTED_READ';$local=Read-LabProtected $secretFile
   if($local.format -ne 1 -or $local.source -cne $Source -or $local.id -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:LEASE_SOURCE_MISMATCH'}
-  $p=New-Object Diagnostics.Process;$p.StartInfo.FileName=$node;$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
+  $stage='NATIVE_START';$p=New-Object Diagnostics.Process;$p.StartInfo.FileName=$node;$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
   $p.StartInfo.RedirectStandardInput=$true;$p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
   $script=Join-Path $SourceRoot 'tools\enforcement\physical-lab\runtime.mjs';if($script.Contains('"')){throw 'INVALID:SOURCE_PATH'};$p.StartInfo.Arguments='"'+$script+'"'
   [void]$p.Start();$err=$p.StandardError.ReadToEndAsync()
   $config=@{root=$SourceRoot;state=(Join-Path $root 'resources.json');source=$Source;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine'}
   $p.StandardInput.WriteLine(($config|ConvertTo-Json -Depth 8 -Compress));$config=$null
-  $line=$p.StandardOutput.ReadLineAsync()
+  $stage='PRIVATE_READINESS';$line=$p.StandardOutput.ReadLineAsync()
   if(-not $line.Wait(600000)){throw 'INVALID:BACKEND_START_TIMEOUT'}
   $raw=$line.GetAwaiter().GetResult();if(-not $raw -or $raw.Length -gt 8192){throw 'INVALID:BACKEND_START_FAILED'};$ready=$raw|ConvertFrom-Json;$raw=$null
   if(-not $ready.ready){throw 'INVALID:LIVE_BACKEND_PREFLIGHT_FAILED'}
   if($ready.jwt -cnotmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'){throw 'INVALID:LAB_SESSION_SCHEMA'}
-  $jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
+  $stage='PRIVATE_SESSION';$jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
   return @{process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
  }catch{
-  if($p){try{$p.StandardInput.WriteLine('STOP');$p.StandardInput.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw 'INVALID:INVALID_HOST_PREFLIGHT'
+  if($p){try{$p.StandardInput.WriteLine('STOP');$p.StandardInput.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$_.InvocationInfo.ScriptLineNumber)
  }
 }
 function Save-ProductLabDevice($Backend,$Device){

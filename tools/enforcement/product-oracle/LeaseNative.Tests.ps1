@@ -41,10 +41,12 @@ r.on('line',line=>{if(line==='STOP'){process.stdout.write('STOPPED_DATA_RETAINED
  started=true;process.stdout.write('{"ready":true,"jwt":"fixture.payload.signature"}\n');});
 '@
    [IO.File]::WriteAllText((Join-Path $scripts 'runtime.mjs'),$fake)
+   Write-Output 'NATIVE_PIPE_FIRST_START'
    $b=Start-ProductBackend $source $bundle ('a'*40);$leaseId=$b.local.id;Check ($null -ne $b.jwt)
    $caught=$false;try{$other=Start-ProductBackend $source $bundle ('a'*40)}catch{$caught=$true};Check $caught
    $d=[pscustomobject]@{id=[Guid]::NewGuid().ToString();policy_epoch=[Guid]::NewGuid().ToString()};Save-ProductLabDevice $b $d
    Check ((Stop-ProductBackend $b) -ceq 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED');$b=$null
+   Write-Output 'NATIVE_PIPE_SECOND_START'
    $b=Start-ProductBackend $source $bundle ('a'*40)
    Check ($b.local.id -ceq $leaseId -and $b.local.device.id -ceq $d.id -and $b.local.device.policy_epoch -ceq $d.policy_epoch)
    $null=Stop-ProductBackend $b;$b=$null
