@@ -75,7 +75,8 @@ Persist recurring policy, current day's aggregate usage, canonical bonus, manual
 Local expiry does not contact the server. Offline additions are impossible until delivered; parent text must say pending.
 Push loss, restart, resume, reconnect and best-effort background work all lead to the same sync endpoint.
 
-Room is recommended for transactional state/command receipts; exact library version is **UNSPECIFIED**.
+OD-46 adopts Room 2.8.5 for the KR-008 local aggregate ledger; command receipts and network convergence remain KR-009.
+The bounded [local accounting core](../tools/kr008/README.md) uses existing child identity/epoch, one transactional aggregate/cursor record and canonical local fixtures. It is not started by unconfigured enrollment and does not connect an enforcement or sync adapter.
 Android recommends Room over direct SQLite for structured persistence.
 [Room](https://developer.android.com/training/data-storage/room).
 Keystore protects keys; encrypted credential bytes live in app-private storage excluded from backup; Room is not automatically an encrypted database.

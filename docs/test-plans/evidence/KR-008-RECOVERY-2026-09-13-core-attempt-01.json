@@ -1,0 +1,92 @@
+{
+  "scope": "KR008_LOCAL_ACCOUNTING_EMULATOR",
+  "source": "bc7a855f7dc01a1760d42b5fdca690a82ab3ad55",
+  "stages": [
+    {
+      "method": "preparePersistence",
+      "result": "PASS",
+      "codes": [
+        "REAL_ROOM_INITIALIZED_AGGREGATE_PERSISTED_NO_NETWORK"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartAndReconcile",
+      "result": "PASS",
+      "codes": [
+        "REAL_PROCESS_RESTART_UNCOVERED_SUFFIX_ONCE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "migrationAndRefusedDowngrade",
+      "result": "PASS",
+      "codes": [
+        "REAL_SQLITE_V1_V2_MIGRATION_PRESERVED_DOWNGRADE_REFUSED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "crashBeforeCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_BEFORE_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterUncommittedCrash",
+      "result": "PASS",
+      "codes": [
+        "REAL_KILL_UNCOMMITTED_TRANSACTION_ROLLED_BACK"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "crashAfterCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_AFTER_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterCommittedCrash",
+      "result": "PASS",
+      "codes": [
+        "REAL_KILL_COMMITTED_AGGREGATE_AND_CURSOR_SURVIVE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "writeFailureAndCorruption",
+      "result": "PASS",
+      "codes": [
+        "REAL_WRITE_FAILURE_AND_CORRUPTION_NO_RESET_NO_FREE_ALLOWANCE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "concurrentSuffixAndIdentityBoundary",
+      "result": "PASS",
+      "codes": [
+        "REAL_CONCURRENT_SUFFIX_IDENTITY_EXPIRY_AND_REMOVAL_BOUNDARY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "missingDatabaseAndSignals",
+      "result": "PASS",
+      "codes": [
+        "MISSING_DB_FAILS_CLOSED_OS_SIGNALS_USAGE_HISTORY_UNVERIFIED"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "0c57125f91b83e6a8b472ee486517bcb8b846348a24a7d74cbf489553fec65a5",
+    "child-debug-androidTest.apk": "5be94c421f93d8497ce42a5da42bb4ac2b3ddf9342bb56508cd0e497fdec98fa"
+  },
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED"
+}

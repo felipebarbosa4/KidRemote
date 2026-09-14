@@ -129,3 +129,7 @@ ADD_TIME uses operation ID and period precondition, permitting safe distinct con
 The machine-readable reviewed cases are [STATE-MACHINE-CASES.json](STATE-MACHINE-CASES.json). They model authoritative product/server
 transitions: an `ADD_TIME` action creates one canonical grant, while child sync still consumes the protocol's absolute bonus total.
 They are product fixtures, not production reducer code.
+
+## Approved local uncertainty recovery — OD-46 AC-7 extension
+
+Unreconstructible accounting remains restricted in the current trusted period, preserving durable usage, policy/version, bonus and manual lock. Uncertainty clears only after full bounded suffix reconstruction commits without overlap, or trusted time establishes a strictly newer household period. The latter atomically installs that period and its new monotonic/time anchor, resets used time and prior-period bonus, and preserves the stored recurring policy and manual lock. Repeated deliveries and skipped dates cannot mint additional allowances. Same-period trusted time, writable storage and device clock/zone edits are not recovery. No manual reset is provided. The local KR-008 interface uses canonical fixtures; KR-009 still owns network convergence. See [LOCAL-TIME](LOCAL-TIME.md#od-46-approved-local-recovery-ac-7).

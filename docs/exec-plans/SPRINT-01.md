@@ -1,5 +1,23 @@
 # Sprint 01 — Architecture and feasibility (one working week)
 
+## KR-008 AC-2 local app-update — OD-46 extension
+
+- **Goal:** prove actual versioned Android replacement preserves identity-bound accounting, with no reset/replay and transactional migration.
+- **Context:** clean `609c0fd`, existing Issue #8 / draft PR #21, same branch; current Room schema 2 and existing legacy schema 1 fixture.
+- **Constraints:** owned emulator; same-signature lab APK v1→v2; no clear/uninstall inside the update window; no core redesign, physical execution, sync/receipts or enforcement. Preserve each attempt separately.
+- **Done when:** pre/post APK source/hash identities, real update/restart/migration/death/refusal results and remaining physical/KR-009 gaps are recorded; CI passes; Issue #8 / PR #21 synchronized.
+
+**Executed local result:** [update evidence](../test-plans/evidence/KR-008-UPDATE-2026-09-13.md): two actual v1→v2 replacements, 12 normal Android checks, two expected downgrade refusals and one deliberate migration death passed. Full aggregate/identity equality, transactional rollback and one committed migration with no replay observed. Code `8c4b2f7` CI passed; earlier failed/cancelled CI attempts are preserved. Local AC-2 persistence demonstrated except KR-009 receipts; physical/OEM acceptance remains open.
+
+## KR-008 local accounting — OD-46
+
+- **Goal:** a persisted local reducer implements approved accounting/period/version semantics without double counting or free recovery allowance.
+- **Context:** clean `4537954`, existing Issue #8, child identity and approved ADR-0005/LOCAL-TIME. Branch `kr-008-local-accounting` targets unmerged `kr-007-local-enrollment`.
+- **Constraints:** canonical inputs through a local interface only; one aggregate ledger bound to existing identity/epoch; no per-package persistence, network sync/receipts, enforcement or physical device. No reinterpretation of KR-007 evidence.
+- **Done when:** controlled domain fixtures, actual Room transaction/migration/crash and owned-emulator results are retained with OBSERVED/INFERRED/UNSPECIFIED labels; CI passes; remaining physical/battery/KR-009 gaps stay explicit and Issue #8/new draft PR synchronized.
+
+**Local result:** [classified KR-008 evidence](../test-plans/evidence/KR-008-LOCAL-2026-09-13.md): 29 accounting domain tests, actual Room migration/transaction/failure and two separately retained emulator attempts pass. Eight normal stages plus two deliberate process kills per attempt; final code `eea8d6a`. Draft PR #21 targets KR-007. Issue #8 remains open: physical AC-4, battery/OEM/history correctness, authorized recovery, real app updates and KR-009 receipts/convergence are not accepted.
+
 ## KR-007 camera and identity-storage continuation — OD-45
 
 ### AC-7 local removal — OD-45, 2026-09-13

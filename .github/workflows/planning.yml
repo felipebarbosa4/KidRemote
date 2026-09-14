@@ -25,6 +25,7 @@ jobs:
         run: |
           node --test tools/kr006/*.test.mjs
           node --test tools/kr007/*.test.mjs
+          node --test tools/kr008/*.test.mjs
           node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --enrollment-test
       - name: Build parent with preinstalled SDK only
         run: |
@@ -36,6 +37,17 @@ jobs:
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
           node tools/kr007/audit-child.mjs
+      - name: Build and verify KR-008 versioned update APK pair
+        env:
+          KR008_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node tools/kr008/build-update.mjs
+      - name: Retain KR-008 update APKs and public identities only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: kr008-update-apks
+          path: apps/child-android/build/outputs/kr008-update/
+          if-no-files-found: error
+          retention-days: 7
       - name: Retain debug APK only (no accounts, mail or local-service data)
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

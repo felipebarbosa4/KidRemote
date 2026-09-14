@@ -32,7 +32,7 @@ internal fun parseQr(text: String): JSONObject? = try {
     q
 }catch(_:Exception){null}
 
-internal class IdentityStore(context: Context) {
+internal class IdentityStore(private val context: Context) {
     val file=File(context.noBackupFilesDir,"device-identity")
     val pending=File(context.noBackupFilesDir,"pairing-pending")
     private val alias="device-identity-v1"
@@ -68,6 +68,7 @@ internal class IdentityStore(context: Context) {
         val value=read()?:return false
         if(!value.has("removal"))return false
         validateRemoval(value.getJSONObject("removal").toString(),value)
+        dev.kidremote.child.accounting.clearAccountingForValidatedRemoval(context)
         android.util.AtomicFile(file).delete()
         pending.delete()
         check(!file.exists()&&!pending.exists())
