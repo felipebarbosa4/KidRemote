@@ -64,7 +64,7 @@ partial state; no separate owner diagnostic is requested.
 
 ### Preserved CI attempt 1
 
-Run 34985676649 / source 27455b5: native QR 32 PS5.1 + 32 PS7 passed;
+Run 34985676649 / source 27455b5 (overall cancelled by the later source push while the Android job was still running): native QR 32 PS5.1 + 32 PS7 passed;
 PS5.1 resume 57, native DPAPI/lock 20 and existing host suites passed. Real Docker
 reconciliation/lifecycle and SQL job passed. Windows compatibility tests failed 2/18:
 checkout CRLF bytes hashed differently from exact historical LF git objects. This is
@@ -76,3 +76,34 @@ The product-only metadata option also inventories exact AndroidX WorkManager DB/
 sidecars and ProfileInstaller constants, verified in the approved f6d2a240 APK DEX
 and locally preserved AndroidX bytecode. It reads only existence/size. Default old
 review semantics remain unchanged: the historical two unknown files remain UNKNOWN.
+
+### Reconciliation gate and validation checkpoint
+
+Source cf94067 / run 34986279634: Windows job passed, including QR 32/32,
+resume 67/67 on PS5.1/PS7, DPAPI/native pipe 20 (PS5.1) and 5 (PS7), lease +
+compatibility 18/18, existing host/independent-oracle regressions. PostgreSQL/Auth/
+gateway persistent lifecycle passed 18 checks with exact CI-owned teardown. This
+checkpoint does not substitute for required CI on the final bundle source.
+
+Additional local coverage executes the actual entrypoint ReadOnlyTarget block with
+synthetic transports: 32 assertions over eight states, including exact LAB bytes
+without a saved device. Review includes the exact historical manifest/APK hashes,
+completed timeout/result/cleanup metadata and stage chain. Additional Lock/Unlock
+admission is rejected. The real preserved historical journal passed this structural
+read-only check; this alone does not authorize mutation without future live state gates.
+Checksum-protected review uses create-new, flush and atomic rename; partial writes
+and duplicate writes are rejected. Old attempts are never overwritten.
+
+Expected owner actions: ENROLL/RESET_ENROLL at most five logical consent/scan actions
+(one QR, camera if requested, Usage Access if missing, product consent, Accessibility
+if missing); consistent REUSE requires zero QR and only missing consent, ideally zero
+actions. Runtime/transport ambiguity is INVALID, never an invitation to bypass gates.
+Configured/reported mismatches remain review-required; the automatic reset is narrower
+than the owner's maximum authorization to avoid inventing a new removal architecture.
+
+No product/QR implementation or approved lab APK bytes changed. The immutable new
+bundle may be declared READY_FOR_ONE_OWNER_RUN only once its own source's complete
+CI passes and every frozen file is hashed. This readiness is safe admission to one
+future attempt, not physical enforcement evidence. Bundle source/hash and single
+replacement command are recorded in the PR handoff after freezing. Earlier commands
+remain retired; no physical command is executed during this task.

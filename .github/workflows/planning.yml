@@ -119,6 +119,7 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ResumeGate.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/Reuse.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/Replacement.Tests.ps1
@@ -189,6 +190,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
           ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
@@ -233,6 +235,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
           ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1

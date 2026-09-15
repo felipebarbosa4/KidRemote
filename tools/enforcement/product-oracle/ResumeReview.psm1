@@ -6,6 +6,10 @@ function Test-ResumableHistory([string]$Directory){
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
  if($j.partial -or $j.verdict -cne 'INVALID' -or $j.cleanup -cne 'UNVERIFIED'){return $false}
  if($m.attempt -cne 'd9157ae6-a6ff-4849-919f-c8f13fe08f7e' -or $m.source -cne '3693034816039de67087066f077e6e02a9507dd6'){return $false}
+ if($m.bundle -cne 'a4824b1e655b5ec3dcaf0d69fcb57516392a0ea9c270cc1865f7c735c63e40fa' -or $m.child -cne 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' -or $m.fixture -cne '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'){return $false}
+ $resultPath=Join-Path $Directory 'result.txt';if(-not(Test-Path -LiteralPath $resultPath)){return $false}
+ $raw=[IO.File]::ReadAllText($resultPath);if($raw.Length -gt 65536){return $false};$result=$raw|ConvertFrom-Json
+ if($result.hostValidated -ne $true -or $result.primary.reason -cne 'INVALID:PAIRING_TIMEOUT' -or $result.primary.lastStage -cne 'ENROLLMENT_ADMITTED' -or $result.primary.cleanup -cne 'UNVERIFIED' -or $result.reverseCleanup -cne 'OWN_REVERSE_REMOVED' -or $result.backendCleanup -cne 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'){return $false}
  $expected='BEGIN,PREMUTATION,UNINSTALL_ADMITTED,INSTALL_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED,VERDICT,CLEANUP_ADMITTED,CLEANUP'
  return (($j.rows.stage -join ',') -ceq $expected)
 }
@@ -37,7 +41,8 @@ function Get-ResumeHash([string]$Text){
 }
 function Read-ResumeReview([string]$Directory){
  if(Test-Path -LiteralPath (Join-Path $Directory 'resume-review.tmp')){throw 'INVALID:RESUME_REVIEW_PARTIAL'}
- $envelope=[IO.File]::ReadAllText((Join-Path $Directory 'resume-review'))|ConvertFrom-Json
+ $raw=[IO.File]::ReadAllText((Join-Path $Directory 'resume-review'));if($raw.Length -gt 8192){throw 'INVALID:RESUME_REVIEW_BOUNDS'}
+ $envelope=$raw|ConvertFrom-Json
  if($envelope.sha256 -cne (Get-ResumeHash $envelope.payload)){throw 'INVALID:RESUME_REVIEW_CHECKSUM'}
  $record=$envelope.payload|ConvertFrom-Json
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
@@ -50,8 +55,8 @@ function Write-ResumeReview([string]$Directory,[string]$HistoricalAttempt,[strin
  $record=[ordered]@{kind='RESUME_REVIEW';format=1;attempt=$m.attempt;historicalAttempt=$HistoricalAttempt;source=$m.source;bundle=$m.bundle;utc=[DateTime]::UtcNow.ToString('o');compatibility=$Digest;classification=$Resolution.classification;packageMode=$Resolution.packageMode;permittedPath=$Resolution.path;credentialProof=$Resolution.credentialProof;backendDevice=$Resolution.backendDevice;localIdentity=$Resolution.localIdentity;pairingPending=$Resolution.pairingPending;localAccounting=$Resolution.localAccounting;historicalVerdict='UNCHANGED';historicalCleanup='UNCHANGED'}
  $path=Join-Path $Directory 'resume-review';$tmp=$path+'.tmp'
  if((Test-Path -LiteralPath $path) -or (Test-Path -LiteralPath $tmp)){throw 'INVALID:RESUME_REVIEW_IMMUTABLE'}
- $f=[IO.File]::Open($tmp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
  $payload=$record|ConvertTo-Json -Compress;$envelope=@{payload=$payload;sha256=(Get-ResumeHash $payload)}|ConvertTo-Json -Compress
+ $f=[IO.File]::Open($tmp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
  try{$bytes=[Text.Encoding]::UTF8.GetBytes($envelope);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  [IO.File]::Move($tmp,$path)
 }
