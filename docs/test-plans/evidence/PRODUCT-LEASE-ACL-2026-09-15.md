@@ -44,3 +44,54 @@ bundle. Synthetic denied-operation injection must not be described as actual OS 
 Old source-60fd897 command is retired. No additional owner diagnostic is requested.
 Readiness remains BLOCKED until native tests, full CI and immutable freeze complete;
 final source/hash/CI verdict are recorded in the PR handoff.
+
+## Recovered checkpoint after PC restart
+
+HEAD was `a82db394d258a4065cd72f2177d08bafc8b017e1`, on the original branch,
+with only seven uncommitted ACL rejection-test lines. Those lines were preserved.
+No local test process survived. CI [34991796915](https://github.com/felipebarbosa4/KidRemote/actions/runs/34991796915)
+finished successfully for that exact HEAD: six jobs, native ACL 40 checks on PS5.1
+and PS7; lease/DPAPI/transport 20 on PS5.1 and 5 on PS7. No new immutable bundle
+had been frozen. The interrupted activity beyond this checkpoint is UNSPECIFIED.
+
+Host-only native readback now confirms current-user ownership, protected inheritance,
+and exactly two noninherited FullControl rules (current user and SYSTEM, child/file
+inheritance, no propagation flags). Lease file sizes/timestamps match the preserved
+observation above. Historical diagnostic/result/journal and protected secrets were
+not modified or decrypted. This is current-state evidence, not the failure-time ACL.
+
+Independent resumed validation attempts:
+
+- One wrong UNC distribution path failed before script execution; two correct UNC
+  invocations were refused by the existing signing policy. No policy change followed.
+- Native PS5.1 ACL test from local NTFS failed at test setup's `Set-Acl` with actual
+  `PrivilegeNotHeldException` / `SeSecurityPrivilege`. Loading explicit descriptor
+  sections alone did not fix that same unprotect operation (second failed attempt).
+- Direct .NET persistence of modified sections passed the isolated protected/inherited
+  ACL control. Implementation now loads Access/Owner/Group explicitly and persists
+  modified sections through Directory.SetAccessControl (PS5.1) or
+  FileSystemAclExtensions.SetAccessControl (PS7), without an audit-SACL write or
+  elevation. Existing user/SYSTEM admission and idempotence remain enforced.
+- Corrected native PS5.1 ACL suite: **49 checks PASS**, actual NTFS and synthetic
+  DPAPI round trip. Denied-operation injections remain labeled INJECTED; foreign-owner
+  fixture is injected, foreign explicit allow is an actual NTFS rule and remains
+  unchanged after refusal.
+- First copied lease-suite invocation lacked its relative lease.mjs fixture and
+  failed before native-pipe startup; its synthetic temporary state was cleaned by
+  finally. This is a harness-copy failure, not a lease or physical result.
+- Local Node lease/compatibility: **18/18 PASS**, zero skipped/failed. Repository
+  validator and `git diff --check`: PASS.
+
+The current host reproduces a Set-Acl privilege failure, but the exact API/exception
+in the historical physical attempt remains **UNSPECIFIED**. No historical verdict is
+promoted or replaced. Full current-source Windows CI and immutable freeze still gate
+publication of the replacement command.
+
+API semantics checked 2026-09-15: [DirectorySecurity sections](https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.directorysecurity.-ctor),
+[AccessControlSections](https://learn.microsoft.com/en-us/dotnet/api/system.security.accesscontrol.accesscontrolsections),
+[Directory.SetAccessControl](https://learn.microsoft.com/en-us/dotnet/api/system.io.directory.setaccesscontrol?view=netframework-4.8.1)
+and [FileSystemAclExtensions.SetAccessControl](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions.setaccesscontrol).
+
+Correct relative-layout native PS5.1 lease rerun: **20 checks PASS**, including
+private native Node/fake-Docker pipe, independent restart, DPAPI, exclusive lock and
+typed stage propagation. Real Docker and ADB were not invoked by that suite.

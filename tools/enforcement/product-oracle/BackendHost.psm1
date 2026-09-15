@@ -9,6 +9,15 @@ function Write-LabPipeLine($Process,[string]$Text){
 function Throw-LabState([string]$Code){
  $e=New-Object Exception('INVALID:'+$Code);$e.Data['hostStage']='LEASE_STATE';$e.Data['hostCode']=$Code;throw $e
 }
+function Read-LabDirectoryAcl([string]$Path){
+ # Load only DACL/owner/group; never request or persist the audit SACL.
+ return (New-Object Security.AccessControl.DirectorySecurity($Path,([Security.AccessControl.AccessControlSections]::Access -bor [Security.AccessControl.AccessControlSections]::Owner -bor [Security.AccessControl.AccessControlSections]::Group)))
+}
+function Set-LabDirectoryAcl([string]$Path,$Acl){
+ # Persist modified sections directly, without the Set-Acl provider's wider write.
+ if($PSVersionTable.PSVersion.Major -le 5){[IO.Directory]::SetAccessControl($Path,$Acl)}
+ else{[IO.FileSystemAclExtensions]::SetAccessControl((New-Object IO.DirectoryInfo($Path)),$Acl)}
+}
 function Write-LabAclRecord([string]$Root,[string]$Id,[string]$Stage){
  $path=Join-Path $Root ('acl-recovery-'+$Id+'.'+$Stage)
  $f=[IO.File]::Open($path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
@@ -36,7 +45,7 @@ function Protect-LabDirectory([string]$Path,[hashtable]$Ops=@{}){
  }catch{if($_.Exception.Data.Contains('hostCode')){throw};Throw-LabState LAB_DIRECTORY_OWNER_INVALID}
  $created=-not [IO.Directory]::Exists($Path)
  try{if($Ops.ContainsKey('Create')){& $Ops.Create $Path}else{[void][IO.Directory]::CreateDirectory($Path)}}catch{Throw-LabState LAB_DIRECTORY_CREATE_FAILED}
- try{$user=[Security.Principal.WindowsIdentity]::GetCurrent().User;if($Ops.ContainsKey('Read')){$acl=& $Ops.Read $Path}else{$acl=Get-Acl -LiteralPath $Path -ErrorAction Stop};$owner=$acl.GetOwner([Security.Principal.SecurityIdentifier])}catch{Throw-LabState LAB_DIRECTORY_ACL_READ_FAILED}
+ try{$user=[Security.Principal.WindowsIdentity]::GetCurrent().User;if($Ops.ContainsKey('Read')){$acl=& $Ops.Read $Path}else{$acl=Read-LabDirectoryAcl $Path};$owner=$acl.GetOwner([Security.Principal.SecurityIdentifier])}catch{Throw-LabState LAB_DIRECTORY_ACL_READ_FAILED}
  # A directory newly created by this invocation may receive the admin group's
  # default owner. Existing ownership is never inferred from a pathname alone.
  if(-not $created -and $owner.Value -cne $user.Value){Throw-LabState LAB_DIRECTORY_OWNER_INVALID}
@@ -64,9 +73,9 @@ function Protect-LabDirectory([string]$Path,[hashtable]$Ops=@{}){
   foreach($sid in @($user,(New-Object Security.Principal.SecurityIdentifier('S-1-5-18')))){
    $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow')))
   }
-  if($Ops.ContainsKey('Apply')){& $Ops.Apply $Path $acl}else{Set-Acl -LiteralPath $Path -AclObject $acl -ErrorAction Stop}
+  if($Ops.ContainsKey('Apply')){& $Ops.Apply $Path $acl}else{Set-LabDirectoryAcl $Path $acl}
  }catch{Throw-LabState LAB_DIRECTORY_ACL_APPLY_FAILED}
- try{$verified=Get-Acl -LiteralPath $Path -ErrorAction Stop}catch{Throw-LabState LAB_DIRECTORY_ACL_READ_FAILED}
+ try{$verified=Read-LabDirectoryAcl $Path}catch{Throw-LabState LAB_DIRECTORY_ACL_READ_FAILED}
  if($verified.GetOwner([Security.Principal.SecurityIdentifier]).Value -cne $user.Value){Throw-LabState LAB_DIRECTORY_OWNER_INVALID}
  if(-not(Test-LabAcl $verified $user)){Throw-LabState LAB_DIRECTORY_RULES_INVALID}
  try{Write-LabAclRecord $Path $repairId APPLIED}catch{Throw-LabState LAB_DIRECTORY_ACL_APPLY_FAILED}
