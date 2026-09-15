@@ -32,22 +32,22 @@ namespace KidRemote.Lab {
   [DllImport("user32.dll")] static extern bool FlashWindowEx(ref Flash f);
   readonly object gate=new object(); readonly ManualResetEventSlim signaled=new ManualResetEventSlim(false);
   readonly Thread thread; readonly int lifetime; readonly string title="KidRemote - QR de pareamento - "+Guid.NewGuid().ToString("N");
-  byte[] png; Form form; IntPtr hwnd; bool ready,closed,expired,failed,interactive,activation; int ticks;
+  byte[] png; Form form; IntPtr hwnd; bool ready,closed,expired,failed,interactive,activation; int ticks; volatile bool stopRequested; string phase="THREAD_START";
   static string DesktopName(IntPtr h){var b=new StringBuilder(256);int needed;return GetUserObjectInformation(h,2,b,512,out needed)?b.ToString():null;}
   static bool OnInputDesktop(){if(!Environment.UserInteractive)return false;var h=OpenInputDesktop(0,false,1);if(h==IntPtr.Zero)return false;try{var name=DesktopName(h);return name!=null&&name==DesktopName(GetThreadDesktop(GetCurrentThreadId()));}finally{CloseDesktop(h);}}
   public QrWindow(byte[] bytes,int timeoutMs){
    if(bytes==null||bytes.Length<8||bytes.Length>262144||timeoutMs<1000||timeoutMs>240000)throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED");
    png=(byte[])bytes.Clone();lifetime=timeoutMs;thread=new Thread(Run);thread.IsBackground=true;thread.SetApartmentState(ApartmentState.STA);thread.Start();
-   if(!signaled.Wait(6000)||!Snapshot().Ready){Dispose();throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED");}
+   if(!signaled.Wait(6000)||!Snapshot().Ready){Dispose();throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED_"+phase);}
   }
   void Run(){
    MemoryStream stream=null;Image image=null;System.Windows.Forms.Timer timer=null;
    try{
-    interactive=OnInputDesktop();if(!interactive)throw new InvalidOperationException();
+    phase="INTERACTIVE_DESKTOP";interactive=OnInputDesktop();if(!interactive)throw new InvalidOperationException();
     // Thread-local DPI context; no process/host setting is changed.
     try{SetThreadDpiAwarenessContext(new IntPtr(-4));}catch(EntryPointNotFoundException){}
-    stream=new MemoryStream(png,false);image=Image.FromStream(stream);if(image.Width!=512||image.Height!=512)throw new InvalidOperationException();
-    form=new Form();form.Text=title;form.AutoScaleDimensions=new SizeF(96,96);form.AutoScaleMode=AutoScaleMode.Dpi;
+    phase="IMAGE_DECODE";stream=new MemoryStream(png,false);image=Image.FromStream(stream);if(image.Width!=512||image.Height!=512)throw new InvalidOperationException();
+    phase="FORM_CREATE";form=new Form();form.Text=title;form.AutoScaleDimensions=new SizeF(96,96);form.AutoScaleMode=AutoScaleMode.Dpi;
     form.ClientSize=new Size(544,544);form.StartPosition=FormStartPosition.CenterScreen;form.TopMost=true;form.ShowInTaskbar=true;
     form.FormBorderStyle=FormBorderStyle.FixedDialog;form.MaximizeBox=false;form.MinimizeBox=false;form.BackColor=Color.White;form.Padding=new Padding(16);
     var box=new PictureBox();box.Dock=DockStyle.Fill;box.SizeMode=PictureBoxSizeMode.Zoom;box.Image=image;form.Controls.Add(box);
@@ -61,6 +61,7 @@ namespace KidRemote.Lab {
     timer.Tick+=delegate {
      try{
       lock(gate){ticks++;}
+      if(stopRequested){form.Close();return;}
       if(elapsed.ElapsedMilliseconds>=lifetime){lock(gate){expired=true;}form.Close();return;}
       var state=Snapshot();
       if(form.Visible&&!form.IsDisposed&&state.Visible&&state.ValidHandle&&state.TitleMatches&&state.TopMost&&Screen.FromControl(form).WorkingArea.Contains(form.Bounds)){
@@ -68,7 +69,7 @@ namespace KidRemote.Lab {
       }else if(elapsed.ElapsedMilliseconds>4000){lock(gate){failed=true;}signaled.Set();form.Close();}
      }catch{lock(gate){failed=true;}signaled.Set();form.Close();}
     };
-    timer.Start();form.Show();form.Activate();form.BringToFront();Application.Run(form);
+    phase="WINDOW_VISIBILITY";if(stopRequested)throw new InvalidOperationException();timer.Start();form.Show();form.Activate();form.BringToFront();Application.Run(form);
    }catch{lock(gate){failed=true;}}
    finally{
     if(timer!=null)timer.Dispose();if(form!=null)form.Dispose();if(image!=null)image.Dispose();if(stream!=null)stream.Dispose();
@@ -85,6 +86,7 @@ namespace KidRemote.Lab {
    state.Ready=state.Ready&&state.Visible&&state.TopMost&&state.TitleMatches;return state;
   }
   public void Dispose(){
+   stopRequested=true;
    try{if(form!=null&&!form.IsDisposed&&form.IsHandleCreated)form.BeginInvoke(new Action(delegate{form.Close();}));}catch{}
    if(thread!=Thread.CurrentThread)thread.Join(3000);
   }

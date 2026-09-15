@@ -38,4 +38,4 @@ try{
  $source=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'LivePreparation.psm1'))
  Check ($source -notmatch '\$form\.Show\(');Check ($source -notmatch 'Write-(Host|Output).*\$(q|encoded)')
  Write-Output "QR_PRESENTATION_CHECKS=$script:n;NATIVE_UI=PASS;SYNTHETIC_IMAGE_ONLY;DEVICE=NOT_INVOKED"
-}finally{if($w){$w.Dispose()};if($other){$other.Dispose()};$encoded=$null;$memory.Dispose();$g.Dispose();$bitmap.Dispose()}
+}catch{Write-Output ('QR_NATIVE_FAILURE_PHASE='+$_.Exception.Data['qrPhase']+';TYPE='+$_.Exception.Data['qrExceptionType']);throw}finally{if($w){$w.Dispose()};if($other){$other.Dispose()};$encoded=$null;$memory.Dispose();$g.Dispose();$bitmap.Dispose()}

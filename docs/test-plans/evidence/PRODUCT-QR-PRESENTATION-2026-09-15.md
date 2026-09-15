@@ -65,3 +65,11 @@ Native Windows PS5.1/PS7 and full required CI results are retained in the delive
 record for the exact frozen source. Tests use a synthetic 512px image, no real pairing
 payload/device, and inspect native state without screen capture. Historical bundles
 remain unmodified; the 3693034 command is retired for future execution.
+
+### Failed validation preserved
+
+CI `34927986598`, source `1c5e9e5`: Windows failed with
+INVALID:QR_PRESENTATION_FAILED during native QR setup. The first error wrapper hid
+the exact phase; no native presentation PASS is claimed. Added bounded phase/type
+diagnostics (no native error text or PNG/payload) to identify the failure. Other
+completed jobs are not pooled into a passing workflow.
