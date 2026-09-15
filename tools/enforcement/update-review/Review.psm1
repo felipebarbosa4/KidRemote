@@ -3,25 +3,36 @@ $ErrorActionPreference='Stop'
 $script:Known=[ordered]@{
  identity='no_backup/device-identity';pairing='no_backup/pairing-pending';accounting='no_backup/accounting.db';writeIntent='no_backup/accounting-write-intent';syncPages='no_backup/sync-page-progress';syncRetry='no_backup/sync-retry';consent='shared_prefs/enforcement-consent.xml'
 }
-function Get-ReviewStatePaths {
+function Get-ReviewStatePaths([bool]$ProductRuntime=$false) {
  $paths=[ordered]@{}
  foreach($k in $script:Known.Keys){$paths[$k]=$script:Known[$k];foreach($suffix in @('bak','new')){$paths[$k+'_'+$suffix]=$script:Known[$k]+'.'+$suffix}}
  foreach($suffix in @('wal','shm','journal')){$paths['accounting_'+$suffix]='no_backup/accounting.db-'+$suffix}
+ if($ProductRuntime){
+  # Exact dependency constants verified in approved lab DEX and local AndroidX bytecode.
+  # This opt-in does not reclassify the historical old APK's two unknown files.
+  $paths['runtime_profile']='files/profileInstalled'
+  $paths['runtime_profileWritten']='files/profileinstaller_profileWrittenFor_lastUpdateTime.dat'
+  $paths['runtime_workPrefs']='shared_prefs/androidx.work.util.preferences.xml'
+  foreach($location in @('no_backup','databases')){
+   $key='runtime_work_'+$location;$base=$location+'/androidx.work.workdb';$paths[$key]=$base
+   foreach($suffix in @('wal','shm','journal')){$paths[$key+'_'+$suffix]=$base+'-'+$suffix}
+  }
+ }
  return $paths
 }
-function Get-ReviewStateScript {
+function Get-ReviewStateScript([bool]$ProductRuntime=$false) {
  # Fixed metadata-only program. No cat/sqlite/content reads, app calls, writes or caller-supplied paths.
  $lines=@('set -eu')
- foreach($p in (Get-ReviewStatePaths).GetEnumerator()){
+ foreach($p in (Get-ReviewStatePaths $ProductRuntime).GetEnumerator()){
   $lines+="if [ -L $($p.Value) ]; then printf '$($p.Key)|UNKNOWN|0\n'; elif [ -f $($p.Value) ]; then printf '$($p.Key)|PRESENT|'; stat -c '%s' $($p.Value); elif [ -e $($p.Value) ]; then printf '$($p.Key)|UNKNOWN|0\n'; else printf '$($p.Key)|ABSENT|0\n'; fi"
  }
  # Count only; unknown filenames stay on the device. Refuse symlinks and unreadable directories.
  $lines+='total=0; for d in no_backup files databases shared_prefs; do if [ -L "$d" ]; then exit 3; fi; if [ -d "$d" ]; then test -r "$d"; test -x "$d"; links=$(find "$d" -type l); if [ -n "$links" ]; then exit 3; fi; entries=$(find "$d" -type f); if [ -n "$entries" ]; then n=$(printf "%s\n" "$entries" | wc -l); total=$((total+n)); fi; elif [ -e "$d" ]; then exit 3; fi; done; printf "LINKS|0\nTOTAL|%s\n" "$total"'
  return ($lines -join "`n")+"`n"
 }
-function Convert-ReviewState([string]$Raw){
+function Convert-ReviewState([string]$Raw,[bool]$ProductRuntime=$false){
  if($Raw.Length -gt 16384){throw 'PRIVATE_STATE_REVIEW_REQUIRED'}
- $paths=Get-ReviewStatePaths;$seen=@{};$present=0;$rows=@();$total=$null;$links=$null
+ $paths=Get-ReviewStatePaths $ProductRuntime;$seen=@{};$present=0;$rows=@();$total=$null;$links=$null
  foreach($line in @($Raw.Trim() -split '\r?\n')){
   if($line -cmatch '^(TOTAL|LINKS)\|\s*([0-9]{1,8})$'){
    if($seen.ContainsKey($Matches[1])){throw 'PRIVATE_STATE_REVIEW_REQUIRED'};$seen[$Matches[1]]=$true
@@ -73,10 +84,10 @@ function Get-InstalledSigner([string]$Adb,[string]$Serial,[string]$BasePath,[str
   return [pscustomobject]@{sha256=$hash;signerSha256=(Convert-ReviewSigner $result.stdout)}
  }finally{if(Test-Path -LiteralPath $path){Remove-Item -LiteralPath $path -Force};if(Test-Path -LiteralPath $path){throw 'READ_ONLY_REVIEW_INVALID'}}
 }
-function Get-PrivateMetadata([string]$Adb,[string]$Serial,[scriptblock]$Run){
+function Get-PrivateMetadata([string]$Adb,[string]$Serial,[scriptblock]$Run,[bool]$ProductRuntime=$false){
  if($Serial -cnotmatch '^[A-Za-z0-9._:-]{1,80}$'){throw 'READ_ONLY_REVIEW_INVALID'}
- try{$r=& $Run $Adb @('-s',$Serial,'shell','-T','run-as','dev.kidremote.child.unassigned.debug','sh') (Get-ReviewStateScript)
- if($r.stderr.Trim()){throw 'PRIVATE_STATE_REVIEW_REQUIRED'};return Convert-ReviewState $r.stdout
+ try{$r=& $Run $Adb @('-s',$Serial,'shell','-T','run-as','dev.kidremote.child.unassigned.debug','sh') (Get-ReviewStateScript $ProductRuntime)
+ if($r.stderr.Trim()){throw 'PRIVATE_STATE_REVIEW_REQUIRED'};return Convert-ReviewState $r.stdout $ProductRuntime
  }catch{return [pscustomobject]@{status='UNKNOWN';sufficientForEmptyStateReview=$false}}
 }
 function Get-UpdateReviewDecision($Installed,$State,[string]$LabSigner,[bool]$LabValid){

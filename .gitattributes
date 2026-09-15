@@ -1,0 +1,5 @@
+# Backend compatibility hashes authenticate exact source bytes on Linux and Windows.
+# Frozen owner bundles preserve these LF bytes; do not normalize mismatched inputs at runtime.
+/supabase/** text eol=lf
+/tools/kr007/local-gateway.mjs text eol=lf
+/packages/protocol/CONTRACT.md text eol=lf

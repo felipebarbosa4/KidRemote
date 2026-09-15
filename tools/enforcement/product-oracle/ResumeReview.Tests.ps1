@@ -34,5 +34,33 @@ try{
   $ops[$failed]={throw 'INVALID:PAIRING_TIMEOUT'};$caught=$false;try{Invoke-ResumePreparation $dir $ops RESET_ENROLL}catch{$caught=$true};Check $caught
   $j=Read-ProductJournal $dir;Check ($j.verdict -ceq 'INVALID');Check ($j.cleanup -ceq 'UNVERIFIED')
  }
+ # Exact historical sequence remains independently INVALID/UNVERIFIED after review.
+ $dir=New-ProductJournal $root ('3693034816039de67087066f077e6e02a9507dd6') ('b'*64) ('c'*64) ('d'*64) $true
+ $metaPath=Join-Path $dir 'provenance';$meta=[IO.File]::ReadAllText($metaPath)|ConvertFrom-Json
+ $meta.attempt='d9157ae6-a6ff-4849-919f-c8f13fe08f7e';[IO.File]::WriteAllText($metaPath,($meta|ConvertTo-Json -Compress))
+ foreach($stage in @('BEGIN','PREMUTATION','UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','ENROLLMENT_ADMITTED','VERDICT','CLEANUP_ADMITTED','CLEANUP')){
+  $value=switch($stage){'BEGIN'{'STARTED'} 'PREMUTATION'{'EXACT_OLD_AND_FIXTURE_VERIFIED'} 'VERDICT'{'INVALID'} 'CLEANUP'{'UNVERIFIED'} default{'OD50_FIXED_SCOPE'}}
+  $null=Add-ProductJournal $dir ([Guid]::NewGuid().ToString()) $stage $value
+ }
+ Check (Test-ResumableHistory $dir)
+ $before=(Read-ProductJournal $dir).previous
+ $reviewDir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true
+ Write-ResumeReview $reviewDir $meta.attempt ('e'*64) (Resolve-ProductPreparation (Facts))
+ Check ((Read-ResumeReview $reviewDir).historicalAttempt -ceq $meta.attempt)
+ Check ((Read-ProductJournal $dir).previous -ceq $before)
+ Check ((Read-ProductJournal $dir).cleanup -ceq 'UNVERIFIED')
+ # Additional Lock admission is never reviewed away, even after a finalized INVALID.
+ $null=Add-ProductJournal $dir ([Guid]::NewGuid().ToString()) UNLOCK_ADMITTED EXPECTED_VERSION:1
+ Check (-not (Test-ResumableHistory $dir))
+ [IO.File]::WriteAllText((Join-Path $reviewDir 'resume-review.tmp'),'truncated')
+ $caught=$false;try{Read-ResumeReview $reviewDir}catch{$caught=$true};Check $caught
+ # Opt-in runtime metadata never reads contents or reinterprets the historical parser.
+ Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
+ $paths=Get-ReviewStatePaths $true;$lines=@()
+ foreach($key in $paths.Keys){$lines+=($key+'|'+$(if($key -ceq 'runtime_profile'){'PRESENT|8'}else{'ABSENT|0'}))}
+ $lines+=@('LINKS|0','TOTAL|1');$raw=$lines -join "`n"
+ $parsed=Convert-ReviewState $raw $true;Check ($parsed.otherDurableFiles -eq 0);Check (-not $parsed.sufficientForEmptyStateReview)
+ $caught=$false;try{Convert-ReviewState $raw}catch{$caught=$true};Check $caught
+ Check ((Get-ReviewStateScript $true) -notmatch '(?m)^(cat|sqlite|am |pm clear)')
  Write-Output "OD51_RESUME_CHECKS=$script:n;DEVICE=NOT_INVOKED"
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}

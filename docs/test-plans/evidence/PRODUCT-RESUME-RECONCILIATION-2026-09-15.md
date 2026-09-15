@@ -61,3 +61,18 @@ attempt or native Windows PASS. Native Windows/SQL/build CI is required before f
 PRODUCT_PHYSICAL_ORACLE remains **BLOCKED pending full validation and bundle freeze**.
 No new owner command yet. Existing 3693034/e8be9cf commands are retired for current
 partial state; no separate owner diagnostic is requested.
+
+### Preserved CI attempt 1
+
+Run 34985676649 / source 27455b5: native QR 32 PS5.1 + 32 PS7 passed;
+PS5.1 resume 57, native DPAPI/lock 20 and existing host suites passed. Real Docker
+reconciliation/lifecycle and SQL job passed. Windows compatibility tests failed 2/18:
+checkout CRLF bytes hashed differently from exact historical LF git objects. This is
+not ignored or normalized at runtime. Repository attributes now pin backend-critical
+text to LF across checkouts; runtime still rejects any differing bytes. PS7 later
+steps of this failed run were not executed. Preserve this run independently.
+
+The product-only metadata option also inventories exact AndroidX WorkManager DB/
+sidecars and ProfileInstaller constants, verified in the approved f6d2a240 APK DEX
+and locally preserved AndroidX bytecode. It reads only existence/size. Default old
+review semantics remain unchanged: the historical two unknown files remain UNKNOWN.

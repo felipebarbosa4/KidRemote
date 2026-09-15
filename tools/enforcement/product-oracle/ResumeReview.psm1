@@ -10,7 +10,7 @@ function Test-ResumableHistory([string]$Directory){
  return (($j.rows.stage -join ',') -ceq $expected)
 }
 function Resolve-ProductPreparation($Facts){
- $answer=[ordered]@{classification='INVALID_PARTIAL_STATE_REVIEW_REQUIRED';packageMode='INVALID_STATE';path='NONE';credentialProof='NOT_ESTABLISHED'}
+ $answer=[ordered]@{classification='INVALID_PARTIAL_STATE_REVIEW_REQUIRED';packageMode='INVALID_STATE';path='NONE';credentialProof='NOT_ESTABLISHED';backendDevice=$Facts.backendDevice;localIdentity=$Facts.identity;pairingPending=$Facts.pending;localAccounting=$Facts.accounting}
  foreach($k in @('provenance','owned','compatible','reverseAbsent','historySafe','metadataKnown','noUnknownFiles')){if($Facts.$k -isnot [bool] -or -not $Facts.$k){return [pscustomobject]$answer}}
  if($Facts.package -ceq 'OLD'){
   if(-not $Facts.backendDevice -and -not $Facts.savedDevice -and -not $Facts.historicalPartial){$answer.packageMode='OLD_PACKAGE_NEEDS_REPLACEMENT';$answer.path='REPLACE';$answer.classification='SAFE_RESUME_FROM_ENROLLMENT'}
@@ -32,9 +32,14 @@ function Resolve-ProductPreparation($Facts){
  }
  return [pscustomobject]$answer
 }
+function Get-ResumeHash([string]$Text){
+ $h=[Security.Cryptography.SHA256]::Create();try{return ([BitConverter]::ToString($h.ComputeHash([Text.Encoding]::UTF8.GetBytes($Text)))).Replace('-','').ToLowerInvariant()}finally{$h.Dispose()}
+}
 function Read-ResumeReview([string]$Directory){
  if(Test-Path -LiteralPath (Join-Path $Directory 'resume-review.tmp')){throw 'INVALID:RESUME_REVIEW_PARTIAL'}
- $record=[IO.File]::ReadAllText((Join-Path $Directory 'resume-review'))|ConvertFrom-Json
+ $envelope=[IO.File]::ReadAllText((Join-Path $Directory 'resume-review'))|ConvertFrom-Json
+ if($envelope.sha256 -cne (Get-ResumeHash $envelope.payload)){throw 'INVALID:RESUME_REVIEW_CHECKSUM'}
+ $record=$envelope.payload|ConvertFrom-Json
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
  if($record.kind -cne 'RESUME_REVIEW' -or $record.format -ne 1 -or $record.attempt -cne $m.attempt -or $record.source -cne $m.source -or $record.bundle -cne $m.bundle -or $record.compatibility -cnotmatch '^[a-f0-9]{64}$'){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
  return $record
@@ -42,11 +47,12 @@ function Read-ResumeReview([string]$Directory){
 function Write-ResumeReview([string]$Directory,[string]$HistoricalAttempt,[string]$Digest,$Resolution){
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
  if($Digest -cnotmatch '^[a-f0-9]{64}$' -or $HistoricalAttempt -cnotmatch '^(NONE|[a-f0-9-]{36})$' -or $Resolution.classification -cnotin @('SAFE_REUSE_ENROLLED','SAFE_RESUME_FROM_ENROLLMENT','SAFE_RESET_SYNTHETIC_KIDREMOTE_STATE_AND_REENROLL','INVALID_PARTIAL_STATE_REVIEW_REQUIRED')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
- $record=[ordered]@{kind='RESUME_REVIEW';format=1;attempt=$m.attempt;historicalAttempt=$HistoricalAttempt;source=$m.source;bundle=$m.bundle;utc=[DateTime]::UtcNow.ToString('o');compatibility=$Digest;classification=$Resolution.classification;packageMode=$Resolution.packageMode;permittedPath=$Resolution.path;credentialProof=$Resolution.credentialProof;historicalVerdict='UNCHANGED';historicalCleanup='UNCHANGED'}
+ $record=[ordered]@{kind='RESUME_REVIEW';format=1;attempt=$m.attempt;historicalAttempt=$HistoricalAttempt;source=$m.source;bundle=$m.bundle;utc=[DateTime]::UtcNow.ToString('o');compatibility=$Digest;classification=$Resolution.classification;packageMode=$Resolution.packageMode;permittedPath=$Resolution.path;credentialProof=$Resolution.credentialProof;backendDevice=$Resolution.backendDevice;localIdentity=$Resolution.localIdentity;pairingPending=$Resolution.pairingPending;localAccounting=$Resolution.localAccounting;historicalVerdict='UNCHANGED';historicalCleanup='UNCHANGED'}
  $path=Join-Path $Directory 'resume-review';$tmp=$path+'.tmp'
  if((Test-Path -LiteralPath $path) -or (Test-Path -LiteralPath $tmp)){throw 'INVALID:RESUME_REVIEW_IMMUTABLE'}
  $f=[IO.File]::Open($tmp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
- try{$bytes=[Text.Encoding]::UTF8.GetBytes(($record|ConvertTo-Json -Compress));$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
+ $payload=$record|ConvertTo-Json -Compress;$envelope=@{payload=$payload;sha256=(Get-ResumeHash $payload)}|ConvertTo-Json -Compress
+ try{$bytes=[Text.Encoding]::UTF8.GetBytes($envelope);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  [IO.File]::Move($tmp,$path)
 }
 Export-ModuleMember -Function Read-ResumeReview,Test-ResumableHistory,Resolve-ProductPreparation,Write-ResumeReview

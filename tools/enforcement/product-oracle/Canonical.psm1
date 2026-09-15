@@ -3,7 +3,7 @@ $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
 function Invoke-LabWire([string]$Service,[string]$Path,[string]$Method,$Body,[Security.SecureString]$Jwt){
  $ports=@{auth=47361;rest=47362;gateway=47366;mail=47365}
- if(-not $ports.ContainsKey($Service) -or $Method -notin @('GET','POST') -or $Path -notmatch '^/(signup|verify|rpc/(bootstrap_household|parent_devices)|parent/pairing-sessions|api/v1/messages|api/v1/message/[A-Za-z0-9-]+|parent/devices/[a-f0-9-]{36}/operations)$'){throw 'INVALID:LAB_ROUTE'}
+ if(-not $ports.ContainsKey($Service) -or $Method -notin @('GET','POST') -or $Path -notmatch '^/(signup|verify|rpc/(bootstrap_household|parent_devices|finish_pairing)|parent/pairing-sessions|api/v1/messages|api/v1/message/[A-Za-z0-9-]+|parent/devices/[a-f0-9-]{36}/operations)$'){throw 'INVALID:LAB_ROUTE'}
  $args=@{Uri=('http://127.0.0.1:'+$ports[$Service]+$Path);Method=$Method;UseBasicParsing=$true;MaximumRedirection=0;TimeoutSec=10;ErrorAction='Stop'};$ptr=[IntPtr]::Zero
  try{
   if($null -ne $Jwt){$ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($Jwt);$args.Headers=@{Authorization='Bearer '+[Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)}}

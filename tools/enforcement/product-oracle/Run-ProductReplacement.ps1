@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 # OD-51: frozen files + native live host gate precede every device mutation.
 # Frozen entrypoint is copied to bundle root. No ADB/HTTP until manifest/tool validation.
-$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$backendAttempted=$false;$reuse=$false;$hostFailureStage='BUNDLE_VERIFY';$hostFailureCode='NONE';$hostDiagnosticWrite='NOT_ATTEMPTED'
+$preparation=$null;$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$backendAttempted=$false;$reuse=$false;$hostFailureStage='BUNDLE_VERIFY';$hostFailureCode='NONE';$hostDiagnosticWrite='NOT_ATTEMPTED'
 try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $manifestPath).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'INVALID:BUNDLE_HASH'}
@@ -78,7 +78,7 @@ try{
    $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$true;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
    # Historical replacement explicitly authorizes loss of old unknown files, only on OLD path.
    if(-not $lab -and -not $historicalPartial){$facts.metadataKnown=$true;$facts.noUnknownFiles=$true}
-   $h.resolution=Resolve-ProductPreparation $facts
+   $h.resolution=Resolve-ProductPreparation $facts;$preparation=$h.resolution
    Write-ResumeReview $directory $(if($historicalPartial){'d9157ae6-a6ff-4849-919f-c8f13fe08f7e'}else{'NONE'}) $h.backend.compatibility $h.resolution
    if($h.resolution.path -ceq 'NONE'){throw 'INVALID:INVALID_PARTIAL_STATE_REVIEW_REQUIRED'}
    $h.reuse=$h.resolution.path -ceq 'VERIFY_REUSE'
@@ -86,7 +86,7 @@ try{
 
   }
  }
- try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$backendAttempted=$h.backendAttempted;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse}
+ try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$backendAttempted=$h.backendAttempted;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse;$preparation=$h.resolution}
  $jwt=$backend.jwt
  if(-not $hostValidated){throw 'INVALID:INVALID_HOST_PREFLIGHT'}
  $review=$backend.review
@@ -139,7 +139,28 @@ try{
  if($null -eq $primary){$primary=[pscustomobject]@{status='INVALID';reason=$reason;cleanup='UNVERIFIED'}}
  if($directory){try{$j=Read-ProductJournal $directory;if(-not $j.verdict){$meta=[IO.File]::ReadAllText((Join-Path $directory 'provenance'))|ConvertFrom-Json;$null=Add-ProductJournal $directory $meta.attempt VERDICT INVALID;if(-not ($j.rows|Where-Object{$_.stage -in @('RESET_ADMITTED','PAIRING_CLEANUP_ADMITTED','ENROLLMENT_ADMITTED','SETUP_ADMITTED','UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','POLICY_ADMITTED','LOCK_ADMITTED')})){$null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP NOT_REQUIRED}}}catch{}}
 }finally{
- if($hostValidated -and $live -and $primary -and $primary.cleanup -ceq 'UNVERIFIED' -and $recovery -ceq 'NOT_REQUIRED' -and @((Read-ProductJournal $directory).rows|Where-Object{$_.stage -in @('POLICY_ADMITTED','LOCK_ADMITTED')}).Count){
+ if($hostValidated -and $live -and $primary -and $primary.cleanup -ceq 'UNVERIFIED'){
+  try{
+   $j=Read-ProductJournal $directory
+   if(@($j.rows|Where-Object{$_.stage -ceq 'POLICY_ADMITTED'}).Count -and -not @($j.rows|Where-Object{$_.stage -ceq 'UNLOCK_ADMITTED'}).Count){
+    $d=Get-OnlyLabChild $wire $jwt
+    if(-not $d -or -not $d.policy_configured){throw 'INVALID:RECOVERY_POLICY_UNKNOWN'}
+    $id=[Guid]::NewGuid().ToString()
+    $null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP_ADMITTED OD51_FIXED_SCOPE
+    $null=Add-ProductJournal $directory $id UNLOCK_ADMITTED ('EXPECTED_VERSION:'+$d.version)
+    $q=New-ProductOperation $id $d.id UNLOCK $d.version
+    $r=Invoke-StableLabOperation $wire $jwt $q;Assert-ProductAccepted $r $q $d.policy_epoch
+    $recoveryOps=New-LiveSliceCallbacks $Adb $serial $wire $jwt $d $directory $true
+    & $recoveryOps.Sync;$null=& $recoveryOps.Report $r.version $false
+    & $recoveryOps.StartFixture;$before=& $recoveryOps.Fixture;& $recoveryOps.Tap $before;& $recoveryOps.Pause
+    Assert-ProductPositive $before (& $recoveryOps.Fixture)
+    if(-not (& $recoveryOps.Status $id $r.version)){throw 'INVALID:RECOVERY_STATUS_UNVERIFIED'}
+    $null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT
+    $recovery='VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT'
+   }
+  }catch{$recovery='CANONICAL_RECOVERY_UNVERIFIED'}
+ }
+ if($hostValidated -and $live -and $primary -and $primary.cleanup -ceq 'UNVERIFIED' -and $recovery -cin @('NOT_REQUIRED','CANONICAL_RECOVERY_UNVERIFIED') -and @((Read-ProductJournal $directory).rows|Where-Object{$_.stage -in @('POLICY_ADMITTED','LOCK_ADMITTED')}).Count){
   $recovery='MANUAL_RECOVERY_REQUIRED'
   try{& $live.action OpenAccessibility}catch{}
   Write-Host 'LAB RECOVERY: se houver restrição, desative manualmente somente a Acessibilidade do KidRemote. O resultado original permanece inalterado.'
@@ -161,7 +182,7 @@ try{
  if($temporary){try{[IO.Directory]::Delete($temporary)}catch{$recovery='HOST_TEMP_REVIEW_REQUIRED'}}
  $jwt=$null;$serial=$null
 }
-$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;hostFailureStage=$(if($hostValidated){'NONE'}else{$hostFailureStage});hostFailureCode=$hostFailureCode;hostFailureAction=$(if(-not $hostValidated){'Host preflight failed before tablet mutation. Check the named stage and code. Docker engine availability is relevant only to DOCKER_ENGINE. Preserve this attempt and paste only this sanitized JSON.'}else{'NONE'});reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
+$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;hostFailureStage=$(if($hostValidated){'NONE'}else{$hostFailureStage});hostFailureCode=$hostFailureCode;hostFailureAction=$(if(-not $hostValidated){'Host preflight failed before tablet mutation. Check the named stage and code. Docker engine availability is relevant only to DOCKER_ENGINE. Preserve this attempt and paste only this sanitized JSON.'}else{'NONE'});preparation=$preparation;reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
 # Result contains only typed verdict/state and task UUIDs, never credentials or raw device output.
 $json=$result|ConvertTo-Json -Depth 8
 if($directory){$p=Join-Path $directory 'result.txt';$f=[IO.File]::Open($p,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);try{$b=[Text.Encoding]::UTF8.GetBytes($json);$f.Write($b,0,$b.Length);$f.Flush($true)}finally{$f.Dispose()}}

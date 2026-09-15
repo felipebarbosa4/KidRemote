@@ -5,7 +5,7 @@ Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
 Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 
-function New-LiveSliceCallbacks([string]$Adb,[string]$Serial,[scriptblock]$Wire,[Security.SecureString]$Jwt,$Device,[string]$Directory){
+function New-LiveSliceCallbacks([string]$Adb,[string]$Serial,[scriptblock]$Wire,[Security.SecureString]$Jwt,$Device,[string]$Directory,[bool]$RecoveryOnly=$false){
  $canonical=New-CanonicalCallbacks $Wire $Jwt $Device.id $Device.policy_epoch
  $s=@{request=0L;period=$null;sequence=-1L}
  $fixture={
@@ -47,6 +47,7 @@ function New-LiveSliceCallbacks([string]$Adb,[string]$Serial,[scriptblock]$Wire,
   Tap={param($p) $null=Invoke-ProductAdb $Adb $Serial @('shell','input','tap',[string]$p.probeX,[string]$p.probeY)}.GetNewClosure()
   Pause={Start-Sleep -Milliseconds 250}
  }
+ if($RecoveryOnly){return $ops}
  $journal=New-DurableJournalCallback $Directory $true
  $ops.Attempt=$journal.Attempt;$ops.Journal=$journal.Journal
  return $ops

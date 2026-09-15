@@ -20,6 +20,8 @@ lines.on('line',async line=>{
   authorizeCompatibility(current,c.source,c.executionSource??c.source,proof);
   stage='LAB_PORTS';await freePort(47366);
   stage='LEASE_STATE';lease=new Lease({...c,call:dockerCall(c.docker,c.host)});const disposition=await lease.start();started=true;
+  // Snapshot existing child state before the host health transaction touches its separate probe household.
+  if(disposition==='REUSED')inspectEnrollment(lease);
   stage='GATEWAY_READY';gateway=await startGateway(lease,c.docker,c.host);const jwt=await health(lease,s=>{stage=s;});
   // This is a PRIVATE pipe consumed directly into SecureString, never a console/log record.
   process.stdout.write(JSON.stringify({ready:true,disposition,jwt,compatibility:current.digest,review:inspectEnrollment(lease)})+'\n');

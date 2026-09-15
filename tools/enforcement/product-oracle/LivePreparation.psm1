@@ -91,7 +91,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
   if($null -eq $SavedDevice -or $null -eq $d -or $d.id -cne $SavedDevice.id -or $d.policy_epoch -cne $SavedDevice.policy_epoch -or $i.accessibility -cne 'ENABLED' -or $i.usageAccess -cne 'ENABLED'){throw 'INVALID:REUSE_IDENTITY_OR_PERMISSIONS'}
   $s.device=$d
  }.GetNewClosure()
- $ops.Metadata={Get-PrivateMetadata $Adb $Serial $run}.GetNewClosure()
+ $ops.Metadata={Get-PrivateMetadata $Adb $Serial $run $true}.GetNewClosure()
  $ops.VerifyReuse={
   $before=Get-OnlyLabChild $wire $Jwt
   if(-not $before -or -not $SavedDevice -or $before.id -cne $SavedDevice.id -or $before.policy_epoch -cne $SavedDevice.policy_epoch){throw 'INVALID:REUSE_IDENTITY_MISMATCH'}
