@@ -66,7 +66,9 @@ namespace KidRemote.Lab {
       var state=Snapshot();
       if(form.Visible&&!form.IsDisposed&&state.Visible&&state.ValidHandle&&state.TitleMatches&&state.TopMost&&Screen.FromControl(form).WorkingArea.Contains(form.Bounds)){
        lock(gate){ready=true;}signaled.Set();
-      }else if(elapsed.ElapsedMilliseconds>4000){lock(gate){failed=true;}signaled.Set();form.Close();}
+      }else if(elapsed.ElapsedMilliseconds>4000){
+       phase="WINDOW_VISIBILITY_H"+(state.ValidHandle?1:0)+"_V"+(state.Visible?1:0)+"_T"+(state.TitleMatches?1:0)+"_TOP"+(state.TopMost?1:0)+"_FORM"+(form.Visible?1:0)+"_BOUNDS"+(Screen.FromControl(form).WorkingArea.Contains(form.Bounds)?1:0)+"_W"+form.Width+"_H"+form.Height+"_DESK_W"+Screen.FromControl(form).WorkingArea.Width+"_H"+Screen.FromControl(form).WorkingArea.Height;
+       lock(gate){failed=true;}signaled.Set();form.Close();}
      }catch{lock(gate){failed=true;}signaled.Set();form.Close();}
     };
     phase="WINDOW_VISIBILITY";if(stopRequested)throw new InvalidOperationException();timer.Start();form.Show();form.Activate();form.BringToFront();Application.Run(form);

@@ -19,7 +19,7 @@ function New-ProductQrWindow([string]$PngBase64,[int]$TimeoutMs=240000){
   return [KidRemote.Lab.QrWindow]::new([Convert]::FromBase64String($PngBase64),$TimeoutMs)
  }catch{
   $detail=$_.Exception.GetBaseException().Message
-  if($detail -cmatch '^INVALID:QR_PRESENTATION_FAILED_([A-Z_]+)$'){$phase=$Matches[1]}
+  if($detail -cmatch '^INVALID:QR_PRESENTATION_FAILED_([A-Z0-9_]{1,180})$'){$phase=$Matches[1]}
   $e=New-Object Exception('INVALID:QR_PRESENTATION_FAILED');$e.Data['qrPhase']=$phase;$e.Data['qrExceptionType']=$_.Exception.GetBaseException().GetType().Name;throw $e
  }
 }

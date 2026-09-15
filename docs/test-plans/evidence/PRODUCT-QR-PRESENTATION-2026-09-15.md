@@ -73,3 +73,8 @@ INVALID:QR_PRESENTATION_FAILED during native QR setup. The first error wrapper h
 the exact phase; no native presentation PASS is claimed. Added bounded phase/type
 diagnostics (no native error text or PNG/payload) to identify the failure. Other
 completed jobs are not pooled into a passing workflow.
+
+CI `34928137766`, source `b2cbf1b`: the native error phase is now established as
+WINDOW_VISIBILITY (not assembly compilation or desktop admission). It remains FAILED.
+Add bounded boolean HWND/visibility/title/TopMost/bounds and dimensions diagnostics,
+without content or capture, to distinguish the exact failed presentation check.
