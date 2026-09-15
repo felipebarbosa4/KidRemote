@@ -95,3 +95,25 @@ and [FileSystemAclExtensions.SetAccessControl](https://learn.microsoft.com/en-us
 Correct relative-layout native PS5.1 lease rerun: **20 checks PASS**, including
 private native Node/fake-Docker pipe, independent restart, DPAPI, exclusive lock and
 typed stage propagation. Real Docker and ADB were not invoked by that suite.
+
+### Historical-function control and CI refusal fixture scope
+
+The exact source-60fd897 Protect-LabDirectory function was also executed twice in
+one newly generated synthetic temporary directory, using native local PS5.1:
+first call PASS; second call FAIL with PrivilegeNotHeldException / SeSecurityPrivilege.
+No physical-lab path was used. This reproduces the old idempotence defect on the
+current host; it cannot supply the missing failure-time exception retroactively.
+
+The first resumed CI [35026229971](https://github.com/felipebarbosa4/KidRemote/actions/runs/35026229971)
+failed at ACL assertion 19: the new foreign-owner injected closure was constructed
+inside Expected's function scope. Standalone `-File` passed, whereas nested script
+invocation lost the fixture variable. The callback is now bound at its defining
+script scope. Nested native PS5.1 invocation passes all **49** assertions too.
+This was a test-fixture scope defect; no owner ACL or lease was altered by it.
+The CI failure remains independent, and a new complete CI run is required.
+
+Local isolated Gradle suite: **BUILD SUCCESSFUL**, 274 tasks (6 executed,
+268 up-to-date), followed by audit-build: **24/24 JVM tests**, both merged manifests
+and release isolation PASS. QR private-pipe checks: **5 PASS**. Missing `/tmp`
+freezer inputs were recovered from hash-verified immutable source-60fd897 artifacts;
+HostQr.java is byte-identical, so the completed helper was reused without rebuilding.

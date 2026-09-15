@@ -27,7 +27,8 @@ try{
  Expected {Protect @{Apply={throw [UnauthorizedAccessException]::new()}}} LAB_DIRECTORY_ACL_APPLY_FAILED
  $null=Protect
  $foreignOwner=Get-Acl $path;$foreignOwner.SetOwner((New-Object Security.Principal.SecurityIdentifier('S-1-5-18')))
- Expected {Protect @{Read={$foreignOwner}.GetNewClosure()}} LAB_DIRECTORY_OWNER_INVALID
+ $foreignRead={$foreignOwner}.GetNewClosure()
+ Expected {Protect @{Read=$foreignRead}} LAB_DIRECTORY_OWNER_INVALID
  $acl=MutableAcl;$foreign=New-Object Security.AccessControl.FileSystemAccessRule((New-Object Security.Principal.SecurityIdentifier('S-1-1-0')),'ReadAndExecute','ContainerInherit,ObjectInherit','None','Allow');$acl.AddAccessRule($foreign);ApplyAcl $acl
  $before=(Get-Acl $path).Sddl
  Expected {Protect} LAB_DIRECTORY_RULES_INVALID
