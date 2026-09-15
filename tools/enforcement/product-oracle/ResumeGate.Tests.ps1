@@ -5,7 +5,7 @@ Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Replacement.psm1')
 # Execute the actual entrypoint's read-only gate with synthetic boundary callbacks.
 $text=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Run-ProductReplacement.ps1'))
-if($text -notmatch '(?s)  ReadOnlyTarget=\{(.*?)\n  \}\n \}') {throw 'GATE_SOURCE_NOT_FOUND'}
+if($text -notmatch '(?s)  ReadOnlyTarget=\{(.*?)\r?\n  \}\r?\n \}') {throw 'GATE_SOURCE_NOT_FOUND'}
 $gate=[scriptblock]::Create($Matches[1]);$script:n=0
 function Check($b){$script:n++;if(-not $b){throw "RESUME_GATE_$script:n"}}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-gate-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
