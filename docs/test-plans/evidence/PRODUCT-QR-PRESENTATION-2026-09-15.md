@@ -78,3 +78,7 @@ CI `34928137766`, source `b2cbf1b`: the native error phase is now established as
 WINDOW_VISIBILITY (not assembly compilation or desktop admission). It remains FAILED.
 Add bounded boolean HWND/visibility/title/TopMost/bounds and dimensions diagnostics,
 without content or capture, to distinguish the exact failed presentation check.
+
+CI `34928264285`, source `40a7bc3`, still FAILED with WINDOW_VISIBILITY before the
+new bounds-failure branch. No bounds diagnosis is inferred. Preserve this attempt and
+add UI exception type, pump count, expiry flag and completed assertion count only.

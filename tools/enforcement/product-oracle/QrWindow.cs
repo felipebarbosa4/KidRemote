@@ -38,7 +38,7 @@ namespace KidRemote.Lab {
   public QrWindow(byte[] bytes,int timeoutMs){
    if(bytes==null||bytes.Length<8||bytes.Length>262144||timeoutMs<1000||timeoutMs>240000)throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED");
    png=(byte[])bytes.Clone();lifetime=timeoutMs;thread=new Thread(Run);thread.IsBackground=true;thread.SetApartmentState(ApartmentState.STA);thread.Start();
-   if(!signaled.Wait(6000)||!Snapshot().Ready){Dispose();throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED_"+phase);}
+   bool wake=signaled.Wait(6000);var first=Snapshot();if(!wake||!first.Ready){phase+="_PUMP"+first.PumpTicks+"_EXPIRED"+(first.TimedOut?1:0);Dispose();throw new InvalidOperationException("INVALID:QR_PRESENTATION_FAILED_"+phase);}
   }
   void Run(){
    MemoryStream stream=null;Image image=null;System.Windows.Forms.Timer timer=null;
@@ -69,10 +69,10 @@ namespace KidRemote.Lab {
       }else if(elapsed.ElapsedMilliseconds>4000){
        phase="WINDOW_VISIBILITY_H"+(state.ValidHandle?1:0)+"_V"+(state.Visible?1:0)+"_T"+(state.TitleMatches?1:0)+"_TOP"+(state.TopMost?1:0)+"_FORM"+(form.Visible?1:0)+"_BOUNDS"+(Screen.FromControl(form).WorkingArea.Contains(form.Bounds)?1:0)+"_W"+form.Width+"_H"+form.Height+"_DESK_W"+Screen.FromControl(form).WorkingArea.Width+"_H"+Screen.FromControl(form).WorkingArea.Height;
        lock(gate){failed=true;}signaled.Set();form.Close();}
-     }catch{lock(gate){failed=true;}signaled.Set();form.Close();}
+     }catch(Exception e){phase="TIMER_"+e.GetType().Name.ToUpperInvariant();lock(gate){failed=true;}signaled.Set();form.Close();}
     };
     phase="WINDOW_VISIBILITY";if(stopRequested)throw new InvalidOperationException();timer.Start();form.Show();form.Activate();form.BringToFront();Application.Run(form);
-   }catch{lock(gate){failed=true;}}
+   }catch(Exception e){phase+="_"+e.GetType().Name.ToUpperInvariant();lock(gate){failed=true;}}
    finally{
     if(timer!=null)timer.Dispose();if(form!=null)form.Dispose();if(image!=null)image.Dispose();if(stream!=null)stream.Dispose();
     if(png!=null){Array.Clear(png,0,png.Length);png=null;}lock(gate){closed=true;ready=false;}signaled.Set();
