@@ -5,7 +5,8 @@ Import-Module (Join-Path $PSScriptRoot 'BackendHost.psm1') -Force
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-native-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 $script:n=0;function Check($b){$script:n++;if(-not $b){throw "OD51_NATIVE_$script:n"}}
 try{
- & (Get-Module BackendHost) {param($r) Protect-LabDirectory $r} $root
+ $originalLocal=$env:LOCALAPPDATA;$env:LOCALAPPDATA=$root
+ try{$null=& (Get-Module BackendHost) {param($r) Protect-LabDirectory $r} (Join-Path $root 'KidRemote/physical-lab')}finally{$env:LOCALAPPDATA=$originalLocal}
  $p=Join-Path $root 'test.dpapi';$value=@{id=[Guid]::NewGuid().ToString();secret=[Guid]::NewGuid().ToString()}
  & (Get-Module BackendHost) {param($p,$v) Write-LabProtected $p $v} $p $value
  Check (-not ([IO.File]::ReadAllText($p)).Contains($value.secret))

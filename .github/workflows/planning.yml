@@ -193,6 +193,7 @@ jobs:
           ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
           ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
+          ./tools/enforcement/product-oracle/AclNative.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
           ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
@@ -238,6 +239,7 @@ jobs:
           ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
           ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
+          ./tools/enforcement/product-oracle/AclNative.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
           ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1

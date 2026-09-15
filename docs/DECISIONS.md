@@ -305,3 +305,11 @@ attributes a partial identity safely; ambiguity remains INVALID with no mutation
 No Samsung execution in this preparation, credential/content reads, interop repair,
 new protocol, FCM or changed independent fixture oracle. Future single-command runs
 remain gated by live host/backend/provenance checks and genuine Android consent.
+
+OD-51 ACL diagnostic extension (owner, 2026-09-15): inspect only preserved host
+metadata for the source-60fd897 INVALID_HOST_PREFLIGHT. Wrap exact lab directory
+creation/ACL/lease failures in typed sanitized stages, make approved user+SYSTEM ACL
+idempotent, and repair only demonstrably task-owned incomplete ACL initialization.
+Do not weaken inheritance/ownership, decrypt historical secrets, delete valid leases,
+rewrite attempts, execute physical ADB or repair interop. Native Windows CI is required
+before a new immutable single-command bundle; no separate owner diagnostic or icacls step.
