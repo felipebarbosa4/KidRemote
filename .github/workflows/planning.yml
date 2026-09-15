@@ -171,12 +171,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # existing pinned action
         with:
           persist-credentials: false
+      - name: Native QR presentation on Windows PowerShell (synthetic only)
+        shell: powershell
+        run: ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
+      - name: Native QR presentation on PowerShell 7 (synthetic only)
+        shell: pwsh
+        run: ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
-          ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
@@ -220,7 +225,6 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
-          ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1

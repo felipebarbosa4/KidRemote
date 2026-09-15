@@ -99,3 +99,14 @@ This refines the earlier timeout observation rather than treating that partial
 explanation as complete. Defer final activation until Show/Run initialization, then
 apply SetWindowPos(HWND_TOPMOST) to this owned HWND only. The actual native TopMost
 check remains mandatory. No setting or other window is modified.
+
+CI `34928691745`, source `868c156`: all 32 native QR checks PASS on PS5.1.
+The later, unchanged legacy VisualCaptureWorker synthetic test failed deleting an
+open `.png.partial` file; no physical capture was involved. PS7 had not run yet.
+Preserve this separate failure, keep the legacy runner unchanged, and isolate the
+new QR UI tests in their own PS5.1/PS7 processes before the existing legacy suite.
+
+A read-only Windows PowerShell version probe from the current Linux execution tool
+failed with exit 126 / Exec format error. No Windows process or device command was
+started. There is no alternative installed Windows execution connector. Owner autonomy
+is authorized, but that authorization cannot supply a missing native execution channel.
