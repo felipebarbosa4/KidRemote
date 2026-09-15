@@ -292,3 +292,16 @@ also authorizes agent-operated runs within OD-50/51, stopping for genuine consen
 physical observation, out-of-scope destruction or FAIL/INVALID. This does not override
 existing journal/lease review gates or authorize host/WSLInterop repair. No new physical
 execution is needed for this presentation correction.
+
+OD-50/OD-51 resume extension (owner, 2026-09-15): reconcile the exact partial
+attempt d9157ae6-a6ff-4849-919f-c8f13fe08f7e automatically inside the next runner.
+Preserve its INVALID:PAIRING_TIMEOUT and cleanup UNVERIFIED without rewriting rows.
+Separate installed package from enrollment; exact lab bytes need no reinstall.
+Use a backend-critical compatibility digest, with exact source/ownership provenance,
+to assess presentation-only source changes. Record a separate durable RESUME_REVIEW.
+Reuse consistent enrollment or resume QR when empty. Owner authorizes clearing only
+this exact child package's data and exact synthetic lab state when bounded evidence
+attributes a partial identity safely; ambiguity remains INVALID with no mutation.
+No Samsung execution in this preparation, credential/content reads, interop repair,
+new protocol, FCM or changed independent fixture oracle. Future single-command runs
+remain gated by live host/backend/provenance checks and genuine Android consent.

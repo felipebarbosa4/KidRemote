@@ -18,7 +18,7 @@ try{
  if(-not $seen.ContainsKey('Start-ProductSlice.ps1') -or -not $seen.ContainsKey('lab-reference.apk') -or -not $seen.ContainsKey('host-qr.jar') -or -not $seen.ContainsKey('zxing-core.jar')){throw 'INVALID:BUNDLE_REQUIRED_FILES'}
  $hostFailureStage='RUNTIME_VERIFY'
  $source=$m.source;$sourceRoot=Join-Path $PSScriptRoot 'source';$modules=Join-Path $sourceRoot 'tools/enforcement/product-oracle'
- foreach($n in @('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','QrPresentation','LivePreparation','LiveSlice','ProductOracle','ProductTransport')){Import-Module (Join-Path $modules ($n+'.psm1'))}
+ foreach($n in @('ResumeReview','ResumePreparation','Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','QrPresentation','LivePreparation','LiveSlice','ProductOracle','ProductTransport')){Import-Module (Join-Path $modules ($n+'.psm1'))}
  Import-Module (Join-Path $sourceRoot 'tools/enforcement/update-review/Review.psm1')
  $java=Join-Path $PSScriptRoot 'runtime\jbr\bin\java.exe';$jar=Join-Path $PSScriptRoot 'runtime\apksigner.jar'
  if((Get-FileHash -LiteralPath $java).Hash.ToLowerInvariant() -cne $m.javaSha256 -or (Get-FileHash -LiteralPath $jar).Hash.ToLowerInvariant() -cne $m.apksignerSha256){throw 'INVALID:SDK_PROVENANCE'}
@@ -27,15 +27,23 @@ try{
  $hostFailureStage='JOURNAL_READY'
  $root=Join-Path $env:LOCALAPPDATA 'KidRemote\product-slice-attempts';[void][IO.Directory]::CreateDirectory($root)
  # Restart is review-only. No new uninstall can hide an unfinished/ambiguous attempt.
+ $historicalPartial=$false;$resolvedHistory=$false
  foreach($old in @(Get-ChildItem -LiteralPath $root -Directory)){
   $previous=Read-ProductJournal $old.FullName
-  if($previous.partial -or -not $previous.verdict -or $previous.cleanup -ceq 'UNVERIFIED'){throw 'INVALID:PRIOR_ATTEMPT_REVIEW_REQUIRED'}
+  if($previous.verdict -ceq 'PASS' -and $previous.cleanup -ceq 'VERIFIED_CANONICAL_UNLOCK_AND_INDEPENDENT_INPUT' -and (Test-Path -LiteralPath (Join-Path $old.FullName 'resume-review'))){
+   $priorReview=Read-ResumeReview $old.FullName
+   if($priorReview.historicalAttempt -ceq 'd9157ae6-a6ff-4849-919f-c8f13fe08f7e'){$resolvedHistory=$true}
+  }
+  if($previous.partial -or -not $previous.verdict -or $previous.cleanup -ceq 'UNVERIFIED'){
+   if(Test-ResumableHistory $old.FullName){$historicalPartial=$true}else{throw 'INVALID:PRIOR_ATTEMPT_REVIEW_REQUIRED'}
+  }
  }
+ if($resolvedHistory){$historicalPartial=$false}
  $directory=New-ProductJournal $root $source $ExpectedManifestHash 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc' $true
  $temporary=Join-Path $directory 'temporary';[void][IO.Directory]::CreateDirectory($temporary)
  Write-Host 'Preparando backend local isolado; nenhuma substituição do tablet foi admitida ainda.'
  $wire={param($s,$p,$method,$body,$jwt) Invoke-LabWire $s $p $method $body $jwt}
- $h=@{backend=$null;backendAttempted=$false;serial=$null;live=$null;reuse=$false}
+ $h=@{backend=$null;backendAttempted=$false;serial=$null;live=$null;reuse=$false;resolution=$null}
  $gate=@{
   Bundle={if($seen.Count -ne $m.files.Count){throw 'INVALID:BUNDLE_INCOMPLETE'}}
   Tools={if(-not(Test-Path -LiteralPath $Adb) -or -not(Test-Path -LiteralPath (Join-Path $PSScriptRoot 'runtime/node.exe'))){throw 'INVALID:NATIVE_TOOLS'}}
@@ -53,14 +61,59 @@ try{
    $h.live=New-LivePreparation $Adb $h.serial $PSScriptRoot $temporary $h.backend.jwt $h.reuse $h.backend.local.device $directory
    & $h.live.ops.HostReady;& $h.live.ops.Configuration
    if((& $h.live.ops.FixtureHash) -cne '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'){throw 'INVALID:FIXTURE_PROVENANCE'}
-   Assert-ReplacementRecord (& $h.live.ops.Installed) (-not $h.reuse)
-   if($h.reuse){& $h.live.ops.ReuseIdentityPermissions}
+   $installed=& $h.live.ops.Installed
+   $lab=$installed.sha256 -ceq 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'
+   Assert-ReplacementRecord $installed (-not $lab)
+   $metadata=& $h.live.ops.Metadata
+   $known=$metadata.status -ceq 'METADATA_ONLY'
+   $identity=$false;$pending=$false;$accounting=$false;$noUnknown=$false
+   if($known){
+    $noUnknown=$metadata.otherDurableFiles -eq 0
+    $identity=@($metadata.files|Where-Object{$_.kind -like 'identity*' -and $_.presence -ceq 'PRESENT'}).Count -gt 0
+    $pending=@($metadata.files|Where-Object{$_.kind -like 'pairing*' -and $_.presence -ceq 'PRESENT'}).Count -gt 0
+    $accounting=@($metadata.files|Where-Object{$_.kind -like 'accounting*' -and $_.presence -ceq 'PRESENT'}).Count -gt 0
+   }
+   $review=$h.backend.review;$devices=@($review.devices);$saved=$h.backend.local.device
+   $d=if($devices.Count -eq 1){$devices[0]}else{$null}
+   $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$true;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
+   # Historical replacement explicitly authorizes loss of old unknown files, only on OLD path.
+   if(-not $lab -and -not $historicalPartial){$facts.metadataKnown=$true;$facts.noUnknownFiles=$true}
+   $h.resolution=Resolve-ProductPreparation $facts
+   Write-ResumeReview $directory $(if($historicalPartial){'d9157ae6-a6ff-4849-919f-c8f13fe08f7e'}else{'NONE'}) $h.backend.compatibility $h.resolution
+   if($h.resolution.path -ceq 'NONE'){throw 'INVALID:INVALID_PARTIAL_STATE_REVIEW_REQUIRED'}
+   $h.reuse=$h.resolution.path -ceq 'VERIFY_REUSE'
+   $h.live.state.new=$lab
+
   }
  }
  try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$backendAttempted=$h.backendAttempted;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse}
  $jwt=$backend.jwt
  if(-not $hostValidated){throw 'INVALID:INVALID_HOST_PREFLIGHT'}
- $prepared=if($reuse){Invoke-ReusePreparation $directory $live.ops}else{Invoke-ReplacementPreparation $directory $live.ops}
+ $review=$backend.review
+ $live.ops.CancelPairings={
+  foreach($session in @($review.sessions|Where-Object{-not $_.consumed -and -not $_.cancelled})){
+   $r=& $wire rest '/rpc/finish_pairing' POST @{p_session=$session.id;p_revoke_incomplete=$false} $jwt
+   if($r.result -cne 'CANCELLED'){throw 'INVALID:PAIRING_CLEANUP_CONCURRENT_REDEMPTION'}
+  }
+ }.GetNewClosure()
+ $live.ops.Reset={
+  $fresh=Get-OnlyLabChild $wire $jwt
+  if($fresh){
+   $expected=@($review.devices)
+   if($expected.Count -ne 1 -or $fresh.id -cne $expected[0].id -or $fresh.policy_epoch -cne $expected[0].epoch -or $fresh.policy_configured -or $fresh.report){throw 'INVALID:RESET_STATE_CHANGED'}
+   $sessions=@($review.sessions|Where-Object{$_.device -ceq $fresh.id -and $_.consumed})
+   if($sessions.Count -ne 1){throw 'INVALID:RESET_SESSION_AMBIGUOUS'}
+   $r=& $wire rest '/rpc/finish_pairing' POST @{p_session=$sessions[0].id;p_revoke_incomplete=$true} $jwt
+   if($r.result -cne 'REVOKED_FRESH_QR_REQUIRED'){throw 'INVALID:RESET_BACKEND_REFUSED'}
+  }
+  if($null -ne (Get-OnlyLabChild $wire $jwt)){throw 'INVALID:RESET_BACKEND_NOT_EMPTY'}
+  & $live.action ClearChildData
+  $after=& $live.ops.Metadata
+  if($after.status -cne 'METADATA_ONLY' -or -not $after.sufficientForEmptyStateReview){throw 'INVALID:RESET_LOCAL_NOT_EMPTY'}
+  Clear-ProductLabSavedDevice $backend
+  $live.state.device=$null
+ }.GetNewClosure()
+ $prepared=if($h.resolution.path -ceq 'REPLACE'){Invoke-ReplacementPreparation $directory $live.ops}else{Invoke-ResumePreparation $directory $live.ops $h.resolution.path}
  if($prepared.status -ceq 'PREPARED_NOT_PASS'){Save-ProductLabDevice $backend $live.state.device}
  if($prepared.status -cne 'PREPARED_NOT_PASS'){$primary=$prepared}
  else{
@@ -84,9 +137,9 @@ try{
  if($_.Exception.Data.Contains('hostCode')){$hostFailureCode=[string]$_.Exception.Data['hostCode']}
  $reason=[string]$_.Exception.Message;if(-not $hostValidated){$reason='INVALID:INVALID_HOST_PREFLIGHT'};if($reason -cnotmatch '^INVALID:[A-Z0-9_]+$'){$reason='INVALID:HOST_OR_TRANSPORT_FAILURE'}
  if($null -eq $primary){$primary=[pscustomobject]@{status='INVALID';reason=$reason;cleanup='UNVERIFIED'}}
- if($directory){try{$j=Read-ProductJournal $directory;if(-not $j.verdict){$meta=[IO.File]::ReadAllText((Join-Path $directory 'provenance'))|ConvertFrom-Json;$null=Add-ProductJournal $directory $meta.attempt VERDICT INVALID;if(-not ($j.rows|Where-Object{$_.stage -in @('UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','POLICY_ADMITTED','LOCK_ADMITTED')})){$null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP NOT_REQUIRED}}}catch{}}
+ if($directory){try{$j=Read-ProductJournal $directory;if(-not $j.verdict){$meta=[IO.File]::ReadAllText((Join-Path $directory 'provenance'))|ConvertFrom-Json;$null=Add-ProductJournal $directory $meta.attempt VERDICT INVALID;if(-not ($j.rows|Where-Object{$_.stage -in @('RESET_ADMITTED','PAIRING_CLEANUP_ADMITTED','ENROLLMENT_ADMITTED','SETUP_ADMITTED','UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','POLICY_ADMITTED','LOCK_ADMITTED')})){$null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP NOT_REQUIRED}}}catch{}}
 }finally{
- if($hostValidated -and $live -and $primary -and $primary.cleanup -ceq 'UNVERIFIED' -and $recovery -ceq 'NOT_REQUIRED'){
+ if($hostValidated -and $live -and $primary -and $primary.cleanup -ceq 'UNVERIFIED' -and $recovery -ceq 'NOT_REQUIRED' -and @((Read-ProductJournal $directory).rows|Where-Object{$_.stage -in @('POLICY_ADMITTED','LOCK_ADMITTED')}).Count){
   $recovery='MANUAL_RECOVERY_REQUIRED'
   try{& $live.action OpenAccessibility}catch{}
   Write-Host 'LAB RECOVERY: se houver restrição, desative manualmente somente a Acessibilidade do KidRemote. O resultado original permanece inalterado.'

@@ -42,25 +42,30 @@ function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$S
   $stage='PROTECTED_STATE';$secretFile=Join-Path $root 'lease.dpapi'
   if(-not(Test-Path -LiteralPath $secretFile)){
    if(Test-Path -LiteralPath (Join-Path $root 'resources.json')){throw 'INVALID:LEASE_SECRETS_MISSING'}
-   $new=[ordered]@{format=1;id=[Guid]::NewGuid().ToString();source=$Source;device=$null;secrets=@{}}
+   $compatibilityFile=Join-Path $Bundle 'backend-compatibility.json';$compatibility=[IO.File]::ReadAllText($compatibilityFile)|ConvertFrom-Json
+   $new=[ordered]@{compatibility=$compatibility;format=1;id=[Guid]::NewGuid().ToString();source=$Source;device=$null;secrets=@{}}
    foreach($k in @('database','jwt','parentPassword','probePassword')){$bytes=New-Object byte[] 32;$rng=[Security.Cryptography.RandomNumberGenerator]::Create();try{$rng.GetBytes($bytes)}finally{$rng.Dispose()};$v=([BitConverter]::ToString($bytes)).Replace('-','').ToLowerInvariant();if($k.EndsWith('Password')){$v+='aA1!'};$new.secrets[$k]=$v}
    Write-LabProtected $secretFile $new;$new=$null
   }
   $stage='PROTECTED_READ';$local=Read-LabProtected $secretFile
-  if($local.format -ne 1 -or $local.source -cne $Source -or $local.id -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:LEASE_SOURCE_MISMATCH'}
+  if($local.format -ne 1 -or $local.id -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:LEASE_SOURCE_MISMATCH'}
+  $proof=if($local.PSObject.Properties.Name -contains 'compatibility'){$local.compatibility}else{[IO.File]::ReadAllText((Join-Path $SourceRoot 'tools/enforcement/physical-lab/legacy-compatibility.json'))|ConvertFrom-Json}
+  $current=[IO.File]::ReadAllText((Join-Path $Bundle 'backend-compatibility.json'))|ConvertFrom-Json
+  if($current.source -cne $Source -or $current.format -ne 1 -or $current.digest -cnotmatch '^[a-f0-9]{64}$' -or $proof.source -cne $local.source -or $proof.digest -cne $current.digest -or $proof.format -ne 1){throw 'INVALID:BACKEND_COMPATIBILITY_MISMATCH'}
   $stage='NATIVE_START';$p=New-Object Diagnostics.Process;$p.StartInfo.FileName=$node;$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
   $p.StartInfo.RedirectStandardInput=$true;$p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
   $script=Join-Path $SourceRoot 'tools\enforcement\physical-lab\runtime.mjs';if($script.Contains('"')){throw 'INVALID:SOURCE_PATH'};$p.StartInfo.Arguments='"'+$script+'"'
   [void]$p.Start();$runtimeStarted=$true;$err=$p.StandardError.ReadToEndAsync()
-  $config=@{root=$SourceRoot;state=(Join-Path $root 'resources.json');source=$Source;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine'}
+  $config=@{root=$SourceRoot;state=(Join-Path $root 'resources.json');source=$local.source;executionSource=$Source;compatibility=$proof;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine'}
   Write-LabPipeLine $p ($config|ConvertTo-Json -Depth 8 -Compress);$config=$null
   $stage='LEASE_START';$line=$p.StandardOutput.ReadLineAsync()
   if(-not $line.Wait(600000)){throw 'INVALID:BACKEND_START_TIMEOUT'}
   $raw=$line.GetAwaiter().GetResult();if(-not $raw -or $raw.Length -gt 8192){throw 'INVALID:BACKEND_START_FAILED'};$ready=$raw|ConvertFrom-Json;$raw=$null
   if(-not $ready.ready){if($ready.PSObject.Properties.Name -contains 'stage' -and $ready.stage -cin @('DOCKER_ENGINE','LAB_PORTS','LEASE_STATE','LEASE_START','POSTGRES_READY','AUTH_READY','GATEWAY_READY','BACKEND_HEALTH')){$stage=$ready.stage};$reason='LIVE_BACKEND_PREFLIGHT_FAILED';if($ready.PSObject.Properties.Name -contains 'code' -and $ready.code -cmatch '^[A-Z0-9_]{1,80}$'){$reason=$ready.code};throw ('INVALID:'+$reason)}
   if($ready.jwt -cnotmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'){throw 'INVALID:LAB_SESSION_SCHEMA'}
+  $review=$ready.review;$digest=$ready.compatibility
   $stage='PRIVATE_SESSION';$jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
-  return @{process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
+  return @{review=$review;compatibility=$digest;process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
  }catch{
   $failureType=$_.Exception.GetType().Name;if($_.Exception.Message -cmatch '^INVALID:[A-Z0-9_]{1,100}$'){$failureType=$_.Exception.Message.Substring(8)};$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
   if($p -and $runtimeStarted -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
@@ -79,6 +84,9 @@ function Save-ProductLabDevice($Backend,$Device){
  if($Backend.local.device -and ($Backend.local.device.id -cne $Device.id -or $Backend.local.device.policy_epoch -cne $Device.policy_epoch)){throw 'INVALID:LEASE_DEVICE_CHANGED'}
  $Backend.local.device=[pscustomobject]@{id=$Device.id;policy_epoch=$Device.policy_epoch};Write-LabProtected $Backend.secretFile $Backend.local
 }
+function Clear-ProductLabSavedDevice($Backend){
+ $Backend.local.device=$null;Write-LabProtected $Backend.secretFile $Backend.local
+}
 function Stop-ProductBackend($Backend){
  if($null -eq $Backend){return 'NOT_STARTED'}
  $p=$Backend.process
@@ -90,4 +98,4 @@ function Stop-ProductBackend($Backend){
   return 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'
  }finally{$p.Dispose();$Backend.guard.Dispose();$Backend.jwt.Dispose();$Backend.local=$null}
 }
-Export-ModuleMember -Function Start-ProductBackend,Stop-ProductBackend,Save-ProductLabDevice
+Export-ModuleMember -Function Clear-ProductLabSavedDevice,Start-ProductBackend,Stop-ProductBackend,Save-ProductLabDevice

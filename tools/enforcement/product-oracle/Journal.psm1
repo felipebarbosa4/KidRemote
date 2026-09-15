@@ -10,7 +10,7 @@ function Read-ProductJournal([string]$Directory){
  foreach($file in @(Get-ChildItem -LiteralPath $Directory -Filter '*.json'|Sort-Object Name)){
   if($file.Name -cne ('{0:d6}.json' -f $rows.Count)){throw 'INVALID:JOURNAL_SEQUENCE'}
   try{$raw=[IO.File]::ReadAllText($file.FullName);$envelope=$raw|ConvertFrom-Json;if($envelope.sha256 -cne (Get-JHash $envelope.payload)){throw 'checksum'};$r=$envelope.payload|ConvertFrom-Json}catch{throw 'INVALID:JOURNAL_CORRUPT'}
-  if($r.stage -cnotmatch '^(BEGIN|REUSE_VERIFIED|RESUME_ADMITTED|ALLOWANCE_ADMITTED|PREMUTATION|UNINSTALL_ADMITTED|INSTALL_ADMITTED|REVERSE_ADMITTED|ENROLLMENT_ADMITTED|SETUP_ADMITTED|POLICY_ADMITTED|CLEANUP_ADMITTED|LOCK_ADMITTED|UNLOCK_ADMITTED|OBSERVATION|VERDICT|CLEANUP)$' -or $r.value -cnotmatch '^[A-Z0-9_:-]{1,120}$' -or $r.event -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:JOURNAL_SCHEMA'}
+  if($r.stage -cnotmatch '^(BEGIN|RESET_ADMITTED|PAIRING_CLEANUP_ADMITTED|REUSE_VERIFIED|RESUME_ADMITTED|ALLOWANCE_ADMITTED|PREMUTATION|UNINSTALL_ADMITTED|INSTALL_ADMITTED|REVERSE_ADMITTED|ENROLLMENT_ADMITTED|SETUP_ADMITTED|POLICY_ADMITTED|CLEANUP_ADMITTED|LOCK_ADMITTED|UNLOCK_ADMITTED|OBSERVATION|VERDICT|CLEANUP)$' -or $r.value -cnotmatch '^[A-Z0-9_:-]{1,120}$' -or $r.event -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:JOURNAL_SCHEMA'}
   if($r.previous -cne $previous -or $r.sequence -ne $rows.Count){throw 'INVALID:JOURNAL_CHAIN'}
   if($r.stage -eq 'VERDICT'){if($null -ne $verdict -and $verdict -cne $r.value){throw 'INVALID:VERDICT_CHANGED'};$verdict=$r.value}
   if($r.stage -eq 'CLEANUP'){$cleanup=$r.value}
@@ -19,12 +19,12 @@ function Read-ProductJournal([string]$Directory){
  return [pscustomobject]@{rows=$rows;previous=$previous;verdict=$verdict;cleanup=$cleanup;partial=(@(Get-ChildItem -LiteralPath $Directory -Filter '*.tmp').Count -gt 0)}
 }
 function Add-ProductJournal([string]$Directory,[string]$EventId,[string]$Stage,[string]$Value,[string]$Fault='NONE'){
- if($EventId -cnotmatch '^[a-f0-9-]{36}$' -or $Stage -cnotmatch '^(BEGIN|REUSE_VERIFIED|RESUME_ADMITTED|ALLOWANCE_ADMITTED|PREMUTATION|UNINSTALL_ADMITTED|INSTALL_ADMITTED|REVERSE_ADMITTED|ENROLLMENT_ADMITTED|SETUP_ADMITTED|POLICY_ADMITTED|CLEANUP_ADMITTED|LOCK_ADMITTED|UNLOCK_ADMITTED|OBSERVATION|VERDICT|CLEANUP)$' -or $Value -cnotmatch '^[A-Z0-9_:-]{1,120}$'){throw 'INVALID:JOURNAL_SCHEMA'}
+ if($EventId -cnotmatch '^[a-f0-9-]{36}$' -or $Stage -cnotmatch '^(BEGIN|RESET_ADMITTED|PAIRING_CLEANUP_ADMITTED|REUSE_VERIFIED|RESUME_ADMITTED|ALLOWANCE_ADMITTED|PREMUTATION|UNINSTALL_ADMITTED|INSTALL_ADMITTED|REVERSE_ADMITTED|ENROLLMENT_ADMITTED|SETUP_ADMITTED|POLICY_ADMITTED|CLEANUP_ADMITTED|LOCK_ADMITTED|UNLOCK_ADMITTED|OBSERVATION|VERDICT|CLEANUP)$' -or $Value -cnotmatch '^[A-Z0-9_:-]{1,120}$'){throw 'INVALID:JOURNAL_SCHEMA'}
  $validValue=switch($Stage){
  'BEGIN' {$Value -ceq 'STARTED'}
  'REUSE_VERIFIED' {$Value -ceq 'EXACT_LEASE_DEVICE_PERMISSIONS'}
  'PREMUTATION' {$Value -ceq 'EXACT_OLD_AND_FIXTURE_VERIFIED'}
- {$_ -in @('UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','ENROLLMENT_ADMITTED','SETUP_ADMITTED','POLICY_ADMITTED','CLEANUP_ADMITTED','RESUME_ADMITTED','ALLOWANCE_ADMITTED')} {$Value -cin @('OD50_FIXED_SCOPE','OD51_FIXED_SCOPE')}
+ {$_ -in @('RESET_ADMITTED','PAIRING_CLEANUP_ADMITTED','UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','ENROLLMENT_ADMITTED','SETUP_ADMITTED','POLICY_ADMITTED','CLEANUP_ADMITTED','RESUME_ADMITTED','ALLOWANCE_ADMITTED')} {$Value -cin @('OD50_FIXED_SCOPE','OD51_FIXED_SCOPE')}
  'LOCK_ADMITTED' {$Value -cmatch '^EXPECTED_VERSION:[0-9]{1,16}$'}
  'UNLOCK_ADMITTED' {$Value -cmatch '^EXPECTED_VERSION:[0-9]{1,16}$'}
  'OBSERVATION' {$Value -cin @('INDEPENDENT_BLOCKED','INDEPENDENT_RESTORED','TRANSPORT_UNAVAILABLE')}
@@ -64,7 +64,7 @@ function New-ProductJournal([string]$Root,[string]$Source,[string]$BundleHash,[s
 function New-DurableJournalCallback([string]$Directory,[bool]$Prepared=$false){
  $state=Read-ProductJournal $Directory
  if($state.partial -or ($state.rows.Count -and -not $Prepared)){throw 'INVALID:EXISTING_ATTEMPT_REVIEW_REQUIRED'}
- if($Prepared){$stages=($state.rows|ForEach-Object{$_.stage}) -join ',';$allowed=@('BEGIN,PREMUTATION,UNINSTALL_ADMITTED,INSTALL_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED,SETUP_ADMITTED,POLICY_ADMITTED','BEGIN,REUSE_VERIFIED,REVERSE_ADMITTED,RESUME_ADMITTED,POLICY_ADMITTED','BEGIN,REUSE_VERIFIED,REVERSE_ADMITTED,RESUME_ADMITTED,POLICY_ADMITTED,ALLOWANCE_ADMITTED');if($state.verdict -or $stages -cnotin $allowed){throw 'INVALID:PREPARATION_JOURNAL_INCOMPLETE'}}
+ if($Prepared){$stages=($state.rows|ForEach-Object{$_.stage}) -join ',';$allowed=@('BEGIN,PREMUTATION,UNINSTALL_ADMITTED,INSTALL_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED,SETUP_ADMITTED,POLICY_ADMITTED','BEGIN,REUSE_VERIFIED,REVERSE_ADMITTED,RESUME_ADMITTED,POLICY_ADMITTED','BEGIN,REUSE_VERIFIED,REVERSE_ADMITTED,RESUME_ADMITTED,POLICY_ADMITTED,ALLOWANCE_ADMITTED');if($state.verdict -or ($stages -cnotin $allowed -and $stages -cnotmatch '^BEGIN,(RESET_ADMITTED,)?PAIRING_CLEANUP_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED,SETUP_ADMITTED,POLICY_ADMITTED$' -and $stages -cnotmatch '^BEGIN,REVERSE_ADMITTED,RESUME_ADMITTED,SETUP_ADMITTED,POLICY_ADMITTED(,ALLOWANCE_ADMITTED)?$')){throw 'INVALID:PREPARATION_JOURNAL_INCOMPLETE'}}
  $meta=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
  $cleanupAdmission=[Guid]::NewGuid().ToString()
  $callback={param($j)

@@ -2,6 +2,7 @@
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync,lstatSync,existsSync,unlinkSync} from 'node:fs';
 import {resolve,join,dirname,relative} from 'node:path';import {createHash} from 'node:crypto';
+import {compatibility} from './compatibility.mjs';
 const root=process.argv[2];if(!root)throw Error('OWNER_LOCAL_DESTINATION_REQUIRED');
 const git=args=>execFileSync('git',args,{encoding:'utf8'}).trim();
 if(git(['status','--porcelain']))throw Error('CLEAN_COMMITTED_SOURCE_REQUIRED');
@@ -29,6 +30,7 @@ for(const [to,[from]] of Object.entries(inputs))copy(from,join(dir,to));
 function tree(from,to){for(const f of readdirSync(from)){const p=join(from,f),out=join(to,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())tree(p,out);else copy(p,out);}}
 tree(jbr,join(dir,'runtime/jbr'));
 copy('tools/enforcement/product-oracle/Run-ProductReplacement.ps1',join(dir,'Start-ProductSlice.ps1'));
+writeFileSync(join(dir,'backend-compatibility.json'),JSON.stringify({...compatibility('.'),source}));
 const files=[];function inventory(path){for(const f of readdirSync(path).sort()){if(f==='.incomplete')continue;const p=join(path,f);if(lstatSync(p).isDirectory())inventory(p);else{const name=relative(dir,p).replaceAll('\\','/');if(!/^[A-Za-z0-9_./-]+$/.test(name))throw Error('BUNDLE_FILENAME');files.push({name,sha256:sha(readFileSync(p))});}}}inventory(dir);
 const manifest={scope:'OD51_ONE_PERSISTENT_LAB_PRODUCT_SLICE',readiness:'READY_FOR_ONE_OWNER_RUN',source,ci:ci.databaseId,files,
  javaSha256:'7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a',apksignerSha256:inputs['runtime/apksigner.jar'][1],

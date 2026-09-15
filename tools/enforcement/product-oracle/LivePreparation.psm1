@@ -21,7 +21,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $ops.HostReady={
   $r=& $run $java @('--enable-native-access=ALL-UNNAMED','-jar',$jar,'verify','--verbose','--print-certs',$apk) ''
   if($r.stderr.Trim() -or (Convert-ReviewSigner $r.stdout) -cne '638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb'){throw 'INVALID:LAB_SIGNER'}
-  if(-not $Reuse -and $null -ne (Get-OnlyLabChild $wire $Jwt)){throw 'INVALID:NEW_HOUSEHOLD_NOT_EMPTY'}
+
  }.GetNewClosure()
  $ops.Configuration={
   $i=Invoke-ReadOnlyInventory $read
@@ -32,7 +32,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $ops.Installed={
   $p=Get-InventoryPackage 'dev.kidremote.child.unassigned.debug' $read
   if(-not $p.installed){throw 'INVALID:CHILD_ABSENT'}
-  $hash=if($s.new){'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'}else{'3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9'}
+  $hash=if($p.sha256 -ceq 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'){'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'}else{'3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9'}
   $signed=Get-InstalledSigner $Adb $Serial $p.basePath $Temporary $java $jar $run $hash
   if($p.sha256 -cne $signed.sha256){throw 'INVALID:INSTALLED_HASH_CHANGED'}
   [pscustomobject]@{package='dev.kidremote.child.unassigned.debug';sha256=$signed.sha256;signer=$signed.signerSha256;version=[int]$p.versionCode;versionName=$p.versionName;serviceRegistered=$p.serviceRegistered}
@@ -69,11 +69,13 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
    do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.usageAccess -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
    if($i.usageAccess -cne 'ENABLED'){throw 'INVALID:USAGE_CONSENT_TIMEOUT'}
   }
+  if($i.accessibility -cne 'ENABLED'){
   & $action OpenChild
   Write-Host 'No KidRemote: toque Concordo · abrir configuração de Acessibilidade; ative o serviço KidRemote nas Configurações.'
   $timer=[Diagnostics.Stopwatch]::StartNew()
   do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.accessibility -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
   if($i.accessibility -cne 'ENABLED'){throw 'INVALID:ACCESSIBILITY_CONSENT_TIMEOUT'}
+  }
   & $action OpenChild
  }.GetNewClosure()
  $ops.Configure={param($eventId)
@@ -88,6 +90,21 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
   $i=Invoke-ReadOnlyInventory $read;$d=Get-OnlyLabChild $wire $Jwt
   if($null -eq $SavedDevice -or $null -eq $d -or $d.id -cne $SavedDevice.id -or $d.policy_epoch -cne $SavedDevice.policy_epoch -or $i.accessibility -cne 'ENABLED' -or $i.usageAccess -cne 'ENABLED'){throw 'INVALID:REUSE_IDENTITY_OR_PERMISSIONS'}
   $s.device=$d
+ }.GetNewClosure()
+ $ops.Metadata={Get-PrivateMetadata $Adb $Serial $run}.GetNewClosure()
+ $ops.VerifyReuse={
+  $before=Get-OnlyLabChild $wire $Jwt
+  if(-not $before -or -not $SavedDevice -or $before.id -cne $SavedDevice.id -or $before.policy_epoch -cne $SavedDevice.policy_epoch){throw 'INVALID:REUSE_IDENTITY_MISMATCH'}
+  $sequence=if($before.report){[long]$before.report.sequence}else{-1}
+  $started=[DateTimeOffset]::UtcNow;& $action OpenChild
+  $timer=[Diagnostics.Stopwatch]::StartNew();$verified=$false
+  do{
+   $after=Get-OnlyLabChild $wire $Jwt
+   if($after -and $after.id -ceq $before.id -and $after.policy_epoch -ceq $before.policy_epoch -and $after.report -and $after.report.sequence -gt $sequence -and [DateTimeOffset]::Parse($after.report.received_at) -ge $started){$verified=$true;break}
+   Start-Sleep -Milliseconds 500
+  }while($timer.Elapsed.TotalSeconds -lt 45)
+  if(-not $verified){throw 'INVALID:REUSE_AUTHENTICATED_ACK_NOT_ESTABLISHED'}
+  $s.device=$after
  }.GetNewClosure()
  $ops.Resume={& $action OpenChild}.GetNewClosure()
  $ops.Normalize={param($eventId)

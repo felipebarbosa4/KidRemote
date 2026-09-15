@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - run: node --test tools/enforcement/physical-lab/lease.test.mjs
+          fetch-depth: 0
+      - run: node --test tools/enforcement/physical-lab/lease.test.mjs tools/enforcement/physical-lab/compatibility.test.mjs
       - run: node tools/enforcement/physical-lab/live-test.mjs docker
   parent-foundation:
     name: KR-006 local Auth and parent APK
@@ -27,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
         with:
           distribution: temurin
@@ -96,6 +98,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Execute complete KR-004 local pre-exposure checks
         run: node tools/kr004/check-local.mjs docker unix:///var/run/docker.sock
   validate:
@@ -105,6 +108,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, verified 2026-09-05
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Validate repository planning
         run: node tools/validate.mjs
       - name: Test content-free host recovery observer
@@ -115,6 +119,7 @@ jobs:
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/Reuse.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/Replacement.Tests.ps1
           pwsh -NoProfile -File tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
@@ -148,6 +153,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, verified 2026-09-05
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0, verified 2026-09-05
         with:
           distribution: temurin
@@ -171,6 +177,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # existing pinned action
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Native QR presentation on Windows PowerShell (synthetic only)
         shell: powershell
         run: ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
@@ -182,6 +189,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
@@ -216,7 +224,7 @@ jobs:
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
       - name: Test native lab lease model without WSL or device
         shell: powershell
-        run: node --test tools/enforcement/physical-lab/lease.test.mjs
+        run: node --test tools/enforcement/physical-lab/lease.test.mjs tools/enforcement/physical-lab/compatibility.test.mjs
       - name: Test OD-50 native fake ADB (no device)
         shell: powershell
         run: ./tools/enforcement/product-oracle/ReplacementNative.Tests.ps1
@@ -225,6 +233,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1

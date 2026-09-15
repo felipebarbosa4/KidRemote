@@ -2,6 +2,7 @@ Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
 function Get-ReplacementCommand([string]$Action,[string]$Apk){
  switch -Exact ($Action){
+  'ClearChildData' {return @('shell','pm','clear','dev.kidremote.child.unassigned.debug')}
   'Uninstall' {return @('uninstall','dev.kidremote.child.unassigned.debug')}
   'Install' {
    if(-not [IO.Path]::IsPathRooted($Apk) -or $Apk -match '["\r\n]' -or -not $Apk.EndsWith('.apk')){throw 'INVALID:LAB_APK_PATH'}
@@ -29,7 +30,7 @@ function Invoke-ReplacementAdb([string]$Adb,[string]$Serial,[string]$Action,[str
  $arguments=Get-ReplacementCommand $Action $Apk
  $r=& $Run $Adb (@('-s',$Serial)+$arguments) ''
  if($r.stderr.Trim()){throw 'INVALID:ADB_REJECTED'}
- if($Action -in @('Uninstall','Install') -and $r.stdout.Trim() -cnotmatch '^(Performing Streamed Install\r?\n)?Success$'){throw 'INVALID:REPLACEMENT_FAILED'}
+ if($Action -in @('Uninstall','Install','ClearChildData') -and $r.stdout.Trim() -cnotmatch '^(Performing Streamed Install\r?\n)?Success$'){throw 'INVALID:REPLACEMENT_FAILED'}
  if($Action -like 'Open*' -and ($r.stdout -match 'Error:|Exception|Permission Denial' -or $r.stdout -notmatch '(?m)^Status: ok\r?$')){throw 'INVALID:ACTIVITY_LAUNCH_REJECTED'}
  return $r.stdout
 }

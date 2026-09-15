@@ -9,7 +9,10 @@ function New-ProductPairing([scriptblock]$Wire,[Security.SecureString]$Jwt){
 }
 function Get-OnlyLabChild([scriptblock]$Wire,[Security.SecureString]$Jwt){
  $r=& $Wire rest '/rpc/parent_devices' POST @{p_after=$null} $Jwt
- if($r.protocol_version -ne 1 -or $r.devices -isnot [Array] -or $r.devices.Count -gt 1){throw 'INVALID:PAIRING_DUPLICATE_OR_SCHEMA'}
+ if($r.protocol_version -ne 1 -or $r.devices -isnot [Array] -or $r.devices.Count -gt 50){throw 'INVALID:PAIRING_DUPLICATE_OR_SCHEMA'}
+ if(@($r.devices|Where-Object{$_.revoked -isnot [bool]}).Count){throw 'INVALID:PAIRING_DEVICE_SCHEMA'}
+ $r.devices=@($r.devices|Where-Object{-not $_.revoked})
+ if($r.devices.Count -gt 1){throw 'INVALID:PAIRING_DUPLICATE_OR_SCHEMA'}
  if($r.devices.Count -eq 0){return $null}
  $d=$r.devices[0]
  foreach($k in @('id','policy_epoch')){if($d.$k -cnotmatch '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'){throw 'INVALID:PAIRING_DEVICE_SCHEMA'}}
