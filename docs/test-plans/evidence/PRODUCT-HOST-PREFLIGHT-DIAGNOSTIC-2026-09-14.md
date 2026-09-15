@@ -64,3 +64,14 @@ No physical runner, ADB command, emulator or backend was started locally in this
 The old `871fcfa` owner command is retired. A replacement is ready only after current
 source CI passes and a new immutable manifest is frozen. This never constitutes
 physical enforcement PASS.
+
+### Failed CI attempt retained
+
+Run `34916241144`, source `e7694d6`: Windows PS5.1 passed frozen imports, nine
+commands, real journal create/read, 43 entrypoint checks and 43 gate/reuse checks.
+It then FAILED because the new entrypoint test left its temporary module graph loaded:
+`Get-Module BackendHost` returned two modules in the subsequent native lease test.
+This is test isolation, not a Docker/device failure. Remove only modules loaded from
+that test's unique temporary root in its finally block. The failure is not discarded
+or counted as a passing workflow. Native private-pipe stage propagation is additionally
+tested for all eight backend stages.

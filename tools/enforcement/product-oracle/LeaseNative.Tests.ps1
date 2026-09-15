@@ -54,6 +54,13 @@ r.on('line',line=>{if(line==='STOP'){process.stdout.write('STOPPED_DATA_RETAINED
    Check ($b.local.id -ceq $leaseId -and $b.local.device.id -ceq $d.id -and $b.local.device.policy_epoch -ceq $d.policy_epoch)
    $null=Stop-ProductBackend $b;$b=$null
    $caught=$false;try{$other=Start-ProductBackend $source $bundle ('b'*40)}catch{$caught=$true};Check $caught
+   foreach($stage in @('DOCKER_ENGINE','LAB_PORTS','LEASE_STATE','LEASE_START','POSTGRES_READY','AUTH_READY','GATEWAY_READY','BACKEND_HEALTH')){
+    $failed="import {createInterface} from 'node:readline';const r=createInterface({input:process.stdin});r.on('line',line=>{if(line==='STOP'){r.close();process.stdin.destroy();return;}process.stdout.write(JSON.stringify({ready:false,code:'SYNTHETIC_NATIVE_FAILURE',stage:'"+$stage+"'})+'\n');});"
+    [IO.File]::WriteAllText((Join-Path $scripts 'runtime.mjs'),$failed)
+    $observed=$null;try{$other=Start-ProductBackend $source $bundle ('a'*40)}catch{$observed=$_.Exception.Data['hostStage']}
+    Check ($observed -ceq $stage)
+   }
+
   }finally{if($b){$null=Stop-ProductBackend $b};$env:LOCALAPPDATA=$savedLocal}
  }
  Write-Output "OD51_NATIVE_DPAPI_LOCK_TRANSPORT_CHECKS=$script:n;REAL_DOCKER_ADB=NOT_INVOKED"

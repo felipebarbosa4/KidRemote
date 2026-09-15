@@ -36,4 +36,7 @@ try{
   Check ($s.deviceCalls -eq 0)
  }
  Write-Output "HOST_PREFLIGHT_CHECKS=$script:n;DEVICE=NOT_INVOKED;EARLY_DIAGNOSTICS=DURABLE"
-}finally{$env:LOCALAPPDATA=$prior;Remove-Item $root -Recurse -Force}
+}finally{
+ foreach($module in @(Get-Module -All|Where-Object{$_.Path -and $_.Path.StartsWith($root,[StringComparison]::OrdinalIgnoreCase)})){Remove-Module -ModuleInfo $module -Force -ErrorAction SilentlyContinue}
+ $env:LOCALAPPDATA=$prior;Remove-Item $root -Recurse -Force
+}
