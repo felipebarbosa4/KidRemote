@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot '../../kr003/Qualification.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot '../../kr003/DevicePreflight.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot '../../kr003/Qualification.psm1')
+Import-Module (Join-Path $PSScriptRoot '../../kr003/DevicePreflight.psm1')
 
 function Assert-ProductProvenance($Expected,$Actual) {
     foreach($key in @('Branch','Source','ChildHash','FixtureHash','Package','Service','Manufacturer','Model','Android','Api','Build','Patch','BatterySaver','AppStandby')) {

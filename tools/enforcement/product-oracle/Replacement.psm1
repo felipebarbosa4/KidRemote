@@ -1,5 +1,5 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot 'Journal.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 
 function Assert-ReplacementRecord($r,[bool]$Old){
  $hash=if($Old){'3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9'}else{'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'}

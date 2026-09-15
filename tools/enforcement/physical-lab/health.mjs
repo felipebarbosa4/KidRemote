@@ -20,9 +20,9 @@ async function parent(lease,email,password){
  const s=await wire(47361,'/token?grant_type=password',{email,password});check(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(s.access_token),'LAB_AUTH_SESSION');
  const h=await wire(47362,'/rpc/bootstrap_household',{p_timezone:'Etc/UTC'},s.access_token);check(/^[a-f0-9-]{36}$/.test(h.household_id),'LAB_BOOTSTRAP');return s.access_token;
 }
-export async function health(lease){
- for(let i=0;i<45;i++){try{await wire(47361,'/health');await wire(47362,'/');await wire(47366,'/health');break;}catch(e){if(i===44)throw e;await sleep(1000);}}
- check(lease.sql('show logging_collector;')==='off','DATABASE_FILE_LOGGING_NOT_DISABLED');
+export async function health(lease,onStage=()=>{}){
+ for(let i=0;i<45;i++){try{onStage('AUTH_READY');await wire(47361,'/health');onStage('BACKEND_HEALTH');await wire(47362,'/');onStage('GATEWAY_READY');await wire(47366,'/health');break;}catch(e){if(i===44)throw e;await sleep(1000);}}
+ onStage('BACKEND_HEALTH');check(lease.sql('show logging_collector;')==='off','DATABASE_FILE_LOGGING_NOT_DISABLED');
  const s=lease.secrets;
  const probe=await parent(lease,'product-lab-probe-'+lease.id+'@example.test',s.probePassword);
  let page=await wire(47362,'/rpc/parent_devices',{p_after:null},probe);check(page.protocol_version===1&&page.devices.length<=1,'PROBE_SCOPE');

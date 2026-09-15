@@ -1,6 +1,6 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
-Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
 function Invoke-LabWire([string]$Service,[string]$Path,[string]$Method,$Body,[Security.SecureString]$Jwt){
  $ports=@{auth=47361;rest=47362;gateway=47366;mail=47365}
  if(-not $ports.ContainsKey($Service) -or $Method -notin @('GET','POST') -or $Path -notmatch '^/(signup|verify|rpc/(bootstrap_household|parent_devices)|parent/pairing-sessions|api/v1/messages|api/v1/message/[A-Za-z0-9-]+|parent/devices/[a-f0-9-]{36}/operations)$'){throw 'INVALID:LAB_ROUTE'}

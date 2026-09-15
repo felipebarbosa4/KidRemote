@@ -13,10 +13,10 @@ export const images={
 export function check(b,c){if(!b)throw Error(c);}
 export function schema(root){const files=readdirSync(resolve(root,'supabase/migrations')).filter(f=>/^\d+.*\.sql$/.test(f)).sort();check(files.length>0,'MIGRATIONS_MISSING');return {files,hash:createHash('sha256').update(files.map(f=>f+'\n'+readFileSync(resolve(root,'supabase/migrations',f),'utf8')).join('\n')).digest('hex')};}
 export function atomic(path,value){check(!existsSync(path+'.tmp'),'PARTIAL_HOST_STATE');const f=openSync(path+'.tmp','wx',0o600);try{writeFileSync(f,JSON.stringify(value));fsyncSync(f);}finally{closeSync(f);}renameSync(path+'.tmp',path);}
-export function dockerCall(docker,host){
+export function dockerCall(docker,host,run=spawnSync){
  check(['npipe:////./pipe/dockerDesktopLinuxEngine','unix:///var/run/docker.sock'].includes(host),'LOCAL_DOCKER_ONLY');
  const clean={...process.env};for(const k of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH'])delete clean[k];
- return (args,input,vars={})=>{const p=spawnSync(docker,['--host',host,...args],{input,env:{...clean,...vars},encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024,windowsHide:true});check(!p.error&&p.status===0,'NATIVE_DOCKER_COMMAND_FAILED');return p.stdout.trim();};
+ return (args,input,vars={})=>{const p=run(docker,['--host',host,...args],{input,env:{...clean,...vars},encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024,windowsHide:true});check(p.status===0||!/port is already allocated|address already in use|ports are not available/i.test(p.stderr??''),'LAB_PORT_CONFLICT');check(!p.error&&p.status===0,'NATIVE_DOCKER_COMMAND_FAILED');return p.stdout.trim();};
 }
 export class Lease {
  constructor({root,state,source,id,secrets,call}){
@@ -51,17 +51,17 @@ export class Lease {
    ...ports.flatMap(p=>['-p','127.0.0.1:'+p]),...Object.keys(vars).flatMap(k=>['-e',k]),images[kind]];
   const id=this.call(args,undefined,Object.fromEntries(Object.entries(vars).map(([k,v])=>[k,String(v)])));check(/^[a-f0-9]{64}$/.test(id),'LEASE_CONTAINER_ID');this.record.containers[kind]=id;this.save();this.inspect();this.call(['start',id]);
  }
- async readyDb(){for(let i=0;i<90;i++){try{if(this.sql("select 1 where current_setting('listen_addresses') <> '';")==='1')return;}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
+ async readyDb(){const previous=this.stage;this.stage='POSTGRES_READY';for(let i=0;i<90;i++){try{if(this.sql("select 1 where current_setting('listen_addresses') <> '';")==='1'){this.stage=previous;return;}}catch{}await new Promise(r=>setTimeout(r,1000));}throw Error('DATABASE_READINESS');}
  async start(){
-  check(!existsSync(this.state+'.tmp'),'PARTIAL_HOST_STATE');
-  check(this.call(['info','--format','{{.OSType}}'])==='linux','LINUX_DOCKER_REQUIRED');
-  if(existsSync(this.state)){
+  this.stage='LEASE_STATE';check(!existsSync(this.state+'.tmp'),'PARTIAL_HOST_STATE');
+  this.stage='DOCKER_ENGINE';check(this.call(['info','--format','{{.OSType}}'])==='linux','LINUX_DOCKER_REQUIRED');
+  this.stage='LEASE_STATE';if(existsSync(this.state)){
    this.record=JSON.parse(readFileSync(this.state,'utf8'));check(this.record.complete&&Object.keys(this.record.containers).sort().join(',')==='auth,db,mail,rest','PARTIAL_LEASE_REVIEW_REQUIRED');this.inspect();
-   for(const id of Object.values(this.record.containers))this.call(['start',id]);await this.readyDb();
+   this.stage='LEASE_START';for(const id of Object.values(this.record.containers))this.call(['start',id]);await this.readyDb();
    check(this.sql('select source || \':\' || schema_hash from lab_runtime.identity;')===this.source+':'+this.schema.hash,'DATABASE_LEASE_MISMATCH');return 'REUSED';
   }
   // Persist intent before creation. Interrupted creation is review-only, never adopted by name.
-  this.save();
+  this.stage='LEASE_START';this.save();
   this.record.network=this.call(['network','create','--driver','bridge','--opt','com.docker.network.bridge.host_binding_ipv4=127.0.0.1','--opt','com.docker.network.bridge.enable_ip_masquerade=false',...this.tags(),this.network]);this.save();
   this.record.volume=this.call(['volume','create',...this.tags(),this.volume]);this.save();
   this.create('db',{POSTGRES_PASSWORD:this.secrets.database});await this.readyDb();

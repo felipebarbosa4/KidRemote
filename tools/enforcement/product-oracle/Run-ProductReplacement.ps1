@@ -3,7 +3,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 # OD-51: frozen files + native live host gate precede every device mutation.
 # Frozen entrypoint is copied to bundle root. No ADB/HTTP until manifest/tool validation.
-$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$backendAttempted=$false;$reuse=$false;$hostFailureStage='UNSPECIFIED'
+$directory=$null;$backend=$null;$live=$null;$serial=$null;$temporary=$null;$primary=$null;$backendCleanup='NOT_STARTED';$reverseCleanup='NOT_CREATED';$recovery='NOT_REQUIRED';$source='UNSPECIFIED';$hostValidated=$false;$backendAttempted=$false;$reuse=$false;$hostFailureStage='BUNDLE_VERIFY';$hostFailureCode='NONE';$hostDiagnosticWrite='NOT_ATTEMPTED'
 try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $manifestPath).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'INVALID:BUNDLE_HASH'}
@@ -16,12 +16,15 @@ try{
   if((Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $f.name)).Hash.ToLowerInvariant() -cne $f.sha256){throw 'INVALID:BUNDLE_FILE_HASH'}
  }
  if(-not $seen.ContainsKey('Start-ProductSlice.ps1') -or -not $seen.ContainsKey('lab-reference.apk') -or -not $seen.ContainsKey('host-qr.jar') -or -not $seen.ContainsKey('zxing-core.jar')){throw 'INVALID:BUNDLE_REQUIRED_FILES'}
+ $hostFailureStage='RUNTIME_VERIFY'
  $source=$m.source;$sourceRoot=Join-Path $PSScriptRoot 'source';$modules=Join-Path $sourceRoot 'tools/enforcement/product-oracle'
- foreach($n in @('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','LivePreparation','LiveSlice','ProductOracle','ProductTransport')){Import-Module (Join-Path $modules ($n+'.psm1')) -Force}
- Import-Module (Join-Path $sourceRoot 'tools/enforcement/update-review/Review.psm1') -Force
+ foreach($n in @('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','LivePreparation','LiveSlice','ProductOracle','ProductTransport')){Import-Module (Join-Path $modules ($n+'.psm1'))}
+ Import-Module (Join-Path $sourceRoot 'tools/enforcement/update-review/Review.psm1')
  $java=Join-Path $PSScriptRoot 'runtime\jbr\bin\java.exe';$jar=Join-Path $PSScriptRoot 'runtime\apksigner.jar'
  if((Get-FileHash -LiteralPath $java).Hash.ToLowerInvariant() -cne $m.javaSha256 -or (Get-FileHash -LiteralPath $jar).Hash.ToLowerInvariant() -cne $m.apksignerSha256){throw 'INVALID:SDK_PROVENANCE'}
+ $hostFailureStage='ADB_PREREQUISITE'
  if($Adb -cne 'C:\platform-tools\adb.exe'){throw 'INVALID:FIXED_ADB_REQUIRED'}
+ $hostFailureStage='JOURNAL_READY'
  $root=Join-Path $env:LOCALAPPDATA 'KidRemote\product-slice-attempts';[void][IO.Directory]::CreateDirectory($root)
  # Restart is review-only. No new uninstall can hide an unfinished/ambiguous attempt.
  foreach($old in @(Get-ChildItem -LiteralPath $root -Directory)){
@@ -76,7 +79,9 @@ try{
   }
  }
 }catch{
+ $hostFailureCode=if($_.Exception.Message -cmatch '^INVALID:[A-Z0-9_]{1,160}$'){$_.Exception.Message.Substring(8)}elseif($_.Exception -is [Management.Automation.CommandNotFoundException]){'COMMAND_NOT_AVAILABLE'}else{'SANITIZED_HOST_EXCEPTION'}
  if($_.Exception.Data.Contains('hostStage')){$hostFailureStage=[string]$_.Exception.Data['hostStage']}
+ if($_.Exception.Data.Contains('hostCode')){$hostFailureCode=[string]$_.Exception.Data['hostCode']}
  $reason=[string]$_.Exception.Message;if(-not $hostValidated){$reason='INVALID:INVALID_HOST_PREFLIGHT'};if($reason -cnotmatch '^INVALID:[A-Z0-9_]+$'){$reason='INVALID:HOST_OR_TRANSPORT_FAILURE'}
  if($null -eq $primary){$primary=[pscustomobject]@{status='INVALID';reason=$reason;cleanup='UNVERIFIED'}}
  if($directory){try{$j=Read-ProductJournal $directory;if(-not $j.verdict){$meta=[IO.File]::ReadAllText((Join-Path $directory 'provenance'))|ConvertFrom-Json;$null=Add-ProductJournal $directory $meta.attempt VERDICT INVALID;if(-not ($j.rows|Where-Object{$_.stage -in @('UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','POLICY_ADMITTED','LOCK_ADMITTED')})){$null=Add-ProductJournal $directory ([Guid]::NewGuid().ToString()) CLEANUP NOT_REQUIRED}}}catch{}}
@@ -103,8 +108,20 @@ try{
  if($temporary){try{[IO.Directory]::Delete($temporary)}catch{$recovery='HOST_TEMP_REVIEW_REQUIRED'}}
  $jwt=$null;$serial=$null
 }
-$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;hostFailureStage=$hostFailureStage;hostFailureAction=$(if(-not $hostValidated){'Host preflight failed before tablet mutation. Check the named stage; Docker Desktop must be running. Preserve this attempt and paste only this sanitized JSON.'}else{'NONE'});reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
+$result=[ordered]@{scope='OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION';hostValidated=$hostValidated;hostFailureStage=$(if($hostValidated){'NONE'}else{$hostFailureStage});hostFailureCode=$hostFailureCode;hostFailureAction=$(if(-not $hostValidated){'Host preflight failed before tablet mutation. Check the named stage and code. Docker engine availability is relevant only to DOCKER_ENGINE. Preserve this attempt and paste only this sanitized JSON.'}else{'NONE'});reuse=$reuse;expectedSetupActions=$(if($reuse){0}else{5});persistentSyntheticLab=$true;source=$source;primary=$primary;backendCleanup=$backendCleanup;reverseCleanup=$reverseCleanup;labRecovery=$recovery;oldApkRestored=$false;newAppMayRemainInstalled=$true;historicalEvidenceUnchanged=$true}
 # Result contains only typed verdict/state and task UUIDs, never credentials or raw device output.
 $json=$result|ConvertTo-Json -Depth 8
 if($directory){$p=Join-Path $directory 'result.txt';$f=[IO.File]::Open($p,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None);try{$b=[Text.Encoding]::UTF8.GetBytes($json);$f.Write($b,0,$b.Length);$f.Flush($true)}finally{$f.Dispose()}}
-Write-Output $json
+# Independent early diagnostic: no imported module is required; unique create-new + flush.
+# Kept separate from mutation journals, so a pre-journal failure cannot hide a later attempt.
+try{
+ $diagnostics=Join-Path $env:LOCALAPPDATA 'KidRemote\product-host-failures'
+ [void][IO.Directory]::CreateDirectory($diagnostics)
+ $record=[ordered]@{attempt=[Guid]::NewGuid().ToString();utc=[DateTime]::UtcNow.ToString('o');result=$result}
+ $path=Join-Path $diagnostics ($record.attempt+'.json')
+ $stream=[IO.File]::Open(($path+'.tmp'),[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+ try{$bytes=[Text.Encoding]::UTF8.GetBytes(($record|ConvertTo-Json -Depth 10));$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+ [IO.File]::Move(($path+'.tmp'),$path);$hostDiagnosticWrite='DURABLE'
+}catch{$hostDiagnosticWrite='FAILED_PRESERVE_CONSOLE_JSON'}
+$result.hostDiagnosticWrite=$hostDiagnosticWrite
+Write-Output ($result|ConvertTo-Json -Depth 8)

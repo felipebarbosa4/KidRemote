@@ -1,5 +1,5 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
 function Get-ReplacementCommand([string]$Action,[string]$Apk){
  switch -Exact ($Action){
   'Uninstall' {return @('uninstall','dev.kidremote.child.unassigned.debug')}

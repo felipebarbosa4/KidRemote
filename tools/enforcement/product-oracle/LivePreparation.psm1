@@ -1,11 +1,11 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot 'ReplacementAdb.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'ReadOnly.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Journal.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ReplacementAdb.psm1')
+Import-Module (Join-Path $PSScriptRoot 'ReadOnly.psm1')
+Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
+Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
+Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
 
 function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[string]$Temporary,[Security.SecureString]$Jwt,[bool]$Reuse=$false,$SavedDevice=$null,[string]$Directory=''){
  $java=Join-Path $Bundle 'runtime\jbr\bin\java.exe'

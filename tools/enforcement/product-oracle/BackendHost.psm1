@@ -28,14 +28,15 @@ function Read-LabProtected([string]$Path){
  $s=ConvertTo-SecureString ([IO.File]::ReadAllText($Path));$p=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
  try{return ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($p)|ConvertFrom-Json)}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p);$s.Dispose()}
 }
-function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Source){
+function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$Source){
  if($env:OS -cne 'Windows_NT'){throw 'INVALID:NATIVE_WINDOWS_REQUIRED'}
  $docker=Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'
  if(-not(Test-Path -LiteralPath $docker)){$docker='C:\Program Files\Docker\Docker\resources\bin\docker.exe'}
  $node=Join-Path $Bundle 'runtime\node.exe'
- if(-not(Test-Path -LiteralPath $docker) -or -not(Test-Path -LiteralPath $node)){throw 'INVALID:START_DOCKER_DESKTOP_AND_RETRY_BEFORE_REPLACEMENT'}
+ if(-not(Test-Path -LiteralPath $docker)){throw 'INVALID:DOCKER_CLIENT_MISSING'}
+ if(-not(Test-Path -LiteralPath $node)){throw 'INVALID:NATIVE_RUNTIME_MISSING'}
  $root=Join-Path $env:LOCALAPPDATA 'KidRemote\physical-lab';Protect-LabDirectory $root
- $guard=$null;$p=$null;$stage='LEASE_LOCK'
+ $guard=$null;$p=$null;$runtimeStarted=$false;$stage='LEASE_LOCK'
  try{
   $guard=[IO.File]::Open((Join-Path $root 'runner.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
   $stage='PROTECTED_STATE';$secretFile=Join-Path $root 'lease.dpapi'
@@ -50,20 +51,27 @@ function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Sourc
   $stage='NATIVE_START';$p=New-Object Diagnostics.Process;$p.StartInfo.FileName=$node;$p.StartInfo.UseShellExecute=$false;$p.StartInfo.CreateNoWindow=$true
   $p.StartInfo.RedirectStandardInput=$true;$p.StartInfo.RedirectStandardOutput=$true;$p.StartInfo.RedirectStandardError=$true
   $script=Join-Path $SourceRoot 'tools\enforcement\physical-lab\runtime.mjs';if($script.Contains('"')){throw 'INVALID:SOURCE_PATH'};$p.StartInfo.Arguments='"'+$script+'"'
-  [void]$p.Start();$err=$p.StandardError.ReadToEndAsync()
+  [void]$p.Start();$runtimeStarted=$true;$err=$p.StandardError.ReadToEndAsync()
   $config=@{root=$SourceRoot;state=(Join-Path $root 'resources.json');source=$Source;id=$local.id;secrets=$local.secrets;docker=$docker;host='npipe:////./pipe/dockerDesktopLinuxEngine'}
   Write-LabPipeLine $p ($config|ConvertTo-Json -Depth 8 -Compress);$config=$null
-  $stage='PRIVATE_READINESS';$line=$p.StandardOutput.ReadLineAsync()
+  $stage='LEASE_START';$line=$p.StandardOutput.ReadLineAsync()
   if(-not $line.Wait(600000)){throw 'INVALID:BACKEND_START_TIMEOUT'}
   $raw=$line.GetAwaiter().GetResult();if(-not $raw -or $raw.Length -gt 8192){throw 'INVALID:BACKEND_START_FAILED'};$ready=$raw|ConvertFrom-Json;$raw=$null
-  if(-not $ready.ready){$reason='LIVE_BACKEND_PREFLIGHT_FAILED';if($ready.PSObject.Properties.Name -contains 'code' -and $ready.code -cmatch '^[A-Z0-9_]{1,80}$'){$reason=$ready.code};throw ('INVALID:'+$reason)}
+  if(-not $ready.ready){if($ready.PSObject.Properties.Name -contains 'stage' -and $ready.stage -cin @('DOCKER_ENGINE','LAB_PORTS','LEASE_STATE','LEASE_START','POSTGRES_READY','AUTH_READY','GATEWAY_READY','BACKEND_HEALTH')){$stage=$ready.stage};$reason='LIVE_BACKEND_PREFLIGHT_FAILED';if($ready.PSObject.Properties.Name -contains 'code' -and $ready.code -cmatch '^[A-Z0-9_]{1,80}$'){$reason=$ready.code};throw ('INVALID:'+$reason)}
   if($ready.jwt -cnotmatch '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'){throw 'INVALID:LAB_SESSION_SCHEMA'}
   $stage='PRIVATE_SESSION';$jwt=ConvertTo-SecureString $ready.jwt -AsPlainText -Force;$ready=$null
   return @{process=$p;stderr=$err;stdout=$p.StandardOutput.ReadToEndAsync();guard=$guard;secretFile=$secretFile;local=$local;jwt=$jwt;root=$root}
  }catch{
   $failureType=$_.Exception.GetType().Name;if($_.Exception.Message -cmatch '^INVALID:[A-Z0-9_]{1,100}$'){$failureType=$_.Exception.Message.Substring(8)};$failureLine=$_.InvocationInfo.ScriptLineNumber;$runtimeExit='RUNNING';$diagnostic='NONE'
-  if($p -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
-  if($p){try{Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};throw ('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic)
+  if($p -and $runtimeStarted -and $p.HasExited){$runtimeExit=[string]$p.ExitCode;try{$diagnosticText=$err.GetAwaiter().GetResult();$diagnostic=if($diagnosticText -match 'SyntaxError'){'SYNTAX'}elseif($diagnosticText -match 'Cannot find module|ERR_MODULE_NOT_FOUND'){'MODULE'}elseif($diagnosticText){'OTHER'}else{'EMPTY'}}catch{$diagnostic='UNAVAILABLE'}}
+  if($p){try{Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};$e=New-Object Exception('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic);$map=@{LEASE_LOCK='LEASE_STATE';PROTECTED_STATE='LEASE_STATE';PROTECTED_READ='LEASE_STATE';NATIVE_START='RUNTIME_VERIFY';PRIVATE_SESSION='BACKEND_HEALTH'};$e.Data['hostStage']=if($map.ContainsKey($stage)){$map[$stage]}else{$stage};throw $e
+ }
+}
+function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Source){
+ try{return Start-ProductBackendCore $SourceRoot $Bundle $Source}catch{
+  if($_.Exception.Data.Contains('hostStage')){throw}
+  $stage=switch($_.Exception.Message){'INVALID:DOCKER_CLIENT_MISSING'{'DOCKER_CLIENT'} 'INVALID:NATIVE_RUNTIME_MISSING'{'RUNTIME_VERIFY'} 'INVALID:NATIVE_WINDOWS_REQUIRED'{'RUNTIME_VERIFY'} default{'LEASE_STATE'}}
+  $e=New-Object Exception('INVALID:HOST_PREREQUISITE');$e.Data['hostStage']=$stage;throw $e
  }
 }
 function Save-ProductLabDevice($Backend,$Device){

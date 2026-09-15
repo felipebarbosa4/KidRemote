@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync,writeFileSync} from 'node:fs';import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';import {randomUUID} from 'node:crypto';
-import {Lease,label,images,parsePrivateFrame} from './lease.mjs';
+import {Lease,label,images,parsePrivateFrame,dockerCall} from './lease.mjs';
 class Docker {
  constructor(){this.items={};this.volumes={};this.networks={};this.calls=[];this.number=1;this.schema='';this.data='';}
  call=(a,input,env={})=>{
@@ -39,3 +39,10 @@ test('secrets absent in public state and command arguments',()=>run(async x=>{aw
 test('owner runtime has no WSL chain and disposable harness unchanged',()=>{for(const f of ['tools/enforcement/product-oracle/BackendHost.psm1','tools/enforcement/physical-lab/runtime.mjs','tools/enforcement/physical-lab/lease.mjs'])assert.doesNotMatch(readFileSync(f,'utf8'),/wsl\.exe|wslpath|\/mnt\/c\/|WSLENV|\/usr\/bin\/node/);assert.match(readFileSync('tools/kr004/test-local-db.mjs','utf8'),/--tmpfs/);assert.doesNotMatch(readFileSync('tools/kr004/test-local-db.mjs','utf8'),/physical-lab/);});
 
 test('private JSON accepts one Framework BOM, not malformed or doubled framing',()=>{assert.deepEqual(parsePrivateFrame('\uFEFF{"synthetic":true}'),{synthetic:true});assert.deepEqual(parsePrivateFrame('{"synthetic":true}'),{synthetic:true});assert.throws(()=>parsePrivateFrame('\uFEFF\uFEFF{}'));assert.throws(()=>parsePrivateFrame('{truncated'));assert.throws(()=>parsePrivateFrame('x'.repeat(16385)),/BOUNDS/);});
+
+test('engine failure is typed before any resource admission',()=>run(async x=>{x.lease.call=()=>{throw Error('SYNTHETIC_ENGINE_OFFLINE');};await assert.rejects(()=>x.lease.start(),/ENGINE_OFFLINE/);assert.equal(x.lease.stage,'DOCKER_ENGINE');assert.equal(x.fake.calls.length,0);}));
+test('ownership failure remains LEASE_STATE and creates nothing',()=>run(async x=>{await x.lease.start();x.fake.items[x.lease.record.containers.db].Config.Labels[label]='foreign';const next=new Lease(x.config),before=x.fake.calls.filter(a=>a[0]==='create').length;await assert.rejects(()=>next.start(),/OWNERSHIP/);assert.equal(next.stage,'LEASE_STATE');assert.equal(x.fake.calls.filter(a=>a[0]==='create').length,before);}));
+test('resource startup failure remains LEASE_START',()=>run(async x=>{const call=x.fake.call;x.lease.call=(a,...rest)=>{if(a[0]==='create')throw Error('SYNTHETIC_CREATE');return call(a,...rest);};await assert.rejects(()=>x.lease.start(),/SYNTHETIC_CREATE/);assert.equal(x.lease.stage,'LEASE_START');}));
+test('database readiness uses POSTGRES_READY and restores caller stage on success',()=>run(async x=>{x.lease.stage='LEASE_START';x.lease.sql=()=>{assert.equal(x.lease.stage,'POSTGRES_READY');return '1';};await x.lease.readyDb();assert.equal(x.lease.stage,'LEASE_START');}));
+
+test('native Docker stderr is reduced to typed port/engine errors without retaining raw text',()=>{for(const [stderr,expected] of [['ports are not available SECRET_SENTINEL','LAB_PORT_CONFLICT'],['engine unreachable SECRET_SENTINEL','NATIVE_DOCKER_COMMAND_FAILED']]){const call=dockerCall('synthetic','unix:///var/run/docker.sock',()=>({status:1,stderr,stdout:''}));assert.throws(()=>call(['info']),e=>e.message===expected&&!e.message.includes('SECRET_SENTINEL'));}});

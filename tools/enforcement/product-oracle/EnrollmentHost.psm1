@@ -1,5 +1,5 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
 function New-ProductPairing([scriptblock]$Wire,[Security.SecureString]$Jwt){
  $r=& $Wire gateway '/parent/pairing-sessions' POST @{} $Jwt
  if($r.result -cne 'CREATED' -or $r.qr.protocol_version -ne 1 -or $r.qr.session_id -cnotmatch '^[a-f0-9-]{36}$' -or $r.qr.token -cnotmatch '^[A-Za-z0-9_-]{43}$'){throw 'INVALID:PAIRING_SCHEMA'}

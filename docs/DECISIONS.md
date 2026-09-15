@@ -276,3 +276,10 @@ means READY_FOR_ONE_OWNER_RUN only after complete device-free/native CI validati
 immutable bundle freezing, never physical acceptance. Independent fixture input/focus
 remains the oracle; original verdict and cleanup are separate. No agent Samsung action,
 FCM, merge, deployment or production persistence is authorized.
+
+OD-51 diagnostic extension (owner, 2026-09-14): preserve the failed `871fcfa`
+owner attempt independently; inspect host-only artifacts and correct host-preflight
+observability without executing the physical runner. Known host failures must carry
+sanitized typed stages, including failures before journal creation. Freeze a new bundle
+rather than altering old bytes; keep the single-command pre-destructive gate. No ADB,
+physical mutation, WSLInterop repair, FCM or merge is authorized for this preparation.

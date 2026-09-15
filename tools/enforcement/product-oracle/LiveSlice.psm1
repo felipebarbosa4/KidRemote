@@ -1,9 +1,9 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'ProductTransport.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1') -Force
-Import-Module (Join-Path $PSScriptRoot 'Journal.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
+Import-Module (Join-Path $PSScriptRoot 'ProductTransport.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
+Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1')
+Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 
 function New-LiveSliceCallbacks([string]$Adb,[string]$Serial,[scriptblock]$Wire,[Security.SecureString]$Jwt,$Device,[string]$Directory){
  $canonical=New-CanonicalCallbacks $Wire $Jwt $Device.id $Device.policy_epoch

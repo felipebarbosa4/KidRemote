@@ -1,5 +1,5 @@
 Set-StrictMode -Version Latest
-Import-Module (Join-Path $PSScriptRoot '../../kr003/OracleTransport.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot '../../kr003/OracleTransport.psm1')
 
 function Invoke-ProductAdb([string]$Adb,[string]$Serial,[string[]]$Arguments) {
     if($Serial -notmatch '^[A-Za-z0-9._:-]{1,80}$'){throw 'INVALID:TARGET_SERIAL'}
