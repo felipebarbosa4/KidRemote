@@ -21,6 +21,6 @@ try{
  if($e){throw 'FROZEN_ENTRYPOINT_PARSE_FAILED'}
  Write-Output 'FROZEN_OWNER_MODULE_IMPORTS=13;ENTRYPOINT_PARSE=PASS;COMMANDS=9;JOURNAL_CREATE_READ=PASS;DEVICE=NOT_INVOKED'
 }finally{
- foreach($name in $names+@('Review')){Remove-Module $name -Force -ErrorAction SilentlyContinue}
+ foreach($name in $names+@('Review','QrPresentation')){Remove-Module $name -Force -ErrorAction SilentlyContinue}
  Remove-Item -LiteralPath $root -Recurse -Force
 }

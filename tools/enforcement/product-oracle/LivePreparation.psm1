@@ -4,6 +4,7 @@ Import-Module (Join-Path $PSScriptRoot 'ReadOnly.psm1')
 Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
 Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1')
+Import-Module (Join-Path $PSScriptRoot 'QrPresentation.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
 
@@ -46,22 +47,19 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  }.GetNewClosure()
  $ops.Enroll={
   $q=New-ProductPairing $wire $Jwt
-  $image=$null;$stream=$null;$form=$null
+  $window=$null
   try{
    $encoded=& $run $java @('-cp',((Join-Path $Bundle 'host-qr.jar')+';'+(Join-Path $Bundle 'zxing-core.jar')),'HostQr') ($q.qr|ConvertTo-Json -Compress)
-   if($encoded.stderr.Trim()){throw 'INVALID:QR_RENDER_FAILED'}
-   Add-Type -AssemblyName System.Windows.Forms;Add-Type -AssemblyName System.Drawing
-   $stream=New-Object IO.MemoryStream(,[Convert]::FromBase64String($encoded.stdout));$image=[Drawing.Image]::FromStream($stream)
-   $form=New-Object Windows.Forms.Form;$form.Text='KidRemote — escaneie este único QR no tablet';$form.ClientSize=New-Object Drawing.Size(540,540)
-   $box=New-Object Windows.Forms.PictureBox;$box.Dock='Fill';$box.SizeMode='Zoom';$box.Image=$image;$form.Controls.Add($box);$form.Show()
-   & $action OpenChild
-   Write-Host 'No KidRemote: toque Escanear QR, permita a câmera se solicitado e escaneie o QR exibido.'
-   $timer=[Diagnostics.Stopwatch]::StartNew()
-   while($timer.Elapsed.TotalSeconds -lt 240 -and $form.Visible){
-    [Windows.Forms.Application]::DoEvents();$d=Get-OnlyLabChild $wire $Jwt
-    if($null -ne $d){$s.device=$d;return};Start-Sleep -Milliseconds 500
-   };throw 'INVALID:PAIRING_TIMEOUT'
-  }finally{if($form){$form.Dispose()};if($image){$image.Dispose()};if($stream){$stream.Dispose()};$q=$null;$encoded=$null}
+   if($encoded.stderr.Trim()){throw 'INVALID:QR_PRESENTATION_FAILED'}
+   $window=New-ProductQrWindow $encoded.stdout
+   $poll={Get-OnlyLabChild $wire $Jwt}.GetNewClosure()
+   $open={& $action OpenChild}.GetNewClosure()
+   $instruction={
+    Write-Host 'QR_WINDOW_READY: janela KidRemote verificada e sempre no topo; a ativacao de foco depende do Windows.'
+    Write-Host 'No KidRemote: toque Escanear QR, permita a camera se solicitado e escaneie o QR exibido.'
+   }
+   $s.device=Invoke-ProductQrEnrollment $window $open $poll $instruction
+  }finally{if($window){$window.Dispose()};$q=$null;$encoded=$null}
  }.GetNewClosure()
  $ops.Consent={
   $i=Invoke-ReadOnlyInventory $read

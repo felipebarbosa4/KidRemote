@@ -283,3 +283,12 @@ observability without executing the physical runner. Known host failures must ca
 sanitized typed stages, including failures before journal creation. Freeze a new bundle
 rather than altering old bytes; keep the single-command pre-destructive gate. No ADB,
 physical mutation, WSLInterop repair, FCM or merge is authorized for this preparation.
+
+OD-51 QR-presentation extension (owner, 2026-09-15): replace the unverified host
+Form.Show enrollment presentation with a visible-window gate and independent UI
+message loop. No QR protocol/scanner/product changes or manual visibility confirmation.
+Preserve the 3693034 physical attempt and freeze new bytes. After readiness, the owner
+also authorizes agent-operated runs within OD-50/51, stopping for genuine consent,
+physical observation, out-of-scope destruction or FAIL/INVALID. This does not override
+existing journal/lease review gates or authorize host/WSLInterop repair. No new physical
+execution is needed for this presentation correction.

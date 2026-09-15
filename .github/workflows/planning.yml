@@ -176,6 +176,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
@@ -219,6 +220,7 @@ jobs:
         run: |
           ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
           ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
           ./tools/enforcement/product-oracle/Reuse.Tests.ps1
           ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
           ./tools/enforcement/product-oracle/Replacement.Tests.ps1
