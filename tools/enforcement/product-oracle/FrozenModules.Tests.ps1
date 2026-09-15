@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-frozen-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
-$names=@('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','LivePreparation','LiveSlice','ProductOracle','ProductTransport')
+$names=@('Reuse','BackendHost','Journal','Replacement','ReplacementAdb','ReadOnly','Canonical','EnrollmentHost','QrPresentation','LivePreparation','LiveSlice','ProductOracle','ProductTransport')
 try{
  # The freezer emits UTF-8 BOM for scripts so Windows PowerShell 5.1 reads UI labels correctly.
  Copy-Item -LiteralPath (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path -Destination (Join-Path $root 'tools') -Recurse
@@ -12,14 +12,20 @@ try{
  foreach($name in $names){Import-Module (Join-Path $modules ($name+'.psm1'))}
  Import-Module (Join-Path $root 'tools/enforcement/update-review/Review.psm1')
  # Imports alone did not prove command availability in 871fcfa. Exercise the real journal seam.
- foreach($command in @('New-ProductJournal','Read-ProductJournal','Add-ProductJournal','Invoke-ProductHostGate','Start-ProductBackend','Invoke-ReviewProcess','New-LivePreparation','New-LiveSliceCallbacks','Invoke-ProductSlice')){
+ foreach($command in @('New-ProductJournal','Read-ProductJournal','Add-ProductJournal','Invoke-ProductHostGate','Start-ProductBackend','Invoke-ReviewProcess','New-LivePreparation','New-LiveSliceCallbacks','Invoke-ProductSlice','New-ProductQrWindow','Invoke-ProductQrEnrollment')){
   if(-not(Get-Command $command -ErrorAction SilentlyContinue)){throw ('MISSING_ENTRYPOINT_COMMAND_'+$command)}
  }
+ $jwt=ConvertTo-SecureString 'synthetic' -AsPlainText -Force
+ try{
+  $prep=New-LivePreparation 'SYNTHETIC_ADB' '' $root $root $jwt
+  $found=& $prep.ops.Enroll.Module {[bool](Get-Command New-ProductQrWindow -ErrorAction SilentlyContinue)}
+  if(-not $found){throw 'ENROLL_CLOSURE_QR_COMMAND_MISSING'}
+ }finally{$jwt.Dispose()}
  $journal=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true
  $null=Read-ProductJournal $journal
  $e=$null;[void][Management.Automation.Language.Parser]::ParseFile((Join-Path $modules 'Run-ProductReplacement.ps1'),[ref]$null,[ref]$e)
  if($e){throw 'FROZEN_ENTRYPOINT_PARSE_FAILED'}
- Write-Output 'FROZEN_OWNER_MODULE_IMPORTS=13;ENTRYPOINT_PARSE=PASS;COMMANDS=9;JOURNAL_CREATE_READ=PASS;DEVICE=NOT_INVOKED'
+ Write-Output 'FROZEN_OWNER_MODULE_IMPORTS=14;ENTRYPOINT_PARSE=PASS;COMMANDS=11;ENROLL_CLOSURE=PASS;JOURNAL_CREATE_READ=PASS;DEVICE=NOT_INVOKED'
 }finally{
  foreach($name in $names+@('Review','QrPresentation')){Remove-Module $name -Force -ErrorAction SilentlyContinue}
  Remove-Item -LiteralPath $root -Recurse -Force

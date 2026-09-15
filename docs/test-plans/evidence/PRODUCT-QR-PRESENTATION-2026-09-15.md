@@ -110,3 +110,10 @@ A read-only Windows PowerShell version probe from the current Linux execution to
 failed with exit 126 / Exec format error. No Windows process or device command was
 started. There is no alternative installed Windows execution connector. Owner autonomy
 is authorized, but that authorization cannot supply a missing native execution channel.
+
+Local scope regression on `010c1d4`: constructing (but not invoking) the enrollment
+callback and inspecting its dynamic module showed New-ProductQrWindow unavailable.
+Nested import alone does not populate the GetNewClosure caller scope. Explicitly load
+QrPresentation in the owner entrypoint graph and test resolution inside the actual
+enrollment closure. This prevents a second missing-command failure before a future
+owner run. No ADB/backend callback was invoked by this scope test.
