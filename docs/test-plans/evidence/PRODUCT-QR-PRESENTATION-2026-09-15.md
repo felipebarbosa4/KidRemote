@@ -90,3 +90,12 @@ on successful enrollment had passed. The one-second timeout fixture expired duri
 initial presentation before READY. Correct the helper to start its scan lifetime on
 first confirmed presentation, independently of the bounded startup deadline. This
 failed workflow is preserved; partial checks are not an overall PASS.
+
+CI `34928523650`, source `6d8ab2f`: after separating deadlines, the exact failure is
+H1/V1/T1/TOP0/FORM1/BOUNDS1, window 560x583 inside desktop work area 1024x720,
+65 pump ticks, not expired, 26 checks completed. The third window's native TopMost
+style was absent despite the managed property; bounds and visibility were valid.
+This refines the earlier timeout observation rather than treating that partial
+explanation as complete. Defer final activation until Show/Run initialization, then
+apply SetWindowPos(HWND_TOPMOST) to this owned HWND only. The actual native TopMost
+check remains mandatory. No setting or other window is modified.

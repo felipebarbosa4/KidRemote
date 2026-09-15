@@ -18,6 +18,7 @@ namespace KidRemote.Lab {
   [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
   [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
   [DllImport("user32.dll")] static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h,IntPtr after,int x,int y,int width,int height,uint flags);
   [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h,StringBuilder b,int count);
@@ -54,9 +55,16 @@ namespace KidRemote.Lab {
     var elapsed=Stopwatch.StartNew();timer=new System.Windows.Forms.Timer();timer.Interval=50;
     form.Shown+=delegate {
      lock(gate){hwnd=form.Handle;activation=true;}
-     form.Activate();form.BringToFront();SetForegroundWindow(form.Handle);
-     var flash=new Flash {size=(uint)Marshal.SizeOf(typeof(Flash)),hwnd=form.Handle,flags=3,count=3,timeout=0};
-     if(GetForegroundWindow()!=form.Handle)FlashWindowEx(ref flash);
+     // Defer until Show/Run initialization is complete. Verify native style, not only Form.TopMost.
+     form.BeginInvoke(new Action(delegate {
+      try{
+       form.Activate();form.BringToFront();form.TopMost=true;
+       if(!SetWindowPos(form.Handle,new IntPtr(-1),0,0,0,0,0x43))throw new InvalidOperationException();
+       SetForegroundWindow(form.Handle);
+       var flash=new Flash {size=(uint)Marshal.SizeOf(typeof(Flash)),hwnd=form.Handle,flags=3,count=3,timeout=0};
+       if(GetForegroundWindow()!=form.Handle)FlashWindowEx(ref flash);
+      }catch{phase="TOPMOST_ACTIVATION";lock(gate){failed=true;}signaled.Set();form.Close();}
+     }));
     };
     timer.Tick+=delegate {
      try{
