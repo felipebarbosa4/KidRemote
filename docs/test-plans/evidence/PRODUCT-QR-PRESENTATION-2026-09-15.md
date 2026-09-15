@@ -82,3 +82,11 @@ without content or capture, to distinguish the exact failed presentation check.
 CI `34928264285`, source `40a7bc3`, still FAILED with WINDOW_VISIBILITY before the
 new bounds-failure branch. No bounds diagnosis is inferred. Preserve this attempt and
 add UI exception type, pump count, expiry flag and completed assertion count only.
+
+CI `34928383992`, source `175dfa3`: exact native failure
+WINDOW_VISIBILITY_PUMP17_EXPIRED1 after 26 completed assertions. Creation, real HWND,
+visibility/TopMost/title, independent pump survival, second unique window and close
+on successful enrollment had passed. The one-second timeout fixture expired during
+initial presentation before READY. Correct the helper to start its scan lifetime on
+first confirmed presentation, independently of the bounded startup deadline. This
+failed workflow is preserved; partial checks are not an overall PASS.

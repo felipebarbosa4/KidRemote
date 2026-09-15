@@ -62,10 +62,10 @@ namespace KidRemote.Lab {
      try{
       lock(gate){ticks++;}
       if(stopRequested){form.Close();return;}
-      if(elapsed.ElapsedMilliseconds>=lifetime){lock(gate){expired=true;}form.Close();return;}
+      if(ready&&elapsed.ElapsedMilliseconds>=lifetime){lock(gate){expired=true;}form.Close();return;}
       var state=Snapshot();
       if(form.Visible&&!form.IsDisposed&&state.Visible&&state.ValidHandle&&state.TitleMatches&&state.TopMost&&Screen.FromControl(form).WorkingArea.Contains(form.Bounds)){
-       lock(gate){ready=true;}signaled.Set();
+       if(!ready)elapsed.Restart();lock(gate){ready=true;}signaled.Set();
       }else if(elapsed.ElapsedMilliseconds>4000){
        phase="WINDOW_VISIBILITY_H"+(state.ValidHandle?1:0)+"_V"+(state.Visible?1:0)+"_T"+(state.TitleMatches?1:0)+"_TOP"+(state.TopMost?1:0)+"_FORM"+(form.Visible?1:0)+"_BOUNDS"+(Screen.FromControl(form).WorkingArea.Contains(form.Bounds)?1:0)+"_W"+form.Width+"_H"+form.Height+"_DESK_W"+Screen.FromControl(form).WorkingArea.Width+"_H"+Screen.FromControl(form).WorkingArea.Height;
        lock(gate){failed=true;}signaled.Set();form.Close();}
