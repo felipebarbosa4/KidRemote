@@ -3,3 +3,5 @@
 /supabase/** text eol=lf
 /tools/kr007/local-gateway.mjs text eol=lf
 /packages/protocol/CONTRACT.md text eol=lf
+/tools/enforcement/physical-lab/lease.mjs text eol=lf
+/tools/enforcement/physical-lab/health.mjs text eol=lf

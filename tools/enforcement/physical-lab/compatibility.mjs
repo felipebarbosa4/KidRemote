@@ -7,7 +7,8 @@ export function criticalFiles(root){
  const files=[];
  function walk(dir){for(const name of readdirSync(resolve(root,dir)).sort()){const path=dir+'/'+name;if(name.endsWith('.mjs')||name.endsWith('.sql'))files.push(path);else if(!name.includes('.'))walk(path);}}
  walk('supabase/migrations');walk('supabase/functions');
- files.push('tools/kr007/local-gateway.mjs','packages/protocol/CONTRACT.md');
+ files.push('tools/kr007/local-gateway.mjs','packages/protocol/CONTRACT.md',
+  'tools/enforcement/physical-lab/lease.mjs','tools/enforcement/physical-lab/health.mjs');
  return files.sort();
 }
 export function compatibility(root,read=path=>readFileSync(resolve(root,path))){

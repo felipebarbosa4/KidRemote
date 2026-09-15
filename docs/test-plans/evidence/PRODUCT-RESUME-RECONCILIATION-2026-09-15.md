@@ -107,3 +107,11 @@ CI passes and every frozen file is hashed. This readiness is safe admission to o
 future attempt, not physical enforcement evidence. Bundle source/hash and single
 replacement command are recorded in the PR handoff after freezing. Earlier commands
 remain retired; no physical command is executed during this task.
+
+Final compatibility boundary refinement: also include the unchanged lease implementation
+(pinned Auth/images/env/ports/ownership) and live Auth/bootstrap implementation, not just
+canonical gateway/SQL. The **17-input** final digest is
+`1f772544e5398223fa90b3349ec4528f4bb02efbd4f94a3811cdba658e45a45a`, independently
+equal at 3693034 and current source. This supersedes the initial 15-input boundary;
+it prevents future Auth/lease configuration edits from being treated as QR-only changes.
+Raw byte validation remains strict, with LF checkout attributes for all critical text.
