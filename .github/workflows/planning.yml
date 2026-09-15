@@ -9,6 +9,17 @@ concurrency:
   group: planning-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  physical-lab-lease:
+    name: OD-51 real persistent synthetic lab lease (no device)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: node --test tools/enforcement/physical-lab/lease.test.mjs tools/enforcement/physical-lab/compatibility.test.mjs
+      - run: node tools/enforcement/physical-lab/live-test.mjs docker
   parent-foundation:
     name: KR-006 local Auth and parent APK
     runs-on: ubuntu-latest
@@ -17,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c
         with:
           distribution: temurin
@@ -28,6 +40,8 @@ jobs:
           node --test tools/kr008/*.test.mjs
           node --test tools/kr009/*.test.mjs
           node tools/kr004/test-local-db.mjs docker unix:///var/run/docker.sock --sync-test
+      - name: Test OD-50 task-owned backend supervisor stop without a device
+        run: node tools/enforcement/product-oracle/backend-stdio-test.mjs docker unix:///var/run/docker.sock
       - name: Build parent with preinstalled SDK only
         run: |
           test -d "$ANDROID_HOME/platforms/android-37.0" || test -d "$ANDROID_HOME/platforms/android-37"
@@ -38,6 +52,10 @@ jobs:
           spikes/android-enforcement/gradlew -p apps/parent-mobile --no-daemon testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest lintRelease assembleRelease
           node tools/kr006/audit-parent.mjs
           node tools/kr007/audit-child.mjs
+      - name: Verify host QR private-pipe BOM and payload bounds
+        run: node tools/enforcement/physical-lab/qr-test.mjs
+      - name: Verify OD-49 fixed loopback lab APK and release isolation
+        run: node tools/enforcement/product-oracle/build-lab.mjs
       - name: Build and verify KR-008 versioned update APK pair
         env:
           KR008_SOURCE: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -80,6 +98,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Execute complete KR-004 local pre-exposure checks
         run: node tools/kr004/check-local.mjs docker unix:///var/run/docker.sock
   validate:
@@ -89,12 +108,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, verified 2026-09-05
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Validate repository planning
         run: node tools/validate.mjs
+      - name: Test content-free host recovery observer
+        run: python3 -B -m unittest discover -s tools/enforcement -p 'test_*.py'
+      - name: Test read-only private-state shell program without a device
+        run: python3 -B -m unittest discover -s tools/enforcement/update-review -p 'test_*.py'
       - name: Test evidence ingestion and least-privilege rejection
         run: node --test tools/kr003/*.test.mjs
       - name: Test qualification runner without a device
         run: |
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ResumeGate.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ResumeReview.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/Reuse.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/Replacement.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/update-review/Review.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/Prerequisites.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           pwsh -NoProfile -File tools/kr003/Qualification.Tests.ps1
           pwsh -NoProfile -File tools/kr003/OracleTransport.Tests.ps1
           pwsh -NoProfile -File tools/kr003/UiAutomationTransport.Tests.ps1
@@ -122,6 +154,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, verified 2026-09-05
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0, verified 2026-09-05
         with:
           distribution: temurin
@@ -145,9 +178,29 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # existing pinned action
         with:
           persist-credentials: false
+          fetch-depth: 0
+      - name: Native QR presentation on Windows PowerShell (synthetic only)
+        shell: powershell
+        run: ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
+      - name: Native QR presentation on PowerShell 7 (synthetic only)
+        shell: pwsh
+        run: ./tools/enforcement/product-oracle/QrPresentation.Tests.ps1
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell
         run: |
+          ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
+          ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
+          ./tools/enforcement/product-oracle/Reuse.Tests.ps1
+          ./tools/enforcement/product-oracle/AclNative.Tests.ps1
+          ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
+          ./tools/enforcement/product-oracle/Replacement.Tests.ps1
+          ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
+          ./tools/enforcement/update-review/Review.Tests.ps1
+          ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
+          ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1
+          ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1
@@ -172,9 +225,28 @@ jobs:
           ./tools/kr003/VisualCalibrationEntrypoint.Tests.ps1
           ./tools/kr003/VisualCaptureWorker.Tests.ps1
           ./tools/kr003/VisualBailoutEntrypoint.Tests.ps1
+      - name: Test native lab lease model without WSL or device
+        shell: powershell
+        run: node --test tools/enforcement/physical-lab/lease.test.mjs tools/enforcement/physical-lab/compatibility.test.mjs
+      - name: Test OD-50 native fake ADB (no device)
+        shell: powershell
+        run: ./tools/enforcement/product-oracle/ReplacementNative.Tests.ps1
       - name: Exercise diagnostic and shared runner under PowerShell 7
         shell: pwsh
         run: |
+          ./tools/enforcement/product-oracle/FrozenModules.Tests.ps1
+          ./tools/enforcement/product-oracle/HostPreflight.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeGate.Tests.ps1
+          ./tools/enforcement/product-oracle/ResumeReview.Tests.ps1
+          ./tools/enforcement/product-oracle/Reuse.Tests.ps1
+          ./tools/enforcement/product-oracle/AclNative.Tests.ps1
+          ./tools/enforcement/product-oracle/LeaseNative.Tests.ps1
+          ./tools/enforcement/product-oracle/Replacement.Tests.ps1
+          ./tools/enforcement/product-oracle/ReplacementTransport.Tests.ps1
+          ./tools/enforcement/update-review/Review.Tests.ps1
+          ./tools/enforcement/product-oracle/PreflightEntrypoint.Tests.ps1
+          ./tools/enforcement/product-oracle/Prerequisites.Tests.ps1
+          ./tools/enforcement/product-oracle/ProductOracle.Tests.ps1
           ./tools/kr007/physical-invalid-camera.test.ps1
           ./tools/kr007/physical-native.test.ps1
           ./tools/kr003/Qualification.Tests.ps1

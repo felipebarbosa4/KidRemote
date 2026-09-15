@@ -1,0 +1,593 @@
+{
+  "scope": "OD49_HOST_RECOVERY_DIAGNOSIS",
+  "source": "0406a92e6e3120057d1e9cf975d693af75fcd145",
+  "hashes": {
+    "app-debug.apk": "bb416b9e5c0d4b2957b2323914527c176ff8249c51282f34d8bb9126401e3354",
+    "app-debug-androidTest.apk": "82b08632f152ebf87bc910c0925a29d8d4641bdecfd60fe410402fd625461ece",
+    "child-debug.apk": "d2b3448b5c5574dc4ec693fc1e09386bae6ca1082e42c8c68f6c8c5d870b7f2f",
+    "child-debug-androidTest.apk": "4884df5282bab2567c18176481273f666e5e502113c3c8bc0f20ddc4e1820e33"
+  },
+  "result": "DIAGNOSTIC_COMPLETED_ONLY",
+  "cleanup": "TASK_CHILD_DATA_CLEARED_SETTINGS_READBACK_VERIFIED",
+  "fixtureSha256": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+  "stages": [
+    {
+      "method": "killWhileRestricted",
+      "codes": [
+        "SERVICE_CONNECTED",
+        "LOCK_ATTACHED_OBSERVED",
+        "OBSERVATION_DURABLE_OFFLINE",
+        "UNLOCK_POSITIVE_DETACHED",
+        "CHILD_UI_USES_LIVE_LEDGER",
+        "ZERO_REQUIRES_ATTACHED",
+        "UNLOCK_ZERO_STILL_REQUIRED",
+        "PLUS10_CLEARS_EXPIRY_DETACHED",
+        "PLUS30_MANUAL_LOCK_ATTACHED",
+        "STALE_UNLOCK_REJECTED",
+        "SAFE_SURFACE_DETACHED",
+        "ORDINARY_REENTRY_ATTACHED",
+        "EXPECTED_PRODUCT_ENFORCEMENT_KILL"
+      ],
+      "failure": [],
+      "result": "EXPECTED_PROCESS_DEATH"
+    }
+  ],
+  "oldPid": 2169,
+  "timeOrigin": "HOST_INSTRUMENTATION_COMMAND_RETURN_AFTER_EXPECTED_DEATH",
+  "observations": [
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 1.275,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 4.089,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 6.884,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 9.731,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 12.53,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 15.321,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 18.136,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 20.998,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 23.783,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 26.561,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 29.358,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 32.232,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 35.036,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 37.817,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 40.61,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 43.373,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 46.151,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 48.925,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 51.693,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 54.454,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 57.227,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 60.023,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 62.843,
+      "pids": [],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 66.1,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 68.867,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 71.681,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 74.476,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 77.244,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 80.116,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 82.876,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 85.646,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 88.439,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 91.193,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 93.987,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 96.759,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 99.571,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 102.333,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 105.112,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 107.868,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 110.712,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 113.469,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 116.26,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 119.026,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 121.852,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 124.695,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "APP_REOPEN_CONTROL",
+      "elapsedSeconds": 127.485,
+      "pids": [
+        2808
+      ],
+      "stopped": "false",
+      "bound": false,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    }
+  ],
+  "classification": "NO_RECOVERY_OBSERVED",
+  "appReopenAtSeconds": 62.843
+}

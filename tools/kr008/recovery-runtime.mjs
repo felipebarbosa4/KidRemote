@@ -19,7 +19,7 @@ let primary;
 try {
  await guard();if((await command(['shell','getprop','ro.build.version.sdk'])).trim()!=='36')throw Error('API_MISMATCH');
  for(const [i,file] of ['child-debug.apk','child-debug-androidTest.apk'].entries()) {
-  const path=join(dir,'apks-kr008-recovery',file);evidence.hashes[file]=createHash('sha256').update(readFileSync(path)).digest('hex');
+  const path=join(dir,process.env.KR008_APK_BUNDLE??'apks-kr008-recovery',file);evidence.hashes[file]=createHash('sha256').update(readFileSync(path)).digest('hex');
   const exists=(await command(['shell','pm','list','packages',packages[i]])).replaceAll('\r','').trim().split('\n').includes('package:'+packages[i]);
   if(exists&&!(await command(['uninstall',packages[i]])).includes('Success'))throw Error('OWN_UNINSTALL_FAILED');
   if(!(await command(['install','-r','-t',windows(path)])).includes('Success'))throw Error('OWN_INSTALL_FAILED');

@@ -100,6 +100,11 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
         if(!identity.read()!!.optBoolean("accounting_initialized",false))initialize(input,now,trustedUtc){queued(it)}
         else update(now){check(it.pendingAck==null);queued(SyncMerge.accept(it,input,now,trustedUtc))}.also{attached=!it.storageFailure}
     }
+    fun queueObservation(now:Sample,accept:(Ledger)->Boolean,observation:String,receipt:(Ledger)->String):AccountingResult=synchronized(accountingLock) {
+        val current=read()
+        if(current.storageFailure||current.ledger==null||!accept(current.ledger))return@synchronized current
+        update(now){s->check(accept(s));val observed=s.copy(lastAdapterObservation=observation);if(s.pendingAck!=null)observed else {val next=observed.copy(reportSequence=Math.addExact(s.reportSequence,1));next.copy(pendingAck=receipt(next))}}
+    }
     fun confirmReport(sequence:Long,now:Sample)=synchronized(accountingLock) {
         update(now){check(it.reportSequence==sequence&&it.pendingAck!=null);it.copy(pendingAck=null)}.also{attached=!it.storageFailure}
     }
@@ -108,7 +113,8 @@ internal class ChildAccounting(private val context:Context):AutoCloseable {
 internal object AndroidAccountingClock {
     fun sample(context:Context,permitted:Boolean):Sample {
         val boot=Settings.Global.getInt(context.contentResolver,Settings.Global.BOOT_COUNT,-1).toLong()
-        val elapsed=SystemClock.elapsedRealtime();val uptime=SystemClock.uptimeMillis()
+        var elapsed:Long;var uptime:Long
+        do {elapsed=SystemClock.elapsedRealtime();uptime=SystemClock.uptimeMillis()}while(elapsed!=SystemClock.elapsedRealtime())
         val power=context.getSystemService(android.os.PowerManager::class.java)
         val guard=context.getSystemService(android.app.KeyguardManager::class.java)
         return Sample(boot,elapsed,uptime,Signals(power.isInteractive,guard.isKeyguardLocked,permitted))

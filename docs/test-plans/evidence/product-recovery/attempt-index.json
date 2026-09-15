@@ -1,0 +1,44 @@
+[
+  {
+    "attempt": 1,
+    "file": "od49-host-recovery-1789396958007430592.json",
+    "classification": "INVALID_OBSERVER_BINDING_CONCLUSION",
+    "reportedResult": "DIAGNOSTIC_COMPLETED_ONLY",
+    "note": "Original emitted labels preserved; see report for parser limitations."
+  },
+  {
+    "attempt": 2,
+    "file": "od49-host-recovery-1789397128251108681.json",
+    "classification": "INVALID_OBSERVER_BINDING_CONCLUSION",
+    "reportedResult": "DIAGNOSTIC_COMPLETED_ONLY",
+    "note": "Original emitted labels preserved; see report for parser limitations."
+  },
+  {
+    "attempt": 3,
+    "file": "od49-host-recovery-1789397316442467672.json",
+    "classification": "INVALID_OBSERVER_BINDING_CONCLUSION",
+    "reportedResult": "DIAGNOSTIC_COMPLETED_ONLY",
+    "note": "Original emitted labels preserved; see report for parser limitations."
+  },
+  {
+    "attempt": 4,
+    "file": "od49-host-recovery-1789397338061274394.json",
+    "classification": "AUTOMATIC_RECOVERY_OBSERVED",
+    "reportedResult": "DIAGNOSTIC_COMPLETED_ONLY",
+    "note": "Independent attempt; no pooled rows."
+  },
+  {
+    "attempt": 5,
+    "file": "od49-host-recovery-1789397507758937690.json",
+    "classification": "AUTOMATIC_RECOVERY_OBSERVED",
+    "reportedResult": "PASS_AUTOMATIC_RECOVERY",
+    "note": "Independent attempt; no pooled rows."
+  },
+  {
+    "attempt": 6,
+    "file": "od49-host-recovery-1789397543335289270.json",
+    "classification": "AUTOMATIC_RECOVERY_OBSERVED",
+    "reportedResult": "PASS_AUTOMATIC_RECOVERY",
+    "note": "Independent attempt; no pooled rows."
+  }
+]

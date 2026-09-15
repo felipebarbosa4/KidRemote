@@ -179,3 +179,137 @@ retain independent failures. No screenshots, physical/Samsung action, enforcemen
 FCM/provider, deployment, distribution, real-family use, merge or further issue.
 KR-003/008/009 and physical KR-010 criteria stay open. Preserve earlier PRs/evidence
 and clean only task-owned resources after validation.
+
+**OD-49 — APPROVED OWNER BOUNDED PRODUCT ENFORCEMENT INTEGRATION:**
+from `e007eb23331d5b1cc924f9b67ab9fb0329e39414`, authorize repository-local
+integration of the existing KR-003 consumer Accessibility candidate with the actual
+KR-007/008/009/010 child/accounting/sync/parent stack, on a new draft branch stacked
+on `kr-010-local-parent-controls`, referencing existing Issues #3/#10. Reuse the
+candidate boundary and safe-system-surface semantics; exclude all lab-only control,
+trace/counter/capture code from release. Desired persistence and actual observed
+adapter application remain separate, with truthful durable ACK/health. Validate on
+the existing task-owned emulator only. Preserve all physical history/verdicts and
+A/B recovery. No physical execution, production acceptance, FCM, deployment, Play,
+distribution, merge or new enforcement design. After local validation, prepare
+exactly one future owner-operated short physical integration handoff only if existing
+independent oracle tooling can safely support it without weakened proof, capture,
+settings changes or destructive operations; otherwise report the exact blocker.
+KR-003 and all physical acceptance gates remain open.
+
+**OD-49 extension — host-observed normal process-death diagnosis:**
+from `fabfbdc3ca755624504ca945b988b4ae78c112bd`, owner authorizes only isolation
+of automatic AccessibilityService recovery on the existing owned emulator/PR #24.
+First use the unchanged APK/self-kill seam and a bounded host observation window,
+without instrumentation restart, app reopen, force-stop, permission toggles or data
+clear during that window. App-reopen is a separate control. Preserve the two old
+NOT_PASSED attempts. Modify product/harness only for an evidenced defect; no new
+lifecycle architecture. Any confirmation uses independent clean attempts. Physical
+oracle assessment is conditional on demonstrated automatic recovery; no physical
+execution, FCM, deployment, permission-transfer assumption or weakened oracle.
+
+**OD-49 extension — independent product oracle preparation only:**
+from `5675a3881dd08ae4c2433470a809adc4b4711d47`, owner authorizes a bounded
+Windows host driver using canonical LOCK/UNLOCK and the separate ordinary fixture's
+input/focus oracle. Product attachment/ACK/status are corroboration only. Validate
+host failures and useful owned-emulator cases; do not execute any physical command.
+Verify exact Samsung configuration/provenance and read existing product permissions;
+never assume spike permission transfer or overwrite installed state. No product lab
+hooks, FCM, enforcement redesign, destructive operations or historical runner edits.
+Publish an immutable owner bundle/command only when transport, provenance and
+independent cleanup are actually ready; otherwise retain an explicit blocker.
+
+**OD-49 extension — device-free prerequisites and read-only inventory:** owner
+explicitly authorizes durable host journals, strict canonical callback/provenance
+adapters, a fixed loopback debug-only lab endpoint, and one immutable Windows
+read-only Samsung preflight bundle. No physical command is executed by the agent;
+no installation, settings/input, reverse tunnel, backend mutation or qualification
+belongs to the preflight. Product oracle remains BLOCKED until live prerequisites
+are evidenced. Release endpoint/security and historical verdicts remain unchanged.
+
+**OD-49 extension — signer/private-state read-only update review:** owner reports
+matching Samsung configuration and installed child v1 hash `3ff9962e...`, with
+product permissions not verified enabled. Authorizes one additional read-only
+handoff: temporary installed APK pull + local SDK apksigner, and content-free
+run-as existence/size inventory. No install/update, permissions, launch/input,
+backend, reverse or data erasure. SAFE_DATA_PRESERVING_UPDATE_REVIEW is technical
+eligibility for review only, never authorization to perform an update.
+
+**OD-49 extension — bounded historical signing recovery:** owner confirms the
+installed certificate differs from the lab and two other durable files remain.
+Authorizes metadata-only search of known local Android/task-owned build locations;
+if the original signing key is found, reference it without modifying/copying it and
+test a same-signer lab update on an owned emulator only. No physical command,
+destructive replacement, release signing change or secret disclosure. If not found,
+stop for owner choice between a side-by-side package and separately authorized
+destructive reinstall after state/risk review. Neither alternative is preselected.
+
+**OD-50 — APPROVED OWNER DESTRUCTIVE SAMSUNG LAB REPLACEMENT / ONE PRODUCT SLICE:**
+from `45eda78b7c4d45f3ddb3971b134feea26d7e7f1f`, owner chooses option B for
+the dedicated Samsung SM-X400 / Android 16 API 36 / BP4A.251205.006 / patch
+2026-07-05 only. A future pinned runner may uninstall only
+`dev.kidremote.child.unassigned.debug` and lose its private data, then install
+the approved source-668ab87 physical-lab APK. Old provenance must match before
+uninstall; preserve historical evidence, not the two unknown files. Permit
+fixed loopback ADB reverse, task-owned canonical backend, real pairing, app/fixture
+and relevant Settings launches, genuine owner consent and bounded independent
+fixture input. Leave the lab app, identity and permissions after successful
+canonical Unlock/independent restored-input cleanup. Manual Accessibility-disable
+recovery is separate and never changes the original verdict. No agent physical
+execution in preparation, factory reset, root, bootloader/safe-mode changes,
+unrelated data changes, arbitrary navigation/security changes, FCM or merge.
+Only freeze one command if complete device-free validation supports readiness.
+
+**OD-51 — APPROVED OWNER PERSISTENT SYNTHETIC PHYSICAL-LAB LEASE:** from
+`54df5a0dacd2b6b0266f18a4f99325749b61a94c`, owner authorizes one Windows-native
+runner with an exactly owned, versioned, loopback-only persistent synthetic backend.
+Retain enrolled identity, lab APK, genuine permissions and backend data after verified
+canonical Unlock and independent restored input. Reuse must verify the same lease,
+source/schema, installed provenance and permissions; never silently replace identity.
+Keep disposable CI databases unchanged. Protect locally generated secrets; explicit
+teardown may delete only the verified lease's synthetic resources and must be journaled.
+Windows PowerShell must call native Docker directly, without WSLInterop, repair, sudo,
+host configuration changes or runtime downloads during qualification. Mandatory live
+host/backend/hash/journal/read-only device preflight precedes every OD-50 destructive
+admission. Failure is INVALID_HOST_PREFLIGHT with no device mutation. First native host
+execution may be this in-run preflight; no separate owner command is required. Readiness
+means READY_FOR_ONE_OWNER_RUN only after complete device-free/native CI validation and
+immutable bundle freezing, never physical acceptance. Independent fixture input/focus
+remains the oracle; original verdict and cleanup are separate. No agent Samsung action,
+FCM, merge, deployment or production persistence is authorized.
+
+OD-51 diagnostic extension (owner, 2026-09-14): preserve the failed `871fcfa`
+owner attempt independently; inspect host-only artifacts and correct host-preflight
+observability without executing the physical runner. Known host failures must carry
+sanitized typed stages, including failures before journal creation. Freeze a new bundle
+rather than altering old bytes; keep the single-command pre-destructive gate. No ADB,
+physical mutation, WSLInterop repair, FCM or merge is authorized for this preparation.
+
+OD-51 QR-presentation extension (owner, 2026-09-15): replace the unverified host
+Form.Show enrollment presentation with a visible-window gate and independent UI
+message loop. No QR protocol/scanner/product changes or manual visibility confirmation.
+Preserve the 3693034 physical attempt and freeze new bytes. After readiness, the owner
+also authorizes agent-operated runs within OD-50/51, stopping for genuine consent,
+physical observation, out-of-scope destruction or FAIL/INVALID. This does not override
+existing journal/lease review gates or authorize host/WSLInterop repair. No new physical
+execution is needed for this presentation correction.
+
+OD-50/OD-51 resume extension (owner, 2026-09-15): reconcile the exact partial
+attempt d9157ae6-a6ff-4849-919f-c8f13fe08f7e automatically inside the next runner.
+Preserve its INVALID:PAIRING_TIMEOUT and cleanup UNVERIFIED without rewriting rows.
+Separate installed package from enrollment; exact lab bytes need no reinstall.
+Use a backend-critical compatibility digest, with exact source/ownership provenance,
+to assess presentation-only source changes. Record a separate durable RESUME_REVIEW.
+Reuse consistent enrollment or resume QR when empty. Owner authorizes clearing only
+this exact child package's data and exact synthetic lab state when bounded evidence
+attributes a partial identity safely; ambiguity remains INVALID with no mutation.
+No Samsung execution in this preparation, credential/content reads, interop repair,
+new protocol, FCM or changed independent fixture oracle. Future single-command runs
+remain gated by live host/backend/provenance checks and genuine Android consent.
+
+OD-51 ACL diagnostic extension (owner, 2026-09-15): inspect only preserved host
+metadata for the source-60fd897 INVALID_HOST_PREFLIGHT. Wrap exact lab directory
+creation/ACL/lease failures in typed sanitized stages, make approved user+SYSTEM ACL
+idempotent, and repair only demonstrably task-owned incomplete ACL initialization.
+Do not weaken inheritance/ownership, decrypt historical secrets, delete valid leases,
+rewrite attempts, execute physical ADB or repair interop. Native Windows CI is required
+before a new immutable single-command bundle; no separate owner diagnostic or icacls step.

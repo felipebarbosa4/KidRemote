@@ -31,9 +31,15 @@ class ChildActivity:ComponentActivity() {
     override fun onCreate(state:Bundle?) {
         super.onCreate(state);window.setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE)
         model=ViewModelProvider(this)[EnrollmentModel::class.java]
-        setContent {MaterialTheme(colorScheme=lightColorScheme()) {Surface(Modifier.fillMaxSize()){Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+        setContent {var adapterText by remember {mutableStateOf(dev.kidremote.child.enforcement.EnforcementRuntime.text())}
+        LaunchedEffect(Unit){while(true){adapterText=dev.kidremote.child.enforcement.EnforcementRuntime.text();kotlinx.coroutines.delay(1000)}}
+        MaterialTheme(colorScheme=lightColorScheme()) {Surface(Modifier.fillMaxSize()){Column(Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
             Text("KidRemote Child · laboratório local",style=MaterialTheme.typography.titleLarge)
-            Text(model.state.message);if(model.state.localReasons.isNotEmpty())Text(model.state.localReasons);Text("Sem contato, uma remoção remota ainda não foi recebida. A última política válida e a contabilidade permanecem armazenadas.");Text("Nenhum bloqueio ou proteção está ativo neste aplicativo.")
+            Text(model.state.message);if(model.state.localReasons.isNotEmpty())Text(model.state.localReasons);Text("Sem contato, uma remoção remota ainda não foi recebida. A última política válida e a contabilidade permanecem armazenadas.");Text(adapterText)
+            if(model.state.paired&&!model.state.removed){
+                Text("Acessibilidade: permite mostrar uma sobreposição de restrição parental. Não lê conteúdo, mensagens ou histórico. Ativação opcional e manual nas Configurações; integração local sem aceitação física.")
+                Button(onClick={dev.kidremote.child.enforcement.EnforcementRuntime.consent(this@ChildActivity);startActivity(android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))}){Text("Concordo · abrir configuração de Acessibilidade")}
+            }
             if(model.state.loading)CircularProgressIndicator()
             if(cameraMessage.isNotEmpty())Text(cameraMessage)
             if(!model.state.paired&&!model.state.loading&&!model.state.recovery)Button(onClick={if(ContextCompat.checkSelfPermission(this@ChildActivity,Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)scanning=true else permission.launch(Manifest.permission.CAMERA)}){Text("Escanear QR do responsável")}
