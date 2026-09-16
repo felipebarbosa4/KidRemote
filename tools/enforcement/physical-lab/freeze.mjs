@@ -1,4 +1,7 @@
 // Builds owner-local immutable bytes only. Never invokes Windows, ADB or Docker.
+// Source-07cf5e1 did not persist enough metadata to distinguish METADATA_KNOWN from
+// NO_UNKNOWN_FILES. A later evidence-backed change must remove this explicit gate.
+throw Error('PRODUCT_PHYSICAL_ORACLE_BLOCKED_METADATA_PREDICATE_UNRESOLVED');
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync,lstatSync,existsSync,unlinkSync} from 'node:fs';
 import {resolve,join,dirname,relative} from 'node:path';import {createHash} from 'node:crypto';

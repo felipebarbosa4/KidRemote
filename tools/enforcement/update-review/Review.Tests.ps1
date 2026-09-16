@@ -8,10 +8,17 @@ function State($present=''){
  $lines=@();foreach($key in (Get-ReviewStatePaths).Keys){$lines+=($key+'|'+$(if($present -ceq $key){'PRESENT|40'}else{'ABSENT|0'}))}
  $lines+='LINKS|0';$lines+=('TOTAL|'+$(if($present){'1'}else{'0'}));return $lines -join "`n"
 }
+function RuntimeState([string[]]$present=@(),[int]$extra=0){
+ $lines=@();foreach($key in (Get-ReviewStatePaths $true).Keys){$lines+=($key+'|'+$(if($key -cin $present){'PRESENT|40'}else{'ABSENT|0'}))}
+ $lines+='LINKS|0';$lines+=('TOTAL|'+($present.Count+$extra));return $lines -join "`n"
+}
 $empty=Convert-ReviewState (State);Eq $empty.sufficientForEmptyStateReview $true
 foreach($key in (Get-ReviewStatePaths).Keys){$r=Convert-ReviewState (State $key);Eq $r.sufficientForEmptyStateReview $false;Eq $r.totalDurableFiles 1}
 foreach($raw in @(((State)+"`nidentity|ABSENT|0"),(State).Replace('LINKS|0','LINKS|1'),(State).Replace('identity|ABSENT|0','identity|UNKNOWN|0'),(State).Replace('TOTAL|0','TOTAL|x'),(State).Replace('identity|ABSENT|0','secret|ABSENT|0'),(State).Replace('identity|ABSENT|0','identity|ABSENT|2'))){No {Convert-ReviewState $raw} 'PRIVATE_STATE_REVIEW_REQUIRED'}
 $r=Convert-ReviewState ((State).Replace('TOTAL|0','TOTAL|1'));Eq $r.otherDurableFiles 1;Eq $r.sufficientForEmptyStateReview $false
+$runtime=Convert-ReviewState (RuntimeState @('runtime_profile','runtime_profileWritten')) $true;Eq $runtime.otherDurableFiles 0;Eq $runtime.totalDurableFiles 2
+$runtime=Convert-ReviewState (RuntimeState @('runtime_profile','runtime_profileWritten','runtime_work_databases','runtime_work_databases_wal')) $true;Eq $runtime.otherDurableFiles 0;Eq $runtime.totalDurableFiles 4
+$runtimeUnknown=Convert-ReviewState (RuntimeState @('runtime_profile','runtime_profileWritten') 1) $true;Eq $runtimeUnknown.otherDurableFiles 1;Eq $runtimeUnknown.sufficientForEmptyStateReview $false
 $cert='a'*64;$sig="Verifies`nNumber of signers: 1`nV2 Signer: certificate SHA-256 digest: $cert`n"
 Eq (Convert-ReviewSigner $sig) $cert
 Eq (Convert-ReviewSigner $sig.Replace('V2 Signer:','Signer #1')) $cert

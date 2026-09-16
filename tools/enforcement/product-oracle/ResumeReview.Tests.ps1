@@ -5,19 +5,24 @@ Import-Module (Join-Path $PSScriptRoot 'ResumePreparation.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 $script:n=0;function Check($b){$script:n++;if(-not $b){throw "RESUME_CHECK_$script:n"}}
 function Facts {return [pscustomobject]@{provenance=$true;owned=$true;compatible=$true;reverseAbsent=$true;historySafe=$true;metadataKnown=$true;noUnknownFiles=$true;package='LAB';historicalPartial=$true;backendDevice=$false;savedDevice=$false;savedMatches=$false;identity=$false;pending=$false;accounting=$false;credentialUsable=$false;policyConsistent=$false;noPolicyOrReport=$true;resetAttributable=$true}}
-$f=Facts;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'ENROLL');Check ($r.packageMode -ceq 'LAB_PACKAGE_UNPAIRED')
-foreach($field in @('backendDevice','identity','pending','savedDevice')){$f=Facts;$f.$field=$true;Check ((Resolve-ProductPreparation $f).path -ceq 'RESET_ENROLL')}
-foreach($field in @('provenance','owned','compatible','reverseAbsent','historySafe','metadataKnown','noUnknownFiles')){$f=Facts;$f.$field=$false;Check ((Resolve-ProductPreparation $f).path -ceq 'NONE')}
-$f=Facts;$f.backendDevice=$true;$f.noPolicyOrReport=$false;Check ((Resolve-ProductPreparation $f).path -ceq 'NONE')
-$f=Facts;$f.identity=$true;$f.resetAttributable=$false;Check ((Resolve-ProductPreparation $f).path -ceq 'NONE')
+$f=Facts;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'ENROLL');Check ($r.packageMode -ceq 'LAB_PACKAGE_UNPAIRED');Check ($r.reviewReason -ceq 'NONE');Check (@($r.failedChecks).Count -eq 0)
+foreach($field in @('backendDevice','identity','pending')){$f=Facts;$f.$field=$true;Check ((Resolve-ProductPreparation $f).path -ceq 'RESET_ENROLL')}
+$typed=[ordered]@{provenance='PROVENANCE';owned='OWNERSHIP';compatible='BACKEND_COMPATIBILITY';reverseAbsent='REVERSE_ABSENT';historySafe='HISTORY_SAFE';metadataKnown='METADATA_KNOWN';noUnknownFiles='NO_UNKNOWN_FILES'}
+foreach($field in $typed.Keys){$f=Facts;$f.$field=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq $typed[$field]);Check ((@($r.failedChecks) -join ',') -ceq $typed[$field])}
+$f=Facts;$f.metadataKnown=$false;$f.noUnknownFiles=$false;$r=Resolve-ProductPreparation $f;Check ((@($r.failedChecks) -join ',') -ceq 'METADATA_KNOWN,NO_UNKNOWN_FILES')
+$f=Facts;$f.savedDevice=$true;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq 'SAVED_DEVICE_ORPHANED')
+$f=Facts;$f.package='OTHER';$r=Resolve-ProductPreparation $f;Check ($r.reviewReason -ceq 'PACKAGE_PROVENANCE')
+$f=Facts;$f.backendDevice=$true;$f.noPolicyOrReport=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
+$f=Facts;$f.identity=$true;$f.resetAttributable=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
 $f=Facts;$f.historicalPartial=$false;$f.backendDevice=$true;$f.savedDevice=$true;$f.savedMatches=$true;$f.identity=$true;$f.credentialUsable=$true;$f.policyConsistent=$true
 $r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'VERIFY_REUSE');Check ($r.credentialProof -ceq 'FRESH_ACK_REQUIRED_BEFORE_POLICY')
-$f.savedMatches=$false;Check ((Resolve-ProductPreparation $f).path -ceq 'NONE')
+$f.savedMatches=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-resume-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 try{
  foreach($path in @('ENROLL','RESET_ENROLL','VERIFY_REUSE')){
   $dir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true
   $r=Resolve-ProductPreparation (Facts);Write-ResumeReview $dir 'NONE' ('e'*64) $r
+  $saved=Read-ResumeReview $dir;Check ($saved.reviewReason -ceq 'NONE');Check (@($saved.failedChecks).Count -eq 0)
   $caught=$false;try{Write-ResumeReview $dir 'NONE' ('e'*64) $r}catch{$caught=$true};Check $caught
   $state=@{actions=@()};$ops=@{}
   foreach($action in @('Reset','CancelPairings','Reverse','Enroll','VerifyReuse','Consent','Configure','Normalize')){$a=$action;$ops[$a]={param($id) $j=Read-ProductJournal $dir;if(-not $j.rows.Count){throw 'NOT_ADMITTED'};$state.actions+=,$a}.GetNewClosure()}
@@ -50,6 +55,9 @@ try{
  Check ((Read-ResumeReview $reviewDir).historicalAttempt -ceq $meta.attempt)
  Check ((Read-ProductJournal $dir).previous -ceq $before)
  Check ((Read-ProductJournal $dir).cleanup -ceq 'UNVERIFIED')
+ $typedDir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true;$typedFacts=Facts;$typedFacts.noUnknownFiles=$false
+ Write-ResumeReview $typedDir 'NONE' ('e'*64) (Resolve-ProductPreparation $typedFacts)
+ $typedReview=Read-ResumeReview $typedDir;Check ($typedReview.reviewReason -ceq 'NO_UNKNOWN_FILES');Check ((@($typedReview.failedChecks) -join ',') -ceq 'NO_UNKNOWN_FILES')
  # Additional Lock admission is never reviewed away, even after a finalized INVALID.
  $null=Add-ProductJournal $dir ([Guid]::NewGuid().ToString()) UNLOCK_ADMITTED EXPECTED_VERSION:1
  Check (-not (Test-ResumableHistory $dir))

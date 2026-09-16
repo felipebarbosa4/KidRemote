@@ -2,6 +2,12 @@
 
 ## OD-51 current native runner
 
+Current physical handoff is **BLOCKED**. Immutable source/bundle `07cf5e1` stopped
+read-only at `INVALID_PARTIAL_STATE_REVIEW_REQUIRED` with no tablet mutation. Its
+schema proves `NO_UNKNOWN_FILES=false` but did not persist enough information to
+distinguish an unknown-file count from a metadata-read failure. The source is retired;
+there is no replacement command. See the [predicate diagnosis](../../../docs/test-plans/evidence/PRODUCT-RESUME-PREDICATE-DIAGNOSIS-2026-09-16.md).
+
 `Run-ProductReplacement.ps1` uses native Windows PowerShell, a frozen native Node
 runtime and native Docker Desktop. It never enters WSL. The separate
 `../physical-lab` lease retains its exactly owned synthetic PostgreSQL volume and

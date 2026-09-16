@@ -313,3 +313,12 @@ idempotent, and repair only demonstrably task-owned incomplete ACL initializatio
 Do not weaken inheritance/ownership, decrypt historical secrets, delete valid leases,
 rewrite attempts, execute physical ADB or repair interop. Native Windows CI is required
 before a new immutable single-command bundle; no separate owner diagnostic or icacls step.
+
+OD-51 resume-predicate diagnostic extension (owner, 2026-09-16): preserve the
+source-07cf5e1 physical INVALID independently and inspect only durable host/backend
+evidence. Determine each resume predicate without Samsung execution, content or
+credential disclosure. Add sanitized typed failed checks and one-at-a-time regressions;
+never allowlist unknown files or clear a saved-device pointer without exact evidence.
+Retire 07cf5e1. Freeze a new bundle only after the exact blocker is established and
+safely handled; otherwise keep PRODUCT_PHYSICAL_ORACLE blocked. Preserve d9157ae6 as
+INVALID:PAIRING_TIMEOUT / cleanup UNVERIFIED and do not rewrite either attempt.
