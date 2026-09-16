@@ -81,6 +81,28 @@ unknown, extra durable files, old/foreign package, ownership/compatibility failu
 policy ambiguity remain fail-closed. Synthetic read-only failures assert unchanged
 backend/metadata objects and an empty mutation journal.
 
+## Device-free validation
+
+- Native local Windows PowerShell 5.1: resume/journal **97 checks PASS**; actual
+  extracted read-only gate **99 PASS**; host preflight **43 PASS**; reuse **43 PASS**;
+  prerequisites **72 PASS**; metadata/update review **84 PASS**; DPAPI/lock/private
+  pipe lease **20 PASS**. Every suite reports `DEVICE=NOT_INVOKED` or equivalent.
+- Node lease/compatibility: **19/19 PASS**, including the explicit immutable-freezer
+  blocker. Host QR payload/BOM/bounds: **5 PASS**, device not run.
+- Isolated KR-003 Gradle: **BUILD SUCCESSFUL**, 274 tasks (6 executed, 268 up-to-date).
+  Build audit: **24/24 JVM**, merged debug/release permissions and DEX isolation PASS.
+- Python host observers: **3 + 4 PASS**; the update-review suite used native
+  `powershell.exe` because `pwsh` is not installed in WSL.
+- One local native QR-window invocation stopped independently at
+  `WINDOW_VISIBILITY ... TOP0` after 11 checks. It made no device call. This is a
+  current interactive-session/topmost failure, not a passing result and not evidence
+  against the metadata correction. Native PS5.1 and PS7 QR tests remain mandatory in CI.
+
+Full SQL/backend, PS5.1/PS7, Android build/lint/security/privacy and required CI must
+pass on the final source before this bounded diagnostic is complete. Passing them
+does not unblock the physical oracle while the historical metadata predicate remains
+unresolved.
+
 ## Gate
 
 `PRODUCT_PHYSICAL_ORACLE = BLOCKED`. Source/bundle 07cf5e1 is retired and must not be
@@ -88,4 +110,3 @@ rerun. No replacement bundle or PowerShell command may be published until a futu
 authorized read-only observation establishes whether METADATA_KNOWN also failed and,
 if applicable, classifies any extra file from structural metadata. No Samsung command
 was executed in this diagnosis.
-
