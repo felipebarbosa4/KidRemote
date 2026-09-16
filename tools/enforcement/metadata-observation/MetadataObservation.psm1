@@ -132,10 +132,29 @@ function Invoke-Od51Adb([string]$Adb,[string]$Serial,[string[]]$Arguments,[strin
 }
 
 function Get-Od51AdbText($Result,[bool]$AllowAbsentPackage=$false) {
- if($Result.outputTooLarge -or $Result.stderrPresent){throw 'ADB_READ_FAILED'}
+ if($Result.outputTooLarge){throw 'ADB_OUTPUT_TOO_LARGE'}
+ if($Result.stderrPresent){throw 'ADB_STDERR_PRESENT'}
  if($AllowAbsentPackage -and $Result.exitCode -eq 1 -and -not $Result.stdout.Trim()){return ''}
- if($Result.exitCode -ne 0){throw 'ADB_READ_FAILED'}
+ if($Result.exitCode -ne 0){throw 'ADB_EXIT_NONZERO'}
  return $Result.stdout
+}
+
+function Assert-Od51PullResult($Result,[string]$Destination,[string]$AllowedDestination) {
+ if(-not $AllowedDestination -or $Destination -cne $AllowedDestination){throw 'READ_ONLY_COMMAND_REJECTED'}
+ if($Result.outputTooLarge){throw 'ADB_OUTPUT_TOO_LARGE'}
+ if($Result.exitCode -ne 0){throw 'ADB_EXIT_NONZERO'}
+ # adb sync progress and its final transfer summary are informational stderr.
+ # Local identity, size, hash and signer checks remain mandatory after this return.
+}
+
+function Assert-Od51LocalApk([string]$Destination,[string]$AllowedDestination,[string]$ExpectedSha256) {
+ try{
+  if(-not $AllowedDestination -or $Destination -cne $AllowedDestination -or $ExpectedSha256 -cnotmatch '^[a-f0-9]{64}$'){throw 'PACKAGE_PROVENANCE_INVALID'}
+  if(-not (Test-Path -LiteralPath $Destination)){throw 'PACKAGE_PROVENANCE_INVALID'}
+  $item=Get-Item -LiteralPath $Destination -Force
+  if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -or -not (Test-Path -LiteralPath $Destination -PathType Leaf) -or $item.Length -le 0 -or $item.Length -gt 200MB){throw 'PACKAGE_PROVENANCE_INVALID'}
+  if((Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash.ToLowerInvariant() -cne $ExpectedSha256){throw 'PACKAGE_PROVENANCE_INVALID'}
+ }catch{throw 'PACKAGE_PROVENANCE_INVALID'}
 }
 
 function Select-Od51Target([string]$Raw) {
@@ -188,4 +207,4 @@ function Get-Od51Signer([string]$Java,[string]$Jar,[string]$Apk) {
  try{[void]$p.Start();$o=$p.StandardOutput.ReadToEndAsync();$e=$p.StandardError.ReadToEndAsync();if(-not $p.WaitForExit(60000)){$p.Kill();throw 'PACKAGE_SIGNER_INVALID'};$stdout=$o.GetAwaiter().GetResult();$stderr=$e.GetAwaiter().GetResult();if($p.ExitCode -ne 0 -or $stderr.Trim() -or $stdout.Length -gt 65536){throw 'PACKAGE_SIGNER_INVALID'};return Convert-Od51Signer $stdout}catch{throw 'PACKAGE_SIGNER_INVALID'}finally{$p.Dispose()}
 }
 
-Export-ModuleMember -Function Get-Od51MetadataScript,Test-Od51SafeRelativeName,Convert-Od51MetadataOutput,Convert-Od51MetadataProcessResult,Test-Od51AdbCommand,Invoke-Od51Adb,Get-Od51AdbText,Select-Od51Target,Test-Od51ReverseAbsent,Get-Od51Configuration,Get-Od51Package,Convert-Od51Signer,Get-Od51Signer
+Export-ModuleMember -Function Get-Od51MetadataScript,Test-Od51SafeRelativeName,Convert-Od51MetadataOutput,Convert-Od51MetadataProcessResult,Test-Od51AdbCommand,Invoke-Od51Adb,Get-Od51AdbText,Assert-Od51PullResult,Assert-Od51LocalApk,Select-Od51Target,Test-Od51ReverseAbsent,Get-Od51Configuration,Get-Od51Package,Convert-Od51Signer,Get-Od51Signer

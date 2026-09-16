@@ -334,3 +334,14 @@ app/backend/private-state mutation, install/uninstall/clear, reverse change, lau
 input, permission/policy action or historical rewrite. Current evidence is independent
 and cannot backfill e888975a. Freeze only this diagnostic bundle after native CI;
 the product physical oracle remains blocked pending owner output and review.
+
+OD-51 metadata-pull correction extension (owner, 2026-09-16): preserve read-only
+attempt 78bf058e-280f-4ee1-9384-a51a75a395e5 independently as INVALID /
+ADB_READ_FAILED and retire source bcac318 from physical reuse. Correct only the fixed
+child base-APK pull so bounded informational stderr with exit zero may proceed to exact
+destination, regular/non-reparse file, size, device-hash and signer validation. All
+ordinary reads retain strict stderr rejection. Add sanitized stage plus typed ADB
+reason without raw output. Do not broaden ADB commands, inspect private contents,
+mutate device/backend/history, run Samsung/emulator ADB or freeze a product bundle.
+Freeze a replacement diagnostic probe only after native PowerShell 5.1/7 and required
+CI pass; PRODUCT_PHYSICAL_ORACLE remains blocked.

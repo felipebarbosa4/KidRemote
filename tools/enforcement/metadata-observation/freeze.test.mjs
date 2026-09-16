@@ -16,4 +16,10 @@ test('runtime has no backend, product-control, journal or capture capability',()
  for(const source of [runner,module])assert.doesNotMatch(source,/Invoke-RestMethod|https?:\/\/|\bLOCK\b|\bUNLOCK\b/);
  assert.match(runner,/deviceMutation=\$false/);assert.match(runner,/backendMutation=\$false/);assert.match(runner,/mutationJournalCreated=\$false/);
  assert.match(module,/line -ceq 'reverse --list'/);assert.doesNotMatch(module,/line -ceq 'reverse tcp:/);
+ assert.match(module,/function Assert-Od51PullResult/);
+ assert.match(module,/if\(\$Result\.stderrPresent\)\{throw 'ADB_STDERR_PRESENT'\}/);
+ assert.doesNotMatch(runner,/ADB_READ_FAILED/);
+ for(const command of ['install','uninstall','pm clear','am start','settings put','appops set','shell input','shell rm','shell mv','shell cp','shell touch','shell mkdir','shell sqlite3','shell cat','shell content']){
+  assert.doesNotMatch(module,new RegExp(`line -ceq '${command.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`));
+ }
 });

@@ -73,9 +73,29 @@ Eq (Test-Od51ReverseAbsent "SYNTHETIC-1 tcp:47366 tcp:47366`n" 47366) $false
 Eq (Test-Od51ReverseAbsent "SYNTHETIC-1 tcp:40000 tcp:40001`n" 47366) $true
 Fails {Test-Od51ReverseAbsent 'PRIVATE malformed output' 47366} 'REVERSE_OUTPUT_INVALID'
 
+$adbOk=[pscustomobject]@{exitCode=0;stdout='safe';stderrPresent=$false;outputTooLarge=$false}
+Eq (Get-Od51AdbText $adbOk) 'safe'
+Fails {Get-Od51AdbText ([pscustomobject]@{exitCode=0;stdout='safe';stderrPresent=$true;outputTooLarge=$false})} 'ADB_STDERR_PRESENT'
+Fails {Get-Od51AdbText ([pscustomobject]@{exitCode=7;stdout='';stderrPresent=$false;outputTooLarge=$false})} 'ADB_EXIT_NONZERO'
+Fails {Get-Od51AdbText ([pscustomobject]@{exitCode=0;stdout='';stderrPresent=$false;outputTooLarge=$true})} 'ADB_OUTPUT_TOO_LARGE'
+$pullResult=[pscustomobject]@{exitCode=0;stdout='';stderrPresent=$true;outputTooLarge=$false}
+Assert-Od51PullResult $pullResult $pull $pull;Check $true
+Fails {Assert-Od51PullResult $pullResult 'C:\Temp\other.apk' $pull} 'READ_ONLY_COMMAND_REJECTED'
+Fails {Assert-Od51PullResult ([pscustomobject]@{exitCode=8;stdout='';stderrPresent=$true;outputTooLarge=$false}) $pull $pull} 'ADB_EXIT_NONZERO'
+Fails {Assert-Od51PullResult ([pscustomobject]@{exitCode=0;stdout='';stderrPresent=$true;outputTooLarge=$true}) $pull $pull} 'ADB_OUTPUT_TOO_LARGE'
+$localApk=Join-Path ([IO.Path]::GetTempPath()) ('kr-pull-'+[Guid]::NewGuid()+'.apk')
+try{
+ [IO.File]::WriteAllText($localApk,'bounded apk bytes');$localHash=(Get-FileHash -LiteralPath $localApk -Algorithm SHA256).Hash.ToLowerInvariant()
+ Assert-Od51LocalApk $localApk $localApk $localHash;Check $true
+ Fails {Assert-Od51LocalApk $localApk $localApk ('0'*64)} 'PACKAGE_PROVENANCE_INVALID'
+ Fails {Assert-Od51LocalApk ($localApk+'.missing') ($localApk+'.missing') $localHash} 'PACKAGE_PROVENANCE_INVALID'
+}finally{if(Test-Path -LiteralPath $localApk){Remove-Item -LiteralPath $localApk -Force}}
+
 $runtimeSource=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Read-CurrentMetadata.ps1'))
 Check ($runtimeSource -notmatch 'Import-Module[^\r\n]*(Journal|BackendHost|EnrollmentHost|ProductTransport)|Invoke-WebRequest|HttpClient|screencap|screenshot')
 Check ($runtimeSource -notmatch 'Invoke-RestMethod|https?://|\bLOCK\b|\bUNLOCK\b')
 Check ($runtimeSource.Contains("scope='OD51_READ_ONLY_METADATA_OBSERVATION'"))
 Check ($runtimeSource.Contains("deviceMutation=`$false"));Check ($runtimeSource.Contains("backendMutation=`$false"));Check ($runtimeSource.Contains("productPhysicalOracle='BLOCKED'"))
+foreach($stage in @('DEVICE_SELECTION','CONFIGURATION_READ','CHILD_PACKAGE_READ','FIXTURE_PACKAGE_READ','REVERSE_READ','CHILD_APK_PULL','CHILD_APK_LOCAL_VERIFY','CHILD_APK_SIGNER_VERIFY','METADATA_RUN_AS','METADATA_PARSE')){Check ($runtimeSource.Contains("'$stage'"))}
+Check ($runtimeSource -notmatch "'ADB_READ_FAILED'")
 Write-Output "OD51_METADATA_OBSERVATION_CHECKS=$script:n;DEVICE=NOT_INVOKED"

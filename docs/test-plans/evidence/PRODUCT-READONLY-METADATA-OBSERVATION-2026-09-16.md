@@ -125,3 +125,16 @@ independent current evidence; it is not a product-slice run.
 
 No product-slice bundle was frozen. A successful current observation remains subject
 to review and never changes the historical e888975a values.
+
+## Subsequent owner execution
+
+The owner executed this frozen probe once as attempt
+`78bf058e-280f-4ee1-9384-a51a75a395e5`. It stopped read-only in the child APK pull
+result-validation path with the historical collapsed reason `ADB_READ_FAILED`; no
+device/backend mutation or mutation journal occurred, and the host temporary APK was
+deleted. Source `bcac31838720a8aee77488ccf4b1ca9ad4b7929e` is retired and must not
+be rerun. The immutable result and bounded correction are recorded separately in
+[the pull INVALID evidence](PRODUCT-READONLY-METADATA-PULL-INVALID-2026-09-16.md).
+
+Current gate after that execution:
+`READ_ONLY_METADATA_PROBE = BLOCKED_PENDING_REPLACEMENT_VALIDATION_AND_FREEZE`.
