@@ -59,8 +59,11 @@ metadata parsing. ADB failures distinguish `ADB_EXIT_NONZERO`, `ADB_STDERR_PRESE
 Preparation-time local results, with no ADB, emulator or physical device:
 
 - Windows PowerShell 5.1 parser/allowlist: **117 checks PASS**;
-- Windows-native fake-ADB entrypoint: **194 checks PASS**, including both successful
-  pull stderr variants and every typed pull/local/signer failure listed above;
+- Windows-native fake-ADB entrypoint under PowerShell 5.1: **194 checks PASS**,
+  including both successful pull stderr variants and every typed pull/local/signer
+  failure listed above;
+- PowerShell 7 parser/allowlist: **117 checks PASS**;
+- Windows-native fake-ADB entrypoint under PowerShell 7: **194 checks PASS**;
 - fixed metadata-only shell fixtures: **4 PASS**;
 - static freezer/no-mutation capability: **2/2 PASS**;
 - ProductRuntime/update-review: **84 checks PASS**;
@@ -69,11 +72,38 @@ Preparation-time local results, with no ADB, emulator or physical device:
   **24/24 JVM**, all debug/release manifests and release DEX isolation PASS;
 - repository validation and patch whitespace: **PASS**.
 
-PowerShell 7, required committed-source CI and immutable replacement freeze remain
-pending. No physical action is inferred from these device-free tests.
+Required CI
+[35137531678](https://github.com/felipebarbosa4/KidRemote/actions/runs/35137531678)
+on exact probe source `8ebcc89e0b483af1f5d3cf3a081fca640da37e10` completed
+**6/6 jobs SUCCESS**. It also passed real SQL/RLS/Auth/backend suites, the persistent
+synthetic lease, QR, complete Android build/lint and security/privacy isolation gates.
+No physical action is inferred from these device-free tests.
+
+The host-only freezer then created 489 inventoried files at:
+
+`%LOCALAPPDATA%\KidRemote\read-only-metadata-probes\8ebcc89e0b483af1f5d3cf3a081fca640da37e10`
+
+- probe source: `8ebcc89e0b483af1f5d3cf3a081fca640da37e10`;
+- required CI: `35137531678`;
+- `bundle.json` SHA-256:
+  `e4d8ab75d9b6c44ca08d3c5cb3958e3992afa4a254518f4fdebb450ba0cc29ee`;
+- `Read-CurrentMetadata.ps1` SHA-256:
+  `4faf78c521837bf28ad4ed03a3d08c4e5dbbeb64a3bc5ed6ec5c2ef88f042930`;
+- physical execution: **NOT_RUN**.
+
+Independent recalculation matched both hashes; the inventory contains no symlink or
+incomplete marker. The frozen manifest keeps device/backend/private-state/history
+mutation and content/capture capabilities false. The single replacement command is:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\KidRemote\read-only-metadata-probes\8ebcc89e0b483af1f5d3cf3a081fca640da37e10\Read-CurrentMetadata.ps1" -Adb "C:\platform-tools\adb.exe" -ExpectedManifestHash "e4d8ab75d9b6c44ca08d3c5cb3958e3992afa4a254518f4fdebb450ba0cc29ee"
+```
+
+After validation and freeze, the physical attempt file still has its original
+SHA-256, 1,842-byte size and timestamp. No product-slice bundle was frozen.
 
 ## Gates
 
-`READ_ONLY_METADATA_PROBE = BLOCKED_PENDING_VALIDATION_AND_FREEZE`.
+`READ_ONLY_METADATA_PROBE = READY_FOR_ONE_OWNER_RUN`.
 
 `PRODUCT_PHYSICAL_ORACLE = BLOCKED`.
