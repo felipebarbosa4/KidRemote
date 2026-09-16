@@ -69,19 +69,59 @@ committed source passes all gates. No result in this section is physical evidenc
 - Windows-native fake-ADB entrypoint: **65 checks PASS** under PowerShell 5.1; device
   not invoked. Empty, unexpected-file, redacted run-as-failure and pre-existing-reverse
   outputs were exercised; the reverse refusal never entered private metadata.
+- PowerShell 7 parser/allowlist fixtures: **95 checks PASS**; device not invoked.
+- Windows-native fake-ADB entrypoint: **65 checks PASS** under PowerShell 7; fake ADB
+  only and device not invoked.
 - Fixed shell program: **4 tests PASS** for empty/known, one/multiple unexpected,
   symlink/nonregular/unreadable/bounds and unsafe-name behavior; no private content emitted.
 - Node freezer/static capability tests: **2/2 PASS**.
 - Existing ProductRuntime/update-review regression: **84 checks PASS**.
+- Existing resume/review/prerequisite regressions: **99 + 97 + 72 checks PASS**.
+- Isolated KR-003 Gradle build/test/lint: **BUILD SUCCESSFUL, 274 tasks**. The audit
+  passed **24/24 JVM tests**, both merged-manifest checks and release DEX isolation.
+- Repository validation, patch whitespace, QR tests, real SQL/RLS/Auth/backend suites,
+  OD-51 persistent synthetic lease and security/privacy gates passed in required CI.
 
-Final PS7, full build/lint/security/privacy, required CI and immutable freeze: **PENDING**.
+The first preparation run, CI 35111613199 on source `0e422de`, is preserved as
+**cancelled** after both new PowerShell tests printed PASS but the native harness left
+the expected negative-fixture process exit code in `$LASTEXITCODE`. Commit `bcac318`
+normalizes only the successful harness exit after all assertions. Required CI
+[35111839403](https://github.com/felipebarbosa4/KidRemote/actions/runs/35111839403)
+on exact probe source `bcac31838720a8aee77488ccf4b1ca9ad4b7929e` completed **6/6
+jobs SUCCESS**. The Windows job independently ran the 95 parser/allowlist plus 65
+native fake-ADB checks under both PowerShell 5.1 and PowerShell 7.
+
+## Immutable probe handoff
+
+The host-only freezer ran only after the exact source above was clean, pushed and had
+passing required CI. It invoked no ADB, emulator, physical device or backend. It froze
+489 inventoried files at:
+
+`%LOCALAPPDATA%\KidRemote\read-only-metadata-probes\bcac31838720a8aee77488ccf4b1ca9ad4b7929e`
+
+- probe source: `bcac31838720a8aee77488ccf4b1ca9ad4b7929e`;
+- required CI: `35111839403`;
+- `bundle.json` SHA-256:
+  `0b163526cbab5b19aee2ca08434a5889753d77e3996d7bef1833165dc6fccba1`;
+- `Read-CurrentMetadata.ps1` SHA-256:
+  `10482554105723f5f9038cecdc4e7cd702279e1bb8734f6d465114f2d5826029`;
+- physical execution: **NOT_RUN**.
+
+The bundle inventory contains no symlink or incomplete marker. Independent SHA-256
+recalculation matched both hashes. The single owner command is:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\KidRemote\read-only-metadata-probes\bcac31838720a8aee77488ccf4b1ca9ad4b7929e\Read-CurrentMetadata.ps1" -Adb "C:\platform-tools\adb.exe" -ExpectedManifestHash "0b163526cbab5b19aee2ca08434a5889753d77e3996d7bef1833165dc6fccba1"
+```
+
+The owner must return the one sanitized JSON object printed by this command. It is
+independent current evidence; it is not a product-slice run.
 
 ## Gate
 
-`READ_ONLY_METADATA_PROBE = BLOCKED_PENDING_FINAL_VALIDATION_AND_FREEZE`.
+`READ_ONLY_METADATA_PROBE = READY_FOR_ONE_OWNER_RUN`.
 
 `PRODUCT_PHYSICAL_ORACLE = BLOCKED`.
 
-No owner command is published until the exact committed source passes required CI and
-the diagnostic-only bundle is frozen. A successful future current observation remains
-subject to review and never changes the historical e888975a values.
+No product-slice bundle was frozen. A successful current observation remains subject
+to review and never changes the historical e888975a values.
