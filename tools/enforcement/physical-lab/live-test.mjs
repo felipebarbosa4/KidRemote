@@ -2,7 +2,7 @@
 import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';import {randomUUID,randomBytes} from 'node:crypto';
 import {inspectEnrollment} from './reconciliation.mjs';
 import {Lease,dockerCall,startGateway,check} from './lease.mjs';import {health,wire} from './health.mjs';
-const dir=mkdtempSync(join(tmpdir(),'kr-physical-ci-'));const docker=process.argv[2]??'docker',host='unix:///var/run/docker.sock';
+const dir=mkdtempSync(join(tmpdir(),'kr-physical-ci-'));const docker=process.argv[2]??'docker',host=process.argv[3]??'unix:///var/run/docker.sock';
 const config={root:resolve('.'),state:join(dir,'resources.json'),source:'a'.repeat(40),id:randomUUID(),call:dockerCall(docker,host),secrets:{database:randomBytes(32).toString('hex'),jwt:randomBytes(48).toString('hex'),parentPassword:randomBytes(32).toString('hex')+'aA1!',probePassword:randomBytes(32).toString('hex')+'aA1!'}};
 let lease=new Lease(config),gateway,passed=0;
 const ok=(b,c)=>{check(b,c);passed++;console.log('LAB_LIVE_CHECK='+c);};

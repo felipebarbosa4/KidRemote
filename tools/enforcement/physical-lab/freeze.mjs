@@ -1,7 +1,6 @@
 // Builds owner-local immutable bytes only. Never invokes Windows, ADB or Docker.
-// Source-07cf5e1 did not persist enough metadata to distinguish METADATA_KNOWN from
-// NO_UNKNOWN_FILES. A later evidence-backed change must remove this explicit gate.
-throw Error('PRODUCT_PHYSICAL_ORACLE_BLOCKED_METADATA_PREDICATE_UNRESOLVED');
+// The source gate remains clean-commit + exact required CI. Runtime metadata admission
+// is rechecked in the runner for the exact Samsung configuration before mutation.
 import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync,lstatSync,existsSync,unlinkSync} from 'node:fs';
 import {resolve,join,dirname,relative} from 'node:path';import {createHash} from 'node:crypto';
@@ -45,6 +44,7 @@ const manifest={scope:'OD51_ONE_PERSISTENT_LAB_PRODUCT_SLICE',readiness:'READY_F
  lease:{format:1,label:'org.kidremote.physical-lab',id:'kr-physical-<UUID>',state:'%LOCALAPPDATA%/KidRemote/physical-lab',secrets:'DPAPI current user + restricted ACL',onExit:'stop services; retain owned DB volume/identity',onReuse:'exact ownership source/schema + backend compatibility digest; installed package independently reconciled; fresh authenticated ACK before policy; missing consent only'},
  journal:{format:'hash-chained fsync-before-admission events',originalVerdict:'immutable',cleanup:'independent',partial:'immutable historical result; separate checksum-protected fsynced RESUME_REVIEW; unknown/Lock history fails closed'},
  resume:{historicalAttempt:'d9157ae6-a6ff-4849-919f-c8f13fe08f7e',historicalVerdict:'INVALID:PAIRING_TIMEOUT',historicalCleanup:'UNVERIFIED',legacySource:'3693034816039de67087066f077e6e02a9507dd6',backendCompatibility:compatibility('.').digest,paths:['SAFE_REUSE_ENROLLED','SAFE_RESUME_FROM_ENROLLMENT','SAFE_RESET_SYNTHETIC_KIDREMOTE_STATE_AND_REENROLL','INVALID_PARTIAL_STATE_REVIEW_REQUIRED'],reset:'only exact unconfigured/unreported synthetic pairing and fixed child package data; no lab APK reinstall'},
+ runtimeMetadataOverlay:{kind:'runtime_samsung_ids',path:'shared_prefs/android.app.ActivityThread.IDS.xml',scope:'samsung/SM-X400/Android16/API36/BP4A.251205.006/2026-07-05 only',meaning:'OEM runtime structural file; contents unread; every other unknown still blocks'},
  ownerActions:{firstRunLogicalMaximum:5,reuse:0,extraVisualConfirmation:0},
  hostGate:'bundle, native tools, owned lease, live Auth/bootstrap/control, fixed ports, artifacts, durable journal, read-only exact target; all before device mutation. Failure INVALID_HOST_PREFLIGHT.',
  verdicts:{PASS:'independent positive input, blocked counter/focus under canonical Lock, corroborating actual product status, canonical Unlock and independent restored input',FAIL:'usable fixture input/focus under restriction',INVALID:'ambiguous transport/provenance/setup/counter/focus or incomplete corroboration'},

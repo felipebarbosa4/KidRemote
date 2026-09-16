@@ -15,7 +15,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $run={param($e,$a,$inputText) Invoke-ReviewProcess $e $a $inputText}
  $read={param($a) Invoke-InventoryAdb $Adb $Serial $a}.GetNewClosure()
  $wire={param($s,$p,$m,$b,$j) Invoke-LabWire $s $p $m $b $j}
- $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false}
+ $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false;runtimeConfiguration=$null}
  $action={param($name) $null=Invoke-ReplacementAdb $Adb $Serial $name $apk $run}.GetNewClosure()
  $ops=@{}
  $ops.HostReady={
@@ -26,6 +26,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $ops.Configuration={
   $i=Invoke-ReadOnlyInventory $read
   if($i.classification -ceq 'CONFIGURATION_MISMATCH'){throw 'INVALID:CONFIGURATION_MISMATCH'}
+  $s.runtimeConfiguration=$i.configuration
   Assert-LabReverse (Invoke-ReplacementAdb $Adb $Serial ReverseRead $apk $run) $false
  }.GetNewClosure()
  $ops.FixtureHash={(Get-InventoryPackage 'dev.kidremote.spike.ordinary' $read).sha256}.GetNewClosure()
@@ -91,7 +92,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
   if($null -eq $SavedDevice -or $null -eq $d -or $d.id -cne $SavedDevice.id -or $d.policy_epoch -cne $SavedDevice.policy_epoch -or $i.accessibility -cne 'ENABLED' -or $i.usageAccess -cne 'ENABLED'){throw 'INVALID:REUSE_IDENTITY_OR_PERMISSIONS'}
   $s.device=$d
  }.GetNewClosure()
- $ops.Metadata={Get-PrivateMetadata $Adb $Serial $run $true}.GetNewClosure()
+ $ops.Metadata={Get-PrivateMetadata $Adb $Serial $run $true $s.runtimeConfiguration}.GetNewClosure()
  $ops.VerifyReuse={
   $before=Get-OnlyLabChild $wire $Jwt
   if(-not $before -or -not $SavedDevice -or $before.id -cne $SavedDevice.id -or $before.policy_epoch -cne $SavedDevice.policy_epoch){throw 'INVALID:REUSE_IDENTITY_MISMATCH'}

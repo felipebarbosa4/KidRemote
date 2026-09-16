@@ -19,6 +19,8 @@ for variant in ['debug','release']:
  dex=b''.join(z.read(n) for n in z.namelist() if n.endswith('.dex'))
  assert (b'http://127.0.0.1:47366' in dex)==(variant=='debug')
  assert b'http://10.0.2.2:47366' not in dex
+ for marker in [b'android.app.ActivityThread.IDS.xml',b'ActivityThread.IDS',b'IDSCount',b'IDS_TAG',b'runtime_samsung_ids']:
+  assert marker not in dex
 print('LAB_DEBUG_RELEASE_ENDPOINT_ISOLATION=PASS')`],{stdio:'inherit'});
 const dir='apps/child-android/build/outputs/product-lab/'+source;
 const manifest={source,sourceWorkingTreeChanged:dirty,scope:'LAB_ONLY_NOT_INSTALLED',endpoint:'http://127.0.0.1:47366',transport:'FUTURE_ADB_REVERSE_NOT_EXECUTED',package:'dev.kidremote.child.unassigned.debug',versionCode:2,versionName:'0.0.2-local-physical-lab',sha256:sha(path),signerSha256:cert,releaseSha256:sha('apps/child-android/build/outputs/apk/release/child-release-unsigned.apk')};if(!dirty){if(existsSync(dir))throw Error('PRESERVE_EXISTING_LAB_ARTIFACT');mkdirSync(dir,{recursive:true});copyFileSync(path,dir+'/child-physical-lab.apk');writeFileSync(dir+'/provenance.json',JSON.stringify(manifest,null,2)+'\n');}console.log(JSON.stringify(manifest));

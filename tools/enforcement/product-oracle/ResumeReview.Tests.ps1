@@ -6,7 +6,8 @@ Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 $script:n=0;function Check($b){$script:n++;if(-not $b){throw "RESUME_CHECK_$script:n"}}
 function Facts {return [pscustomobject]@{provenance=$true;owned=$true;compatible=$true;reverseAbsent=$true;historySafe=$true;metadataKnown=$true;noUnknownFiles=$true;package='LAB';historicalPartial=$true;backendDevice=$false;savedDevice=$false;savedMatches=$false;identity=$false;pending=$false;accounting=$false;credentialUsable=$false;policyConsistent=$false;noPolicyOrReport=$true;resetAttributable=$true}}
 $f=Facts;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'ENROLL');Check ($r.packageMode -ceq 'LAB_PACKAGE_UNPAIRED');Check ($r.reviewReason -ceq 'NONE');Check (@($r.failedChecks).Count -eq 0)
-foreach($field in @('backendDevice','identity','pending')){$f=Facts;$f.$field=$true;Check ((Resolve-ProductPreparation $f).path -ceq 'RESET_ENROLL')}
+foreach($field in @('backendDevice','identity','pending')){$f=Facts;$f.$field=$true;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'RESET_ENROLL');Check ($r.packageMode -cne 'LAB_PACKAGE_UNPAIRED')}
+$f=Facts;$f.accounting=$true;$f.resetAttributable=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.packageMode -cne 'LAB_PACKAGE_UNPAIRED');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
 $typed=[ordered]@{provenance='PROVENANCE';owned='OWNERSHIP';compatible='BACKEND_COMPATIBILITY';reverseAbsent='REVERSE_ABSENT';historySafe='HISTORY_SAFE';metadataKnown='METADATA_KNOWN';noUnknownFiles='NO_UNKNOWN_FILES'}
 foreach($field in $typed.Keys){$f=Facts;$f.$field=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq $typed[$field]);Check ((@($r.failedChecks) -join ',') -ceq $typed[$field])}
 $f=Facts;$f.metadataKnown=$false;$f.noUnknownFiles=$false;$r=Resolve-ProductPreparation $f;Check ((@($r.failedChecks) -join ',') -ceq 'METADATA_KNOWN,NO_UNKNOWN_FILES')
