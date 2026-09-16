@@ -38,3 +38,4 @@ try{
  $env:LOCALAPPDATA=$oldLocal;$env:KR_METADATA_APK=$oldApk;$env:KR_METADATA_CHILD_HASH=$oldHash;$env:KR_METADATA_FIXTURE_HASH=$oldFixture;$env:KR_METADATA_SIGNER=$oldSigner;$env:KR_METADATA_MODE=$oldMode
  if(Test-Path -LiteralPath $root){Remove-Item -LiteralPath $root -Recurse -Force}
 }
+exit 0
