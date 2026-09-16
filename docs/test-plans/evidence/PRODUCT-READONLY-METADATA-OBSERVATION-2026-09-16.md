@@ -1,0 +1,87 @@
+# OD-51 current read-only metadata observation preparation
+
+[Task contract](../../exec-plans/PRODUCT-READONLY-METADATA-OBSERVATION.md).
+
+## Evidence boundary
+
+Historical attempt `e888975a-207a-473f-a442-2a2895f02347` remains independently
+`INVALID_HOST_PREFLIGHT / INVALID_PARTIAL_STATE_REVIEW_REQUIRED`, with
+`noUnknownFiles=false` and `metadataKnown=UNSPECIFIED`. Historical attempt
+`d9157ae6-a6ff-4849-919f-c8f13fe08f7e` remains `INVALID:PAIRING_TIMEOUT / cleanup
+UNVERIFIED`. This preparation does not change, reinterpret or backfill either attempt.
+
+The owner authorized one independent current read-only observation on the existing
+Samsung lab tablet. Codex did not execute ADB, an emulator or a physical device while
+preparing it. `PRODUCT_PHYSICAL_ORACLE` remains **BLOCKED** before and after freezing
+the diagnostic probe.
+
+## Probe design
+
+The dedicated entrypoint imports only its metadata module and the shared
+`ProductRuntimeCatalog.psm1`. It contains no product runner, backend, enrollment,
+policy/control, input, screenshot or journal module. Before private metadata it:
+
+1. requires exactly one authorized non-emulator target and keeps its serial in memory;
+2. verifies Android user 0 and exact Samsung manufacturer/model/Android/API/build/
+   security-patch values;
+3. verifies the installed LAB child hash, signer and version using device SHA-256 plus
+   a host-temporary APK pull and frozen SDK `apksigner`;
+4. verifies the ordinary fixture APK SHA-256;
+5. reads only `reverse --list` and requires no mapping for TCP 47366;
+6. creates no mutation journal and imports no historical evidence path.
+
+Only then may the fixed `run-as dev.kidremote.child.unassigned.debug sh` program run.
+The script is generated from `Get-ReviewStatePaths($true)`. It uses metadata operations
+only (`find`, regular-file/type checks and `stat` size); it never reads file contents.
+It enumerates only `no_backup/`, `files/`, `databases/` and `shared_prefs/`, rejects
+symlinks/nonregular entries, traversal, unsafe characters and paths over 200
+characters, and stops before emitting a 65th unexpected entry.
+
+Known paths become repository logical kinds. A valid parse with extra regular files
+sets `metadataStatus=METADATA_ONLY`, `metadataFinding=UNKNOWN_DURABLE_FILES_PRESENT`
+and returns only authorized directory, relative structural name and byte size. No
+unexpected entry is returned for a failed metadata read. Raw stderr, serial, APK path,
+file content, database rows, XML/preferences, credentials and timestamps are excluded.
+
+Typed metadata failures are `RUN_AS_FAILED`, `PRIVATE_DIRECTORY_UNREADABLE`,
+`SYMLINK_OR_NONREGULAR_ENTRY`, `METADATA_OUTPUT_SCHEMA_INVALID` and
+`METADATA_OUTPUT_BOUNDS`. A successful valid parse is `METADATA_ONLY`; unexpected
+files are distinguished by `metadataFinding` without weakening that parse result.
+
+## Runtime command boundary
+
+The runtime allowlist contains only: `devices`; exact current-user and fixed `getprop`
+reads; `pm path`/`dumpsys package` for the child or fixture; SHA-256 of a strictly
+validated installed base APK; exact `reverse --list`; one child base-APK pull to the
+unique host temporary destination; and the exact fixed metadata-only `run-as` script.
+
+Tests reject install, uninstall, `pm clear`, reverse creation/removal, `am start`,
+`settings put`, `appops set`, input, rm/mv/cp/touch/mkdir, sqlite3, cat, content queries,
+capture and arbitrary `run-as` input. There is no HTTP client or LOCK/UNLOCK path.
+The pulled APK is deleted from host temporary storage after signer verification.
+
+## Validation before physical execution
+
+Preparation-time results and final CI/bundle identities are recorded below after the
+committed source passes all gates. No result in this section is physical evidence.
+
+- PowerShell 5.1 parser/allowlist fixtures: **95 checks PASS**; device not invoked.
+- Windows-native fake-ADB entrypoint: **65 checks PASS** under PowerShell 5.1; device
+  not invoked. Empty, unexpected-file, redacted run-as-failure and pre-existing-reverse
+  outputs were exercised; the reverse refusal never entered private metadata.
+- Fixed shell program: **4 tests PASS** for empty/known, one/multiple unexpected,
+  symlink/nonregular/unreadable/bounds and unsafe-name behavior; no private content emitted.
+- Node freezer/static capability tests: **2/2 PASS**.
+- Existing ProductRuntime/update-review regression: **84 checks PASS**.
+
+Final PS7, full build/lint/security/privacy, required CI and immutable freeze: **PENDING**.
+
+## Gate
+
+`READ_ONLY_METADATA_PROBE = BLOCKED_PENDING_FINAL_VALIDATION_AND_FREEZE`.
+
+`PRODUCT_PHYSICAL_ORACLE = BLOCKED`.
+
+No owner command is published until the exact committed source passes required CI and
+the diagnostic-only bundle is frozen. A successful future current observation remains
+subject to review and never changes the historical e888975a values.

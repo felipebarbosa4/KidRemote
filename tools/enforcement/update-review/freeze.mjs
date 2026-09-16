@@ -10,7 +10,7 @@ const artifact='apps/child-android/build/outputs/product-lab/668ab87a22591319afd
 const lab=JSON.parse(readFileSync(artifact+'provenance.json','utf8'));
 if(lab.source!=='668ab87a22591319afd43167d55ef9ac0909c1b3'||lab.sourceWorkingTreeChanged||sha(artifact+'child-physical-lab.apk')!=='f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56')throw Error('APPROVED_LAB_PROVENANCE');
 lab.service='dev.kidremote.child.unassigned.debug/dev.kidremote.child.enforcement.ChildEnforcementService';
-const entries=[['Review.psm1','tools/enforcement/update-review/Review.psm1'],['ReadOnly-UpdateReview.ps1','tools/enforcement/update-review/ReadOnly-UpdateReview.ps1'],['ReadOnly.psm1','tools/enforcement/product-oracle/ReadOnly.psm1'],['lab-reference.apk',artifact+'child-physical-lab.apk']];
+const entries=[['ProductRuntimeCatalog.psm1','tools/enforcement/update-review/ProductRuntimeCatalog.psm1'],['Review.psm1','tools/enforcement/update-review/Review.psm1'],['ReadOnly-UpdateReview.ps1','tools/enforcement/update-review/ReadOnly-UpdateReview.ps1'],['ReadOnly.psm1','tools/enforcement/product-oracle/ReadOnly.psm1'],['lab-reference.apk',artifact+'child-physical-lab.apk']];
 const files=entries.map(([name,p])=>({name,sha256:sha(p)}));
 const manifest={scope:'READ_ONLY_SIGNER_STATE_UPDATE_REVIEW',source,files,lab,javaSha256:sha(java),apksignerSha256:sha(jar),
  installedExpectedSha256:'3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9',

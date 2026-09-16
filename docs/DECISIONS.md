@@ -322,3 +322,15 @@ never allowlist unknown files or clear a saved-device pointer without exact evid
 Retire 07cf5e1. Freeze a new bundle only after the exact blocker is established and
 safely handled; otherwise keep PRODUCT_PHYSICAL_ORACLE blocked. Preserve d9157ae6 as
 INVALID:PAIRING_TIMEOUT / cleanup UNVERIFIED and do not rewrite either attempt.
+
+OD-51 current-metadata observation extension (owner, 2026-09-16): authorize one
+owner-operated read-only probe against the already authorized Samsung and only
+`dev.kidremote.child.unassigned.debug` private metadata. Verify exact target,
+configuration, child/fixture APK provenance and reverse absence before one fixed
+metadata-only `run-as` program. Permit only structural regular-file names and sizes
+under no_backup/files/databases/shared_prefs, bounded to 64 unexpected entries and
+200 safe path characters. No content/database/preference/credential read, capture,
+app/backend/private-state mutation, install/uninstall/clear, reverse change, launch,
+input, permission/policy action or historical rewrite. Current evidence is independent
+and cannot backfill e888975a. Freeze only this diagnostic bundle after native CI;
+the product physical oracle remains blocked pending owner output and review.

@@ -8,6 +8,15 @@ schema proves `NO_UNKNOWN_FILES=false` but did not persist enough information to
 distinguish an unknown-file count from a metadata-read failure. The source is retired;
 there is no replacement command. See the [predicate diagnosis](../../../docs/test-plans/evidence/PRODUCT-RESUME-PREDICATE-DIAGNOSIS-2026-09-16.md).
 
+A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
+It cannot invoke this product runner and carries no backend, enrollment, policy,
+input, capture or journal module. Its exact ADB allowlist reads one target's fixed
+configuration, child/fixture APK provenance, the reverse list and one fixed
+metadata-only `run-as` program. It reports only repository logical kinds plus, when
+needed, bounded regular-file paths and sizes under the four authorized private
+directories. Its result is independent current diagnostic evidence; it never changes
+the immutable e888975a predicate values or unblocks the product oracle by itself.
+
 `Run-ProductReplacement.ps1` uses native Windows PowerShell, a frozen native Node
 runtime and native Docker Desktop. It never enters WSL. The separate
 `../physical-lab` lease retains its exactly owned synthetic PostgreSQL volume and

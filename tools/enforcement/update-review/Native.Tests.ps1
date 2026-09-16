@@ -5,12 +5,12 @@ $root=Join-Path ([IO.Path]::GetTempPath()) ('kr-review-entry-'+[Guid]::NewGuid()
 $oldMode=$env:KR_REVIEW_TEST_MODE;$oldFixture=$env:KR_REVIEW_OLD_APK;$n=0
 try{
  if((Get-FileHash $OldApk).Hash.ToLowerInvariant() -cne '3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9'){throw 'OLD_FIXTURE_HASH'}
- foreach($f in @('Review.psm1','ReadOnly-UpdateReview.ps1')){Copy-Item (Join-Path $PSScriptRoot $f) $root}
+ foreach($f in @('ProductRuntimeCatalog.psm1','Review.psm1','ReadOnly-UpdateReview.ps1')){Copy-Item (Join-Path $PSScriptRoot $f) $root}
  Copy-Item (Join-Path $PSScriptRoot '../product-oracle/ReadOnly.psm1') $root
  Copy-Item $LabApk (Join-Path $root 'lab-reference.apk')
  $java='C:\Program Files\Android\Android Studio\jbr\bin\java.exe';$jar=Join-Path $env:LOCALAPPDATA 'Android\Sdk\build-tools\37.0.0\lib\apksigner.jar'
  $m=@{scope='READ_ONLY_SIGNER_STATE_UPDATE_REVIEW';source=('a'*40);files=@();javaSha256=(Get-FileHash $java).Hash.ToLowerInvariant();apksignerSha256=(Get-FileHash $jar).Hash.ToLowerInvariant();lab=@{sha256='f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56';signerSha256='638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb';versionCode=2;package='dev.kidremote.child.unassigned.debug'}}
- foreach($f in @('Review.psm1','ReadOnly.psm1','ReadOnly-UpdateReview.ps1','lab-reference.apk')){$m.files+=@{name=$f;sha256=(Get-FileHash (Join-Path $root $f)).Hash.ToLowerInvariant()}}
+ foreach($f in @('ProductRuntimeCatalog.psm1','Review.psm1','ReadOnly.psm1','ReadOnly-UpdateReview.ps1','lab-reference.apk')){$m.files+=@{name=$f;sha256=(Get-FileHash (Join-Path $root $f)).Hash.ToLowerInvariant()}}
  $manifest=Join-Path $root 'bundle.json';[IO.File]::WriteAllText($manifest,($m|ConvertTo-Json -Depth 6));$hash=(Get-FileHash $manifest).Hash.ToLowerInvariant()
  $exe=Join-Path $root 'fixture.exe';$compiler=Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
  $null=& $compiler /nologo /target:exe "/out:$exe" (Join-Path $PSScriptRoot 'NativeFixture.cs');if($LASTEXITCODE -ne 0){throw 'FAKE_BUILD'}

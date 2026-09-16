@@ -6,8 +6,8 @@ try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or (Get-FileHash -LiteralPath $manifestPath).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'READ_ONLY_REVIEW_INVALID'}
  $m=[IO.File]::ReadAllText($manifestPath)|ConvertFrom-Json
- if($m.scope -cne 'READ_ONLY_SIGNER_STATE_UPDATE_REVIEW' -or $m.source -cnotmatch '^[a-f0-9]{40}$' -or $m.files.Count -ne 4){throw 'READ_ONLY_REVIEW_INVALID'}
- foreach($name in @('Review.psm1','ReadOnly.psm1','ReadOnly-UpdateReview.ps1','lab-reference.apk')){
+ if($m.scope -cne 'READ_ONLY_SIGNER_STATE_UPDATE_REVIEW' -or $m.source -cnotmatch '^[a-f0-9]{40}$' -or $m.files.Count -ne 5){throw 'READ_ONLY_REVIEW_INVALID'}
+ foreach($name in @('ProductRuntimeCatalog.psm1','Review.psm1','ReadOnly.psm1','ReadOnly-UpdateReview.ps1','lab-reference.apk')){
   $row=@($m.files|Where-Object{$_.name -ceq $name});if($row.Count -ne 1 -or (Get-FileHash -LiteralPath (Join-Path $PSScriptRoot $name)).Hash.ToLowerInvariant() -cne $row[0].sha256){throw 'LAB_APK_PROVENANCE_UNVERIFIED'}
  }
  $source=$m.source;$lab=$m.lab
