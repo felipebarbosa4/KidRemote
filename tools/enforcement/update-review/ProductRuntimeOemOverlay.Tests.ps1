@@ -43,6 +43,8 @@ $evidence=(Get-Content -LiteralPath $evidencePath -Raw)|ConvertFrom-Json
 Eq $evidence.probeAttempt '88af2a3b-bdfd-4d5b-b814-729facbac4a9'
 Eq $evidence.probeResultSha256 'f4bff1b17176ce621db4c27c412710b8148f604422d0bc62fca6d968ecb13e14'
 Eq $evidence.classification.logicalKind 'runtime_samsung_ids'
-$physical=Join-Path $env:LOCALAPPDATA 'KidRemote\metadata-observation-results\88af2a3b-bdfd-4d5b-b814-729facbac4a9.json'
-if(Test-Path -LiteralPath $physical){Eq (Get-FileHash -LiteralPath $physical -Algorithm SHA256).Hash.ToLowerInvariant() $evidence.probeResultSha256;Eq (Get-Item -LiteralPath $physical).Length ([long]$evidence.probeResultBytes)}
+if($env:LOCALAPPDATA){
+ $physical=Join-Path $env:LOCALAPPDATA 'KidRemote\metadata-observation-results\88af2a3b-bdfd-4d5b-b814-729facbac4a9.json'
+ if(Test-Path -LiteralPath $physical){Eq (Get-FileHash -LiteralPath $physical -Algorithm SHA256).Hash.ToLowerInvariant() $evidence.probeResultSha256;Eq (Get-Item -LiteralPath $physical).Length ([long]$evidence.probeResultBytes)}
+}
 Write-Output "PRODUCT_RUNTIME_OEM_OVERLAY_CHECKS=$script:n;EXACT_CONFIGURATION_ONLY=PASS;DEVICE=NOT_INVOKED"
