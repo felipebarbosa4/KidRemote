@@ -12,8 +12,10 @@ try{
  const empty=inspectEnrollment(lease);ok(empty.devices.length===0&&empty.owners===1&&empty.households===1,'READONLY_EMPTY_REVIEW');
  const abandoned=await wire(47366,'/parent/pairing-sessions',{},jwt);
  ok((await wire(47362,'/rpc/finish_pairing',{p_session:abandoned.qr.session_id,p_revoke_incomplete:false},jwt)).result==='CANCELLED','CANONICAL_ABANDONED_CANCEL');
- const q=await wire(47366,'/parent/pairing-sessions',{},jwt);const d=await wire(47366,'/pairing/redeem',{qr:q.qr,metadata:{platform:'android',os_major:16,agent_version:'od51-ci',nickname:'synthetic-persistence'}});ok(d.result==='REDEEMED','REAL_ENROLLMENT');
+ const cancelled=inspectEnrollment(lease);ok(cancelled.devices.length===0&&cancelled.sessions.length===1&&cancelled.sessions[0].id===abandoned.qr.session_id&&!cancelled.sessions[0].consumed&&cancelled.sessions[0].cancelled,'CANCEL_BEFORE_FRESH_QR');
+ const q=await wire(47366,'/parent/pairing-sessions',{},jwt);ok(q.qr.session_id!==abandoned.qr.session_id,'FRESH_QR_AFTER_CANCEL');const d=await wire(47366,'/pairing/redeem',{qr:q.qr,metadata:{platform:'android',os_major:16,agent_version:'od51-ci',nickname:'synthetic-persistence'}});ok(d.result==='REDEEMED','REAL_ENROLLMENT');
  const partial=inspectEnrollment(lease);ok(partial.devices.length===1&&!partial.devices[0].configured&&!partial.devices[0].reported&&partial.devices[0].usable,'READONLY_PARTIAL_REVIEW');
+ ok(partial.sessions.length===2&&partial.sessions.filter(s=>s.consumed).length===1&&partial.sessions.filter(s=>s.cancelled).length===1,'NO_DUPLICATE_DEVICE_AFTER_ABANDONED_CANCEL');
  const before=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);ok(before.device_id===d.device_id,'REAL_DEVICE_AUTH');
  const ids=JSON.stringify(lease.record);await stopGateway();ok(lease.stop()==='STOPPED_DATA_RETAINED','STOP_RETAINS');
  lease=new Lease(config);ok(await lease.start()==='REUSED','SECOND_START_REUSE');ok(JSON.stringify(lease.record)===ids,'EXACT_RESOURCES');gateway=await startGateway(lease,docker,host);jwt=await health(lease);passed++;

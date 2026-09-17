@@ -7,16 +7,18 @@ function FakeWindow([bool]$Ready){
  $w|Add-Member ScriptMethod Snapshot {return [pscustomobject]@{Ready=$this.readyValue;Visible=$this.readyValue;ValidHandle=$this.readyValue;TitleMatches=$true;TopMost=$true;Interactive=$true;ActivationAttempted=$true;Closed=$this.closedValue;TimedOut=$false}}
  $w|Add-Member ScriptMethod Dispose {$this.closedValue=$true};return $w
 }
-$s=@{open=0;instruction=0;poll=0};$w=FakeWindow $false
-try{$null=Invoke-ProductQrEnrollment $w {$s.open++} {$s.poll++} {$s.instruction++};throw 'MISSING_FAILURE'}catch{Check ($_.Exception.Message -ceq 'INVALID:QR_PRESENTATION_FAILED')}
+$s=@{open=0;instruction=0;poll=0};$w=FakeWindow $false;$stages=@()
+try{$null=Invoke-ProductQrEnrollment $w {$s.open++} {$s.poll++} {$s.instruction++} 240000 {param($stage)$script:stages+=,$stage};throw 'MISSING_FAILURE'}catch{Check ($_.Exception.Message -ceq 'INVALID:QR_PRESENTATION_FAILED')}
 Check ($s.open -eq 0 -and $s.poll -eq 0 -and $s.instruction -eq 0);Check $w.closedValue
+Check (($stages -join ',') -ceq 'QR_WINDOW_READY_INITIAL')
 $w=FakeWindow $true
-try{$null=Invoke-ProductQrEnrollment $w {$w.readyValue=$false} {$s.poll++} {$s.instruction++};throw 'MISSING_FAILURE'}catch{Check ($_.Exception.Message -ceq 'INVALID:QR_PRESENTATION_FAILED')}
+try{$null=Invoke-ProductQrEnrollment $w {$w.readyValue=$false} {$s.poll++} {$s.instruction++} 240000 {param($stage)$script:lastStage=$stage};throw 'MISSING_FAILURE'}catch{Check ($_.Exception.Message -ceq 'INVALID:QR_PRESENTATION_FAILED')}
 Check ($s.poll -eq 0 -and $s.instruction -eq 0);Check $w.closedValue
+Check ($lastStage -ceq 'QR_WINDOW_READY_AFTER_CHILD_OPEN')
 $w=FakeWindow $true;$r=Invoke-ProductQrEnrollment $w {} {[pscustomobject]@{synthetic='ENROLLED'}} {$s.instruction++}
 Check ($r.synthetic -ceq 'ENROLLED');Check $w.closedValue;Check ($s.instruction -eq 1)
-$w=FakeWindow $true
-try{$null=Invoke-ProductQrEnrollment $w {} {$null} {} 1;throw 'MISSING_TIMEOUT'}catch{Check ($_.Exception.Message -ceq 'INVALID:PAIRING_TIMEOUT')};Check $w.closedValue
+$w=FakeWindow $true;$lastStage='NONE'
+try{$null=Invoke-ProductQrEnrollment $w {} {$null} {} 1 {param($stage)$script:lastStage=$stage};throw 'MISSING_TIMEOUT'}catch{Check ($_.Exception.Message -ceq 'INVALID:PAIRING_TIMEOUT')};Check $w.closedValue;Check ($lastStage -ceq 'QR_ENROLLMENT_TIMEOUT')
 if($env:OS -cne 'Windows_NT'){Write-Output "QR_GATE_CHECKS=$script:n;NATIVE_UI=NOT_RUN";exit 0}
 Add-Type -AssemblyName System.Drawing;Add-Type -AssemblyName System.Windows.Forms
 # Only a synthetic image, never a real pairing token or device. No capture or screenshots.

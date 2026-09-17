@@ -1,7 +1,9 @@
 Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
-function New-ProductPairing([scriptblock]$Wire,[Security.SecureString]$Jwt){
+function New-ProductPairing([scriptblock]$Wire,[Security.SecureString]$Jwt,[scriptblock]$OnStage={}){
+ & $OnStage PAIRING_SESSION_CREATE
  $r=& $Wire gateway '/parent/pairing-sessions' POST @{} $Jwt
+ & $OnStage PAIRING_SESSION_VALIDATE
  if($r.result -cne 'CREATED' -or $r.qr.protocol_version -ne 1 -or $r.qr.session_id -cnotmatch '^[a-f0-9-]{36}$' -or $r.qr.token -cnotmatch '^[A-Za-z0-9_-]{43}$'){throw 'INVALID:PAIRING_SCHEMA'}
  try{$expires=[DateTimeOffset]::Parse($r.expires_at)}catch{throw 'INVALID:PAIRING_EXPIRY'}
  if($expires -le [DateTimeOffset]::UtcNow -or $expires -gt [DateTimeOffset]::UtcNow.AddMinutes(6)){throw 'INVALID:PAIRING_EXPIRY'}
@@ -33,4 +35,16 @@ function Set-InitialLabLimit([scriptblock]$Wire,[Security.SecureString]$Jwt,$Dev
  if($r.status -cne 'accepted' -or $r.operation_id -cne $OperationId -or $r.device_id -cne $Device.id -or $r.policy_epoch -cne $Device.policy_epoch -or $r.version -ne 1){throw 'INVALID:INITIAL_POLICY_RESULT'}
  return $r
 }
-Export-ModuleMember -Function New-ProductPairing,Get-OnlyLabChild,Invoke-StableLabOperation,Set-InitialLabLimit
+function Invoke-ReviewedPairingCleanup($Review,$HistoryReviews,[scriptblock]$Wire,[Security.SecureString]$Jwt){
+ $approvedOpen=@($HistoryReviews|Where-Object{$_.pairingSession.disposition -ceq 'OPEN'}|ForEach-Object{$_.pairingSession.id})
+ $actualOpen=@($Review.sessions|Where-Object{-not $_.consumed -and -not $_.cancelled})
+ $approvedCount=($approvedOpen|Measure-Object).Count;$actualCount=($actualOpen|Measure-Object).Count;$unreviewedCount=($actualOpen|Where-Object{$_.id -cnotin $approvedOpen}|Measure-Object).Count
+ if($actualCount -ne $approvedCount -or $unreviewedCount){throw 'INVALID:PAIRING_CLEANUP_UNREVIEWED_SESSION'}
+ foreach($session in $actualOpen){
+  $result=& $Wire rest '/rpc/finish_pairing' POST @{p_session=$session.id;p_revoke_incomplete=$false} $Jwt
+  if($result.result -cne 'CANCELLED'){throw 'INVALID:PAIRING_CLEANUP_CONCURRENT_REDEMPTION'}
+ }
+ if($null -ne (Get-OnlyLabChild $Wire $Jwt)){throw 'INVALID:PAIRING_CLEANUP_CREATED_DEVICE'}
+ return 'EXACT_REVIEWED_PAIRING_SESSIONS_CANCELLED'
+}
+Export-ModuleMember -Function New-ProductPairing,Get-OnlyLabChild,Invoke-StableLabOperation,Set-InitialLabLimit,Invoke-ReviewedPairingCleanup

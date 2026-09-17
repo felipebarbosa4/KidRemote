@@ -48,12 +48,15 @@ try{
   $value=switch($stage){'BEGIN'{'STARTED'} 'PREMUTATION'{'EXACT_OLD_AND_FIXTURE_VERIFIED'} 'VERDICT'{'INVALID'} 'CLEANUP'{'UNVERIFIED'} default{'OD50_FIXED_SCOPE'}}
   $null=Add-ProductJournal $dir ([Guid]::NewGuid().ToString()) $stage $value
  }
- [IO.File]::WriteAllText((Join-Path $dir 'result.txt'),(@{hostValidated=$true;primary=@{reason='INVALID:PAIRING_TIMEOUT';lastStage='ENROLLMENT_ADMITTED';cleanup='UNVERIFIED'};reverseCleanup='OWN_REVERSE_REMOVED';backendCleanup='STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'}|ConvertTo-Json -Depth 4))
- Check (Test-ResumableHistory $dir)
+ [IO.File]::WriteAllText((Join-Path $dir 'result.txt'),(@{hostValidated=$true;hostFailureCode='NONE';primary=@{reason='INVALID:PAIRING_TIMEOUT';lastStage='ENROLLMENT_ADMITTED';cleanup='UNVERIFIED'};reverseCleanup='OWN_REVERSE_REMOVED';backendCleanup='STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'}|ConvertTo-Json -Depth 4))
+ $inventory=[ordered]@{};foreach($file in @(Get-ChildItem -LiteralPath $dir -File|Sort-Object Name)){$inventory[$file.Name]=(Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
+ $catalogPath=Join-Path $root 'review-catalog.json';[IO.File]::WriteAllText($catalogPath,(@{schema=1;reviews=@(@{attempt=$meta.attempt;source=$meta.source;bundle=$meta.bundle;child=$meta.child;fixture=$meta.fixture;stages=@('BEGIN','PREMUTATION','UNINSTALL_ADMITTED','INSTALL_ADMITTED','REVERSE_ADMITTED','ENROLLMENT_ADMITTED','VERDICT','CLEANUP_ADMITTED','CLEANUP');primaryReason='INVALID:PAIRING_TIMEOUT';hostFailureCode='NONE';pairingSession=@{id=[Guid]::NewGuid().ToString();disposition='CANCELLED'};inventory=$inventory})}|ConvertTo-Json -Depth 8))
+ Check (Test-ResumableHistory $dir $catalogPath)
  $before=(Read-ProductJournal $dir).previous
  $reviewDir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true
  Write-ResumeReview $reviewDir $meta.attempt ('e'*64) (Resolve-ProductPreparation (Facts))
  Check ((Read-ResumeReview $reviewDir).historicalAttempt -ceq $meta.attempt)
+ Check (((Read-ResumeReview $reviewDir).reviewedHistoricalAttempts -join ',') -ceq $meta.attempt)
  Check ((Read-ProductJournal $dir).previous -ceq $before)
  Check ((Read-ProductJournal $dir).cleanup -ceq 'UNVERIFIED')
  $typedDir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true;$typedFacts=Facts;$typedFacts.noUnknownFiles=$false
@@ -61,7 +64,7 @@ try{
  $typedReview=Read-ResumeReview $typedDir;Check ($typedReview.reviewReason -ceq 'NO_UNKNOWN_FILES');Check ((@($typedReview.failedChecks) -join ',') -ceq 'NO_UNKNOWN_FILES')
  # Additional Lock admission is never reviewed away, even after a finalized INVALID.
  $null=Add-ProductJournal $dir ([Guid]::NewGuid().ToString()) UNLOCK_ADMITTED EXPECTED_VERSION:1
- Check (-not (Test-ResumableHistory $dir))
+ Check (-not (Test-ResumableHistory $dir $catalogPath))
  [IO.File]::WriteAllText((Join-Path $reviewDir 'resume-review.tmp'),'truncated')
  $caught=$false;try{Read-ResumeReview $reviewDir}catch{$caught=$true};Check $caught
  # Opt-in runtime metadata never reads contents or reinterprets the historical parser.

@@ -1,18 +1,32 @@
 Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 # No caller-supplied ADB commands or product state contents enter this model.
-function Test-ResumableHistory([string]$Directory){
- $j=Read-ProductJournal $Directory
- $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
- if($j.partial -or $j.verdict -cne 'INVALID' -or $j.cleanup -cne 'UNVERIFIED'){return $false}
- if($m.attempt -cne 'd9157ae6-a6ff-4849-919f-c8f13fe08f7e' -or $m.source -cne '3693034816039de67087066f077e6e02a9507dd6'){return $false}
- if($m.bundle -cne 'a4824b1e655b5ec3dcaf0d69fcb57516392a0ea9c270cc1865f7c735c63e40fa' -or $m.child -cne 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' -or $m.fixture -cne '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'){return $false}
- $resultPath=Join-Path $Directory 'result.txt';if(-not(Test-Path -LiteralPath $resultPath)){return $false}
- $raw=[IO.File]::ReadAllText($resultPath);if($raw.Length -gt 65536){return $false};$result=$raw|ConvertFrom-Json
- if($result.hostValidated -ne $true -or $result.primary.reason -cne 'INVALID:PAIRING_TIMEOUT' -or $result.primary.lastStage -cne 'ENROLLMENT_ADMITTED' -or $result.primary.cleanup -cne 'UNVERIFIED' -or $result.reverseCleanup -cne 'OWN_REVERSE_REMOVED' -or $result.backendCleanup -cne 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'){return $false}
- $expected='BEGIN,PREMUTATION,UNINSTALL_ADMITTED,INSTALL_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED,VERDICT,CLEANUP_ADMITTED,CLEANUP'
- return (($j.rows.stage -join ',') -ceq $expected)
+function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
+ try{
+  if(-not $CatalogPath){$CatalogPath=Join-Path $PSScriptRoot 'ReviewedInvalidAttempts.json'}
+  $catalogRaw=[IO.File]::ReadAllText($CatalogPath);if($catalogRaw.Length -gt 32768){return $null};$catalog=$catalogRaw|ConvertFrom-Json
+  if($catalog.schema -ne 1 -or $catalog.reviews -isnot [Array] -or $catalog.reviews.Count -gt 10){return $null}
+  $j=Read-ProductJournal $Directory
+  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
+  if($j.partial -or $j.verdict -cne 'INVALID' -or $j.cleanup -cne 'UNVERIFIED'){return $null}
+  $matches=@($catalog.reviews|Where-Object{$_.attempt -ceq $m.attempt});if($matches.Count -ne 1){return $null};$review=$matches[0]
+  if($review.attempt -cnotmatch '^[a-f0-9-]{36}$' -or $review.source -cnotmatch '^[a-f0-9]{40}$' -or $review.bundle -cnotmatch '^[a-f0-9]{64}$' -or $review.child -cnotmatch '^[a-f0-9]{64}$' -or $review.fixture -cnotmatch '^[a-f0-9]{64}$'){return $null}
+  if($m.source -cne $review.source -or $m.bundle -cne $review.bundle -or $m.child -cne $review.child -or $m.fixture -cne $review.fixture){return $null}
+  $inventory=@($review.inventory.PSObject.Properties);if($inventory.Count -lt 5 -or $inventory.Count -gt 32){return $null}
+  $actual=@(Get-ChildItem -LiteralPath $Directory -File);if($actual.Count -ne $inventory.Count){return $null}
+  foreach($entry in $inventory){
+   if($entry.Name -cnotmatch '^(?:[0-9]{6}\.json|provenance|result\.txt|resume-review|writer\.lock)$' -or [string]$entry.Value -cnotmatch '^[a-f0-9]{64}$'){return $null}
+   $path=Join-Path $Directory $entry.Name;if(-not(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.Value){return $null}
+  }
+  $stages=@($review.stages);if($stages.Count -ne $j.rows.Count -or ($stages -join ',') -cne ($j.rows.stage -join ',') -or $stages -contains 'POLICY_ADMITTED' -or $stages -contains 'LOCK_ADMITTED'){return $null}
+  $raw=[IO.File]::ReadAllText((Join-Path $Directory 'result.txt'));if($raw.Length -gt 65536){return $null};$result=$raw|ConvertFrom-Json
+  if($review.primaryReason -cnotmatch '^INVALID:[A-Z0-9_]{1,120}$' -or $review.hostFailureCode -cnotmatch '^[A-Z0-9_]{1,120}$'){return $null}
+  if($result.hostValidated -ne $true -or $result.hostFailureCode -cne $review.hostFailureCode -or $result.primary.reason -cne $review.primaryReason -or $result.primary.cleanup -cne 'UNVERIFIED' -or $result.reverseCleanup -cne 'OWN_REVERSE_REMOVED' -or $result.backendCleanup -cne 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'){return $null}
+  if($review.pairingSession.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingSession.disposition -cnotin @('OPEN','CANCELLED')){return $null}
+  return $review
+ }catch{return $null}
 }
+function Test-ResumableHistory([string]$Directory,[string]$CatalogPath=''){return $null -ne (Get-ResumableHistoryReview $Directory $CatalogPath)}
 function Resolve-ProductPreparation($Facts){
  $answer=[ordered]@{classification='INVALID_PARTIAL_STATE_REVIEW_REQUIRED';packageMode='INVALID_STATE';path='NONE';credentialProof='NOT_ESTABLISHED';reviewReason='NONE';failedChecks=@();backendDevice=$Facts.backendDevice;localIdentity=$Facts.identity;pairingPending=$Facts.pending;localAccounting=$Facts.accounting}
  $required=[ordered]@{provenance='PROVENANCE';owned='OWNERSHIP';compatible='BACKEND_COMPATIBILITY';reverseAbsent='REVERSE_ABSENT';historySafe='HISTORY_SAFE';metadataKnown='METADATA_KNOWN';noUnknownFiles='NO_UNKNOWN_FILES'}
@@ -56,15 +70,24 @@ function Read-ResumeReview([string]$Directory){
  $record=$envelope.payload|ConvertFrom-Json
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
  $allowed=@('PROVENANCE','OWNERSHIP','BACKEND_COMPATIBILITY','REVERSE_ABSENT','HISTORY_SAFE','METADATA_KNOWN','NO_UNKNOWN_FILES','PACKAGE_PROVENANCE','SAVED_DEVICE_ORPHANED','POLICY_STATE_AMBIGUOUS')
- $failed=@($record.failedChecks)
- if($record.kind -cne 'RESUME_REVIEW' -or $record.format -ne 1 -or $record.attempt -cne $m.attempt -or $record.source -cne $m.source -or $record.bundle -cne $m.bundle -or $record.compatibility -cnotmatch '^[a-f0-9]{64}$' -or $failed.Count -gt 10 -or @($failed|Where-Object{$_ -cnotin $allowed}).Count -or ($failed.Count -and $record.reviewReason -cne $failed[0]) -or (-not $failed.Count -and $record.reviewReason -cne 'NONE')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ [array]$failed=@($record.failedChecks);[array]$history=$(if($record.PSObject.Properties.Name -contains 'historicalAttempts'){@($record.historicalAttempts)}elseif($record.historicalAttempt -cne 'NONE'){@($record.historicalAttempt)}else{@()})
+ [array]$badFailed=@($failed|Where-Object{$_ -cnotin $allowed});[array]$badHistory=@($history|Where-Object{$_ -cnotmatch '^[a-f0-9-]{36}$'});[array]$uniqueHistory=@($history|Select-Object -Unique)
+ $failedCount=($failed|Measure-Object).Count;$badFailedCount=($badFailed|Measure-Object).Count;$historyCount=($history|Measure-Object).Count;$badHistoryCount=($badHistory|Measure-Object).Count;$uniqueHistoryCount=($uniqueHistory|Measure-Object).Count
+ if($record.kind -cne 'RESUME_REVIEW' -or $record.format -notin @(1,2) -or $record.attempt -cne $m.attempt -or $record.source -cne $m.source -or $record.bundle -cne $m.bundle -or $record.compatibility -cnotmatch '^[a-f0-9]{64}$'){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ if($failedCount -gt 10 -or $badFailedCount -gt 0 -or ($failedCount -gt 0 -and $record.reviewReason -cne $failed[0]) -or ($failedCount -eq 0 -and $record.reviewReason -cne 'NONE')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ if($historyCount -gt 10 -or $badHistoryCount -gt 0 -or $uniqueHistoryCount -ne $historyCount){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ $record|Add-Member -NotePropertyName reviewedHistoricalAttempts -NotePropertyValue @($history) -Force
  return $record
 }
-function Write-ResumeReview([string]$Directory,[string]$HistoricalAttempt,[string]$Digest,$Resolution){
+function Write-ResumeReview([string]$Directory,$HistoricalAttempts,[string]$Digest,$Resolution){
  $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
- $allowed=@('PROVENANCE','OWNERSHIP','BACKEND_COMPATIBILITY','REVERSE_ABSENT','HISTORY_SAFE','METADATA_KNOWN','NO_UNKNOWN_FILES','PACKAGE_PROVENANCE','SAVED_DEVICE_ORPHANED','POLICY_STATE_AMBIGUOUS');$failed=@($Resolution.failedChecks)
- if($Digest -cnotmatch '^[a-f0-9]{64}$' -or $HistoricalAttempt -cnotmatch '^(NONE|[a-f0-9-]{36})$' -or $Resolution.classification -cnotin @('SAFE_REUSE_ENROLLED','SAFE_RESUME_FROM_ENROLLMENT','SAFE_RESET_SYNTHETIC_KIDREMOTE_STATE_AND_REENROLL','INVALID_PARTIAL_STATE_REVIEW_REQUIRED') -or $failed.Count -gt 10 -or @($failed|Where-Object{$_ -cnotin $allowed}).Count -or ($failed.Count -and $Resolution.reviewReason -cne $failed[0]) -or (-not $failed.Count -and $Resolution.reviewReason -cne 'NONE')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
- $record=[ordered]@{kind='RESUME_REVIEW';format=1;attempt=$m.attempt;historicalAttempt=$HistoricalAttempt;source=$m.source;bundle=$m.bundle;utc=[DateTime]::UtcNow.ToString('o');compatibility=$Digest;classification=$Resolution.classification;packageMode=$Resolution.packageMode;permittedPath=$Resolution.path;credentialProof=$Resolution.credentialProof;reviewReason=$Resolution.reviewReason;failedChecks=@($failed);backendDevice=$Resolution.backendDevice;localIdentity=$Resolution.localIdentity;pairingPending=$Resolution.pairingPending;localAccounting=$Resolution.localAccounting;historicalVerdict='UNCHANGED';historicalCleanup='UNCHANGED'}
+ $allowed=@('PROVENANCE','OWNERSHIP','BACKEND_COMPATIBILITY','REVERSE_ABSENT','HISTORY_SAFE','METADATA_KNOWN','NO_UNKNOWN_FILES','PACKAGE_PROVENANCE','SAVED_DEVICE_ORPHANED','POLICY_STATE_AMBIGUOUS');[array]$failed=@($Resolution.failedChecks);[array]$history=@($HistoricalAttempts|Where-Object{$_ -ne 'NONE'})
+ [array]$badFailed=@($failed|Where-Object{$_ -cnotin $allowed});[array]$badHistory=@($history|Where-Object{$_ -cnotmatch '^[a-f0-9-]{36}$'});[array]$uniqueHistory=@($history|Select-Object -Unique)
+ $failedCount=($failed|Measure-Object).Count;$badFailedCount=($badFailed|Measure-Object).Count;$historyCount=($history|Measure-Object).Count;$badHistoryCount=($badHistory|Measure-Object).Count;$uniqueHistoryCount=($uniqueHistory|Measure-Object).Count
+ if($Digest -cnotmatch '^[a-f0-9]{64}$' -or $Resolution.classification -cnotin @('SAFE_REUSE_ENROLLED','SAFE_RESUME_FROM_ENROLLMENT','SAFE_RESET_SYNTHETIC_KIDREMOTE_STATE_AND_REENROLL','INVALID_PARTIAL_STATE_REVIEW_REQUIRED')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ if($historyCount -gt 10 -or $badHistoryCount -gt 0 -or $uniqueHistoryCount -ne $historyCount){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ if($failedCount -gt 10 -or $badFailedCount -gt 0 -or ($failedCount -gt 0 -and $Resolution.reviewReason -cne $failed[0]) -or ($failedCount -eq 0 -and $Resolution.reviewReason -cne 'NONE')){throw 'INVALID:RESUME_REVIEW_SCHEMA'}
+ $record=[ordered]@{kind='RESUME_REVIEW';format=2;attempt=$m.attempt;historicalAttempt=$(if($historyCount){$history[-1]}else{'NONE'});historicalAttempts=@($history);source=$m.source;bundle=$m.bundle;utc=[DateTime]::UtcNow.ToString('o');compatibility=$Digest;classification=$Resolution.classification;packageMode=$Resolution.packageMode;permittedPath=$Resolution.path;credentialProof=$Resolution.credentialProof;reviewReason=$Resolution.reviewReason;failedChecks=@($failed);backendDevice=$Resolution.backendDevice;localIdentity=$Resolution.localIdentity;pairingPending=$Resolution.pairingPending;localAccounting=$Resolution.localAccounting;historicalVerdict='UNCHANGED';historicalCleanup='UNCHANGED'}
  $path=Join-Path $Directory 'resume-review';$tmp=$path+'.tmp'
  if((Test-Path -LiteralPath $path) -or (Test-Path -LiteralPath $tmp)){throw 'INVALID:RESUME_REVIEW_IMMUTABLE'}
  $payload=$record|ConvertTo-Json -Compress;$envelope=@{payload=$payload;sha256=(Get-ResumeHash $payload)}|ConvertTo-Json -Compress
@@ -72,4 +95,4 @@ function Write-ResumeReview([string]$Directory,[string]$HistoricalAttempt,[strin
  try{$bytes=[Text.Encoding]::UTF8.GetBytes($envelope);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  [IO.File]::Move($tmp,$path)
 }
-Export-ModuleMember -Function Read-ResumeReview,Test-ResumableHistory,Resolve-ProductPreparation,Write-ResumeReview
+Export-ModuleMember -Function Read-ResumeReview,Test-ResumableHistory,Get-ResumableHistoryReview,Resolve-ProductPreparation,Write-ResumeReview

@@ -5,8 +5,57 @@ Import-Module (Join-Path $PSScriptRoot '../update-review/Review.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Canonical.psm1')
 Import-Module (Join-Path $PSScriptRoot 'EnrollmentHost.psm1')
 Import-Module (Join-Path $PSScriptRoot 'QrPresentation.psm1')
+Import-Module (Join-Path $PSScriptRoot 'QrRenderer.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 Import-Module (Join-Path $PSScriptRoot 'ProductOracle.psm1')
+
+function Set-ProductPreparationStage($State,[string]$Stage){
+ $allowed=@('NONE','PAIRING_SESSION_CLEANUP','RESET_RECONCILIATION','REVERSE_CREATE','PAIRING_SESSION_CREATE','PAIRING_SESSION_VALIDATE','QR_RENDER_PROCESS','QR_RENDER_VALIDATE','QR_WINDOW_CREATE','QR_WINDOW_READY_INITIAL','CHILD_OPEN_FOR_SCAN','QR_WINDOW_READY_AFTER_CHILD_OPEN','QR_ENROLLMENT_POLL','QR_ENROLLMENT_TIMEOUT','CONSENT_USAGE','CONSENT_ACCESSIBILITY','INITIAL_POLICY','PRODUCT_SLICE')
+ if($Stage -cnotin $allowed){throw 'INVALID:PREPARATION_STAGE_SCHEMA'};$State.preparationStage=$Stage
+}
+function Throw-ProductPreparationFailure($State,[string]$Message){
+ $stage=[string]$State.preparationStage
+ $code=switch($stage){
+  'PAIRING_SESSION_CLEANUP' {'PAIRING_SESSION_CLEANUP_FAILED'}
+  'RESET_RECONCILIATION' {'RESET_RECONCILIATION_FAILED'}
+  'REVERSE_CREATE' {'REVERSE_CREATE_FAILED'}
+  'PAIRING_SESSION_CREATE' {'PAIRING_SESSION_CREATE_FAILED'}
+  'PAIRING_SESSION_VALIDATE' {'PAIRING_SESSION_INVALID'}
+  'QR_RENDER_PROCESS' {'QR_RENDER_PROCESS_FAILED'}
+  'QR_RENDER_VALIDATE' {'QR_RENDER_OUTPUT_INVALID'}
+  'QR_WINDOW_CREATE' {'QR_WINDOW_CREATE_FAILED'}
+  'QR_WINDOW_READY_INITIAL' {'QR_WINDOW_NOT_READY'}
+  'CHILD_OPEN_FOR_SCAN' {'CHILD_OPEN_FAILED'}
+  'QR_WINDOW_READY_AFTER_CHILD_OPEN' {'QR_WINDOW_NOT_READY'}
+  'QR_ENROLLMENT_POLL' {'QR_ENROLLMENT_POLL_FAILED'}
+  'QR_ENROLLMENT_TIMEOUT' {'PAIRING_TIMEOUT'}
+  'CONSENT_USAGE' {if($Message -ceq 'INVALID:USAGE_CONSENT_TIMEOUT'){'USAGE_CONSENT_TIMEOUT'}else{'CONSENT_USAGE_FAILED'}}
+  'CONSENT_ACCESSIBILITY' {if($Message -ceq 'INVALID:ACCESSIBILITY_CONSENT_TIMEOUT'){'ACCESSIBILITY_CONSENT_TIMEOUT'}else{'CONSENT_ACCESSIBILITY_FAILED'}}
+  'INITIAL_POLICY' {'INITIAL_POLICY_FAILED'}
+  default {'PREPARATION_ORCHESTRATION_FAILED'}
+ }
+ $error=New-Object Exception('INVALID:'+$code);$error.Data['preparationStage']=$stage;$error.Data['preparationCode']=$code;throw $error
+}
+function Invoke-ProductEnrollmentPreparation($State,[scriptblock]$Pairing,[scriptblock]$Render,[scriptblock]$WindowFactory,[scriptblock]$OpenChild,[scriptblock]$Poll,[scriptblock]$Instruction,[scriptblock]$Stage,[int]$TimeoutMs=240000){
+ $q=$null;$encoded=$null;$window=$null
+ try{
+  $q=& $Pairing $Stage
+  $encoded=& $Render $q.qr $Stage
+  & $Stage QR_WINDOW_CREATE
+  $window=& $WindowFactory $encoded
+  return Invoke-ProductQrEnrollment $window $OpenChild $Poll $Instruction $TimeoutMs $Stage
+ }catch{Throw-ProductPreparationFailure $State $_.Exception.Message}finally{if($window){$window.Dispose()};$q=$null;$encoded=$null}
+}
+function Get-ProductPreparationFailure($ErrorRecord,$State){
+ $message=[string]$ErrorRecord.Exception.Message
+ $stateStage=$null
+ if($State -is [Collections.IDictionary]){$stateStage=$State['preparationStage']}elseif($State -and $State.PSObject.Properties.Name -contains 'preparationStage'){$stateStage=$State.preparationStage}
+ $stage=if($ErrorRecord.Exception.Data.Contains('preparationStage')){[string]$ErrorRecord.Exception.Data['preparationStage']}elseif($stateStage -and $stateStage -cne 'NONE'){[string]$stateStage}else{'PREPARATION_ORCHESTRATION'}
+ $code=if($ErrorRecord.Exception.Data.Contains('preparationCode')){[string]$ErrorRecord.Exception.Data['preparationCode']}elseif($message -cmatch '^INVALID:[A-Z0-9_]{1,120}$'){$message.Substring(8)}else{'PREPARATION_ORCHESTRATION_FAILED'}
+ if($stage -cnotmatch '^[A-Z0-9_]{1,80}$'){$stage='PREPARATION_ORCHESTRATION'}
+ if($code -cnotmatch '^[A-Z0-9_]{1,120}$'){$code='PREPARATION_ORCHESTRATION_FAILED'}
+ return [pscustomobject]@{stage=$stage;code=$code;reason=('INVALID:'+$code)}
+}
 
 function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[string]$Temporary,[Security.SecureString]$Jwt,[bool]$Reuse=$false,$SavedDevice=$null,[string]$Directory=''){
  $java=Join-Path $Bundle 'runtime\jbr\bin\java.exe'
@@ -15,7 +64,8 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $run={param($e,$a,$inputText) Invoke-ReviewProcess $e $a $inputText}
  $read={param($a) Invoke-InventoryAdb $Adb $Serial $a}.GetNewClosure()
  $wire={param($s,$p,$m,$b,$j) Invoke-LabWire $s $p $m $b $j}
- $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false;runtimeConfiguration=$null}
+ $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false;runtimeConfiguration=$null;preparationStage='NONE'}
+ $stage={param($value) Set-ProductPreparationStage $s $value}.GetNewClosure()
  $action={param($name) $null=Invoke-ReplacementAdb $Adb $Serial $name $apk $run}.GetNewClosure()
  $ops=@{}
  $ops.HostReady={
@@ -42,46 +92,47 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $ops.Absent={-not (Get-InventoryPackage 'dev.kidremote.child.unassigned.debug' $read).installed}.GetNewClosure()
  $ops.Install={& $action Install;$s.new=$true}.GetNewClosure()
  $ops.Reverse={
+  & $stage REVERSE_CREATE
   Assert-LabReverse (Invoke-ReplacementAdb $Adb $Serial ReverseRead $apk $run) $false
   $s.reverseAttempted=$true;& $action Reverse;$s.reverse=$true
   Assert-LabReverse (Invoke-ReplacementAdb $Adb $Serial ReverseRead $apk $run) $true
  }.GetNewClosure()
  $ops.Enroll={
-  $q=New-ProductPairing $wire $Jwt
-  $window=$null
-  try{
-   $encoded=& $run $java @('-cp',((Join-Path $Bundle 'host-qr.jar')+';'+(Join-Path $Bundle 'zxing-core.jar')),'HostQr') ($q.qr|ConvertTo-Json -Compress)
-   if($encoded.stderr.Trim()){throw 'INVALID:QR_PRESENTATION_FAILED'}
-   $window=New-ProductQrWindow $encoded.stdout
-   $poll={Get-OnlyLabChild $wire $Jwt}.GetNewClosure()
-   $open={& $action OpenChild}.GetNewClosure()
-   $instruction={
+  $pairing={param($onStage) New-ProductPairing $wire $Jwt $onStage}.GetNewClosure()
+  $render={param($qr,$onStage) Invoke-ProductQrRenderer $java @('-cp',((Join-Path $Bundle 'host-qr.jar')+';'+(Join-Path $Bundle 'zxing-core.jar')),'HostQr') ($qr|ConvertTo-Json -Compress) $onStage}.GetNewClosure()
+  $factory={param($encoded) New-ProductQrWindow $encoded}
+  $poll={Get-OnlyLabChild $wire $Jwt}.GetNewClosure()
+  $open={& $action OpenChild}.GetNewClosure()
+  $instruction={
     Write-Host 'QR_WINDOW_READY: janela KidRemote verificada e sempre no topo; a ativacao de foco depende do Windows.'
     Write-Host 'No KidRemote: toque Escanear QR, permita a camera se solicitado e escaneie o QR exibido.'
-   }
-   $s.device=Invoke-ProductQrEnrollment $window $open $poll $instruction
-  }finally{if($window){$window.Dispose()};$q=$null;$encoded=$null}
+  }
+  $s.device=Invoke-ProductEnrollmentPreparation $s $pairing $render $factory $open $poll $instruction $stage
  }.GetNewClosure()
  $ops.Consent={
-  $i=Invoke-ReadOnlyInventory $read
-  if($i.usageAccess -cne 'ENABLED'){
-   & $action OpenUsage;Write-Host 'Ative somente o Acesso ao uso do KidRemote. A conclusão será detectada automaticamente.'
-   $timer=[Diagnostics.Stopwatch]::StartNew()
-   do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.usageAccess -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
-   if($i.usageAccess -cne 'ENABLED'){throw 'INVALID:USAGE_CONSENT_TIMEOUT'}
-  }
-  if($i.accessibility -cne 'ENABLED'){
-  & $action OpenChild
-  Write-Host 'No KidRemote: toque Concordo · abrir configuração de Acessibilidade; ative o serviço KidRemote nas Configurações.'
-  $timer=[Diagnostics.Stopwatch]::StartNew()
-  do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.accessibility -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
-  if($i.accessibility -cne 'ENABLED'){throw 'INVALID:ACCESSIBILITY_CONSENT_TIMEOUT'}
-  }
-  & $action OpenChild
+  try{
+   & $stage CONSENT_USAGE
+   $i=Invoke-ReadOnlyInventory $read
+   if($i.usageAccess -cne 'ENABLED'){
+    & $action OpenUsage;Write-Host 'Ative somente o Acesso ao uso do KidRemote. A conclusão será detectada automaticamente.'
+    $timer=[Diagnostics.Stopwatch]::StartNew()
+    do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.usageAccess -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
+    if($i.usageAccess -cne 'ENABLED'){throw 'INVALID:USAGE_CONSENT_TIMEOUT'}
+   }
+   & $stage CONSENT_ACCESSIBILITY
+   if($i.accessibility -cne 'ENABLED'){
+    & $action OpenChild
+    Write-Host 'No KidRemote: toque Concordo · abrir configuração de Acessibilidade; ative o serviço KidRemote nas Configurações.'
+    $timer=[Diagnostics.Stopwatch]::StartNew()
+    do{Start-Sleep -Milliseconds 1000;$i=Invoke-ReadOnlyInventory $read}while($i.accessibility -cne 'ENABLED' -and $timer.Elapsed.TotalSeconds -lt 180)
+    if($i.accessibility -cne 'ENABLED'){throw 'INVALID:ACCESSIBILITY_CONSENT_TIMEOUT'}
+   }
+   & $action OpenChild
+  }catch{Throw-ProductPreparationFailure $s $_.Exception.Message}
  }.GetNewClosure()
  $ops.Configure={param($eventId)
-  $null=Set-InitialLabLimit $wire $Jwt $s.device $eventId
-  & $action OpenChild
+  & $stage INITIAL_POLICY
+  try{$null=Set-InitialLabLimit $wire $Jwt $s.device $eventId;& $action OpenChild}catch{Throw-ProductPreparationFailure $s $_.Exception.Message}
  }.GetNewClosure()
  $ops.Recovery={param($stage,$changed)
   # No policy is configured before the final preparation stage. Never reinstall old bytes.
@@ -128,4 +179,4 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  }.GetNewClosure()
  return @{ops=$ops;state=$s;wire=$wire;read=$read;action=$action}
 }
-Export-ModuleMember -Function New-LivePreparation
+Export-ModuleMember -Function New-LivePreparation,Invoke-ProductEnrollmentPreparation,Get-ProductPreparationFailure
