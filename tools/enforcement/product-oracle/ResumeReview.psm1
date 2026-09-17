@@ -21,8 +21,16 @@ function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
   $stages=@($review.stages);if($stages.Count -ne $j.rows.Count -or ($stages -join ',') -cne ($j.rows.stage -join ',') -or $stages -contains 'POLICY_ADMITTED' -or $stages -contains 'LOCK_ADMITTED'){return $null}
   $raw=[IO.File]::ReadAllText((Join-Path $Directory 'result.txt'));if($raw.Length -gt 65536){return $null};$result=$raw|ConvertFrom-Json
   if($review.primaryReason -cnotmatch '^INVALID:[A-Z0-9_]{1,120}$' -or $review.hostFailureCode -cnotmatch '^[A-Z0-9_]{1,120}$'){return $null}
-  if($result.hostValidated -ne $true -or $result.hostFailureCode -cne $review.hostFailureCode -or $result.primary.reason -cne $review.primaryReason -or $result.primary.cleanup -cne 'UNVERIFIED' -or $result.reverseCleanup -cne 'OWN_REVERSE_REMOVED' -or $result.backendCleanup -cne 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'){return $null}
-  if($review.pairingSession.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingSession.disposition -cnotin @('OPEN','CANCELLED')){return $null}
+  $expectedReverse=if($review.PSObject.Properties.Name -contains 'reverseCleanup'){[string]$review.reverseCleanup}else{'OWN_REVERSE_REMOVED'}
+  if($expectedReverse -cnotin @('OWN_REVERSE_REMOVED','NOT_CREATED')){return $null}
+  if($result.hostValidated -ne $true -or $result.hostFailureCode -cne $review.hostFailureCode -or $result.primary.reason -cne $review.primaryReason -or $result.primary.cleanup -cne 'UNVERIFIED' -or $result.reverseCleanup -cne $expectedReverse -or $result.backendCleanup -cne 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED'){return $null}
+  if($review.PSObject.Properties.Name -contains 'preparationFailureStage'){
+   if($review.preparationFailureStage -cnotmatch '^[A-Z0-9_]{1,80}$' -or $review.preparationFailureCode -cnotmatch '^[A-Z0-9_]{1,120}$' -or $result.preparationFailureStage -cne $review.preparationFailureStage -or $result.preparationFailureCode -cne $review.preparationFailureCode){return $null}
+  }
+  $hasSession=$review.PSObject.Properties.Name -contains 'pairingSession';$hasResolution=$review.PSObject.Properties.Name -contains 'pairingResolution'
+  if($hasSession -eq $hasResolution){return $null}
+  if($hasSession -and ($review.pairingSession.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingSession.disposition -cnotin @('OPEN','CANCELLED'))){return $null}
+  if($hasResolution -and ($review.pairingResolution.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingResolution.from -cne 'OPEN' -or $review.pairingResolution.to -cne 'CANCELLED')){return $null}
   return $review
  }catch{return $null}
 }

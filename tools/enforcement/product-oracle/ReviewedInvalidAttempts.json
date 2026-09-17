@@ -54,6 +54,35 @@
         "resume-review": "e0d4cef8491343a976b90393773c7ee1d5197b56429f4bf6505167c0ea58efdf",
         "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
+    },
+    {
+      "attempt": "a2f91a25-0acc-4fff-848d-10fa99e5af53",
+      "source": "b541595a33eee5ae3a4eecd6385780ae906426b7",
+      "bundle": "9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68",
+      "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+      "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+      "stages": ["BEGIN", "PAIRING_CLEANUP_ADMITTED", "REVERSE_ADMITTED", "VERDICT", "CLEANUP"],
+      "primaryReason": "INVALID:PREPARATION_ORCHESTRATION_FAILED",
+      "hostFailureCode": "NONE",
+      "preparationFailureStage": "PAIRING_SESSION_CLEANUP",
+      "preparationFailureCode": "PREPARATION_ORCHESTRATION_FAILED",
+      "reverseCleanup": "NOT_CREATED",
+      "pairingResolution": {
+        "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+        "from": "OPEN",
+        "to": "CANCELLED"
+      },
+      "inventory": {
+        "000000.json": "60f4590d5749c7f221f8cd16fa10b2090fcad51fd83a9df3b89fe25f4af56fc4",
+        "000001.json": "867f3302c6230d8a545d39538ea80104192ea79f533dcd10d17930170fcbb918",
+        "000002.json": "aa83dd775c7a36481b7e1e5f6844a8a3bee78516e889d8b8c22968908b1d654a",
+        "000003.json": "bcb3f112284854cc30878c41e4585354e170c92a1d147c11cab5b06bdffc7547",
+        "000004.json": "e3efbf76e9b10f2e7bd3b45cb3239e174dd254585b76233ea626657ff499cbd1",
+        "provenance": "44d7f4ff997458eedfee1f933a6e68e4a65cef243292691a48b5098392f051c6",
+        "result.txt": "1e76c0f6dca656222cc9d55b3ef19b0d01cd47c5fceeca2d931a408e78728f91",
+        "resume-review": "13b3cd6c54a3fdf42b318169107089d15c1f3ea99c04cf54fc4a6b7ae53a832f",
+        "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
     }
   ]
 }

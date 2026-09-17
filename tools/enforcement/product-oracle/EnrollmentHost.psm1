@@ -35,8 +35,29 @@ function Set-InitialLabLimit([scriptblock]$Wire,[Security.SecureString]$Jwt,$Dev
  if($r.status -cne 'accepted' -or $r.operation_id -cne $OperationId -or $r.device_id -cne $Device.id -or $r.policy_epoch -cne $Device.policy_epoch -or $r.version -ne 1){throw 'INVALID:INITIAL_POLICY_RESULT'}
  return $r
 }
+function Get-ReviewedPairingExpectations($HistoryReviews){
+ $created=@{};$resolved=@{}
+ foreach($history in @($HistoryReviews)){
+  if($history.PSObject.Properties.Name -contains 'pairingSession'){
+   $session=$history.pairingSession
+   if($null -eq $session -or $session.id -cnotmatch '^[a-f0-9-]{36}$' -or $session.disposition -cnotin @('OPEN','CANCELLED') -or $created.ContainsKey($session.id)){throw 'INVALID:PAIRING_REVIEW_SCHEMA'}
+   $created[$session.id]=[string]$session.disposition
+  }
+  if($history.PSObject.Properties.Name -contains 'pairingResolution'){
+   $resolution=$history.pairingResolution
+   if($null -eq $resolution -or $resolution.id -cnotmatch '^[a-f0-9-]{36}$' -or $resolution.from -cne 'OPEN' -or $resolution.to -cne 'CANCELLED' -or $resolved.ContainsKey($resolution.id)){throw 'INVALID:PAIRING_REVIEW_SCHEMA'}
+   $resolved[$resolution.id]=$true
+  }
+ }
+ foreach($id in $resolved.Keys){
+  if(-not $created.ContainsKey($id) -or $created[$id] -cne 'OPEN'){throw 'INVALID:PAIRING_REVIEW_SCHEMA'}
+  $created[$id]='CANCELLED'
+ }
+ return @($created.GetEnumerator()|Sort-Object Name|ForEach-Object{[pscustomobject]@{id=$_.Key;disposition=$_.Value}})
+}
 function Invoke-ReviewedPairingCleanup($Review,$HistoryReviews,[scriptblock]$Wire,[Security.SecureString]$Jwt){
- $approvedOpen=@($HistoryReviews|Where-Object{$_.pairingSession.disposition -ceq 'OPEN'}|ForEach-Object{$_.pairingSession.id})
+ $expected=Get-ReviewedPairingExpectations $HistoryReviews
+ $approvedOpen=@($expected|Where-Object{$_.disposition -ceq 'OPEN'}|ForEach-Object{$_.id})
  $actualOpen=@($Review.sessions|Where-Object{-not $_.consumed -and -not $_.cancelled})
  $approvedCount=($approvedOpen|Measure-Object).Count;$actualCount=($actualOpen|Measure-Object).Count;$unreviewedCount=($actualOpen|Where-Object{$_.id -cnotin $approvedOpen}|Measure-Object).Count
  if($actualCount -ne $approvedCount -or $unreviewedCount){throw 'INVALID:PAIRING_CLEANUP_UNREVIEWED_SESSION'}
@@ -47,4 +68,4 @@ function Invoke-ReviewedPairingCleanup($Review,$HistoryReviews,[scriptblock]$Wir
  if($null -ne (Get-OnlyLabChild $Wire $Jwt)){throw 'INVALID:PAIRING_CLEANUP_CREATED_DEVICE'}
  return 'EXACT_REVIEWED_PAIRING_SESSIONS_CANCELLED'
 }
-Export-ModuleMember -Function New-ProductPairing,Get-OnlyLabChild,Invoke-StableLabOperation,Set-InitialLabLimit,Invoke-ReviewedPairingCleanup
+Export-ModuleMember -Function New-ProductPairing,Get-OnlyLabChild,Invoke-StableLabOperation,Set-InitialLabLimit,Get-ReviewedPairingExpectations,Invoke-ReviewedPairingCleanup

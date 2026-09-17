@@ -14,6 +14,17 @@ try{
  $foreign=[Guid]::NewGuid().ToString();$review.sessions+=,[pscustomobject]@{id=$foreign;device=$null;consumed=$false;cancelled=$false};$before=$state.calls.Count;$caught=$false
  try{$null=Invoke-ReviewedPairingCleanup $review $history $wire $jwt}catch{$caught=$_.Exception.Message -ceq 'INVALID:PAIRING_CLEANUP_UNREVIEWED_SESSION'}
  Check $caught;Check ($state.calls.Count -eq $before)
+ $transitioned=@(
+  [pscustomobject]@{pairingSession=[pscustomobject]@{id=$open;disposition='OPEN'}},
+  [pscustomobject]@{pairingResolution=[pscustomobject]@{id=$open;from='OPEN';to='CANCELLED'}}
+ )
+ $review.sessions=@([pscustomobject]@{id=$open;device=$null;consumed=$false;cancelled=$true});$state.calls=@()
+ $expected=@(Get-ReviewedPairingExpectations $transitioned);Check ($expected.Count -eq 1);Check ($expected[0].id -ceq $open);Check ($expected[0].disposition -ceq 'CANCELLED')
+ Check ((Invoke-ReviewedPairingCleanup $review $transitioned $wire $jwt) -ceq 'EXACT_REVIEWED_PAIRING_SESSIONS_CANCELLED')
+ Check ($state.calls.Count -eq 1);Check ($state.calls[0].path -ceq '/rpc/parent_devices')
+ $caught=$false
+ try{$null=Get-ReviewedPairingExpectations @([pscustomobject]@{pairingResolution=[pscustomobject]@{id=$open;from='OPEN';to='CANCELLED'}})}catch{$caught=$_.Exception.Message -ceq 'INVALID:PAIRING_REVIEW_SCHEMA'}
+ Check $caught
  $review.sessions=@([pscustomobject]@{id=$open;device=$null;consumed=$false;cancelled=$false});$history=@([pscustomobject]@{pairingSession=[pscustomobject]@{id=$open;disposition='OPEN'}})
  $wire={param($service,$path,$method,$body,$secret)if($path -ceq '/rpc/finish_pairing'){return [pscustomobject]@{result='ALREADY_REDEEMED'}};throw 'UNEXPECTED_CALL'}
  $caught=$false;try{$null=Invoke-ReviewedPairingCleanup $review $history $wire $jwt}catch{$caught=$_.Exception.Message -ceq 'INVALID:PAIRING_CLEANUP_CONCURRENT_REDEMPTION'};Check $caught

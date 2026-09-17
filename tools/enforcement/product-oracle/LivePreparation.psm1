@@ -65,7 +65,10 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $read={param($a) Invoke-InventoryAdb $Adb $Serial $a}.GetNewClosure()
  $wire={param($s,$p,$m,$b,$j) Invoke-LabWire $s $p $m $b $j}
  $s=@{new=$Reuse;device=$SavedDevice;reverse=$false;reverseAttempted=$false;runtimeConfiguration=$null;preparationStage='NONE'}
- $stage={param($value) Set-ProductPreparationStage $s $value}.GetNewClosure()
+ # GetNewClosure creates a dynamic module. Capture the private function body so
+ # Windows PowerShell 5.1 does not have to resolve its private command name later.
+ $stageSetter=${function:Set-ProductPreparationStage}
+ $stage={param($value)& $stageSetter $s $value}.GetNewClosure()
  $action={param($name) $null=Invoke-ReplacementAdb $Adb $Serial $name $apk $run}.GetNewClosure()
  $ops=@{}
  $ops.HostReady={

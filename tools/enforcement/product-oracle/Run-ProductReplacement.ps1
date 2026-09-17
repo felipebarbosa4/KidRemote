@@ -79,7 +79,7 @@ try{
     $accounting=@($metadata.files|Where-Object{$_.kind -like 'accounting*' -and $_.presence -ceq 'PRESENT'}).Count -gt 0
    }
    $review=$h.backend.review;$devices=@($review.devices);$saved=$h.backend.local.device
-   $expectedSessions=@($historyReviews|ForEach-Object{$_.pairingSession});$actualSessions=@($review.sessions)
+   $expectedSessions=@(Get-ReviewedPairingExpectations $historyReviews);$actualSessions=@($review.sessions)
    $expectedSessionCount=($expectedSessions|Measure-Object).Count;$actualSessionCount=($actualSessions|Measure-Object).Count
    $historyBackendSafe=$expectedSessionCount -eq $actualSessionCount
    if($historyBackendSafe){
