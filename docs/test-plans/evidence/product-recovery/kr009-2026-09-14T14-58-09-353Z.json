@@ -1,0 +1,234 @@
+{
+  "scope": "KR009_LOCAL_SYNC_ACK_EMULATOR",
+  "source": "0b1ecdddf5b9843c16de513b1dce7081f6ed58af",
+  "stages": [
+    {
+      "method": "prepareIdentityAndUsage",
+      "result": "PASS",
+      "codes": [
+        "REAL_IDENTITY_HTTP_SNAPSHOT_ROOM_ACK_INITIALIZED_NONZERO_USE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "lockPersisted",
+      "result": "PASS",
+      "codes": [
+        "LOCK_PERSISTED_ACKNOWLEDGED_NO_ENFORCEMENT_CLAIM"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "UNLOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "SET_DAILY_LIMIT",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "zeroUnlockAndReordered",
+      "result": "PASS",
+      "codes": [
+        "UNLOCK_ZERO_LOWER_LIMIT_DUPLICATE_OLDER_SNAPSHOT_NO_ROLLBACK"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "malformedSnapshotRetainsPolicy",
+      "result": "PASS",
+      "codes": [
+        "REAL_HTTP_MUTATED_BEFORE_VALIDATION_SCHEMA_NUMBERS_DUPLICATES_RETAIN_POLICY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterGrantPersistence",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "KR009_EXPECTED_KILL_AFTER_PERSIST"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartResendsPendingAck",
+      "result": "PASS",
+      "codes": [
+        "PROCESS_RESTART_RESENDS_DURABLE_ACK_NO_GRANT_REPLAY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "loseAckResponse",
+      "result": "PASS",
+      "codes": [
+        "REAL_COMMITTED_ACK_HTTP_RESPONSE_WITHHELD_PENDING_RETAINED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "retryLostAckAfterRestart",
+      "result": "PASS",
+      "codes": [
+        "LOST_ACK_RETRY_IDENTICAL_SEQUENCE_AFTER_PROCESS_RESTART"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "offlinePreservesLedger",
+      "result": "PASS",
+      "codes": [
+        "GATEWAY_OUTAGE_RETAINS_LEDGER_IDENTITY_NO_PENDING_ERASURE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "explicitRestartConverges",
+      "result": "PASS",
+      "codes": [
+        "EXPLICIT_SYNC_AFTER_OUTAGE_RESTART_WITHOUT_PUSH_CONVERGED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "yesterdayGrantNotCredited",
+      "result": "PASS",
+      "codes": [
+        "YESTERDAY_GRANT_NO_TODAY_CREDIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterPageCheckpoint",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "KR009_EXPECTED_KILL_AFTER_PAGE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartThroughWorkManager",
+      "result": "PASS",
+      "codes": [
+        "REAL_WORKMANAGER_RESTART_FULL_PAGES_NO_POLICY_ROLLBACK_OR_BONUS_REPLAY"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "expiredSequenceRestarts",
+      "result": "PASS",
+      "codes": [
+        "REAL_EXPIRED_CURSOR_HTTP_410_FULL_RESTART_CONVERGED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "resumeDiscoversState",
+      "result": "PASS",
+      "codes": [
+        "ACTUAL_ACTIVITY_RESUME_DISCOVERS_STATE_NO_PUSH"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "coalescedTriggers",
+      "result": "PASS",
+      "codes": [
+        "32_CONCURRENT_TRIGGERS_ONE_ACTIVE_ONE_FOLLOWUP"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "UNLOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "outagePersistsRetry",
+      "result": "PASS",
+      "codes": [
+        "REAL_GATEWAY_OUTAGE_DURABLE_RETRY_INTENT_NO_POLICY_ERASURE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "networkRecoveryConverges",
+      "result": "PASS",
+      "codes": [
+        "REAL_EMULATOR_NETWORK_RETURN_CALLBACK_CONVERGED_CONTROLLED_DUE"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "workerDiscoversWithoutIntent",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_WORK_DISCOVERS_NEW_STATE_WITHOUT_LOCAL_INTENT_OR_PUSH"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "scheduledLostAckRetry",
+      "result": "PASS",
+      "codes": [
+        "SCHEDULED_RETRY_AFTER_REAL_ACK_RESPONSE_LOSS_NO_DUPLICATE_EFFECT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "httpRetryAndAuthStop",
+      "result": "PASS",
+      "codes": [
+        "REAL_LOOPBACK_RETRY_AFTER_AUTH_STOP_OVERSIZE_REJECTION"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "corruptedRetryStops",
+      "result": "PASS",
+      "codes": [
+        "ATOMICFILE_BACKUP_RECOVERS_CORRUPT_INTENT_FAILS_CLOSED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "expiredRetainsLedger",
+      "result": "PASS",
+      "codes": [
+        "EXPIRED_AUTH_RETAINS_DOWNLOADED_POLICY_ACCOUNTING"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "revokedRetainsUntilExplicitRemoval",
+      "result": "PASS",
+      "codes": [
+        "VALIDATED_REVOCATION_PRESERVES_LEDGER_UNTIL_EXPLICIT_CLEAR"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "d2b3448b5c5574dc4ec693fc1e09386bae6ca1082e42c8c68f6c8c5d870b7f2f",
+    "child-debug-androidTest.apk": "4e40973e24eca018ac972b22bdca49021d23146bd7c1e4e24dce5a042853a1b2"
+  },
+  "overall": "PASS_THIS_EMULATOR_ONLY",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED",
+  "lastCommand": "shell pm clear",
+  "activeStage": "revokedRetainsUntilExplicitRemoval",
+  "networkState": {
+    "wifi": "1",
+    "data": "1"
+  }
+}

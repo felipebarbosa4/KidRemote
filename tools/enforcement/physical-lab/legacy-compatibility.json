@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "digest": "1f772544e5398223fa90b3349ec4528f4bb02efbd4f94a3811cdba658e45a45a",
+  "files": [
+    "packages/protocol/CONTRACT.md",
+    "supabase/functions/control/handler.mjs",
+    "supabase/functions/device-gateway/handler.mjs",
+    "supabase/functions/device-gateway/local-database.mjs",
+    "supabase/functions/pairing/protocol.mjs",
+    "supabase/migrations/202609110001_schema_rls.sql",
+    "supabase/migrations/202609110002_atomic_control.sql",
+    "supabase/migrations/202609110003_pairing.sql",
+    "supabase/migrations/202609110004_parent_household.sql",
+    "supabase/migrations/202609120001_rotation.sql",
+    "supabase/migrations/202609140001_local_sync_ack.sql",
+    "supabase/migrations/202609140002_sync_pages.sql",
+    "supabase/migrations/202609140003_parent_presentation.sql",
+    "supabase/migrations/202609140004_enforcement_observation.sql",
+    "tools/enforcement/physical-lab/health.mjs",
+    "tools/enforcement/physical-lab/lease.mjs",
+    "tools/kr007/local-gateway.mjs"
+  ],
+  "leaseSchema": "OD51:format1:source-schema-identity:exact-labels:pinned-images:dpapi-v1",
+  "source": "3693034816039de67087066f077e6e02a9507dd6"
+}

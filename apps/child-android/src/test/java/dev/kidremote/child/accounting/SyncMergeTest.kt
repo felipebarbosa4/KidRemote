@@ -18,8 +18,7 @@ class SyncMergeTest {
  @Test fun wrongEpochDenied(){val s=old();assertThrows(IllegalArgumentException::class.java){SyncMerge.accept(s,s.policy.copy(epoch="foreign",version=2),at(1000),utc)}}
  @Test fun pendingReceiptCodecSurvives(){
   val s=old().copy(reportSequence=8,pendingAck="minimal-fixture");assertEquals(s,LedgerCodec.decode(LedgerCodec.encode(s)))
-  val body=LedgerCodec.encode(old()).dropLast(17).toByteArray();java.nio.ByteBuffer.wrap(body).putInt(2)
-  val legacy=java.io.ByteArrayOutputStream().also{it.write(body);java.io.DataOutputStream(it).writeLong(java.util.zip.CRC32().apply{update(body)}.value)}.toByteArray()
+  val legacy=LegacyFixture.encode(old(),2)
   assertEquals(old(),LedgerCodec.decode(legacy))
  }
 }

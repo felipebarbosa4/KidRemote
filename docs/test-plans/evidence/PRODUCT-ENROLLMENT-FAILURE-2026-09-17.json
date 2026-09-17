@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "kind": "OD51_POST_PREFLIGHT_ENROLLMENT_FAILURE_REVIEW",
+  "physicalAttempt": {
+    "attempt": "28756da0-cbcf-410b-9957-d7aade9afcf4",
+    "source": "863a977407b1f7d5a072b1e6284de0847a5ed0c4",
+    "bundle": "4bccabaa2bc37cfa42c38f4f3b6f992746003d7ea6b7f5026051e5e1277f63cb",
+    "resultSha256": "fbd510ce8449d0788d53eef7446512f75a286e3ef0b1135f32f3095b176b93bd",
+    "provenanceSha256": "821d3bf58813b18013660facfcd98f6e39713198d19f9b806eb274b724a113db",
+    "resumeReviewSha256": "e0d4cef8491343a976b90393773c7ee1d5197b56429f4bf6505167c0ea58efdf",
+    "hostDiagnosticAttempt": "a0b601e2-fc2c-4ca7-85a3-9418d3394a4f",
+    "hostDiagnosticSha256": "2c412e0bedc3e6baaa164babc6e9f334e12e8331523251081867e1ba08591636",
+    "immutable": true
+  },
+  "journal": {
+    "stages": [
+      "BEGIN",
+      "PAIRING_CLEANUP_ADMITTED",
+      "REVERSE_ADMITTED",
+      "ENROLLMENT_ADMITTED",
+      "VERDICT",
+      "CLEANUP"
+    ],
+    "lastAdmitted": "ENROLLMENT_ADMITTED",
+    "enrollmentAdmitted": true,
+    "setupAdmitted": false,
+    "policyAdmitted": false,
+    "lockAdmitted": false,
+    "verdict": "INVALID",
+    "cleanup": "UNVERIFIED"
+  },
+  "failure": {
+    "observedBoundary": "AFTER_PAIRING_SESSION_CREATE_BEFORE_QR_WINDOW_READY_INSTRUCTION",
+    "exactEnrollmentSubstage": "UNKNOWN_NOT_PRESERVED",
+    "operationalRootCause": "UNKNOWN_NOT_PRESERVED",
+    "diagnosticRootCause": "UNTYPED_POST_HOST_EXCEPTION_COLLAPSED_TO_SANITIZED_HOST_EXCEPTION_AND_INVALID_HOST_OR_TRANSPORT_FAILURE",
+    "genericInvokeReviewProcessCouldCollapseReadOnlyReviewInvalid": true,
+    "genericInvokeReviewProcessWasActualFailure": "NOT_ESTABLISHED",
+    "hostOnlyFrozenRendererReplay": {
+      "physicalDeviceUsed": false,
+      "syntheticQrOnly": true,
+      "exitCode": 0,
+      "stdoutBytes": 1256,
+      "stderrBytes": 0,
+      "validPng": true,
+      "genericHelperResult": "PASS"
+    }
+  },
+  "retainedBackendReadOnlyReview": {
+    "method": "DISPOSABLE_COPY_OF_STOPPED_TASK_OWNED_VOLUME_ORIGINAL_NOT_STARTED",
+    "productScope": {
+      "activeDevices": 0,
+      "allDevices": 0,
+      "activeCredentials": 0,
+      "configuredPolicies": 0,
+      "manualLocks": 0,
+      "reports": 0
+    },
+    "sessions": [
+      {
+        "id": "6d703893-dbf0-47d2-b96d-99495159c7af",
+        "createdAt": "2026-09-15T01:26:10.876Z",
+        "consumed": false,
+        "cancelled": true,
+        "hasDevice": false,
+        "role": "PRIOR_REVIEWED_ATTEMPT_ALREADY_CANONICALLY_CANCELLED"
+      },
+      {
+        "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+        "createdAt": "2026-09-17T02:12:25.690Z",
+        "consumed": false,
+        "cancelled": false,
+        "hasDevice": false,
+        "role": "EXACT_OWN_ABANDONED_SESSION_FROM_PHYSICAL_ATTEMPT"
+      }
+    ]
+  },
+  "deviceAndReverseReview": {
+    "preflightLabApkExact": true,
+    "preflightFixtureExact": true,
+    "preflightLocalIdentity": false,
+    "preflightPairingPending": false,
+    "preflightLocalAccounting": false,
+    "backendEnrollmentOccurred": false,
+    "reverseRemovalIndependentlyVerifiedAtAttemptCleanup": true,
+    "freshLiveRevalidationRequired": true
+  },
+  "disposition": {
+    "review": "ADMISSIBLE_ONLY_IF_EXACT_INVENTORY_AND_LIVE_STATE_MATCH",
+    "requiredBeforeNewQr": "CANONICAL_FINISH_PAIRING_FOR_EXACT_OPEN_SESSION",
+    "deleteEnrolledChild": false,
+    "rewriteHistoricalCleanup": false,
+    "policyOrLockHistoryAllowed": false,
+    "additionalOrChangedSessionAllowed": false
+  },
+  "preservedHistory": [
+    "d9157ae6-a6ff-4849-919f-c8f13fe08f7e",
+    "e888975a-207a-473f-a442-2a2895f02347",
+    "88af2a3b-bdfd-4d5b-b814-729facbac4a9",
+    "28756da0-cbcf-410b-9957-d7aade9afcf4"
+  ]
+}
