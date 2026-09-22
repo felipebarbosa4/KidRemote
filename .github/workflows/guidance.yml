@@ -8,7 +8,7 @@ on:
       - tools/validate-guidance.test.mjs
       - .github/workflows/guidance.yml
   push:
-    branches: [main, kr-product-enforcement-integration]
+    branches: [main]
     paths:
       - AGENTS.md
       - README.md
@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - run: node --test tools/validate-guidance.test.mjs
       - run: node tools/validate.mjs
       - run: git show --format= --check HEAD
