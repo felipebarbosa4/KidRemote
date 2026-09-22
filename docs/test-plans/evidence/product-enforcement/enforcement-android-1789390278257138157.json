@@ -1,0 +1,23 @@
+{
+  "scope": "OD49_OWNED_EMULATOR_SERVICE_FIXTURE",
+  "source": "5aee7ab8920f3a890b829905a4c88490b2ba474b",
+  "hashes": {
+    "app-debug.apk": "bb416b9e5c0d4b2957b2323914527c176ff8249c51282f34d8bb9126401e3354",
+    "app-debug-androidTest.apk": "82b08632f152ebf87bc910c0925a29d8d4641bdecfd60fe410402fd625461ece",
+    "child-debug.apk": "e776f68a0f2966417942fdb047f5e16ae5dc1eb1fcb2554bdd4d0c6824573d19",
+    "child-debug-androidTest.apk": "8f87ead9f0163282582fb6cae863b2a0facb7024442d0807618be70c3ed8cdbb"
+  },
+  "result": "NOT_PASSED",
+  "cleanup": "TASK_CHILD_DATA_CLEARED_SERVICE_TEST_RESTORED_SETTINGS",
+  "codes": [
+    "SERVICE_CONNECTED",
+    "WAIT_FAILED_LOCK_ATTACHED_OBSERVED",
+    "UNKNOWN_SURFACE_FAIL_OPEN"
+  ],
+  "failure": [
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26",
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26",
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26"
+  ],
+  "error": "AssertionError"
+}

@@ -1,0 +1,101 @@
+{
+  "observerVersion": 3,
+  "harnessSha256": "6d0276b78d837ef7125c1017f24d2b7193be46e1d1f8240dd4034c99a9c0923d",
+  "instrumentationNoRestart": true,
+  "scope": "OD49_HOST_RECOVERY_DIAGNOSIS",
+  "source": "0406a92e6e3120057d1e9cf975d693af75fcd145",
+  "hashes": {
+    "app-debug.apk": "bb416b9e5c0d4b2957b2323914527c176ff8249c51282f34d8bb9126401e3354",
+    "app-debug-androidTest.apk": "82b08632f152ebf87bc910c0925a29d8d4641bdecfd60fe410402fd625461ece",
+    "child-debug.apk": "d2b3448b5c5574dc4ec693fc1e09386bae6ca1082e42c8c68f6c8c5d870b7f2f",
+    "child-debug-androidTest.apk": "4884df5282bab2567c18176481273f666e5e502113c3c8bc0f20ddc4e1820e33"
+  },
+  "result": "DIAGNOSTIC_COMPLETED_ONLY",
+  "cleanup": "TASK_CHILD_DATA_CLEARED_SETTINGS_READBACK_VERIFIED",
+  "fixtureSha256": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+  "stages": [
+    {
+      "method": "killWhileRestricted",
+      "codes": [
+        "SERVICE_CONNECTED",
+        "LOCK_ATTACHED_OBSERVED",
+        "OBSERVATION_DURABLE_OFFLINE",
+        "UNLOCK_POSITIVE_DETACHED",
+        "CHILD_UI_USES_LIVE_LEDGER",
+        "ZERO_REQUIRES_ATTACHED",
+        "UNLOCK_ZERO_STILL_REQUIRED",
+        "PLUS10_CLEARS_EXPIRY_DETACHED",
+        "PLUS30_MANUAL_LOCK_ATTACHED",
+        "STALE_UNLOCK_REJECTED",
+        "SAFE_SURFACE_DETACHED",
+        "ORDINARY_REENTRY_ATTACHED",
+        "EXPECTED_PRODUCT_ENFORCEMENT_KILL"
+      ],
+      "failure": [],
+      "result": "EXPECTED_PROCESS_DEATH"
+    }
+  ],
+  "oldPid": 6127,
+  "timeOrigin": "HOST_INSTRUMENTATION_COMMAND_RETURN_AFTER_EXPECTED_DEATH",
+  "observations": [
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 1.763,
+      "pids": [
+        6330
+      ],
+      "stopped": "false",
+      "bound": false,
+      "boundLabel": false,
+      "systemBinding": true,
+      "servicePid": 6330,
+      "enabled": true,
+      "binding": false,
+      "crashed": true,
+      "instrumentationPresent": false
+    },
+    {
+      "phase": "AUTOMATIC_NO_INTERVENTION",
+      "elapsedSeconds": 4.773,
+      "pids": [
+        6330
+      ],
+      "stopped": "false",
+      "bound": true,
+      "boundLabel": true,
+      "systemBinding": true,
+      "servicePid": 6330,
+      "enabled": true,
+      "binding": false,
+      "crashed": false,
+      "instrumentationPresent": false
+    }
+  ],
+  "classification": "AUTOMATIC_RECOVERY_OBSERVED",
+  "firstObservedConnection": {
+    "phase": "AUTOMATIC_NO_INTERVENTION",
+    "elapsedSeconds": 4.773,
+    "pids": [
+      6330
+    ],
+    "stopped": "false",
+    "bound": true,
+    "boundLabel": true,
+    "systemBinding": true,
+    "servicePid": 6330,
+    "enabled": true,
+    "binding": false,
+    "crashed": false,
+    "instrumentationPresent": false
+  },
+  "verification": {
+    "codes": [
+      "NEW_PROCESS_SERVICE_CONNECTED",
+      "PROCESS_DEATH_RESTRICTION_REOBSERVED",
+      "PROCESS_DEATH_LEDGER_NO_RESET_OR_REPLAY",
+      "RESTART_REMOVAL_DETACHED"
+    ],
+    "failure": [],
+    "result": "PASS"
+  }
+}

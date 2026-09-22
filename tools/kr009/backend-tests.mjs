@@ -96,6 +96,15 @@ export async function testSync({http,sql,gatewayAvailable}) {
  ok((await send('/parent/devices/'+foreign.device_id+'/operations',undefined,a.token,'GET')).json.length===0,'FOREIGN_STATUS_RLS_EMPTY');
  const {testParentPresentation}=await import('../kr010/backend-tests.mjs');await testParentPresentation({http,own:a.token,foreign:b.token,device:d.device_id});
  const live=await enroll(a);const setup=await op('SET_DAILY_LIMIT',{daily_limit_seconds:3600},0,randomUUID(),live.device_id);ok(setup.status===200,'RUNTIME_CANONICAL_SETUP');
+ // OD-49 HTTP contract fixture: actual authenticated gateway/DB; no OS observation is claimed here.
+ const canonical=(await sync(live)).json;
+ const adapterReport={protocol_version:1,device_id:live.device_id,policy_epoch:live.policy_epoch,applied_version:1,report_sequence:1,period_key:canonical.period_key,used_ms:0,bonus_seconds:0,remaining_ms:3600000,manual_lock:false,restriction_required:false,restriction_applied:false,health:'UNRESTRICTED_OBSERVED',accounting_status:'NONE',observed_at:canonical.server_utc};
+ let er=await send('/device/ack',adapterReport,live.credential);ok(er.status===200,'OD49_UNRESTRICTED_REPORT');
+ const observedRetry=await send('/device/ack',adapterReport,live.credential);ok(JSON.stringify(er.json)===JSON.stringify(observedRetry.json),'OD49_ACK_RETRY_ORIGINAL');
+ ok((await send('/parent/devices/'+live.device_id+'/operations',undefined,a.token,'GET')).json[0].status==='applied','OD49_OBSERVED_STATUS');
+ ok((await send('/device/ack',{...adapterReport,report_sequence:2,restriction_applied:true,health:'ADAPTER_FAILED'},live.credential)).status===400,'OD49_FAILED_CANNOT_CLAIM_APPLIED');
+ // Restore an unreported fresh runtime identity: HTTP fixture never contaminates Android ledger/version.
+ const runtimeIdentity=await enroll(a);ok((await op('SET_DAILY_LIMIT',{daily_limit_seconds:3600},0,randomUUID(),runtimeIdentity.device_id)).status===200,'OD49_RUNTIME_SETUP');
  console.log('KR009_REAL_HTTP_PASS:assertions='+count+':replays=100:storage=POSTGRES:auth=REAL:push=NONE');
- return {identity:live,operation:(kind,payload,expected)=>op(kind,payload,expected,randomUUID(),live.device_id),ownSync:()=>sync(live),readStatus:()=>send('/parent/devices/'+live.device_id+'/operations',undefined,a.token,'GET')};
+ return {identity:runtimeIdentity,operation:(kind,payload,expected)=>op(kind,payload,expected,randomUUID(),runtimeIdentity.device_id),ownSync:()=>sync(runtimeIdentity),readStatus:()=>send('/parent/devices/'+runtimeIdentity.device_id+'/operations',undefined,a.token,'GET')};
 }

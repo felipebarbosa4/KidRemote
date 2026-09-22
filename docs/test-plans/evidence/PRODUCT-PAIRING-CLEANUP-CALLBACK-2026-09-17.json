@@ -1,0 +1,66 @@
+{
+  "scope": "OD51_PAIRING_CLEANUP_CALLBACK_RECOVERY",
+  "attempt": "a2f91a25-0acc-4fff-848d-10fa99e5af53",
+  "source": "b541595a33eee5ae3a4eecd6385780ae906426b7",
+  "manifestSha256": "9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68",
+  "hostDiagnostic": "f990aa76-1438-4b86-aa2d-3d44e8a689ea",
+  "observedJournalStages": [
+    "BEGIN",
+    "PAIRING_CLEANUP_ADMITTED",
+    "REVERSE_ADMITTED",
+    "VERDICT",
+    "CLEANUP"
+  ],
+  "lastAdmittedStage": "REVERSE_ADMITTED",
+  "enrollmentAdmitted": false,
+  "setupAdmitted": false,
+  "policyAdmitted": false,
+  "lockAdmitted": false,
+  "observedResult": {
+    "hostValidated": true,
+    "hostFailureStage": "NONE",
+    "hostFailureCode": "NONE",
+    "preparationFailureStage": "PAIRING_SESSION_CLEANUP",
+    "preparationFailureCode": "PREPARATION_ORCHESTRATION_FAILED",
+    "primaryStatus": "INVALID",
+    "primaryReason": "INVALID:PREPARATION_ORCHESTRATION_FAILED",
+    "primaryCleanup": "UNVERIFIED",
+    "backendCleanup": "STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED",
+    "reverseCleanup": "NOT_CREATED"
+  },
+  "readOnlyBackendObservation": {
+    "devices": 0,
+    "activeCredentials": 0,
+    "configuredPolicies": 0,
+    "manualLocks": 0,
+    "reports": 0,
+    "pairingSessions": [
+      {
+        "id": "6d703893-dbf0-47d2-b96d-99495159c7af",
+        "consumed": false,
+        "cancelled": true,
+        "device": false
+      },
+      {
+        "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+        "consumed": false,
+        "cancelled": true,
+        "device": false
+      }
+    ]
+  },
+  "rootCause": {
+    "status": "OBSERVED_HOST_REPRODUCTION",
+    "boundary": "REVERSE_CALLBACK_ENTRY",
+    "exceptionType": "COMMAND_NOT_FOUND",
+    "missingPrivateCommand": "Set-ProductPreparationStage",
+    "explanation": "Windows PowerShell 5.1 GetNewClosure created a dynamic module that could not resolve the private stage setter by command name."
+  },
+  "preservation": {
+    "record": "%LOCALAPPDATA%/KidRemote/product-attempt-preservations/a2f91a25-0acc-4fff-848d-10fa99e5af53/hashes.json",
+    "recordSha256": "121de0748dcc5271533a4b4cd76e71f5460167401d130887ec24508891bc0f65",
+    "readOnly": true
+  },
+  "deviceMutationDuringDiagnosis": false,
+  "backendMutationDuringDiagnosis": false
+}
