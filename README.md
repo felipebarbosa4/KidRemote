@@ -1,49 +1,42 @@
 # KidRemote
 
-A working codename for simple parental screen-time control. Final product name: **UNSPECIFIED**.
+Simple parental screen-time control without surveillance.
 
-Parent Android app → paired child Android devices → remaining time, +10 / +30 minutes, Lock, Unlock.
-The child executes downloaded rules locally, including when offline.
+Parent Android app -> enrolled child devices -> remaining time, +10 / +30 minutes, Lock, Unlock. The child executes already-downloaded policy locally, including offline. A new remote command still needs connectivity.
 
-## Current state
+## Current development
 
-Architecture and planning scaffold, verified against official documentation on **2026-09-05**.
-KR-001/002 are complete and KR-003 now has an isolated, disposable Android enforcement test harness.
-Bounded [Mi 8 physical evidence](docs/test-plans/evidence/KR-003-MI8-2026-09-06.md) exists; that configuration's active-oracle transport is blocked.
-The authorized [Samsung SM-X400 / Android 16 transport passed](docs/test-plans/evidence/KR-003-SAMSUNG-TRANSPORT-CALIBRATION-2026-09-08.md), followed by a configuration-specific [runner-v5 calibration PASS](docs/test-plans/evidence/KR-003-SAMSUNG-ORACLE-CALIBRATION-PASS-2026-09-08.md). Later qualification attempts retained multiple 100-row automated PASS sets but stopped FAIL or INVALID at checkpoint 3; every run remains independently classified and non-poolable. OD-39 prospectively approves a dual-path Home safety gate. The short [excluded Path-B diagnostic passed](docs/test-plans/evidence/KR-003-SAMSUNG-DUAL-HOME-DIAGNOSTIC-PASS-2026-09-10.md) on this exact configuration with zero qualification/TIME-04 rows and no matrix contribution. The unchanged [immutable runner-v12 full bundle](docs/test-plans/evidence/KR-003-SAMSUNG-QUALIFICATION-V12-DUAL-HOME-BUNDLE-2026-09-09.md) remains physically unexecuted. The KR-003 qualification gate remains open.
-OD-41 now permits one prospective owner-local visual-channel calibration to test whether known ordinary/restricted/ordinary surfaces can be classified with measured temporal bounds and independent fixture agreement. Its [immutable excluded bundle](docs/test-plans/evidence/KR-003-SAMSUNG-VISUAL-CALIBRATION-BUNDLE-2026-09-10.md) is published but physically **Not run**. This does not change the production capture prohibition or qualify any matrix row.
-No production application, backend deployment, database exposure or Play approval exists.
+**Start with the [current execution and authority summary](https://github.com/felipebarbosa4/KidRemote/blob/kr-product-enforcement-integration/docs/exec-plans/TASK-CONTRACT.md#current-execution).**
 
-The [visual validity review](docs/test-plans/KR-003-VISUAL-VALIDITY-REVIEW.md) limits unchanged visual bundle `0596173` to exploratory sampled-channel measurements: self-fitted group separation and sample span do not prove expected restriction identity or continuous visibility. No human checkpoint replacement or physical execution is requested.
+The local product implementation is on `kr-product-enforcement-integration`, in [draft PR #24](https://github.com/felipebarbosa4/KidRemote/pull/24), stacked on `kr-010-local-parent-controls`. `main` remains the bootstrap implementation; this routing update does not merge the development stack. Check live refs before working and preserve any existing worktree changes.
 
-Read [the architecture-pass report](docs/REPORT.md) in the requested A–I order, then:
+The stack includes local parent authentication/controls, child enrollment/accounting/sync, and candidate enforcement integration. Implementation, automated validation, physical observation, and approval are different states. KR-003 and remaining physical acceptance are open; no production readiness, general Android support, real-family-use, deployment or Play approval is claimed.
 
-| Need | Source of truth |
+The latest classified physical attempt in the audited implementation baseline is documented in the [pairing-cleanup callback review](https://github.com/felipebarbosa4/KidRemote/blob/kr-product-enforcement-integration/docs/test-plans/evidence/PRODUCT-PAIRING-CLEANUP-CALLBACK-2026-09-17.md). The earlier `b541595` handoff was subsequently executed and failed; do not reuse its old READY/NOT_RUN description or command. Current source, a frozen bundle, and an executed physical attempt must each be identified separately.
+
+## Work on KidRemote
+
+Read [AGENTS.md](AGENTS.md), then the current execution summary and the relevant existing KR issue. Continue the approved bounded product work; do not restart the initial architecture pass or default to optional KR-003 visual tooling. The original [Sprint 01](docs/exec-plans/SPRINT-01.md) and [architecture report](docs/REPORT.md) are dated history, not instructions to replay their former next steps.
+
+| Need | Repository reference |
 | --- | --- |
-| MVP and unknowns | [Product](docs/PRODUCT.md), [decisions](docs/DECISIONS.md) |
-| Components and boundaries | [Architecture](docs/ARCHITECTURE.md) |
-| State, time, backend | [State machine](docs/product-specs/STATE-MACHINE.md), [local time](docs/product-specs/LOCAL-TIME.md), [backend](docs/product-specs/BACKEND.md) |
-| High-risk decisions | [ADRs](docs/adr/README.md), [Play assessment](docs/POLICY.md) |
-| Threats and data | [Security](docs/SECURITY.md), [privacy](docs/PRIVACY.md) |
-| Wire contract | [Protocol](packages/protocol/CONTRACT.md) |
-| UI concepts | [Design system](docs/design/DESIGN-SYSTEM.md), [five wireframes](docs/design/wireframes.html), [three store concepts](docs/design/STORE-CONCEPTS.md) |
-| Bounded work | [Ten issues](docs/github/ISSUES.md), [Project setup](docs/github/PROJECT.md), [first sprint](docs/exec-plans/SPRINT-01.md) |
-| Evidence and validation | [References](docs/REFERENCES.md), [test matrix](docs/test-plans/MATRIX.md), [capacity](docs/test-plans/CAPACITY.md) |
-| Current feasibility spike | [Android enforcement spike](spikes/android-enforcement/README.md), [KR-003 physical protocol](docs/test-plans/KR-003-PHYSICAL.md) |
+| Product and approved choices | [PRODUCT](docs/PRODUCT.md), [DECISIONS](docs/DECISIONS.md) |
+| Architecture and wire semantics | [ARCHITECTURE](docs/ARCHITECTURE.md), [state machine](docs/product-specs/STATE-MACHINE.md), [protocol](packages/protocol/CONTRACT.md) |
+| Security, privacy and platform gates | [SECURITY](docs/SECURITY.md), [PRIVACY](docs/PRIVACY.md), [POLICY](docs/POLICY.md), [ADRs](docs/adr/README.md) |
+| Acceptance and existing backlog | [Test matrix](docs/test-plans/MATRIX.md), [issues](docs/github/ISSUES.md) |
+| Component validation and environment | [Tooling](docs/TOOLING.md), current task contract |
 
-## Validate the planning scaffold
+These local links describe the checked-out revision. For current implementation work, use the active branch rather than treating older `main` documents as its current status.
+
+## Validation
+
+Repository-local shell, from the checkout root:
 
 ```sh
 node tools/validate.mjs
 git diff --check
-node tools/publish-planning.mjs
 ```
 
-The last command is a dry run. GitHub creation status and exact apply commands are in [Project setup](docs/github/PROJECT.md).
-Production application/library versions remain **UNSPECIFIED**. KR-003 alone pins its disposable compatible Android toolchain;
-see [tooling](docs/TOOLING.md).
+These check repository contracts and hygiene, not physical enforcement. Run the component-specific tests required by the current task as well. Do not install to a device, provision infrastructure, accept licences, or change host configuration merely to make a documentation check pass.
 
-## Pick up a task
-
-Read [AGENTS.md](AGENTS.md), continue the active KR-003 feasibility issue, and use its Goal / Context / Constraints / Done when.
-Record evidence in the repository. Never turn an unrun test or a proposed ADR into a passed launch gate.
+Final brand and public distribution configuration remain separate owner decisions. KidRemote is a working codename.
