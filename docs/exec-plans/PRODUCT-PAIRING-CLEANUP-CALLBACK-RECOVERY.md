@@ -38,7 +38,8 @@ and its exact `OPEN -> CANCELLED` pairing transition.
 reuse previously frozen runtime/QR bytes after exact prior-manifest/source-equivalence
 validation instead of mutable host Node or ephemeral `/tmp` outputs, add regressions for
 both boundaries, run the relevant device-free tests, then publish/freeze a replacement
-only after exact-source CI passes.
+only after the exact-source `Planning checks` workflow passes; the lighter guidance
+workflow is not sufficient admission.
 
 **Evidence boundary:** this correction is host/repository preparation only. It does not
 reclassify any physical attempt, prove Samsung enforcement, authorize another device,
