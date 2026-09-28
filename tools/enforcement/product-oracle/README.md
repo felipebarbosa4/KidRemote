@@ -48,6 +48,10 @@ remain immutable and cannot be silently resumed or replaced.
 Owner publication is conditional on all current-source CI and device-free checks,
 then `../physical-lab/freeze.mjs` freezes all source/runtime/APK hashes. The immutable
 manifest says `READY_FOR_ONE_OWNER_RUN` only for a safe attempt, never physical PASS.
+The freezer reuses runtime/QR bytes only from the previously frozen `b541595a`
+bundle after verifying its exact manifest and file hashes; it does not adopt a later
+host Node/JBR update or depend on ephemeral `/tmp` build outputs. `HostQr.java` must
+remain source-equivalent or freezing stops for a deliberate rebuild/review.
 See the [current execution contract](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution)
 and [latest callback evidence](../../../docs/test-plans/evidence/PRODUCT-PAIRING-CLEANUP-CALLBACK-2026-09-17.md)
 for the controlling readiness boundary and latest physical classification.

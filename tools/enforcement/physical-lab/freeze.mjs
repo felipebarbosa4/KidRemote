@@ -7,24 +7,36 @@ import {resolve,join,dirname,relative} from 'node:path';import {createHash} from
 import {compatibility} from './compatibility.mjs';
 const root=process.argv[2];if(!root)throw Error('OWNER_LOCAL_DESTINATION_REQUIRED');
 const git=args=>execFileSync('git',args,{encoding:'utf8'}).trim();
+const sha=b=>createHash('sha256').update(b).digest('hex');
 if(git(['status','--porcelain']))throw Error('CLEAN_COMMITTED_SOURCE_REQUIRED');
 const source=git(['rev-parse','HEAD']);
 const runs=JSON.parse(execFileSync('gh',['run','list','--branch','kr-product-enforcement-integration','--limit','12','--json','headSha,status,conclusion,databaseId'],{encoding:'utf8'}));
 const ci=runs.find(r=>r.headSha===source&&r.status==='completed'&&r.conclusion==='success');if(!ci)throw Error('CURRENT_SOURCE_REQUIRED_CI_NOT_PASSED');
 const dir=resolve(root,source);if(existsSync(dir))throw Error('IMMUTABLE_DESTINATION_ALREADY_EXISTS');
-const sha=b=>createHash('sha256').update(b).digest('hex');
+const priorSource='b541595a33eee5ae3a4eecd6385780ae906426b7';
+const priorManifestSha='9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68';
+const priorDir=resolve(root,priorSource),priorManifestPath=join(priorDir,'bundle.json');
+if(!existsSync(priorManifestPath)||sha(readFileSync(priorManifestPath))!==priorManifestSha)throw Error('PRIOR_BUNDLE_MANIFEST_MISMATCH');
+const priorManifest=JSON.parse(readFileSync(priorManifestPath,'utf8'));
+if(priorManifest.source!==priorSource||priorManifest.readiness!=='READY_FOR_ONE_OWNER_RUN'||!Array.isArray(priorManifest.files))throw Error('PRIOR_BUNDLE_SCHEMA_MISMATCH');
+const priorFiles=new Map(priorManifest.files.map(f=>[f.name,f.sha256]));
+function priorInput(name){const p=join(priorDir,name),expected=priorFiles.get(name);if(!expected||!existsSync(p)||sha(readFileSync(p))!==expected)throw Error('PRIOR_BUNDLE_FILE_MISMATCH');return p;}
+const currentHostQr='tools/enforcement/product-oracle/HostQr.java',priorHostQr=join(priorDir,'source',currentHostQr);
+if(!existsSync(priorHostQr)||sha(readFileSync(currentHostQr))!==sha(readFileSync(priorHostQr)))throw Error('HOST_QR_SOURCE_CHANGED_REBUILD_REQUIRED');
 const inputs={
  'lab-reference.apk':['apps/child-android/build/outputs/product-lab/668ab87a22591319afd43167d55ef9ac0909c1b3/child-physical-lab.apk','f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56'],
  'fixture-reference.apk':['spikes/android-enforcement/ordinary-fixture/build/outputs/apk/debug/ordinary-fixture-debug.apk','223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'],
- 'runtime/node-LICENSE':['/tmp/od51-runtime-notices/node-LICENSE','4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18'],
- 'runtime/node.exe':['/mnt/c/Program Files/nodejs/node.exe','63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088'],
- 'runtime/apksigner.jar':['/mnt/c/Users/3feli/AppData/Local/Android/Sdk/build-tools/37.0.0/lib/apksigner.jar','2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'],
- 'zxing-core.jar':['/home/felby/.gradle/caches/modules-2/files-2.1/com.google.zxing/core/3.5.4/955fcd6bcd0723ddfb8ee6ed502d5fdf0e9676a9/core-3.5.4.jar',null],
- 'host-qr.jar':['/tmp/od51-host-qr/host-qr.jar',null],
+ 'runtime/node-LICENSE':[priorInput('runtime/node-LICENSE'),'4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18'],
+ 'runtime/node.exe':[priorInput('runtime/node.exe'),'63c259c81e5d472b5f11c8d506070130cb04a1ecf84b80377a34ed6ec9048088'],
+ 'runtime/apksigner.jar':[priorInput('runtime/apksigner.jar'),'2defad215d7ff52968a409cde528cdaef7918b115e276b8e3378ca7a178e4180'],
+ 'zxing-core.jar':[priorInput('zxing-core.jar'),'71de5d89341b5fcf5dd89da7f44e84d825d0e084cdf3ec77c9abe26b0f0ceb13'],
+ 'host-qr.jar':[priorInput('host-qr.jar'),'c82849f4ba90a8cf1a922f5ad606c0dd10a9cd149000760e213127fed989877e'],
 };
 for(const [path,hash] of Object.values(inputs))if(hash&&sha(readFileSync(path))!==hash)throw Error('INPUT_PROVENANCE_MISMATCH');
-const jbr='/mnt/c/Program Files/Android/Android Studio/jbr';
-if(sha(readFileSync(join(jbr,'bin/java.exe')))!=='7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a')throw Error('JAVA_PROVENANCE_MISMATCH');
+const jbr=join(priorDir,'runtime/jbr');
+if(sha(readFileSync(priorInput('runtime/jbr/bin/java.exe'))) !== '7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a')throw Error('JAVA_PROVENANCE_MISMATCH');
+function verifyPriorTree(path){for(const f of readdirSync(path)){const p=join(path,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())verifyPriorTree(p);else{const name=relative(priorDir,p).replaceAll('\','/'),expected=priorFiles.get(name);if(!expected||sha(readFileSync(p))!==expected)throw Error('PRIOR_BUNDLE_FILE_MISMATCH');}}}
+verifyPriorTree(jbr);
 mkdirSync(dir,{recursive:true});writeFileSync(join(dir,'.incomplete'),'NOT_OWNER_READY',{flag:'wx'});
 function copy(from,to){mkdirSync(dirname(to),{recursive:true});if(/\.ps(m)?1$/i.test(to)){const b=readFileSync(from);writeFileSync(to,b.subarray(0,3).equals(Buffer.from([239,187,191]))?b:Buffer.concat([Buffer.from([239,187,191]),b]));}else copyFileSync(from,to);}
 const tracked=git(['ls-files','-z']).split('\0');for(const f of tracked){if(!f)continue;copy(f,join(dir,'source',f));}
@@ -36,7 +48,7 @@ writeFileSync(join(dir,'backend-compatibility.json'),JSON.stringify({...compatib
 const files=[];function inventory(path){for(const f of readdirSync(path).sort()){if(f==='.incomplete')continue;const p=join(path,f);if(lstatSync(p).isDirectory())inventory(p);else{const name=relative(dir,p).replaceAll('\\','/');if(!/^[A-Za-z0-9_./-]+$/.test(name))throw Error('BUNDLE_FILENAME');files.push({name,sha256:sha(readFileSync(p))});}}}inventory(dir);
 const manifest={scope:'OD51_ONE_PERSISTENT_LAB_PRODUCT_SLICE',readiness:'READY_FOR_ONE_OWNER_RUN',source,ci:ci.databaseId,files,
  javaSha256:'7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a',apksignerSha256:inputs['runtime/apksigner.jar'][1],
- runtimes:{node:{version:'24.14.0',sha256:inputs['runtime/node.exe'][1]},java:{version:'25.0.3+-15898627-b508.16',allFilesHashed:true},zxing:{version:'3.5.4'},hostQr:{compiledFrom:source}},
+ runtimes:{node:{version:'24.14.0',sha256:inputs['runtime/node.exe'][1]},java:{version:'25.0.3+-15898627-b508.16',allFilesHashed:true},zxing:{version:'3.5.4'},hostQr:{compiledFrom:priorSource,sourceEquivalentTo:source}},runtimeProvenance:{reusedFromBundle:priorSource,manifestSha256:priorManifestSha},
  old:{package:'dev.kidremote.child.unassigned.debug',versionCode:1,sha256:'3ff9962ec6bf55eab20eda993e879112be9c04a3ed7c00e8287fc7660ad63ac9',signer:'771bc0fa9b91aecba8fd2d0e7d1e3af27237840198327731e098bb83dcbc97d7'},
  lab:{source:'668ab87a22591319afd43167d55ef9ac0909c1b3',package:'dev.kidremote.child.unassigned.debug',versionCode:2,versionName:'0.0.2-local-physical-lab',sha256:inputs['lab-reference.apk'][1],signer:'638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb',service:'dev.kidremote.child.unassigned.debug/dev.kidremote.child.enforcement.ChildEnforcementService',endpoint:'http://127.0.0.1:47366'},
  fixture:{package:'dev.kidremote.spike.ordinary',sha256:inputs['fixture-reference.apk'][1]},

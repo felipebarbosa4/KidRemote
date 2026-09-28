@@ -35,8 +35,10 @@ as open. The reviewed-attempt catalog already contains the later `a2f91a25` INVA
 and its exact `OPEN -> CANCELLED` pairing transition.
 
 **Action:** align only freezer metadata/current runner guidance with the reviewed history,
-add a regression that rejects the stale open-session description, run the relevant
-device-free tests, then publish/freeze a replacement only after exact-source CI passes.
+reuse previously frozen runtime/QR bytes after exact prior-manifest/source-equivalence
+validation instead of mutable host Node or ephemeral `/tmp` outputs, add regressions for
+both boundaries, run the relevant device-free tests, then publish/freeze a replacement
+only after exact-source CI passes.
 
 **Evidence boundary:** this correction is host/repository preparation only. It does not
 reclassify any physical attempt, prove Samsung enforcement, authorize another device,
