@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';
+execFileSync(process.execPath,['--check','tools/enforcement/physical-lab/freeze.mjs']);
 import {compatibility,authorizeCompatibility} from './compatibility.mjs';
 const root=process.cwd(),legacy=JSON.parse(readFileSync('tools/enforcement/physical-lab/legacy-compatibility.json'));
 test('legacy source is independently recomputed from exact git objects',()=>{const old=compatibility(root,p=>execFileSync('git',['show',legacy.source+':'+p]));assert.equal(old.digest,legacy.digest);assert.equal(compatibility(root).digest,legacy.digest);});

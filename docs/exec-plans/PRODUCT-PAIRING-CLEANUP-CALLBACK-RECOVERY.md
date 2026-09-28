@@ -44,3 +44,8 @@ workflow is not sufficient admission.
 **Evidence boundary:** this correction is host/repository preparation only. It does not
 reclassify any physical attempt, prove Samsung enforcement, authorize another device,
 or replace the required independent physical oracle and human consent/observation.
+
+**Freeze admission observation:** the first post-CI freeze invocation at source `ee09dda`
+stopped in Node parsing with a backslash-literal `SyntaxError`, before bundle directory
+creation. The exact destination was confirmed absent and no ADB/Docker/device operation
+occurred. Add `node --check` coverage to the freezer test before another freeze attempt.

@@ -35,7 +35,7 @@ const inputs={
 for(const [path,hash] of Object.values(inputs))if(hash&&sha(readFileSync(path))!==hash)throw Error('INPUT_PROVENANCE_MISMATCH');
 const jbr=join(priorDir,'runtime/jbr');
 if(sha(readFileSync(priorInput('runtime/jbr/bin/java.exe'))) !== '7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a')throw Error('JAVA_PROVENANCE_MISMATCH');
-function verifyPriorTree(path){for(const f of readdirSync(path)){const p=join(path,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())verifyPriorTree(p);else{const name=relative(priorDir,p).replaceAll('\','/'),expected=priorFiles.get(name);if(!expected||sha(readFileSync(p))!==expected)throw Error('PRIOR_BUNDLE_FILE_MISMATCH');}}}
+function verifyPriorTree(path){for(const f of readdirSync(path)){const p=join(path,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())verifyPriorTree(p);else{const name=relative(priorDir,p).split(String.fromCharCode(92)).join('/'),expected=priorFiles.get(name);if(!expected||sha(readFileSync(p))!==expected)throw Error('PRIOR_BUNDLE_FILE_MISMATCH');}}}
 verifyPriorTree(jbr);
 mkdirSync(dir,{recursive:true});writeFileSync(join(dir,'.incomplete'),'NOT_OWNER_READY',{flag:'wx'});
 function copy(from,to){mkdirSync(dirname(to),{recursive:true});if(/\.ps(m)?1$/i.test(to)){const b=readFileSync(from);writeFileSync(to,b.subarray(0,3).equals(Buffer.from([239,187,191]))?b:Buffer.concat([Buffer.from([239,187,191]),b]));}else copyFileSync(from,to);}
@@ -45,7 +45,7 @@ function tree(from,to){for(const f of readdirSync(from)){const p=join(from,f),ou
 tree(jbr,join(dir,'runtime/jbr'));
 copy('tools/enforcement/product-oracle/Run-ProductReplacement.ps1',join(dir,'Start-ProductSlice.ps1'));
 writeFileSync(join(dir,'backend-compatibility.json'),JSON.stringify({...compatibility('.'),source}));
-const files=[];function inventory(path){for(const f of readdirSync(path).sort()){if(f==='.incomplete')continue;const p=join(path,f);if(lstatSync(p).isDirectory())inventory(p);else{const name=relative(dir,p).replaceAll('\\','/');if(!/^[A-Za-z0-9_./-]+$/.test(name))throw Error('BUNDLE_FILENAME');files.push({name,sha256:sha(readFileSync(p))});}}}inventory(dir);
+const files=[];function inventory(path){for(const f of readdirSync(path).sort()){if(f==='.incomplete')continue;const p=join(path,f);if(lstatSync(p).isDirectory())inventory(p);else{const name=relative(dir,p).split(String.fromCharCode(92)).join('/');if(!/^[A-Za-z0-9_./-]+$/.test(name))throw Error('BUNDLE_FILENAME');files.push({name,sha256:sha(readFileSync(p))});}}}inventory(dir);
 const manifest={scope:'OD51_ONE_PERSISTENT_LAB_PRODUCT_SLICE',readiness:'READY_FOR_ONE_OWNER_RUN',source,ci:ci.databaseId,files,
  javaSha256:'7148521120f35659dc0b233358a107c67ca7ca92993391519660ee6c80a9df9a',apksignerSha256:inputs['runtime/apksigner.jar'][1],
  runtimes:{node:{version:'24.14.0',sha256:inputs['runtime/node.exe'][1]},java:{version:'25.0.3+-15898627-b508.16',allFilesHashed:true},zxing:{version:'3.5.4'},hostQr:{compiledFrom:priorSource,sourceEquivalentTo:source}},runtimeProvenance:{reusedFromBundle:priorSource,manifestSha256:priorManifestSha},
