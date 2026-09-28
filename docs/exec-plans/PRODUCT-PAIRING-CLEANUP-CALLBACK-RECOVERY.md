@@ -25,3 +25,19 @@
   immutable bundle is frozen, and the physical slice reaches a verified result
   or a genuine human-interaction blocker.
 
+## Resumption - 2026-09-28
+
+**OBSERVED:** the clean integration checkout resumed at `db890983e801913f1c3bce66b32277ce2b411d2f`.
+The callback correction and its exact-source CI were already complete, but the immutable
+freezer still described only the older `d9157ae6` and `28756da0` attempts, still
+called the latter verdict latest, and still described its now-resolved pairing session
+as open. The reviewed-attempt catalog already contains the later `a2f91a25` INVALID
+and its exact `OPEN -> CANCELLED` pairing transition.
+
+**Action:** align only freezer metadata/current runner guidance with the reviewed history,
+add a regression that rejects the stale open-session description, run the relevant
+device-free tests, then publish/freeze a replacement only after exact-source CI passes.
+
+**Evidence boundary:** this correction is host/repository preparation only. It does not
+reclassify any physical attempt, prove Samsung enforcement, authorize another device,
+or replace the required independent physical oracle and human consent/observation.

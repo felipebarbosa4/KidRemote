@@ -2,11 +2,15 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED**. Immutable source/bundle `07cf5e1` stopped
-read-only at `INVALID_PARTIAL_STATE_REVIEW_REQUIRED` with no tablet mutation. Its
-schema proves `NO_UNKNOWN_FILES=false` but did not persist enough information to
-distinguish an unknown-file count from a metadata-read failure. The source is retired;
-there is no replacement command. See the [predicate diagnosis](../../../docs/test-plans/evidence/PRODUCT-RESUME-PREDICATE-DIAGNOSIS-2026-09-16.md).
+Current physical handoff is **NOT PUBLISHED**. The latest classified attempt
+`a2f91a25-0acc-4fff-848d-10fa99e5af53`, from bundle source `b541595a`,
+remains `INVALID:PREPARATION_ORCHESTRATION_FAILED` with cleanup `UNVERIFIED`.
+It admitted no enrollment, setup, policy or lock. The task-owned backend review
+records both reviewed device-less pairing sessions cancelled. A host-only
+reproduction found the PowerShell closure callback defect; source `e066e87`
+contains the correction and passed its required CI. No later physical success is
+implied and no replacement owner command exists until a current-source immutable
+bundle is frozen. See the [callback recovery evidence](../../../docs/test-plans/evidence/PRODUCT-PAIRING-CLEANUP-CALLBACK-2026-09-17.md).
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
@@ -44,8 +48,9 @@ remain immutable and cannot be silently resumed or replaced.
 Owner publication is conditional on all current-source CI and device-free checks,
 then `../physical-lab/freeze.mjs` freezes all source/runtime/APK hashes. The immutable
 manifest says `READY_FOR_ONE_OWNER_RUN` only for a safe attempt, never physical PASS.
-See [current evidence](../../../docs/test-plans/evidence/PRODUCT-PERSISTENT-LAB-2026-09-14.md)
-for the actual readiness verdict, failures and immutable bundle identity.
+See the [current execution contract](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution)
+and [latest callback evidence](../../../docs/test-plans/evidence/PRODUCT-PAIRING-CLEANUP-CALLBACK-2026-09-17.md)
+for the controlling readiness boundary and latest physical classification.
 
 The [OD-50 preparation](../../../docs/test-plans/evidence/PRODUCT-REPLACEMENT-PREPARATION-2026-09-14.md)
 remains historical: its failed Windows→WSL supervisor, disposable enrollment limitation
