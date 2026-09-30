@@ -21,7 +21,7 @@ At server time 19:06:40.287846Z, the main synthetic household had zero devices. 
 
 ## Source-derived screen meaning; current device state UNKNOWN
 
-[ChildActivity](../../../apps/child-android/src/main/java/dev/kidremote/child/ChildActivity.kt) displays `ResponsÃ¡vel revogou; usar novo QR` only on its pairing-recovery branch. [EnrollmentModel](../../../apps/child-android/src/main/java/dev/kidremote/child/Enrollment.kt) uses a generic recovery message when identity/contact work throws. Multiple failures share that message. The owner's approximate recollection does not identify the exact exception.
+[ChildActivity](../../../apps/child-android/src/main/java/dev/kidremote/child/ChildActivity.kt) displays `Responsável revogou; usar novo QR` only on its pairing-recovery branch. [EnrollmentModel](../../../apps/child-android/src/main/java/dev/kidremote/child/Enrollment.kt) uses a generic recovery message when identity/contact work throws. Multiple failures share that message. The owner's approximate recollection does not identify the exact exception.
 
 The button acknowledges a prior parent revocation; it does not call the backend to revoke a session. Its handler can remove the local pending marker only when no identity file exists. Do not click it to diagnose the issue or assume it has already revoked anything. Local identity/pending/accounting metadata and current reverse state remain UNKNOWN until a separate device observation. No screenshot, credential read or logcat capture is needed.
 
