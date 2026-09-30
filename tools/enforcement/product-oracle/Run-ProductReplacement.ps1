@@ -44,6 +44,7 @@ try{
   }
  }
  $historyAttemptIds=@($historyReviews|ForEach-Object{$_.attempt})
+ $interruptedHistory=@($historyReviews|Where-Object{$_.PSObject.Properties.Name -contains 'reviewKind' -and $_.reviewKind -ceq 'INTERRUPTED_PRE_SETUP'}).Count -gt 0
  $directory=New-ProductJournal $root $source $ExpectedManifestHash 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc' $true
  $temporary=Join-Path $directory 'temporary';[void][IO.Directory]::CreateDirectory($temporary)
  Write-Host 'Preparando backend local isolado; nenhuma substituição do tablet foi admitida ainda.'
@@ -90,18 +91,23 @@ try{
    }
    $d=if($devices.Count -eq 1){$devices[0]}else{$null}
    $historySafe=(-not $historicalPartial) -or ($historyBackendSafe -and -not $identity -and -not $pending -and -not $accounting)
+   # An unfinished pre-setup review never authorizes reset, replacement or reuse.
+   if($interruptedHistory){$historySafe=$historySafe -and (Test-InterruptedEnrollmentLiveState $metadata $devices $saved $lab)}
    $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$historySafe;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
    # Historical replacement explicitly authorizes loss of old unknown files, only on OLD path.
    if(-not $lab -and -not $historicalPartial){$facts.metadataKnown=$true;$facts.noUnknownFiles=$true}
    $h.resolution=Resolve-ProductPreparation $facts;$preparation=$h.resolution
    Write-ResumeReview $directory $historyAttemptIds $h.backend.compatibility $h.resolution
    if($h.resolution.path -ceq 'NONE'){throw 'INVALID:INVALID_PARTIAL_STATE_REVIEW_REQUIRED'}
+   if($interruptedHistory -and $h.resolution.path -cne 'ENROLL'){throw 'INVALID:INTERRUPTED_HISTORY_REQUIRES_EMPTY_ENROLLMENT'}
    $h.reuse=$h.resolution.path -ceq 'VERIFY_REUSE'
    $h.live.state.new=$lab
 
   }
  }
  try{Invoke-ProductHostGate $gate;$hostValidated=$true}finally{$backend=$h.backend;$backendAttempted=$h.backendAttempted;$serial=$h.serial;$live=$h.live;$reuse=$h.reuse;$preparation=$h.resolution}
+ # Recheck pinned old bytes after live preflight and before any new admission.
+ foreach($reviewedHistory in $historyReviews){if(-not(Get-ResumableHistoryReview (Join-Path $root $reviewedHistory.attempt))){throw 'INVALID:HISTORY_CHANGED_AFTER_PREFLIGHT'}}
  $jwt=$backend.jwt
  if(-not $hostValidated){throw 'INVALID:INVALID_HOST_PREFLIGHT'}
  $review=$backend.review

@@ -1,5 +1,42 @@
 Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
+Import-Module (Join-Path $PSScriptRoot '../update-review/ProductRuntimeCatalog.psm1')
+Import-Module (Join-Path $PSScriptRoot '../update-review/ProductRuntimeOemOverlay.psm1')
+function Test-InterruptedEnrollmentObservation($Review,[string]$CatalogPath){
+ # A pinned historical observation supports review only; runtime state is checked again.
+ $ref=$Review.metadataObservation
+ if($ref.path -cnotmatch '^\.\./\.\./\.\./docs/test-plans/evidence/[A-Z0-9_-]+\.json$' -or $ref.sha256 -cnotmatch '^[a-f0-9]{64}$' -or $ref.attempt -cnotmatch '^[a-f0-9-]{36}$' -or $ref.source -cnotmatch '^[a-f0-9]{40}$'){return $false}
+ $path=Join-Path (Split-Path $CatalogPath -Parent) $ref.path
+ $file=Get-Item -LiteralPath $path -Force -ErrorAction Stop
+ if($file.PSIsContainer -or ($file.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $file.Length -gt 16384 -or (Get-FileHash -LiteralPath $path).Hash.ToLowerInvariant() -cne $ref.sha256){return $false}
+ $observation=[IO.File]::ReadAllText($path)|ConvertFrom-Json;$r=$observation.result
+ if($observation.attempt -cne $ref.attempt -or $observation.source -cne $ref.source -or $r.scope -cne 'OD51_READ_ONLY_METADATA_OBSERVATION'){return $false}
+ foreach($k in @('deviceMutation','backendMutation','mutationJournalCreated')){if($r.$k -isnot [bool] -or $r.$k){return $false}}
+ foreach($k in @('configurationProvenance','packageProvenance','fixtureProvenance')){if($r.$k -cne 'PASS'){return $false}}
+ if($r.reverseAbsent -isnot [bool] -or -not $r.reverseAbsent -or $r.metadataKnown -isnot [bool] -or -not $r.metadataKnown -or $r.metadataStatus -cne 'METADATA_ONLY' -or $r.probeStatus -cne 'OBSERVED'){return $false}
+ if($r.child.sha256 -cne $Review.child -or $r.fixture.sha256 -cne $Review.fixture){return $false}
+ $c=$r.configuration;$config=@{manufacturer=$c.manufacturer;model=$c.model;android=$c.android;api=$c.api;build=$c.build;patch=$c.securityPatch}
+ $overlay=Get-ProductRuntimeOemOverlayPaths $config
+ if($overlay.Count -ne 1 -or -not $overlay.Contains('runtime_samsung_ids')){return $false}
+ if($r.knownPresent -isnot [Array] -or (($r.knownPresent|Sort-Object) -join ',') -cne 'runtime_profile,runtime_work_no_backup,runtime_work_no_backup_shm,runtime_work_no_backup_wal'){return $false}
+ if($r.totalDurableFiles -ne 5 -or $r.knownDurableFiles -ne 4 -or $r.otherDurableFiles -ne 1 -or $r.metadataFinding -cne 'UNKNOWN_DURABLE_FILES_PRESENT'){return $false}
+ if($r.unexpectedStructuralEntries -isnot [Array] -or $r.unexpectedStructuralEntries.Count -ne 1){return $false}
+ $entry=$r.unexpectedStructuralEntries[0]
+ return (($entry.directory+'/'+$entry.relativeName) -ceq $overlay['runtime_samsung_ids'] -and $entry.bytes -eq 108)
+}
+function Test-InterruptedEnrollmentLiveState($Metadata,$Devices,$Saved,[bool]$LabPackage){
+ try{
+  if(-not $LabPackage -or $null -ne $Saved -or @($Devices).Count -ne 0 -or $Metadata.status -cne 'METADATA_ONLY' -or $Metadata.otherDurableFiles -ne 0 -or $Metadata.files -isnot [Array]){return $false}
+  $known=Get-ReviewStatePaths $true
+  foreach($kind in @($known.Keys|Where-Object{$_ -cnotlike 'runtime_*'})){
+   $rows=@($Metadata.files|Where-Object{$_.kind -ceq $kind})
+   if($rows.Count -ne 1 -or $rows[0].presence -cne 'ABSENT'){return $false}
+  }
+  if(@($Metadata.files|Where-Object{$_.kind -cnotlike 'runtime_*' -and $_.presence -cne 'ABSENT'}).Count){return $false}
+  return $true
+ }catch{return $false}
+}
+
 # No caller-supplied ADB commands or product state contents enter this model.
 function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
  try{
@@ -8,17 +45,28 @@ function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
   if($catalog.schema -ne 1 -or $catalog.reviews -isnot [Array] -or $catalog.reviews.Count -gt 10){return $null}
   $j=Read-ProductJournal $Directory
   $m=[IO.File]::ReadAllText((Join-Path $Directory 'provenance'))|ConvertFrom-Json
-  if($j.partial -or $j.verdict -cne 'INVALID' -or $j.cleanup -cne 'UNVERIFIED'){return $null}
+  if($j.partial){return $null}
   $matches=@($catalog.reviews|Where-Object{$_.attempt -ceq $m.attempt});if($matches.Count -ne 1){return $null};$review=$matches[0]
+  $kind=if($review.PSObject.Properties.Name -contains 'reviewKind'){[string]$review.reviewKind}else{'FINALIZED_INVALID'}
+  if($kind -cnotin @('FINALIZED_INVALID','INTERRUPTED_PRE_SETUP')){return $null};$interrupted=$kind -ceq 'INTERRUPTED_PRE_SETUP'
+  if($interrupted){if($j.verdict -or $j.cleanup -cne 'UNVERIFIED'){return $null}}elseif($j.verdict -cne 'INVALID' -or $j.cleanup -cne 'UNVERIFIED'){return $null}
   if($review.attempt -cnotmatch '^[a-f0-9-]{36}$' -or $review.source -cnotmatch '^[a-f0-9]{40}$' -or $review.bundle -cnotmatch '^[a-f0-9]{64}$' -or $review.child -cnotmatch '^[a-f0-9]{64}$' -or $review.fixture -cnotmatch '^[a-f0-9]{64}$'){return $null}
   if($m.source -cne $review.source -or $m.bundle -cne $review.bundle -or $m.child -cne $review.child -or $m.fixture -cne $review.fixture){return $null}
   $inventory=@($review.inventory.PSObject.Properties);if($inventory.Count -lt 5 -or $inventory.Count -gt 32){return $null}
-  $actual=@(Get-ChildItem -LiteralPath $Directory -File);if($actual.Count -ne $inventory.Count){return $null}
+  $actual=@(Get-ChildItem -LiteralPath $Directory -Force);if($actual.Count -ne $inventory.Count -or @($actual|Where-Object{$_.PSIsContainer -or ($_.Attributes -band [IO.FileAttributes]::ReparsePoint)}).Count){return $null}
   foreach($entry in $inventory){
    if($entry.Name -cnotmatch '^(?:[0-9]{6}\.json|provenance|result\.txt|resume-review|writer\.lock)$' -or [string]$entry.Value -cnotmatch '^[a-f0-9]{64}$'){return $null}
    $path=Join-Path $Directory $entry.Name;if(-not(Test-Path -LiteralPath $path -PathType Leaf) -or (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $entry.Value){return $null}
   }
   $stages=@($review.stages);if($stages.Count -ne $j.rows.Count -or ($stages -join ',') -cne ($j.rows.stage -join ',') -or $stages -contains 'POLICY_ADMITTED' -or $stages -contains 'LOCK_ADMITTED'){return $null}
+  if($interrupted){
+   if(($stages -join ',') -cne 'BEGIN,PAIRING_CLEANUP_ADMITTED,REVERSE_ADMITTED,ENROLLMENT_ADMITTED' -or $review.permittedPath -cne 'ENROLL'){return $null}
+   foreach($field in @('primaryStatus','primaryReason','primaryCleanup')){if($review.$field -cne 'NOT_RECORDED'){return $null}}
+   if(-not(Test-InterruptedEnrollmentObservation $review $CatalogPath)){return $null}
+   $resume=Read-ResumeReview $Directory
+   if($resume.classification -cne 'SAFE_RESUME_FROM_ENROLLMENT' -or $resume.packageMode -cne 'LAB_PACKAGE_UNPAIRED' -or $resume.permittedPath -cne 'ENROLL' -or $resume.failedChecks.Count){return $null}
+   foreach($field in @('backendDevice','localIdentity','pairingPending','localAccounting')){if($resume.$field -isnot [bool] -or $resume.$field){return $null}}
+  }else{
   $raw=[IO.File]::ReadAllText((Join-Path $Directory 'result.txt'));if($raw.Length -gt 65536){return $null};$result=$raw|ConvertFrom-Json
   if($review.primaryReason -cnotmatch '^INVALID:[A-Z0-9_]{1,120}$' -or $review.hostFailureCode -cnotmatch '^[A-Z0-9_]{1,120}$'){return $null}
   $expectedReverse=if($review.PSObject.Properties.Name -contains 'reverseCleanup'){[string]$review.reverseCleanup}else{'OWN_REVERSE_REMOVED'}
@@ -27,8 +75,9 @@ function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
   if($review.PSObject.Properties.Name -contains 'preparationFailureStage'){
    if($review.preparationFailureStage -cnotmatch '^[A-Z0-9_]{1,80}$' -or $review.preparationFailureCode -cnotmatch '^[A-Z0-9_]{1,120}$' -or $result.preparationFailureStage -cne $review.preparationFailureStage -or $result.preparationFailureCode -cne $review.preparationFailureCode){return $null}
   }
+  }
   $hasSession=$review.PSObject.Properties.Name -contains 'pairingSession';$hasResolution=$review.PSObject.Properties.Name -contains 'pairingResolution'
-  if($hasSession -eq $hasResolution){return $null}
+  if($interrupted){if(-not $hasSession -or -not $hasResolution -or $review.pairingSession.id -ceq $review.pairingResolution.id){return $null}}elseif($hasSession -eq $hasResolution){return $null}
   if($hasSession -and ($review.pairingSession.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingSession.disposition -cnotin @('OPEN','CANCELLED'))){return $null}
   if($hasResolution -and ($review.pairingResolution.id -cnotmatch '^[a-f0-9-]{36}$' -or $review.pairingResolution.from -cne 'OPEN' -or $review.pairingResolution.to -cne 'CANCELLED')){return $null}
   return $review
@@ -103,4 +152,4 @@ function Write-ResumeReview([string]$Directory,$HistoricalAttempts,[string]$Dige
  try{$bytes=[Text.Encoding]::UTF8.GetBytes($envelope);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  [IO.File]::Move($tmp,$path)
 }
-Export-ModuleMember -Function Read-ResumeReview,Test-ResumableHistory,Get-ResumableHistoryReview,Resolve-ProductPreparation,Write-ResumeReview
+Export-ModuleMember -Function Test-InterruptedEnrollmentLiveState,Read-ResumeReview,Test-ResumableHistory,Get-ResumableHistoryReview,Resolve-ProductPreparation,Write-ResumeReview

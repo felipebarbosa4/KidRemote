@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED_PENDING_INTERRUPTED_ENROLLMENT_REVIEW**. The source-de6a488 attempt reached the QR display but its saved journal stops at enrollment admission with no verdict or cleanup. Three repeats were refused. Do not rerun the product command, finalize/delete the old journal, or reset the child app. Follow the [interrupted review](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-INTERRUPTED-2026-09-30.md) and [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution): the next owner action is the existing separate read-only metadata probe, not another product trial.
+Current physical handoff is **PENDING_EXACT_SOURCE_VALIDATION**. The owner completed the metadata probe; see the [post-interruption review](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-REVIEW-2026-09-30.md). The existing OEM overlay accounts for the one generic-catalog unknown without reading its contents. One exact unfinished history may be reviewed without inventing a verdict, but live continuation must be empty-state ENROLL only, never reset/replacement. Source-de6a488 remains retired. Exact-source CI and immutable freezing must precede any replacement command.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,

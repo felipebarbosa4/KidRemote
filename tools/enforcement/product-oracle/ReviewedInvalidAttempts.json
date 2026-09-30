@@ -7,7 +7,17 @@
       "bundle": "a4824b1e655b5ec3dcaf0d69fcb57516392a0ea9c270cc1865f7c735c63e40fa",
       "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
       "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
-      "stages": ["BEGIN", "PREMUTATION", "UNINSTALL_ADMITTED", "INSTALL_ADMITTED", "REVERSE_ADMITTED", "ENROLLMENT_ADMITTED", "VERDICT", "CLEANUP_ADMITTED", "CLEANUP"],
+      "stages": [
+        "BEGIN",
+        "PREMUTATION",
+        "UNINSTALL_ADMITTED",
+        "INSTALL_ADMITTED",
+        "REVERSE_ADMITTED",
+        "ENROLLMENT_ADMITTED",
+        "VERDICT",
+        "CLEANUP_ADMITTED",
+        "CLEANUP"
+      ],
       "primaryReason": "INVALID:PAIRING_TIMEOUT",
       "hostFailureCode": "NONE",
       "pairingSession": {
@@ -35,7 +45,14 @@
       "bundle": "4bccabaa2bc37cfa42c38f4f3b6f992746003d7ea6b7f5026051e5e1277f63cb",
       "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
       "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
-      "stages": ["BEGIN", "PAIRING_CLEANUP_ADMITTED", "REVERSE_ADMITTED", "ENROLLMENT_ADMITTED", "VERDICT", "CLEANUP"],
+      "stages": [
+        "BEGIN",
+        "PAIRING_CLEANUP_ADMITTED",
+        "REVERSE_ADMITTED",
+        "ENROLLMENT_ADMITTED",
+        "VERDICT",
+        "CLEANUP"
+      ],
       "primaryReason": "INVALID:HOST_OR_TRANSPORT_FAILURE",
       "hostFailureCode": "SANITIZED_HOST_EXCEPTION",
       "pairingSession": {
@@ -61,7 +78,13 @@
       "bundle": "9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68",
       "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
       "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
-      "stages": ["BEGIN", "PAIRING_CLEANUP_ADMITTED", "REVERSE_ADMITTED", "VERDICT", "CLEANUP"],
+      "stages": [
+        "BEGIN",
+        "PAIRING_CLEANUP_ADMITTED",
+        "REVERSE_ADMITTED",
+        "VERDICT",
+        "CLEANUP"
+      ],
       "primaryReason": "INVALID:PREPARATION_ORCHESTRATION_FAILED",
       "hostFailureCode": "NONE",
       "preparationFailureStage": "PAIRING_SESSION_CLEANUP",
@@ -117,6 +140,49 @@
         "provenance": "3604c5772fc2bb594341de0a6775ac9efd83325c5185831d3270e72159535542",
         "result.txt": "cfab6111b74c5c2f6d6a56a153e6cc8d0d7de3399c6af0a25632a36b56277287",
         "resume-review": "f4761d44d7c0b6b3964015f637b5efc1f0d1bfc48a4aadc40ad1f92d8dfbd2d6",
+        "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "reviewKind": "INTERRUPTED_PRE_SETUP",
+      "attempt": "685624ea-8f7d-4d0f-8235-5b9a79bd261b",
+      "source": "de6a4882488f9dd19b5ad7b7470bcd76754345fd",
+      "bundle": "3654a62db1213ca8f3b027e0cb8707b4bc51ca4dffaa7a8aa8aeacd6c65190b4",
+      "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+      "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+      "stages": [
+        "BEGIN",
+        "PAIRING_CLEANUP_ADMITTED",
+        "REVERSE_ADMITTED",
+        "ENROLLMENT_ADMITTED"
+      ],
+      "primaryStatus": "NOT_RECORDED",
+      "primaryReason": "NOT_RECORDED",
+      "primaryCleanup": "NOT_RECORDED",
+      "permittedPath": "ENROLL",
+      "metadataObservation": {
+        "attempt": "ee5cb367-4f67-402f-8b86-9cc3c97ff8f6",
+        "source": "8ebcc89e0b483af1f5d3cf3a081fca640da37e10",
+        "sha256": "ace912f3a8b0c4ed6458c3b10257084b8e3ef27a40887020d1cadcd07d5fcbde",
+        "path": "../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json",
+        "originalSha256": "f95eb06ff7cd347919b81e2ec444d1bd6e658fecf179bb187768324ac8654a7d"
+      },
+      "pairingSession": {
+        "id": "c47322c4-f2b8-4e71-9b38-93208c03a43c",
+        "disposition": "OPEN"
+      },
+      "pairingResolution": {
+        "id": "2598b696-3ddc-497d-899b-a9622bb495ef",
+        "from": "OPEN",
+        "to": "CANCELLED"
+      },
+      "inventory": {
+        "000000.json": "0d22552272815a7cbaa38e8a453f698ed5a0291ae177c08ec297bfbd1a114ce7",
+        "000001.json": "69efefab5f2e9c1678d648aa22a252415707dd3b1bd5c06c896c9272f155d2ec",
+        "000002.json": "d4297034b82ee12dea32d167dffed31a7b01e5f2ebf2691391b586c4b4408a10",
+        "000003.json": "c7e7f66acad8b72cf129cdb6af82524abb8b67dfd6f78b3ce5d6a81ebc8873c7",
+        "provenance": "fafe909025d0de183c3da4662cdfccf2e3b5ec2a2df5e0007690e5721b889e3c",
+        "resume-review": "9f5d47fff70aa8250136e43169e0a487d2d0ef87c0dc454313f1489c7d50fd4d",
         "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
     }

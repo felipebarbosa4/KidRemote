@@ -114,6 +114,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  $instruction={
    Write-Host 'QR_WINDOW_READY: janela KidRemote verificada e sempre no topo; a ativacao de foco depende do Windows.'
    Write-Host 'No KidRemote: toque Escanear QR, permita a camera se solicitado e escaneie o QR exibido.'
+   Write-Host 'Apos escanear, aguarde o JSON final neste PowerShell. Se o app mostrar erro, nao toque em revogar/novo QR e nao repita o comando.'
  }
  $ops.Enroll={
   $s.device=Invoke-ProductEnrollmentPreparation $s $pairing $render $factory $open $poll $instruction $stage

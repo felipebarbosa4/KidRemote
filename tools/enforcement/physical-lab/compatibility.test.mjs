@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';
 execFileSync(process.execPath,['--check','tools/enforcement/physical-lab/freeze.mjs']);
 import {compatibility,authorizeCompatibility} from './compatibility.mjs';
@@ -6,7 +7,7 @@ test('legacy source is independently recomputed from exact git objects',()=>{con
 test('presentation changes do not change canonical compatibility inputs',()=>{assert.ok(!compatibility(root).files.some(f=>/QrPresentation|QrWindow|docs\//.test(f)));});
 test('each backend critical input is authenticated by digest',()=>{for(const changed of legacy.files){const mutated=compatibility(root,p=>p===changed?Buffer.concat([readFileSync(p),Buffer.from('\nchanged')]):readFileSync(p));assert.notEqual(mutated.digest,legacy.digest);assert.throws(()=>authorizeCompatibility(mutated,legacy.source,'a'.repeat(40),legacy),/MISMATCH/);}});
 test('exact source proof, schema and ownership required, never relabel legacy owner',()=>{const current=compatibility(root);assert.equal(authorizeCompatibility(current,legacy.source,'a'.repeat(40),legacy).ownershipSource,legacy.source);for(const bad of [null,{...legacy,source:'b'.repeat(40)},{...legacy,format:2},{...legacy,digest:'0'.repeat(64)}])assert.throws(()=>authorizeCompatibility(current,legacy.source,'a'.repeat(40),bad),/MISMATCH/);});
-test('immutable freezer requires exact CI and records only the approved OEM overlay',()=>{const freeze=readFileSync('tools/enforcement/physical-lab/freeze.mjs','utf8');assert.doesNotMatch(freeze,/PRODUCT_PHYSICAL_ORACLE_BLOCKED_METADATA_PREDICATE_UNRESOLVED/);assert.match(freeze,/CURRENT_SOURCE_REQUIRED_CI_NOT_PASSED/);assert.match(freeze,/kind:'runtime_samsung_ids'/);assert.match(freeze,/samsung\/SM-X400\/Android16\/API36\/BP4A\.251205\.006\/2026-07-05 only/);assert.match(freeze,/a2f91a25-0acc-4fff-848d-10fa99e5af53/);assert.match(freeze,/latestHistoricalVerdict:'INVALID:PAIRING_SESSION_INVALID'/);assert.match(freeze,/two reviewed own sessions are cancelled/);assert.match(freeze,/236b1c2b-9290-45cd-82ab-75c0a53fb51b/);assert.doesNotMatch(freeze,/own open session cancelled through finish_pairing/);assert.match(freeze,/PRIOR_BUNDLE_MANIFEST_MISMATCH/);assert.match(freeze,/HOST_QR_SOURCE_CHANGED_REBUILD_REQUIRED/);assert.match(freeze,/9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68/);assert.doesNotMatch(freeze,/\/tmp\/od51-/);assert.doesNotMatch(freeze,/Program Files\/nodejs\/node\.exe/);assert.match(freeze,/workflowName/);assert.match(freeze,/Planning checks/);});
+test('immutable freezer requires exact CI and records only the approved OEM overlay',()=>{const freeze=readFileSync('tools/enforcement/physical-lab/freeze.mjs','utf8');assert.doesNotMatch(freeze,/PRODUCT_PHYSICAL_ORACLE_BLOCKED_METADATA_PREDICATE_UNRESOLVED/);assert.match(freeze,/CURRENT_SOURCE_REQUIRED_CI_NOT_PASSED/);assert.match(freeze,/kind:'runtime_samsung_ids'/);assert.match(freeze,/samsung\/SM-X400\/Android16\/API36\/BP4A\.251205\.006\/2026-07-05 only/);assert.match(freeze,/ReviewedInvalidAttempts\.json/);assert.match(freeze,/historicalAttempts:historyReviews\.map/);assert.match(freeze,/latestHistoricalVerdict:latestHistory\.primaryReason/);assert.doesNotMatch(freeze,/pairingResidue:'(?:all|two) reviewed/);assert.doesNotMatch(freeze,/own open session cancelled through finish_pairing/);assert.match(freeze,/PRIOR_BUNDLE_MANIFEST_MISMATCH/);assert.match(freeze,/HOST_QR_SOURCE_CHANGED_REBUILD_REQUIRED/);assert.match(freeze,/9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68/);assert.doesNotMatch(freeze,/\/tmp\/od51-/);assert.doesNotMatch(freeze,/Program Files\/nodejs\/node\.exe/);assert.match(freeze,/workflowName/);assert.match(freeze,/Planning checks/);});
 test('new recovery admission matches the exact durable review, not a successful rerun',()=>{
  const evidence=JSON.parse(readFileSync('docs/test-plans/evidence/PRODUCT-PAIRING-SESSION-REVIEW-2026-09-30.json','utf8'));
  const catalog=JSON.parse(readFileSync('tools/enforcement/product-oracle/ReviewedInvalidAttempts.json','utf8'));
@@ -22,4 +23,25 @@ test('new recovery admission matches the exact durable review, not a successful 
  const admitted=j.stages.find(x=>x.stage==='ENROLLMENT_ADMITTED'),verdict=j.stages.find(x=>x.stage==='VERDICT');
  assert.ok(Date.parse(s.createdAt)>=Date.parse(admitted.utc)&&Date.parse(s.createdAt)<=Date.parse(verdict.utc));
  assert.ok(evidence.limitations.some(x=>x.includes('INFERRED')));
+});
+test('unfinished recovery preserves missing verdict and pins independent metadata',()=>{
+ const catalog=JSON.parse(readFileSync('tools/enforcement/product-oracle/ReviewedInvalidAttempts.json','utf8'));
+ const evidence=JSON.parse(readFileSync('docs/test-plans/evidence/PRODUCT-ENROLLMENT-INTERRUPTED-2026-09-30.json','utf8'));
+ const matches=catalog.reviews.filter(r=>r.attempt===evidence.attempt);assert.equal(matches.length,1);const r=matches[0];
+ assert.equal(r.reviewKind,'INTERRUPTED_PRE_SETUP');assert.equal(r.permittedPath,'ENROLL');
+ for(const k of ['primaryStatus','primaryReason','primaryCleanup'])assert.equal(r[k],'NOT_RECORDED');
+ assert.equal(r.source,evidence.source);assert.deepEqual(r.inventory,evidence.durableJournal.inventory);
+ assert.deepEqual(r.stages,evidence.durableJournal.rows.map(x=>x.stage));
+ const bytes=readFileSync('docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json');
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),r.metadataObservation.sha256);
+ assert.equal(createHash('sha256').update(bytes.toString('utf8').replaceAll('\n','\r\n')).digest('hex'),r.metadataObservation.originalSha256);
+ const observation=JSON.parse(bytes);assert.equal(observation.attempt,r.metadataObservation.attempt);
+ assert.equal(observation.result.probeStatus,'OBSERVED');assert.equal(observation.result.otherDurableFiles,1);
+ assert.equal(observation.result.metadataFinding,'UNKNOWN_DURABLE_FILES_PRESENT'); // Do not rewrite old probe classification.
+ assert.equal(r.pairingSession.id,'c47322c4-f2b8-4e71-9b38-93208c03a43c');assert.equal(r.pairingSession.disposition,'OPEN');
+ assert.deepEqual(r.pairingResolution,{id:'2598b696-3ddc-497d-899b-a9622bb495ef',from:'OPEN',to:'CANCELLED'});
+ const runner=readFileSync('tools/enforcement/product-oracle/Run-ProductReplacement.ps1','utf8');
+ assert.match(runner,/Test-InterruptedEnrollmentLiveState \$metadata \$devices \$saved \$lab/);
+ assert.match(runner,/INTERRUPTED_HISTORY_REQUIRES_EMPTY_ENROLLMENT/);
+ assert.match(runner,/HISTORY_CHANGED_AFTER_PREFLIGHT/);
 });
