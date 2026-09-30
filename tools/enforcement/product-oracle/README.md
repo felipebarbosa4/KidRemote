@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **READY_FOR_ONE_OWNER_RUN**, frozen source `452396d834dd76410a72094bd1e3e27e3c2954df`, manifest `fe352fe67342e0c8f176dc975dadf10dd7bbd8be16737e8b4a101950b69848dd`, physical execution **NOT_RUN**. Full exact-source CI passed and all 1,158 listed file hashes were rechecked. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [bounded interruption recovery](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-REVIEW-2026-09-30.md). This is a conditional ENROLL-only attempt, not reset/replacement permission or proof that the prior QR failure is fixed. Old source-de6a488 remains retired; do not repeat the completed metadata probe.
+Current physical handoff is **BLOCKED_PENDING_INITIAL_REPORT_REVIEW**. Source `452396d834dd76410a72094bd1e3e27e3c2954df` has been executed: enrollment and initial policy were recorded, but the slice stopped at INITIAL_REPORT_TIMEOUT before any Lock or independent control. Its command is retired from repeat execution. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). The next owner action is a new read-only structural snapshot after enrollment, not a retry, reset or another QR.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
