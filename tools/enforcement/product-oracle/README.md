@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **NOT PUBLISHED: exact-source validation required**. The [callback-context correction](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-CALLBACKS-2026-09-30.md) fixes lost constructor variables in nested callbacks and adds exact conditional recovery admission. The source-062fd59 attempt remains INVALID and its command is retired. No backend/device mutation or physical success is implied. Follow [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution), not an older frozen handoff.
+Current physical handoff is **READY_FOR_ONE_OWNER_RUN / physical NOT_RUN** for frozen source `de6a4882488f9dd19b5ad7b7470bcd76754345fd` only. The manifest is `3654a62db1213ca8f3b027e0cb8707b4bc51ca4dffaa7a8aa8aeacd6c65190b4`. See the [current execution contract](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and existing PR #24 for exact validation and the owner command. Later documentation commits do not replace these pinned bytes. The previous source-062fd59 attempt remains INVALID and its command remains retired.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
