@@ -63,3 +63,7 @@ The actual enrollment callback now has a red/green context-capture regression an
 ## Frozen owner handoff - 2026-09-30
 
 Source `de6a4882488f9dd19b5ad7b7470bcd76754345fd` passed full Planning checks `36760302670` and guidance `36760302546`. The freezer completed successfully; manifest SHA-256 `3654a62db1213ca8f3b027e0cb8707b4bc51ca4dffaa7a8aa8aeacd6c65190b4`, entrypoint SHA-256 `74ef1c8efa20712d3468f880e1468bbea64b963e4c9d379653502450dac99628`, 1,154 files rehashed independently. `READY_FOR_ONE_OWNER_RUN` / `physicalExecution=NOT_RUN`. The unchanged existing history verifier accepted the four exact cataloged INVALID journals in a read-only host check; six other journals remained finalized. No backend/device operation occurred. Execute only the pinned owner command in PR #24; readiness documentation may advance without rewriting this bundle.
+
+## Interrupted owner execution - 2026-09-30
+
+The source-de6a488 handoff above has been executed and is retired from further product reuse pending review. [The interrupted attempt](../test-plans/evidence/PRODUCT-ENROLLMENT-INTERRUPTED-2026-09-30.md) has no recorded final verdict/cleanup. Preserve it and the three refused repeats separately. The immediate goal is to reconcile Android structural identity/pending state with the read-only backend snapshot, not another QR or a forced reset. All 489 files of the existing separate metadata probe were reverified; its next physical execution is owner-operated. No recovery-catalog entry, cancellation, device operation or new product bundle was made by this review.

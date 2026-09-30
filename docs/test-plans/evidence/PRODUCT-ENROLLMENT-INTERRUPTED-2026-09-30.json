@@ -1,0 +1,223 @@
+{
+  "scope": "OD51_INTERRUPTED_ENROLLMENT_REVIEW_NOT_PHYSICAL_ACCEPTANCE",
+  "reviewedOn": "2026-09-30",
+  "attempt": "685624ea-8f7d-4d0f-8235-5b9a79bd261b",
+  "source": "de6a4882488f9dd19b5ad7b7470bcd76754345fd",
+  "reviewClassification": "INCOMPLETE_JOURNAL_REQUIRES_RECONCILIATION",
+  "observedResult": {
+    "primaryStatus": "NOT_RECORDED",
+    "primaryReason": "NOT_RECORDED",
+    "primaryCleanup": "NOT_RECORDED"
+  },
+  "ownerReport": {
+    "qrScanned": true,
+    "executionStopped": true,
+    "subsequentRefusals": 3,
+    "screenTextExact": "UNCONFIRMED",
+    "reportedScreenMeaning": "Revoke pairing / use a new QR; approximate recollection, not captured UI evidence"
+  },
+  "durableJournal": {
+    "attempt": "685624ea-8f7d-4d0f-8235-5b9a79bd261b",
+    "source": "de6a4882488f9dd19b5ad7b7470bcd76754345fd",
+    "bundle": "3654a62db1213ca8f3b027e0cb8707b4bc51ca4dffaa7a8aa8aeacd6c65190b4",
+    "files": [
+      "000000.json",
+      "000001.json",
+      "000002.json",
+      "000003.json",
+      "provenance",
+      "resume-review",
+      "writer.lock"
+    ],
+    "rows": [
+      {
+        "stage": "BEGIN",
+        "value": "STARTED",
+        "utc": "2026-09-30T19:00:45.2902469Z"
+      },
+      {
+        "stage": "PAIRING_CLEANUP_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T19:00:45.3005895Z"
+      },
+      {
+        "stage": "REVERSE_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T19:00:45.3464378Z"
+      },
+      {
+        "stage": "ENROLLMENT_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T19:00:45.4583588Z"
+      }
+    ],
+    "result": null,
+    "journalChainValid": true,
+    "temporaryRowPresent": false,
+    "inventory": {
+      "000000.json": "0d22552272815a7cbaa38e8a453f698ed5a0291ae177c08ec297bfbd1a114ce7",
+      "000001.json": "69efefab5f2e9c1678d648aa22a252415707dd3b1bd5c06c896c9272f155d2ec",
+      "000002.json": "d4297034b82ee12dea32d167dffed31a7b01e5f2ebf2691391b586c4b4408a10",
+      "000003.json": "c7e7f66acad8b72cf129cdb6af82524abb8b67dfd6f78b3ce5d6a81ebc8873c7",
+      "provenance": "fafe909025d0de183c3da4662cdfccf2e3b5ec2a2df5e0007690e5721b889e3c",
+      "resume-review": "9f5d47fff70aa8250136e43169e0a487d2d0ef87c0dc454313f1489c7d50fd4d",
+      "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "resumeReviewChecksumValid": true,
+  "preAttemptState": {
+    "classification": "SAFE_RESUME_FROM_ENROLLMENT",
+    "packageMode": "LAB_PACKAGE_UNPAIRED",
+    "permittedPath": "ENROLL",
+    "credentialProof": "NOT_ESTABLISHED",
+    "backendDevice": false,
+    "localIdentity": false,
+    "pairingPending": false,
+    "localAccounting": false
+  },
+  "durableRepeatDiagnostics": [
+    {
+      "file": "48180b52-c508-46ee-bf37-383d04bc6024.json",
+      "sha256": "5da943a242c9e254ce5b684b05ac0bc2f97c7c512234a99692dbab20280bf8ae",
+      "diagnosticId": "48180b52-c508-46ee-bf37-383d04bc6024",
+      "utc": "2026-09-30T19:02:23.8013196Z",
+      "hostStage": "JOURNAL_READY",
+      "hostCode": "PRIOR_ATTEMPT_REVIEW_REQUIRED",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:INVALID_HOST_PREFLIGHT",
+        "cleanup": "UNVERIFIED"
+      },
+      "backendCleanup": "NOT_STARTED",
+      "reverseCleanup": "NOT_CREATED"
+    },
+    {
+      "file": "5fc8db1c-67a0-4fd6-92d1-9723dc3e6e0b.json",
+      "sha256": "a769117df3ae7f479dd444585114788bbaf3cfce985d639db2dc4b133ae909ec",
+      "diagnosticId": "5fc8db1c-67a0-4fd6-92d1-9723dc3e6e0b",
+      "utc": "2026-09-30T19:02:39.3216371Z",
+      "hostStage": "JOURNAL_READY",
+      "hostCode": "PRIOR_ATTEMPT_REVIEW_REQUIRED",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:INVALID_HOST_PREFLIGHT",
+        "cleanup": "UNVERIFIED"
+      },
+      "backendCleanup": "NOT_STARTED",
+      "reverseCleanup": "NOT_CREATED"
+    },
+    {
+      "file": "93e85694-e2ee-4bb0-9f9f-9b07ddc09ebf.json",
+      "sha256": "b56e685fde571df01ffefad285d6c01b9115ddb9ea118979976151bdce03f98a",
+      "diagnosticId": "93e85694-e2ee-4bb0-9f9f-9b07ddc09ebf",
+      "utc": "2026-09-30T19:02:47.5729736Z",
+      "hostStage": "JOURNAL_READY",
+      "hostCode": "PRIOR_ATTEMPT_REVIEW_REQUIRED",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:INVALID_HOST_PREFLIGHT",
+        "cleanup": "UNVERIFIED"
+      },
+      "backendCleanup": "NOT_STARTED",
+      "reverseCleanup": "NOT_CREATED"
+    }
+  ],
+  "backendObservation": {
+    "ownershipVerified": true,
+    "queryMode": "BEGIN READ ONLY; SELECT OWN METADATA; ROLLBACK",
+    "hostBeforeUtc": "2026-09-30T19:06:40.192575+00:00",
+    "hostAfterUtc": "2026-09-30T19:06:40.296106+00:00",
+    "review": {
+      "owners": 1,
+      "devices": [],
+      "identity": {
+        "schema": "7d9c6f3c1c85fd3f91070f7bad0ce90b4e114ca3f4cbbaaeb02eb799eec7a00a",
+        "source": "3693034816039de67087066f077e6e02a9507dd6"
+      },
+      "sessions": [
+        {
+          "id": "6d703893-dbf0-47d2-b96d-99495159c7af",
+          "device": null,
+          "expired": true,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-15T01:26:10.876792+00:00",
+          "expiresAt": "2026-09-15T01:31:10.876792+00:00"
+        },
+        {
+          "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+          "device": null,
+          "expired": true,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-17T02:12:25.690697+00:00",
+          "expiresAt": "2026-09-17T02:17:25.690697+00:00"
+        },
+        {
+          "id": "2598b696-3ddc-497d-899b-a9622bb495ef",
+          "device": null,
+          "expired": true,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-30T16:31:21.862324+00:00",
+          "expiresAt": "2026-09-30T16:36:21.862324+00:00"
+        },
+        {
+          "id": "c47322c4-f2b8-4e71-9b38-93208c03a43c",
+          "device": null,
+          "expired": true,
+          "consumed": false,
+          "cancelled": false,
+          "createdAt": "2026-09-30T19:00:45.509469+00:00",
+          "expiresAt": "2026-09-30T19:05:45.509469+00:00"
+        }
+      ],
+      "serverUtc": "2026-09-30T19:06:40.287846+00:00",
+      "households": 1
+    },
+    "lifecycle": "Only verified stopped database temporarily started; original stopped state restored",
+    "cleanup": "ORIGINAL_STOPPED_STATE_RESTORED",
+    "sessionOrDeviceMutation": false
+  },
+  "readOnlyProbeReverification": {
+    "source": "8ebcc89e0b483af1f5d3cf3a081fca640da37e10",
+    "manifestSha256": "e4d8ab75d9b6c44ca08d3c5cb3958e3992afa4a254518f4fdebb450ba0cc29ee",
+    "fileCount": 489,
+    "allFileHashesVerified": true,
+    "expectedConfiguration": {
+      "manufacturer": "samsung",
+      "model": "SM-X400",
+      "android": "16",
+      "api": "36",
+      "build": "BP4A.251205.006",
+      "securityPatch": "2026-07-05",
+      "androidUser": 0
+    },
+    "child": {
+      "package": "dev.kidremote.child.unassigned.debug",
+      "sha256": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+      "signerSha256": "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb",
+      "versionCode": 2,
+      "versionName": "0.0.2-local-physical-lab"
+    },
+    "physicalExecution": "NOT_RUN_THIS_REVIEW"
+  },
+  "limits": [
+    "No VERDICT/CLEANUP/result.txt exists for the interrupted journal; do not substitute any repeat result as its verdict.",
+    "Four complete chained rows and no temporary row do not mean the experiment completed.",
+    "QR_WINDOW_READY is owner-supplied console evidence; it is not completed device enrollment.",
+    "No backend device and an unconsumed session in this snapshot do not establish the current Android identity/pending markers or transport state.",
+    "The new session was created within the attempted enrollment period; its association is inferred, not a saved pairing response.",
+    "Current expiry is not evidence that the QR was expired when the owner scanned it.",
+    "No raw device/QR/credential content was read; no ADB, app action, data clear, cancellation or physical rerun was performed.",
+    "The interrupted journal is not admitted by the existing INVALID-history catalog; the catalog and its predicates remain unchanged."
+  ],
+  "nextAction": "Owner-operated existing immutable read-only metadata probe; stop on failure, do not rerun the product slice.",
+  "historicalFilesUnchangedAfterReview": true,
+  "validation": {
+    "guidanceTests": "6 PASS on WSL",
+    "repositoryValidator": "PASS on WSL",
+    "patchWhitespace": "PASS",
+    "scope": "Documentation and evidence consistency only; no new device result"
+  }
+}

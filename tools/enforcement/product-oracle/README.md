@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **READY_FOR_ONE_OWNER_RUN / physical NOT_RUN** for frozen source `de6a4882488f9dd19b5ad7b7470bcd76754345fd` only. The manifest is `3654a62db1213ca8f3b027e0cb8707b4bc51ca4dffaa7a8aa8aeacd6c65190b4`. See the [current execution contract](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and existing PR #24 for exact validation and the owner command. Later documentation commits do not replace these pinned bytes. The previous source-062fd59 attempt remains INVALID and its command remains retired.
+Current physical handoff is **BLOCKED_PENDING_INTERRUPTED_ENROLLMENT_REVIEW**. The source-de6a488 attempt reached the QR display but its saved journal stops at enrollment admission with no verdict or cleanup. Three repeats were refused. Do not rerun the product command, finalize/delete the old journal, or reset the child app. Follow the [interrupted review](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-INTERRUPTED-2026-09-30.md) and [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution): the next owner action is the existing separate read-only metadata probe, not another product trial.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
