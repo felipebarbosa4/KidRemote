@@ -83,6 +83,42 @@
         "resume-review": "13b3cd6c54a3fdf42b318169107089d15c1f3ea99c04cf54fc4a6b7ae53a832f",
         "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       }
+    },
+    {
+      "attempt": "236b1c2b-9290-45cd-82ab-75c0a53fb51b",
+      "source": "062fd59b545b37ac6a58b03ac67889b181a806d8",
+      "bundle": "3eb64b3b5dc134b3ea226c4ba1776a2767b36cae49bd161220d76aaf72dc8fd5",
+      "child": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+      "fixture": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+      "stages": [
+        "BEGIN",
+        "PAIRING_CLEANUP_ADMITTED",
+        "REVERSE_ADMITTED",
+        "ENROLLMENT_ADMITTED",
+        "VERDICT",
+        "CLEANUP"
+      ],
+      "primaryReason": "INVALID:PAIRING_SESSION_INVALID",
+      "hostFailureCode": "NONE",
+      "preparationFailureStage": "PAIRING_SESSION_VALIDATE",
+      "preparationFailureCode": "PAIRING_SESSION_INVALID",
+      "reverseCleanup": "OWN_REVERSE_REMOVED",
+      "pairingSession": {
+        "id": "2598b696-3ddc-497d-899b-a9622bb495ef",
+        "disposition": "OPEN"
+      },
+      "inventory": {
+        "000000.json": "41df019116d0ae474e33061ea18beaa18989dba68bda7ba6a203df9d8582e708",
+        "000001.json": "56ae2fb82c14b8199a8cca6f2ec15a049024826611e576663dbc5033a8742c99",
+        "000002.json": "80e2057e7a89e9b95a97c20d9aa5b164922c42a32f079e9545ca0c8adeccb970",
+        "000003.json": "34c9392c6a1db000700ddd39476ef48a9d0f438f931fcce5984fb0087d7226c0",
+        "000004.json": "78ed845cba3144ea9a537c06d67fb76dbbea6658bb5db192d4eff3acb4c6f577",
+        "000005.json": "27b771fbdeccb7effb7d6a93510e91d59e77688515c4d48ca05e2a7b325c4bbf",
+        "provenance": "3604c5772fc2bb594341de0a6775ac9efd83325c5185831d3270e72159535542",
+        "result.txt": "cfab6111b74c5c2f6d6a56a153e6cc8d0d7de3399c6af0a25632a36b56277287",
+        "resume-review": "f4761d44d7c0b6b3964015f637b5efc1f0d1bfc48a4aadc40ad1f92d8dfbd2d6",
+        "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
     }
   ]
 }

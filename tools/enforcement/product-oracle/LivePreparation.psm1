@@ -105,16 +105,17 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
   $s.reverseAttempted=$true;& $action Reverse;$s.reverse=$true
   Assert-LabReverse (Invoke-ReplacementAdb $Adb $Serial ReverseRead $apk $run) $true
  }.GetNewClosure()
+ # Capture dependencies in this constructor scope, not inside a second closure.
+ $pairing={param($onStage) New-ProductPairing $wire $Jwt $onStage}.GetNewClosure()
+ $render={param($qr,$onStage) Invoke-ProductQrRenderer $java @('-cp',((Join-Path $Bundle 'host-qr.jar')+';'+(Join-Path $Bundle 'zxing-core.jar')),'HostQr') ($qr|ConvertTo-Json -Compress) $onStage}.GetNewClosure()
+ $factory={param($encoded) New-ProductQrWindow $encoded}
+ $poll={Get-OnlyLabChild $wire $Jwt}.GetNewClosure()
+ $open={& $action OpenChild}.GetNewClosure()
+ $instruction={
+   Write-Host 'QR_WINDOW_READY: janela KidRemote verificada e sempre no topo; a ativacao de foco depende do Windows.'
+   Write-Host 'No KidRemote: toque Escanear QR, permita a camera se solicitado e escaneie o QR exibido.'
+ }
  $ops.Enroll={
-  $pairing={param($onStage) New-ProductPairing $wire $Jwt $onStage}.GetNewClosure()
-  $render={param($qr,$onStage) Invoke-ProductQrRenderer $java @('-cp',((Join-Path $Bundle 'host-qr.jar')+';'+(Join-Path $Bundle 'zxing-core.jar')),'HostQr') ($qr|ConvertTo-Json -Compress) $onStage}.GetNewClosure()
-  $factory={param($encoded) New-ProductQrWindow $encoded}
-  $poll={Get-OnlyLabChild $wire $Jwt}.GetNewClosure()
-  $open={& $action OpenChild}.GetNewClosure()
-  $instruction={
-    Write-Host 'QR_WINDOW_READY: janela KidRemote verificada e sempre no topo; a ativacao de foco depende do Windows.'
-    Write-Host 'No KidRemote: toque Escanear QR, permita a camera se solicitado e escaneie o QR exibido.'
-  }
   $s.device=Invoke-ProductEnrollmentPreparation $s $pairing $render $factory $open $poll $instruction $stage
  }.GetNewClosure()
  $ops.Consent={

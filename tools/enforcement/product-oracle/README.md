@@ -2,12 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED_PENDING_CALLBACK_DIAGNOSIS**. Start with the
-[current execution summary](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution)
-and the [durable pairing review](../../../docs/test-plans/evidence/PRODUCT-PAIRING-SESSION-REVIEW-2026-09-30.md).
-Source `062fd59` is retired from physical reuse. Original results remain INVALID;
-the later host-only probe and diagnostic tests are not physical acceptance.
-No replacement command is published.
+Current physical handoff is **NOT PUBLISHED: exact-source validation required**. The [callback-context correction](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-CALLBACKS-2026-09-30.md) fixes lost constructor variables in nested callbacks and adds exact conditional recovery admission. The source-062fd59 attempt remains INVALID and its command is retired. No backend/device mutation or physical success is implied. Follow [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution), not an older frozen handoff.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
