@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **PENDING_EXACT_SOURCE_VALIDATION**. The owner completed the metadata probe; see the [post-interruption review](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-REVIEW-2026-09-30.md). The existing OEM overlay accounts for the one generic-catalog unknown without reading its contents. One exact unfinished history may be reviewed without inventing a verdict, but live continuation must be empty-state ENROLL only, never reset/replacement. Source-de6a488 remains retired. Exact-source CI and immutable freezing must precede any replacement command.
+Current physical handoff is **READY_FOR_ONE_OWNER_RUN**, frozen source `452396d834dd76410a72094bd1e3e27e3c2954df`, manifest `fe352fe67342e0c8f176dc975dadf10dd7bbd8be16737e8b4a101950b69848dd`, physical execution **NOT_RUN**. Full exact-source CI passed and all 1,158 listed file hashes were rechecked. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [bounded interruption recovery](../../../docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-REVIEW-2026-09-30.md). This is a conditional ENROLL-only attempt, not reset/replacement permission or proof that the prior QR failure is fixed. Old source-de6a488 remains retired; do not repeat the completed metadata probe.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
