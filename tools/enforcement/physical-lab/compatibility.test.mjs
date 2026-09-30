@@ -32,7 +32,9 @@ test('unfinished recovery preserves missing verdict and pins independent metadat
  for(const k of ['primaryStatus','primaryReason','primaryCleanup'])assert.equal(r[k],'NOT_RECORDED');
  assert.equal(r.source,evidence.source);assert.deepEqual(r.inventory,evidence.durableJournal.inventory);
  assert.deepEqual(r.stages,evidence.durableJournal.rows.map(x=>x.stage));
- const bytes=readFileSync('docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json');
+ const metadataPath='docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json';
+ assert.equal(execFileSync('git',['check-attr','eol','--',metadataPath],{encoding:'utf8'}).trim(),metadataPath+': eol: lf');
+ const bytes=readFileSync(metadataPath);
  assert.equal(createHash('sha256').update(bytes).digest('hex'),r.metadataObservation.sha256);
  assert.equal(createHash('sha256').update(bytes.toString('utf8').replaceAll('\n','\r\n')).digest('hex'),r.metadataObservation.originalSha256);
  const observation=JSON.parse(bytes);assert.equal(observation.attempt,r.metadataObservation.attempt);

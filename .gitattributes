@@ -5,3 +5,5 @@
 /packages/protocol/CONTRACT.md text eol=lf
 /tools/enforcement/physical-lab/lease.mjs text eol=lf
 /tools/enforcement/physical-lab/health.mjs text eol=lf
+# This reviewed metadata representation is hash-pinned; keep its explicitly normalized LF bytes.
+/docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json text eol=lf
