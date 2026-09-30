@@ -49,3 +49,9 @@ or replace the required independent physical oracle and human consent/observatio
 stopped in Node parsing with a backslash-literal `SyntaxError`, before bundle directory
 creation. The exact destination was confirmed absent and no ADB/Docker/device operation
 occurred. Add `node --check` coverage to the freezer test before another freeze attempt.
+
+## Current continuation - 2026-09-30
+
+**Goal:** resolve the actual enrollment-to-render callback boundary without another blind physical retry. **Context:** owner-granted host access now permits the durable [attempt review](../test-plans/evidence/PRODUCT-PAIRING-SESSION-REVIEW-2026-09-30.md); the real host-only probe pairing passed, while the historical exception is missing. **Constraints:** keep the original INVALID/UNVERIFIED records, the main unconsumed session, the recovery catalog, clocks, device state and acceptance gates unchanged. **Done when:** the diagnostic gap has regression coverage, the remaining callback is independently exercised with synthetic inputs under normal safety checks, and exact recovery admission is reviewed before a replacement physical handoff.
+
+The diagnostic-only change sets the rendering stage before callback argument binding and retains only two known nonsecret pairing codes. Native PowerShell 5.1 regression: baseline failed CHECK_26; corrected suite passed 44 checks. Full final-commit CI is tracked on PR #24. This is not a fixed-pairing or physical-PASS claim.

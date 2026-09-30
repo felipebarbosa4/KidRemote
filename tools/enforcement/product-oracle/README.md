@@ -2,15 +2,12 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **NOT PUBLISHED**. The latest classified attempt
-`a2f91a25-0acc-4fff-848d-10fa99e5af53`, from bundle source `b541595a`,
-remains `INVALID:PREPARATION_ORCHESTRATION_FAILED` with cleanup `UNVERIFIED`.
-It admitted no enrollment, setup, policy or lock. The task-owned backend review
-records both reviewed device-less pairing sessions cancelled. A host-only
-reproduction found the PowerShell closure callback defect; source `e066e87`
-contains the correction and passed its required CI. No later physical success is
-implied and no replacement owner command exists until a current-source immutable
-bundle is frozen. See the [callback recovery evidence](../../../docs/test-plans/evidence/PRODUCT-PAIRING-CLEANUP-CALLBACK-2026-09-17.md).
+Current physical handoff is **BLOCKED_PENDING_CALLBACK_DIAGNOSIS**. Start with the
+[current execution summary](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution)
+and the [durable pairing review](../../../docs/test-plans/evidence/PRODUCT-PAIRING-SESSION-REVIEW-2026-09-30.md).
+Source `062fd59` is retired from physical reuse. Original results remain INVALID;
+the later host-only probe and diagnostic tests are not physical acceptance.
+No replacement command is published.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,

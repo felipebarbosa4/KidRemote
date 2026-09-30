@@ -37,6 +37,25 @@ $case=RunCase $goodPairing $goodRender $goodFactory {} {throw 'PRIVATE_BACKEND_F
 Check ($case.error.Exception.Message -ceq 'INVALID:QR_ENROLLMENT_POLL_FAILED');Check ($case.error.Exception.Data['preparationStage'] -ceq 'QR_ENROLLMENT_POLL')
 $case=RunCase $goodPairing $goodRender $goodFactory {} {$null} 1
 Check ($case.error.Exception.Message -ceq 'INVALID:PAIRING_TIMEOUT');Check ($case.error.Exception.Data['preparationStage'] -ceq 'QR_ENROLLMENT_TIMEOUT')
+# Exercise failures before the renderer can set its own stage. These must not
+# be mislabeled as a pairing response rejection. No network or process is invoked.
+$case=RunCase $goodPairing {throw 'PRIVATE_RENDER_CALLBACK_BINDING'} $goodFactory {} {$null}
+Check ($case.state.preparationStage -ceq 'QR_RENDER_PROCESS')
+Check ($case.error.Exception.Message -ceq 'INVALID:QR_RENDER_PROCESS_FAILED')
+Check ($case.error.Exception.Message -notmatch 'PRIVATE_RENDER_CALLBACK_BINDING')
+$case=RunCase $goodPairing {param([int]$qr,[scriptblock]$stage) throw 'UNREACHABLE_RENDER_BODY'} $goodFactory {} {$null}
+Check ($case.state.preparationStage -ceq 'QR_RENDER_PROCESS')
+Check ($case.error.Exception.Message -ceq 'INVALID:QR_RENDER_PROCESS_FAILED')
+foreach($typedCode in @('PAIRING_SCHEMA','PAIRING_EXPIRY')){
+ $pairing={param($stage)& $stage PAIRING_SESSION_VALIDATE;throw ('INVALID:'+$typedCode)}.GetNewClosure()
+ $case=RunCase $pairing $goodRender $goodFactory {} {$null}
+ Check ($case.error.Exception.Message -ceq ('INVALID:'+$typedCode))
+ $failure=Get-ProductPreparationFailure $case.error $case.state
+ Check ($failure.stage -ceq 'PAIRING_SESSION_VALIDATE');Check ($failure.code -ceq $typedCode)
+}
+$case=RunCase {param($stage)& $stage PAIRING_SESSION_VALIDATE;throw 'INVALID:UNAPPROVED_PRIVATE_DETAIL'} $goodRender $goodFactory {} {$null}
+Check ($case.error.Exception.Message -ceq 'INVALID:PAIRING_SESSION_INVALID')
+
 $runner=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Run-ProductReplacement.ps1'));$live=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'LivePreparation.psm1'))
 Check ($runner -match 'preparationFailureStage=\$preparationFailureStage;preparationFailureCode=\$preparationFailureCode')
 Check ($runner.Contains("if(`$hostValidated){") -and $runner.Contains("`$hostFailureCode='NONE';`$reason=`$failure.reason"))

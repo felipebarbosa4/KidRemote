@@ -20,7 +20,10 @@ function Throw-ProductPreparationFailure($State,[string]$Message){
   'RESET_RECONCILIATION' {'RESET_RECONCILIATION_FAILED'}
   'REVERSE_CREATE' {'REVERSE_CREATE_FAILED'}
   'PAIRING_SESSION_CREATE' {'PAIRING_SESSION_CREATE_FAILED'}
-  'PAIRING_SESSION_VALIDATE' {'PAIRING_SESSION_INVALID'}
+  'PAIRING_SESSION_VALIDATE' {
+   # Only known nonsecret validator codes may survive this boundary.
+   if($Message -cin @('INVALID:PAIRING_SCHEMA','INVALID:PAIRING_EXPIRY')){$Message.Substring(8)}else{'PAIRING_SESSION_INVALID'}
+  }
   'QR_RENDER_PROCESS' {'QR_RENDER_PROCESS_FAILED'}
   'QR_RENDER_VALIDATE' {'QR_RENDER_OUTPUT_INVALID'}
   'QR_WINDOW_CREATE' {'QR_WINDOW_CREATE_FAILED'}
@@ -40,6 +43,8 @@ function Invoke-ProductEnrollmentPreparation($State,[scriptblock]$Pairing,[scrip
  $q=$null;$encoded=$null;$window=$null
  try{
   $q=& $Pairing $Stage
+  # Mark the next boundary before argument binding or closure evaluation can fail.
+  & $Stage QR_RENDER_PROCESS
   $encoded=& $Render $q.qr $Stage
   & $Stage QR_WINDOW_CREATE
   $window=& $WindowFactory $encoded
