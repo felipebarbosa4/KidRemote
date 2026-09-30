@@ -39,3 +39,7 @@ The freezer now derives historical attempt IDs and the latest recorded outcome f
 ## Remaining boundary
 
 The owner has completed the requested read-only probe. Do not ask them to rerun it or delete the IDS file. Publish a replacement product command only after exact-source validation and immutable freezing. Keep the former source-de6a488 command retired, the interrupted result missing, and all KR-003/product acceptance gates open. A future owner trial is new evidence, not a rewritten result or a guaranteed fix for the original recovery screen.
+
+## CI integration correction
+
+Planning run `36767867912` for `8476ef7` exposed a missing input in the existing extracted `ReadOnlyTarget` gate test: the new interrupted-history flag was initialized outside the tested scriptblock. The Windows job stopped at an unset `$interruptedHistory`; no bundle was frozen from that revision. The flag is now derived inside the gate from its existing verified-history input, eliminating the additional ambient dependency rather than defaulting an unknown flag to false. The existing gate test now covers twelve interrupted-history cases as well as all original cases. Native Windows PowerShell 5.1 passed 257 assertions, with all transports synthetic and no device invocation. The failed CI remains preserved; full validation is required again for the corrected source.

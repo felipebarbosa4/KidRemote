@@ -44,7 +44,6 @@ try{
   }
  }
  $historyAttemptIds=@($historyReviews|ForEach-Object{$_.attempt})
- $interruptedHistory=@($historyReviews|Where-Object{$_.PSObject.Properties.Name -contains 'reviewKind' -and $_.reviewKind -ceq 'INTERRUPTED_PRE_SETUP'}).Count -gt 0
  $directory=New-ProductJournal $root $source $ExpectedManifestHash 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc' $true
  $temporary=Join-Path $directory 'temporary';[void][IO.Directory]::CreateDirectory($temporary)
  Write-Host 'Preparando backend local isolado; nenhuma substituição do tablet foi admitida ainda.'
@@ -92,6 +91,7 @@ try{
    $d=if($devices.Count -eq 1){$devices[0]}else{$null}
    $historySafe=(-not $historicalPartial) -or ($historyBackendSafe -and -not $identity -and -not $pending -and -not $accounting)
    # An unfinished pre-setup review never authorizes reset, replacement or reuse.
+   $interruptedHistory=@($historyReviews|Where-Object{$_.PSObject.Properties.Name -contains 'reviewKind' -and $_.reviewKind -ceq 'INTERRUPTED_PRE_SETUP'}).Count -gt 0
    if($interruptedHistory){$historySafe=$historySafe -and (Test-InterruptedEnrollmentLiveState $metadata $devices $saved $lab)}
    $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$historySafe;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
    # Historical replacement explicitly authorizes loss of old unknown files, only on OLD path.
