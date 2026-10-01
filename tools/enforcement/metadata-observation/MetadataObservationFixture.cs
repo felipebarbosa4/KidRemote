@@ -13,7 +13,7 @@ class MetadataObservationFixture {
   if(line=="devices")Console.WriteLine("List of devices attached\nSYNTHETIC_PRIVATE_SERIAL\tdevice");
   else if(line=="shell am get-current-user"){Console.WriteLine("0");if(mode=="readStderr")Console.Error.WriteLine("PRIVATE_ORDINARY_READ_STDERR");}
   else if(line=="shell getprop ro.product.manufacturer")Console.WriteLine("samsung");
-  else if(line=="shell getprop ro.product.model")Console.WriteLine("SM-X400");
+  else if(line=="shell getprop ro.product.model")Console.WriteLine(mode=="wrongModel"?"UNAPPROVED":"SM-X400");
   else if(line=="shell getprop ro.build.version.release")Console.WriteLine("16");
   else if(line=="shell getprop ro.build.version.sdk")Console.WriteLine("36");
   else if(line=="shell getprop ro.build.id")Console.WriteLine("BP4A.251205.006");
@@ -40,9 +40,14 @@ class MetadataObservationFixture {
    if(mode=="pullStderr")Console.Error.WriteLine("PRIVATE_NORMAL_PULL_PROGRESS");
   }
   else if(line=="shell -T run-as dev.kidremote.child.unassigned.debug sh"){
-   Console.In.ReadToEnd();
+   var input=Console.In.ReadToEnd();
    if(mode=="runFail"){Console.Error.WriteLine("PRIVATE_RAW_FAILURE");return 1;}
    if(mode=="reversePresent"){Console.Error.WriteLine("METADATA_SHOULD_NOT_RUN");return 9;}
+   if(input.Contains("p=no_backup/sync-retry")) {
+    var marker=Environment.GetEnvironmentVariable("KR_RETRY_MARKER");
+    if(!String.IsNullOrEmpty(marker))File.WriteAllText(marker,"SYNTHETIC_RETRY_READ");
+    Console.Write(File.ReadAllText(Environment.GetEnvironmentVariable("KR_RETRY_FRAME")));return 0;
+   }
    Console.WriteLine("OD51META|1");
    if(mode=="unexpected"){Console.WriteLine("UNEXPECTED|files|bounded-extra.dat|7");Console.WriteLine("COUNTS|1|0|1");}
    else {Console.WriteLine("COUNTS|0|0|0");}

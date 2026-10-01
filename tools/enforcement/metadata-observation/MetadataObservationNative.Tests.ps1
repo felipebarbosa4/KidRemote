@@ -2,11 +2,12 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $root=Join-Path ([IO.Path]::GetTempPath()) ('kr-metadata-native-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 $oldLocal=$env:LOCALAPPDATA;$oldApk=$env:KR_METADATA_APK;$oldHash=$env:KR_METADATA_CHILD_HASH;$oldFixture=$env:KR_METADATA_FIXTURE_HASH;$oldSigner=$env:KR_METADATA_SIGNER;$oldMode=$env:KR_METADATA_MODE;$oldReparse=$env:KR_METADATA_REPARSE_TARGET;$n=0
+$oldRetryFrame=$env:KR_RETRY_FRAME;$oldRetryMarker=$env:KR_RETRY_MARKER
 function Check([bool]$v){$script:n++;if(-not $v){throw "CHECK_$script:n"}}
 function Eq($a,$b){$script:n++;if($a -cne $b){throw "CHECK_$script:n expected=$b actual=$a"}}
 try{
  $bundle=Join-Path $root 'bundle';[void][IO.Directory]::CreateDirectory($bundle)
- foreach($f in @('MetadataObservation.psm1','Read-CurrentMetadata.ps1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $f) -Destination $bundle}
+ foreach($f in @('MetadataObservation.psm1','Read-CurrentMetadata.ps1','SyncRetryDiagnostic.psm1','SyncRetryDiagnostic.cs','Read-SyncRetry.sh')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $f) -Destination $bundle}
  Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../update-review/ProductRuntimeCatalog.psm1') -Destination $bundle
  $runtime=Join-Path $bundle 'runtime';$javaDir=Join-Path $runtime 'jbr\bin';[void][IO.Directory]::CreateDirectory($javaDir)
  [IO.File]::WriteAllText((Join-Path $runtime 'apksigner.jar'),'synthetic jar')
@@ -60,8 +61,46 @@ try{
  foreach($evidence in Get-ChildItem -LiteralPath $historicalDir -File){Check (-not ([IO.File]::ReadAllText($evidence.FullName).Contains('PRIVATE_')))}
  Eq (Get-FileHash -LiteralPath $historical -Algorithm SHA256).Hash $historicalHash
  $env:KR_METADATA_MODE='empty';$bad=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -Adb $fixture -ExpectedManifestHash ('d'*64);Check (($bad -join "`n") -notmatch 'SYNTHETIC_PRIVATE_SERIAL|PRIVATE_RAW_FAILURE')
+ # Same actual entrypoint, native process transport and provenance checks in opt-in mode.
+ $manifest.scope='OD51_BOUNDED_RETRY_DIAGNOSTIC';$manifest['readiness']='READY_FOR_ONE_OWNER_RUN'
+ $manifest['privateRead']=@{path='no_backup/sync-retry';maximumBytes=1024;rawRetained=$false}
+ [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 8));$retryHash=(Get-FileHash $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+ $frames=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'SyncRetryFixtures.json'))|ConvertFrom-Json
+ $env:KR_RETRY_FRAME=Join-Path $root 'synthetic-retry-frame';$env:KR_RETRY_MARKER=Join-Path $root 'synthetic-retry-read'
+ foreach($caseName in @('valid_NONE','valid_AUTH','valid_PROTOCOL','valid_STORAGE','legacy_True','MISSING','NONREGULAR','TOO_LARGE','changed','checksum','bad_envelope','oversize','truncated')){
+  $case=@($frames.cases|Where-Object{$_.name -ceq $caseName})[0]
+  [IO.File]::WriteAllText($env:KR_RETRY_FRAME,$case.frame)
+  $env:KR_METADATA_MODE='retry';if(Test-Path $env:KR_RETRY_MARKER){Remove-Item $env:KR_RETRY_MARKER}
+  $raw=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -RetrySummary -Adb $fixture -ExpectedManifestHash $retryHash
+  $joined=$raw -join "`n";$r=($joined|ConvertFrom-Json).result
+  Check (Test-Path $env:KR_RETRY_MARKER);Eq $r.scope 'OD51_BOUNDED_RETRY_DIAGNOSTIC';Eq $r.privateReadScope 'SYNC_RETRY_ONLY'
+  Eq $r.privateContentRetained $false;Eq $r.deviceMutation $false;Eq $r.backendMutation $false
+  Eq $r.retry.status $case.status;Eq $r.retry.failureCode $case.code
+  Eq $r.probeStatus $(if($case.status -ceq 'OBSERVED'){'OBSERVED'}else{'TYPED_RETRY_FAILURE'})
+  Eq $r.productPhysicalOracle 'BLOCKED';Eq $r.hostTemporaryApk 'HOST_TEMP_DELETED'
+  Check ($joined -notmatch 'PRIVATE_|11111111|22222222|OD51RETRY|"identity"')
+ }
+ foreach($mode in @('reversePresent','wrongModel','signerMismatch','pullHashMismatch','readStderr','runFail')){
+  if(Test-Path $env:KR_RETRY_MARKER){Remove-Item $env:KR_RETRY_MARKER};$env:KR_METADATA_MODE=$mode
+  $raw=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -RetrySummary -Adb $fixture -ExpectedManifestHash $retryHash
+  $joined=$raw -join "`n";$r=($joined|ConvertFrom-Json).result
+  Check (-not(Test-Path $env:KR_RETRY_MARKER));Check ($r.probeStatus -cne 'OBSERVED');Check ($joined -notmatch 'PRIVATE_|11111111|22222222|OD51RETRY')
+ }
+ # A different scope or omitted explicit switch must stop before private reads.
+ $env:KR_METADATA_MODE='retry'
+ foreach($hash in @($retryHash,('e'*64))){
+  $raw=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -Adb $fixture -ExpectedManifestHash $hash
+  Eq (($raw -join "`n"|ConvertFrom-Json).result.probeStatus) 'INVALID';Check (-not(Test-Path $env:KR_RETRY_MARKER))
+ }
+ $manifest.scope='OD51_READ_ONLY_METADATA_OBSERVATION'
+ [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 8));$genericHash=(Get-FileHash $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+ $raw=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -RetrySummary -Adb $fixture -ExpectedManifestHash $genericHash
+ Eq (($raw -join "`n"|ConvertFrom-Json).result.failureReason) 'BUNDLE_SCHEMA_INVALID';Check (-not(Test-Path $env:KR_RETRY_MARKER))
+ foreach($evidence in Get-ChildItem -LiteralPath (Join-Path $env:LOCALAPPDATA 'KidRemote\retry-diagnostic-results') -File){Check (([IO.File]::ReadAllText($evidence.FullName)) -notmatch 'PRIVATE_|11111111|22222222|OD51RETRY|"identity"')}
+ Eq (Get-FileHash -LiteralPath $historical -Algorithm SHA256).Hash $historicalHash
  Write-Output "OD51_METADATA_NATIVE_CHECKS=$n;ADB=FAKE;DEVICE=NOT_INVOKED;SHELL=$($PSVersionTable.PSEdition)"
 }finally{
+ $env:KR_RETRY_FRAME=$oldRetryFrame;$env:KR_RETRY_MARKER=$oldRetryMarker
  $env:LOCALAPPDATA=$oldLocal;$env:KR_METADATA_APK=$oldApk;$env:KR_METADATA_CHILD_HASH=$oldHash;$env:KR_METADATA_FIXTURE_HASH=$oldFixture;$env:KR_METADATA_SIGNER=$oldSigner;$env:KR_METADATA_MODE=$oldMode;$env:KR_METADATA_REPARSE_TARGET=$oldReparse
  if(Test-Path -LiteralPath $root){Remove-Item -LiteralPath $root -Recurse -Force}
 }

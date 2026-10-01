@@ -1,23 +1,32 @@
 param(
  [string]$Adb='C:\platform-tools\adb.exe',
- [Parameter(Mandatory=$true)][string]$ExpectedManifestHash
+ [Parameter(Mandatory=$true)][string]$ExpectedManifestHash,
+ [switch]$RetrySummary
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 $attempt=[Guid]::NewGuid().ToString();$source='UNSPECIFIED';$serial=$null;$temporary=$null;$cleanup='NOT_CREATED';$failure='NONE';$stage='BUNDLE_VERIFY';$exitCode=0
+$scope=if($RetrySummary){'OD51_BOUNDED_RETRY_DIAGNOSTIC'}else{'OD51_READ_ONLY_METADATA_OBSERVATION'}
 $result=[ordered]@{
- scope='OD51_READ_ONLY_METADATA_OBSERVATION';deviceMutation=$false;backendMutation=$false;mutationJournalCreated=$false
+ scope=$scope;deviceMutation=$false;backendMutation=$false;mutationJournalCreated=$false
  configurationProvenance='INVALID';packageProvenance='INVALID';fixtureProvenance='INVALID';reverseAbsent=$false
  metadataStatus='UNSPECIFIED';metadataKnown='UNSPECIFIED';knownPresent=@();totalDurableFiles='UNSPECIFIED';knownDurableFiles='UNSPECIFIED';otherDurableFiles='UNSPECIFIED'
  productPhysicalOracle='BLOCKED';physicalExecution='OWNER_READ_ONLY_OBSERVATION';probeStatus='INVALID';failureStage='NONE';failureReason='NONE'
+}
+if($RetrySummary){
+ foreach($key in @('metadataStatus','metadataKnown','knownPresent','totalDurableFiles','knownDurableFiles','otherDurableFiles')){$result.Remove($key)}
+ $result.physicalExecution='OWNER_READ_ONLY_RETRY_DIAGNOSTIC';$result.privateReadScope='SYNC_RETRY_ONLY'
+ $result.privateContentRetained=$false;$result.retryReadAttempted=$false;$result.retry=$null
 }
 try{
  $manifestPath=Join-Path $PSScriptRoot 'bundle.json'
  if($ExpectedManifestHash -cnotmatch '^[a-f0-9]{64}$' -or -not (Test-Path -LiteralPath $manifestPath) -or (Get-FileHash -LiteralPath $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $ExpectedManifestHash){throw 'BUNDLE_HASH_INVALID'}
  $manifest=[IO.File]::ReadAllText($manifestPath)|ConvertFrom-Json
- if($manifest.scope -cne 'OD51_READ_ONLY_METADATA_OBSERVATION' -or $manifest.source -cnotmatch '^[a-f0-9]{40}$' -or $manifest.files.Count -lt 5){throw 'BUNDLE_SCHEMA_INVALID'}
+ if($manifest.scope -cne $scope -or $manifest.source -cnotmatch '^[a-f0-9]{40}$' -or $manifest.files.Count -lt 5){throw 'BUNDLE_SCHEMA_INVALID'}
  $source=$manifest.source
+ if($RetrySummary -and ($manifest.readiness -cne 'READY_FOR_ONE_OWNER_RUN' -or $manifest.privateRead.path -cne 'no_backup/sync-retry' -or $manifest.privateRead.maximumBytes -ne 1024 -or $manifest.privateRead.rawRetained -ne $false)){throw 'BUNDLE_SCHEMA_INVALID'}
  $expectedNames=@('MetadataObservation.psm1','ProductRuntimeCatalog.psm1','Read-CurrentMetadata.ps1','runtime/apksigner.jar','runtime/jbr/bin/java.exe')
+ if($RetrySummary){$expectedNames+=@('SyncRetryDiagnostic.psm1','SyncRetryDiagnostic.cs','Read-SyncRetry.sh')}
  foreach($name in $expectedNames){if(@($manifest.files|Where-Object{$_.name -ceq $name}).Count -ne 1){throw 'BUNDLE_SCHEMA_INVALID'}}
  $actual=@(Get-ChildItem -LiteralPath $PSScriptRoot -File -Recurse|Where-Object{$_.FullName -cne $manifestPath})
  if($actual.Count -ne $manifest.files.Count){throw 'BUNDLE_SCHEMA_INVALID'}
@@ -28,6 +37,7 @@ try{
  Import-Module (Join-Path $PSScriptRoot 'ProductRuntimeCatalog.psm1') -Force
  Import-Module (Join-Path $PSScriptRoot 'MetadataObservation.psm1') -Force
  $paths=Get-ReviewStatePaths $true;$metadataScript=Get-Od51MetadataScript $paths
+ if($RetrySummary){Import-Module (Join-Path $PSScriptRoot 'SyncRetryDiagnostic.psm1') -Force;$metadataScript=Get-Od51RetryScript}
  $stage='DEVICE_SELECTION'
  $devices=Invoke-Od51Adb $Adb '' @('devices') '' $metadataScript
  $serial=Select-Od51Target (Get-Od51AdbText $devices)
@@ -67,6 +77,17 @@ try{
  }
  if($child.installed -and $child.sha256 -ceq $manifest.child.sha256 -and $signer -ceq $manifest.child.signerSha256 -and $child.versionCode -ceq ([string]$manifest.child.versionCode) -and $child.versionName -ceq $manifest.child.versionName){$result.packageProvenance='PASS'}
  if($result.configurationProvenance -ceq 'PASS' -and $result.packageProvenance -ceq 'PASS' -and $result.fixtureProvenance -ceq 'PASS' -and $result.reverseAbsent){
+  if($RetrySummary){
+   $stage='RETRY_RUN_AS';$result.retryReadAttempted=$true
+   $retryCommand=@('shell','-T','run-as','dev.kidremote.child.unassigned.debug','sh')
+   try{
+    $raw=& $invoke $retryCommand $metadataScript ''
+    $stage='RETRY_PARSE';$result.retry=Convert-Od51RetryProcessResult $raw
+   }finally{$raw=$null}
+   if($result.retry.status -ceq 'OBSERVED'){$result.probeStatus='OBSERVED'}else{
+    $exitCode=1;$result.probeStatus='TYPED_RETRY_FAILURE';$result.failureStage=$stage;$result.failureReason=$result.retry.failureCode
+   }
+  }else{
   $stage='METADATA_RUN_AS'
   $metadataCommand=@('shell','-T','run-as','dev.kidremote.child.unassigned.debug','sh');$raw=& $invoke $metadataCommand $metadataScript ''
   $stage='METADATA_PARSE'
@@ -83,6 +104,7 @@ try{
    elseif($raw.exitCode -eq 0 -and $raw.stderrPresent){$result.failureStage='METADATA_PARSE';$result.failureReason='ADB_STDERR_PRESENT'}
    else{$result.failureStage='METADATA_PARSE';$result.failureReason=$metadata.metadataStatus}
   }
+  }
  }else{
   $result.probeStatus='PROVENANCE_OR_REVERSE_INVALID'
   if($result.configurationProvenance -cne 'PASS'){$result.failureStage='CONFIGURATION_READ';$result.failureReason='CONFIGURATION_PROVENANCE_INVALID'}
@@ -95,7 +117,7 @@ try{
  $failure=if($_.Exception.Message -cin $allowed){$_.Exception.Message}else{'PROBE_INTERNAL_INVALID'}
  $result.probeStatus='INVALID';$result.failureStage=$stage;$result.failureReason=$failure
 }finally{
- $serial=$null
+ $serial=$null;$raw=$null
  if($temporary){
   try{if(Test-Path -LiteralPath $temporary){Remove-Item -LiteralPath $temporary -Recurse -Force};if(Test-Path -LiteralPath $temporary){throw 'remaining'};$cleanup='HOST_TEMP_DELETED'}catch{$cleanup='HOST_TEMP_CLEANUP_FAILED';$exitCode=1;$result.probeStatus='INVALID';$result.failureStage='HOST_TEMP_CLEANUP';$result.failureReason='HOST_TEMP_CLEANUP_FAILED'}
  }
@@ -104,9 +126,10 @@ $result.hostTemporaryApk=$cleanup
 $output=[ordered]@{attempt=$attempt;utc=[DateTime]::UtcNow.ToString('o');source=$source;bundleSha256=$(if($ExpectedManifestHash -cmatch '^[a-f0-9]{64}$'){$ExpectedManifestHash}else{'UNSPECIFIED'});result=$result}
 $json=$output|ConvertTo-Json -Depth 9
 try{
- $dir=Join-Path $env:LOCALAPPDATA 'KidRemote\metadata-observation-results';[void][IO.Directory]::CreateDirectory($dir);$path=Join-Path $dir ($attempt+'.json')
+ $resultFolder=if($RetrySummary){'KidRemote\retry-diagnostic-results'}else{'KidRemote\metadata-observation-results'}
+ $dir=Join-Path $env:LOCALAPPDATA $resultFolder;[void][IO.Directory]::CreateDirectory($dir);$path=Join-Path $dir ($attempt+'.json')
  $f=[IO.File]::Open($path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
  try{$bytes=(New-Object Text.UTF8Encoding($false)).GetBytes($json);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  Write-Output $json
-}catch{Write-Output '{"result":{"scope":"OD51_READ_ONLY_METADATA_OBSERVATION","deviceMutation":false,"backendMutation":false,"probeStatus":"INVALID","failureStage":"HOST_EVIDENCE_WRITE","failureReason":"HOST_EVIDENCE_WRITE_FAILED","productPhysicalOracle":"BLOCKED"}}';exit 1}
+}catch{Write-Output (@{result=@{scope=$scope;deviceMutation=$false;backendMutation=$false;probeStatus='INVALID';failureStage='HOST_EVIDENCE_WRITE';failureReason='HOST_EVIDENCE_WRITE_FAILED';productPhysicalOracle='BLOCKED'}}|ConvertTo-Json -Compress);exit 1}
 exit $exitCode

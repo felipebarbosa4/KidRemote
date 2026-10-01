@@ -94,7 +94,9 @@ try{
 $runtimeSource=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Read-CurrentMetadata.ps1'))
 Check ($runtimeSource -notmatch 'Import-Module[^\r\n]*(Journal|BackendHost|EnrollmentHost|ProductTransport)|Invoke-WebRequest|HttpClient|screencap|screenshot')
 Check ($runtimeSource -notmatch 'Invoke-RestMethod|https?://|\bLOCK\b|\bUNLOCK\b')
-Check ($runtimeSource.Contains("scope='OD51_READ_ONLY_METADATA_OBSERVATION'"))
+Check ($runtimeSource.Contains("else{'OD51_READ_ONLY_METADATA_OBSERVATION'}"))
+Check ($runtimeSource.Contains('scope=$scope'))
+Check ($runtimeSource.Contains('$manifest.scope -cne $scope'))
 Check ($runtimeSource.Contains("deviceMutation=`$false"));Check ($runtimeSource.Contains("backendMutation=`$false"));Check ($runtimeSource.Contains("productPhysicalOracle='BLOCKED'"))
 foreach($stage in @('DEVICE_SELECTION','CONFIGURATION_READ','CHILD_PACKAGE_READ','FIXTURE_PACKAGE_READ','REVERSE_READ','CHILD_APK_PULL','CHILD_APK_LOCAL_VERIFY','CHILD_APK_SIGNER_VERIFY','METADATA_RUN_AS','METADATA_PARSE')){Check ($runtimeSource.Contains("'$stage'"))}
 Check ($runtimeSource -notmatch "'ADB_READ_FAILED'")

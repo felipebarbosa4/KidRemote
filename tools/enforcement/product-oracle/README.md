@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED_PENDING_BOUNDED_RETRY_DIAGNOSTIC_AUTHORIZATION**. The completed post-enrollment structural probe found identity/syncRetry/consent but no known accounting file; it does not expose retry status or prove the timeout cause. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [updated initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). Do not repeat either completed probe or the retired product runner. A one-file sanitized retry-state read is proposed but requires explicit owner authorization before implementation; no reset, revocation, reinstall or configured-policy history exception follows.
+Current physical handoff is **PREPARING_AUTHORIZED_BOUNDED_RETRY_DIAGNOSTIC**. The completed post-enrollment structural probe found identity/syncRetry/consent but no known accounting file; it does not expose retry status or prove the timeout cause. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [updated initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). Do not repeat either completed probe or the retired product runner. The owner has approved the one-file retry-state diagnostic and autonomous preparation within that scope; no reset, revocation, reinstall or configured-policy history exception follows.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,

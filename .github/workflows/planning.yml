@@ -118,6 +118,7 @@ jobs:
       - name: Test OD-51 read-only metadata probe without a device
         run: |
           pwsh -NoProfile -File tools/enforcement/metadata-observation/MetadataObservation.Tests.ps1
+          pwsh -NoProfile -File tools/enforcement/metadata-observation/SyncRetryDiagnostic.Tests.ps1
           python3 -B -m unittest discover -s tools/enforcement/metadata-observation -p 'test_*.py'
           node --test tools/enforcement/metadata-observation/freeze.test.mjs
       - name: Test evidence ingestion and least-privilege rejection
@@ -199,11 +200,13 @@ jobs:
         shell: powershell
         run: |
           ./tools/enforcement/metadata-observation/MetadataObservation.Tests.ps1
+          ./tools/enforcement/metadata-observation/SyncRetryDiagnostic.Tests.ps1
           ./tools/enforcement/metadata-observation/MetadataObservationNative.Tests.ps1
       - name: OD-51 read-only metadata probe on PowerShell 7 (fake ADB only)
         shell: pwsh
         run: |
           ./tools/enforcement/metadata-observation/MetadataObservation.Tests.ps1
+          ./tools/enforcement/metadata-observation/SyncRetryDiagnostic.Tests.ps1
           ./tools/enforcement/metadata-observation/MetadataObservationNative.Tests.ps1
       - name: Exercise StrictMode finalization and recovery under Windows PowerShell
         shell: powershell

@@ -23,3 +23,26 @@ test('runtime has no backend, product-control, journal or capture capability',()
   assert.doesNotMatch(module,new RegExp(`line -ceq '${command.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`));
  }
 });
+
+test('retry mode requires scoped immutable manifest and emits no private record',()=>{
+ const parser=readFileSync('tools/enforcement/metadata-observation/SyncRetryDiagnostic.cs','utf8');
+ const shell=readFileSync('tools/enforcement/metadata-observation/Read-SyncRetry.sh','utf8');
+ const adapter=readFileSync('tools/enforcement/metadata-observation/SyncRetryDiagnostic.psm1','utf8');
+ assert.match(freeze,/workflowName==='Planning checks'/);
+ assert.match(freeze,/PRIOR_MANIFEST_MISMATCH/);
+ assert.match(freeze,/manifest.scope='OD51_BOUNDED_RETRY_DIAGNOSTIC'/);
+ assert.match(runner,/\$manifest.scope -cne \$scope/);
+ assert.match(runner,/\[switch\]\$RetrySummary/);
+ assert.match(runner,/privateRead.path -cne 'no_backup\/sync-retry'/);
+ assert.match(runner,/\$raw=\$null/);
+ assert.match(shell,/head -c 1025 "\$p"/);
+ assert.match(shell,/\[ "\$size" -le 1024 \]/);
+ assert.match(shell,/p=no_backup\/sync-retry/);
+ assert.doesNotMatch(shell,/device-identity|\.bak|logcat|sqlite|curl|wget|\bcat\b|\brm\b|\bcp\b|\bmv\b/);
+ assert.doesNotMatch(parser,/File\.|Console\.|Process\.|Http|Socket|WriteAll/);
+ assert.doesNotMatch(adapter,/Write-Output|Write-Host|WriteAll|Add-Content|Set-Content|Out-File/);
+ assert.match(parser,/values.ContainsKey\(key\)/);
+ assert.match(parser,/new UTF8Encoding\(false,true\)/);
+ assert.match(parser,/GetByteCount\(raw\)>1024/);
+ assert.doesNotMatch(shell,/\r/);
+});

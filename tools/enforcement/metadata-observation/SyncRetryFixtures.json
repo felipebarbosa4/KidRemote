@@ -1,0 +1,514 @@
+{
+  "scope": "SYNTHETIC_ONLY",
+  "crcOracle": "Python zlib.crc32",
+  "cases": [
+    {
+      "name": "valid_NONE",
+      "frame": "OD51RETRY|DATA\ne1dea495\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "pending": true,
+        "stopped": false,
+        "reason": "NONE",
+        "attemptCount": 2,
+        "delayMs": 60000,
+        "bootRecorded": true,
+        "deadlineRecorded": true,
+        "legacyReasonDerived": false,
+        "checksumValidity": "VALID",
+        "schemaValidity": "VALID"
+      }
+    },
+    {
+      "name": "valid_AUTH",
+      "frame": "OD51RETRY|DATA\nc6769cb9\n{\"format\":1,\"pending\":false,\"stopped\":true,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"AUTH\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "pending": false,
+        "stopped": true,
+        "reason": "AUTH",
+        "attemptCount": 2,
+        "delayMs": 60000,
+        "bootRecorded": true,
+        "deadlineRecorded": true,
+        "legacyReasonDerived": false,
+        "checksumValidity": "VALID",
+        "schemaValidity": "VALID"
+      }
+    },
+    {
+      "name": "valid_PROTOCOL",
+      "frame": "OD51RETRY|DATA\n0a7d17b8\n{\"format\":1,\"pending\":false,\"stopped\":true,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"PROTOCOL\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "pending": false,
+        "stopped": true,
+        "reason": "PROTOCOL",
+        "attemptCount": 2,
+        "delayMs": 60000,
+        "bootRecorded": true,
+        "deadlineRecorded": true,
+        "legacyReasonDerived": false,
+        "checksumValidity": "VALID",
+        "schemaValidity": "VALID"
+      }
+    },
+    {
+      "name": "valid_STORAGE",
+      "frame": "OD51RETRY|DATA\n66079f26\n{\"format\":1,\"pending\":false,\"stopped\":true,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"STORAGE\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "pending": false,
+        "stopped": true,
+        "reason": "STORAGE",
+        "attemptCount": 2,
+        "delayMs": 60000,
+        "bootRecorded": true,
+        "deadlineRecorded": true,
+        "legacyReasonDerived": false,
+        "checksumValidity": "VALID",
+        "schemaValidity": "VALID"
+      }
+    },
+    {
+      "name": "legacy_False",
+      "frame": "OD51RETRY|DATA\n8a9ddc1b\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "reason": "NONE",
+        "legacyReasonDerived": true
+      }
+    },
+    {
+      "name": "legacy_True",
+      "frame": "OD51RETRY|DATA\nc1a64740\n{\"format\":1,\"pending\":true,\"stopped\":true,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "reason": "AUTH",
+        "legacyReasonDerived": true
+      }
+    },
+    {
+      "name": "unbound",
+      "frame": "OD51RETRY|DATA\n02647174\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":0,\"boot\":-1,\"due\":0,\"delay\":0,\"identity\":\"\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {
+        "bootRecorded": false,
+        "deadlineRecorded": false
+      }
+    },
+    {
+      "name": "upper_bounds",
+      "frame": "OD51RETRY|DATA\n4850c70b\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":30,\"boot\":2147483647,\"due\":9223372036854775807,\"delay\":86400000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "OBSERVED",
+      "code": "NONE",
+      "expect": {}
+    },
+    {
+      "name": "invalid_format_8",
+      "frame": "OD51RETRY|DATA\n2482375b\n{\"format\":2,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_format_9",
+      "frame": "OD51RETRY|DATA\n5cde738b\n{\"format\":\"1\",\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_pending_10",
+      "frame": "OD51RETRY|DATA\n44197aaf\n{\"format\":1,\"pending\":1,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_stopped_11",
+      "frame": "OD51RETRY|DATA\n96abc2f9\n{\"format\":1,\"pending\":true,\"stopped\":\"true\",\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_attempt_12",
+      "frame": "OD51RETRY|DATA\n718722a4\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":31,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_attempt_13",
+      "frame": "OD51RETRY|DATA\nf381095b\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":-1,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_boot_14",
+      "frame": "OD51RETRY|DATA\nac83fbb1\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":-2,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_boot_15",
+      "frame": "OD51RETRY|DATA\n199691c9\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":2147483648,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_due_16",
+      "frame": "OD51RETRY|DATA\n2bb1eb50\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":-1,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_due_17",
+      "frame": "OD51RETRY|DATA\nfc3c7d19\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":9223372036854775808,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_delay_18",
+      "frame": "OD51RETRY|DATA\naeec7afe\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":86400001,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_identity_19",
+      "frame": "OD51RETRY|DATA\ncae83050\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"PRIVATE_BINDING_SENTINEL\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_reason_20",
+      "frame": "OD51RETRY|DATA\n4cd3fdac\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"PRIVATE_REASON_SENTINEL\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_reason_21",
+      "frame": "OD51RETRY|DATA\n53b67e27\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"auth\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_attempt_22",
+      "frame": "OD51RETRY|DATA\n674c6ac6\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":true,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_pending_23",
+      "frame": "OD51RETRY|DATA\n0386c852\n{\"format\":1,\"pending\":null,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "invalid_delay_24",
+      "frame": "OD51RETRY|DATA\na4512211\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":{\"nested\":\"PRIVATE_RAW_SENTINEL\"},\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_format",
+      "frame": "OD51RETRY|DATA\nb3c7a02f\n{\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_pending",
+      "frame": "OD51RETRY|DATA\n4737a281\n{\"format\":1,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_stopped",
+      "frame": "OD51RETRY|DATA\n83e641af\n{\"format\":1,\"pending\":true,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_attempt",
+      "frame": "OD51RETRY|DATA\n4756dee9\n{\"format\":1,\"pending\":true,\"stopped\":false,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_boot",
+      "frame": "OD51RETRY|DATA\n184f9c54\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_due",
+      "frame": "OD51RETRY|DATA\n1a16ea08\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_delay",
+      "frame": "OD51RETRY|DATA\n4844481a\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "missing_identity",
+      "frame": "OD51RETRY|DATA\nc390acce\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_format",
+      "frame": "OD51RETRY|DATA\nd606cfca\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"format\":1}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_pending",
+      "frame": "OD51RETRY|DATA\n904d0b26\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"pending\":true}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_stopped",
+      "frame": "OD51RETRY|DATA\ndc4abeaf\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"stopped\":false}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_attempt",
+      "frame": "OD51RETRY|DATA\nd420139c\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"attempt\":2}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_boot",
+      "frame": "OD51RETRY|DATA\n45d7604f\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"boot\":1}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_due",
+      "frame": "OD51RETRY|DATA\n55d4b75e\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"due\":250000}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_delay",
+      "frame": "OD51RETRY|DATA\n8c8a89c7\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"delay\":60000}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_identity",
+      "frame": "OD51RETRY|DATA\n8f413475\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "duplicate_reason",
+      "frame": "OD51RETRY|DATA\n80961e36\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "number_form_02",
+      "frame": "OD51RETRY|DATA\n53e98ac0\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":02,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "number_form_2.0",
+      "frame": "OD51RETRY|DATA\n339173a3\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2.0,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "number_form_2e0",
+      "frame": "OD51RETRY|DATA\n25dc11fc\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2e0,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "number_form_+2",
+      "frame": "OD51RETRY|DATA\n03562eb5\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":+2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_46",
+      "frame": "OD51RETRY|DATA\n058a8aef\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",\"unknown\":\"PRIVATE_RAW_SENTINEL\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_47",
+      "frame": "OD51RETRY|DATA\n7ebad45a\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_48",
+      "frame": "OD51RETRY|DATA\ndf923776\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\",}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_49",
+      "frame": "OD51RETRY|DATA\n5a026dae\n{\"format\":1,\"Pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_50",
+      "frame": "OD51RETRY|DATA\n11389fe4\n{\"format\":1,\"pen\\u0064ing\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_51",
+      "frame": "OD51RETRY|DATA\n0d4cbb29\n[]\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_52",
+      "frame": "OD51RETRY|DATA\na3a6bf43\n{}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_53",
+      "frame": "OD51RETRY|DATA\n25cbfc4f\nnull\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "malformed_54",
+      "frame": "OD51RETRY|DATA\n80d26ba8\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\\n\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_SCHEMA_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "checksum",
+      "frame": "OD51RETRY|DATA\n00000000\ne1dea495\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_CHECKSUM_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "bad_envelope",
+      "frame": "OD51RETRY|DATA\nPRIVATE_RAW_SENTINEL\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_ENVELOPE_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "oversize",
+      "frame": "OD51RETRY|DATA\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nOD51RETRY|END\n",
+      "status": "INVALID",
+      "code": "RETRY_BOUNDS",
+      "expect": {}
+    },
+    {
+      "name": "truncated",
+      "frame": "OD51RETRY|DATA\ne1dea495\n{\"format\":1,\"pending\":true,\"stopped\":false,\"attempt\":2,\"boot\":1,\"due\":250000,\"delay\":60000,\"identity\":\"11111111-1111-4111-8111-111111111111:22222222-2222-4222-8222-222222222222\",\"reason\":\"NONE\"}\nOD51RETRY|E",
+      "status": "INVALID",
+      "code": "RETRY_FRAME_INVALID",
+      "expect": {}
+    },
+    {
+      "name": "MISSING",
+      "frame": "OD51RETRY|MISSING\n",
+      "status": "MISSING",
+      "code": "RETRY_MISSING",
+      "expect": {}
+    },
+    {
+      "name": "NONREGULAR",
+      "frame": "OD51RETRY|NONREGULAR\n",
+      "status": "NONREGULAR",
+      "code": "RETRY_NONREGULAR",
+      "expect": {}
+    },
+    {
+      "name": "UNREADABLE",
+      "frame": "OD51RETRY|UNREADABLE\n",
+      "status": "UNREADABLE",
+      "code": "RETRY_UNREADABLE",
+      "expect": {}
+    },
+    {
+      "name": "TOO_LARGE",
+      "frame": "OD51RETRY|TOO_LARGE\n",
+      "status": "TOO_LARGE",
+      "code": "RETRY_TOO_LARGE",
+      "expect": {}
+    },
+    {
+      "name": "changed",
+      "frame": "OD51RETRY|DATA\nPRIVATE_RAW_SENTINEL\nOD51RETRY|CHANGED\n",
+      "status": "CHANGED",
+      "code": "RETRY_CHANGED_DURING_READ",
+      "expect": {}
+    },
+    {
+      "name": "read_failed",
+      "frame": "OD51RETRY|DATA\nPRIVATE_RAW_SENTINEL\nOD51RETRY|READ_FAILED\n",
+      "status": "UNREADABLE",
+      "code": "RETRY_UNREADABLE",
+      "expect": {}
+    }
+  ]
+}
