@@ -92,3 +92,11 @@ An initial local metadata assertion expected the old constant scope expression (
 The existing metadata freezer now requires the full exact-source Planning checks workflow, not the lighter guidance workflow. It reuses public Java/apksigner bytes from the hash-verified prior immutable metadata bundle instead of mutable workstation installs. The fixed new shell file has LF checkout semantics across Windows/Linux. Frozen product bundles and Android binaries are unchanged.
 
 Implementation references: the Android app's existing RetryStore is the schema authority. The parser uses documented [.NET regex anchors](https://learn.microsoft.com/en-us/dotnet/standard/base-types/anchors-in-regular-expressions) and strict [UTF8Encoding](https://learn.microsoft.com/en-us/dotnet/api/system.text.utf8encoding). [Toybox head source](https://raw.githubusercontent.com/landley/toybox/master/toys/posix/head.c) documents byte-limited output; no physical Toybox execution is inferred from host tests.
+
+## Verified bounded retry diagnostic handoff
+
+Frozen executable source `6d299495a16a8f4135e507a8bae2af0870f3395b` completed Planning checks `36804419951` with all six jobs successful, including Linux and native Windows PowerShell 5.1/7 coverage; guidance `36804419916` also succeeded. Only this exact executable source is admitted. The existing host-only freezer then exited zero.
+
+The owner-local bundle is `%LOCALAPPDATA%/KidRemote/read-only-retry-probes/6d299495a16a8f4135e507a8bae2af0870f3395b`, manifest SHA-256 `a8cfb55c45fe7e9093a73d804c113eae2c38c542dfccb1de8fcf99b49f888be1`, entrypoint SHA-256 `4dc51a7db9aada30c34940361ec56595520ec1e410d4f069a2ab0b6d507075b2`. A separate verifier rehashed all 492 listed files, verified the exact inventory, LF fixed shell script, scope, bounds and absent incomplete marker. It wrote only public readiness metadata to the host validation directory.
+
+The next command is `Read-CurrentMetadata.ps1 -RetrySummary` from that pinned directory, recorded in PR #24. It is a diagnostic read, not a new product trial, cleanup or acceptance. Physical execution is NOT_RUN and productPhysicalOracle remains BLOCKED. The actual retry file has not been read by this preparation, and the original timeout cause remains UNKNOWN. Later readiness-only documentation commits do not change or rebuild these immutable executable bytes.
