@@ -63,11 +63,11 @@ try{
  $env:KR_METADATA_MODE='empty';$bad=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -Adb $fixture -ExpectedManifestHash ('d'*64);Check (($bad -join "`n") -notmatch 'SYNTHETIC_PRIVATE_SERIAL|PRIVATE_RAW_FAILURE')
  # Same actual entrypoint, native process transport and provenance checks in opt-in mode.
  $manifest.scope='OD51_BOUNDED_RETRY_DIAGNOSTIC';$manifest['readiness']='READY_FOR_ONE_OWNER_RUN'
- $manifest['privateRead']=@{path='no_backup/sync-retry';maximumBytes=1024;rawRetained=$false}
+ $manifest['privateRead']=@{path='no_backup/sync-retry';maximumBytes=1024;framing='HEX1';rawRetained=$false}
  [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 8));$retryHash=(Get-FileHash $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
  $frames=[IO.File]::ReadAllText((Join-Path $PSScriptRoot 'SyncRetryFixtures.json'))|ConvertFrom-Json
  $env:KR_RETRY_FRAME=Join-Path $root 'synthetic-retry-frame';$env:KR_RETRY_MARKER=Join-Path $root 'synthetic-retry-read'
- foreach($caseName in @('valid_NONE','valid_AUTH','valid_PROTOCOL','valid_STORAGE','legacy_True','MISSING','NONREGULAR','TOO_LARGE','changed','checksum','bad_envelope','oversize','truncated')){
+ foreach($caseName in @('valid_NONE','valid_AUTH','valid_PROTOCOL','valid_STORAGE','legacy_True','MISSING','NONREGULAR','TOO_LARGE','changed','checksum','bad_envelope','oversize','truncated','valid_NONE_CRLF','valid_PROTOCOL_CRLF','MISSING_CRLF','checksum_CRLF','body_crlf_exact_crc','body_crlf_wrong_crc','hex_nibble','invalid_utf8')){
   $case=@($frames.cases|Where-Object{$_.name -ceq $caseName})[0]
   [IO.File]::WriteAllText($env:KR_RETRY_FRAME,$case.frame)
   $env:KR_METADATA_MODE='retry';if(Test-Path $env:KR_RETRY_MARKER){Remove-Item $env:KR_RETRY_MARKER}
@@ -86,6 +86,16 @@ try{
   $joined=$raw -join "`n";$r=($joined|ConvertFrom-Json).result
   Check (-not(Test-Path $env:KR_RETRY_MARKER));Check ($r.probeStatus -cne 'OBSERVED');Check ($joined -notmatch 'PRIVATE_|11111111|22222222|OD51RETRY')
  }
+ # Unknown/missing framing version must reject before any private read.
+ foreach($frameKind in @('RAW','MISSING')){
+  $manifest.privateRead.framing=$frameKind
+  if($frameKind -ceq 'MISSING'){$manifest.privateRead.Remove('framing')}
+  [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 8));$badFrameHash=(Get-FileHash $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+  $raw=& $shell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $bundle 'Read-CurrentMetadata.ps1') -RetrySummary -Adb $fixture -ExpectedManifestHash $badFrameHash
+  Eq (($raw -join "`n"|ConvertFrom-Json).result.failureReason) 'BUNDLE_SCHEMA_INVALID';Check (-not(Test-Path $env:KR_RETRY_MARKER))
+ }
+ $manifest.privateRead['framing']='HEX1'
+ [IO.File]::WriteAllText($manifestPath,($manifest|ConvertTo-Json -Depth 8));$retryHash=(Get-FileHash $manifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
  # A different scope or omitted explicit switch must stop before private reads.
  $env:KR_METADATA_MODE='retry'
  foreach($hash in @($retryHash,('e'*64))){

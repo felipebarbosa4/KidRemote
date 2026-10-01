@@ -38,17 +38,25 @@ public static class Od51RetryDiagnostic {
     public static Dictionary<string,object> Summarize(string frame) {
         var result=Empty("INVALID","RETRY_FRAME_INVALID");
         try {
-            if(frame==null || frame.Length>1200) return Empty("INVALID","RETRY_BOUNDS");
-            foreach(string status in new[]{"MISSING","NONREGULAR","UNREADABLE","TOO_LARGE"})
-                if(frame=="OD51RETRY|"+status+"\n") return Empty(status,"RETRY_"+status);
-            const string prefix="OD51RETRY|DATA\n", suffix="\nOD51RETRY|END\n";
-            if(!frame.StartsWith(prefix,StringComparison.Ordinal)) return result;
-            if(frame.EndsWith("\nOD51RETRY|CHANGED\n",StringComparison.Ordinal)) return Empty("CHANGED","RETRY_CHANGED_DURING_READ");
-            if(frame.EndsWith("\nOD51RETRY|READ_FAILED\n",StringComparison.Ordinal)) return Empty("UNREADABLE","RETRY_UNREADABLE");
-            if(!frame.EndsWith(suffix,StringComparison.Ordinal)) return result;
-            string raw=frame.Substring(prefix.Length,frame.Length-prefix.Length-suffix.Length);
+            if(frame==null || frame.Length>4096) return Empty("INVALID","RETRY_BOUNDS");
+            Match status=Regex.Match(frame,@"\AOD51RETRY\|HEX1\|(MISSING|NONREGULAR|UNREADABLE|TOO_LARGE)\r?\n\z");
+            if(status.Success) return Empty(status.Groups[1].Value,"RETRY_"+status.Groups[1].Value);
+            Match prefix=Regex.Match(frame,@"\AOD51RETRY\|HEX1\|DATA\r?\n");
+            Match suffix=Regex.Match(frame,@"\r?\nOD51RETRY\|(END|CHANGED|READ_FAILED)\r?\n\z");
+            if(!prefix.Success || !suffix.Success || suffix.Index<prefix.Length) return result;
+            if(suffix.Groups[1].Value=="CHANGED") return Empty("CHANGED","RETRY_CHANGED_DURING_READ");
+            if(suffix.Groups[1].Value=="READ_FAILED") return Empty("UNREADABLE","RETRY_UNREADABLE");
+            string hex=frame.Substring(prefix.Length,suffix.Index-prefix.Length);
+            // Transport whitespace never changes checksum-covered payload bytes.
+            if(!Regex.IsMatch(hex,@"\A[ \t\r\n]*(?:[0-9a-f]{2}(?:[ \t\r\n]+[0-9a-f]{2})*)?[ \t\r\n]*\z"))
+                return Empty("INVALID","RETRY_HEX_INVALID");
+            MatchCollection pairs=Regex.Matches(hex,@"[0-9a-f]{2}");
+            if(pairs.Count>1024) return Empty("INVALID","RETRY_BOUNDS");
+            byte[] payload=new byte[pairs.Count];
+            for(int i=0;i<pairs.Count;i++) payload[i]=Byte.Parse(pairs[i].Value,NumberStyles.HexNumber,CultureInfo.InvariantCulture);
             var utf8=new UTF8Encoding(false,true);
-            if(utf8.GetByteCount(raw)>1024) return Empty("INVALID","RETRY_BOUNDS");
+            string raw;
+            try { raw=utf8.GetString(payload); } catch(DecoderFallbackException) { return Empty("INVALID","RETRY_ENCODING_INVALID"); }
             if(raw.Length<11 || raw[8]!='\n' || !Regex.IsMatch(raw.Substring(0,8),@"\A[0-9a-f]{8}\z")) return Empty("INVALID","RETRY_ENVELOPE_INVALID");
             string body=raw.Substring(9);
             if(Crc(utf8.GetBytes(body))!=raw.Substring(0,8)) {

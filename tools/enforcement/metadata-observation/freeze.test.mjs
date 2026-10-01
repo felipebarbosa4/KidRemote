@@ -35,7 +35,7 @@ test('retry mode requires scoped immutable manifest and emits no private record'
  assert.match(runner,/\[switch\]\$RetrySummary/);
  assert.match(runner,/privateRead.path -cne 'no_backup\/sync-retry'/);
  assert.match(runner,/\$raw=\$null/);
- assert.match(shell,/head -c 1025 "\$p"/);
+ assert.match(shell,/od -An -v -tx1 -N 1025 "\$p"/);
  assert.match(shell,/\[ "\$size" -le 1024 \]/);
  assert.match(shell,/p=no_backup\/sync-retry/);
  assert.doesNotMatch(shell,/device-identity|\.bak|logcat|sqlite|curl|wget|\bcat\b|\brm\b|\bcp\b|\bmv\b/);
@@ -43,6 +43,9 @@ test('retry mode requires scoped immutable manifest and emits no private record'
  assert.doesNotMatch(adapter,/Write-Output|Write-Host|WriteAll|Add-Content|Set-Content|Out-File/);
  assert.match(parser,/values.ContainsKey\(key\)/);
  assert.match(parser,/new UTF8Encoding\(false,true\)/);
- assert.match(parser,/GetByteCount\(raw\)>1024/);
+ assert.match(parser,/pairs.Count>1024/);
+ assert.match(parser,/frame.Length>4096/);
+ assert.match(runner,/privateRead.framing -cne 'HEX1'/);
+ assert.match(freeze,/framing:'HEX1'/);
  assert.doesNotMatch(shell,/\r/);
 });

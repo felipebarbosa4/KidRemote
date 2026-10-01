@@ -12,7 +12,9 @@ class RetryProgramTest(unittest.TestCase):
             root=Path(d); folder=root/'no_backup'; target=folder/'sync-retry'
             if kind!='missing_dir': folder.mkdir()
             payload=b'12345678\nSYNTHETIC_ONLY'
-            if kind=='valid': target.write_bytes(payload)
+            if kind=='body_crlf': payload=b'12345678\nSYNTHETIC\r\nBODY'
+            if kind=='max_size': payload=b'x'*1024
+            if kind in ('valid','body_crlf','max_size'): target.write_bytes(payload)
             if kind=='oversize': target.write_bytes(b'X'*1025)
             if kind=='symlink': target.symlink_to('/dev/null')
             if kind=='directory': target.mkdir()
@@ -23,12 +25,21 @@ class RetryProgramTest(unittest.TestCase):
             after={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file() and not p.is_symlink()}
             self.assertEqual(before,after);self.assertEqual(r.returncode,0);self.assertEqual(r.stderr,b'')
             return r.stdout
-    def test_exact_single_file_and_framing(self): self.assertEqual(self.run_case('valid'),b'OD51RETRY|DATA\n12345678\nSYNTHETIC_ONLY\nOD51RETRY|END\n')
-    def test_missing_directory(self): self.assertEqual(self.run_case('missing_dir'),b'OD51RETRY|MISSING\n')
-    def test_missing_base(self): self.assertEqual(self.run_case('missing'),b'OD51RETRY|MISSING\n')
-    def test_backup_never_read(self): self.assertEqual(self.run_case('backup_only'),b'OD51RETRY|MISSING\n')
-    def test_oversize_never_copied(self): self.assertEqual(self.run_case('oversize'),b'OD51RETRY|TOO_LARGE\n')
-    def test_file_symlink(self): self.assertEqual(self.run_case('symlink'),b'OD51RETRY|NONREGULAR\n')
-    def test_parent_symlink(self): self.assertEqual(self.run_case('parent_symlink'),b'OD51RETRY|NONREGULAR\n')
-    def test_directory_not_read(self): self.assertEqual(self.run_case('directory'),b'OD51RETRY|NONREGULAR\n')
+    def test_exact_single_file_and_framing(self): self.assertEqual(bytes.fromhex(self.run_case('valid').split(b'\n',1)[1].rsplit(b'\nOD51RETRY|END\n',1)[0].decode('ascii')),b'12345678\nSYNTHETIC_ONLY')
+    def test_crlf_transport_preserves_original_payload(self):
+        wire=self.run_case('body_crlf').replace(b'\n',b'\r\n')
+        self.assertTrue(wire.startswith(b'OD51RETRY|HEX1|DATA\r\n'))
+        encoded=wire.split(b'\r\n',1)[1].rsplit(b'\r\nOD51RETRY|END\r\n',1)[0]
+        self.assertEqual(bytes.fromhex(encoded.decode('ascii')),b'12345678\nSYNTHETIC\r\nBODY')
+    def test_maximum_file_size_is_preserved(self):
+        wire=self.run_case('max_size')
+        encoded=wire.split(b'\n',1)[1].rsplit(b'\nOD51RETRY|END\n',1)[0]
+        self.assertEqual(bytes.fromhex(encoded.decode('ascii')),b'x'*1024)
+    def test_missing_directory(self): self.assertEqual(self.run_case('missing_dir'),b'OD51RETRY|HEX1|MISSING\n')
+    def test_missing_base(self): self.assertEqual(self.run_case('missing'),b'OD51RETRY|HEX1|MISSING\n')
+    def test_backup_never_read(self): self.assertEqual(self.run_case('backup_only'),b'OD51RETRY|HEX1|MISSING\n')
+    def test_oversize_never_copied(self): self.assertEqual(self.run_case('oversize'),b'OD51RETRY|HEX1|TOO_LARGE\n')
+    def test_file_symlink(self): self.assertEqual(self.run_case('symlink'),b'OD51RETRY|HEX1|NONREGULAR\n')
+    def test_parent_symlink(self): self.assertEqual(self.run_case('parent_symlink'),b'OD51RETRY|HEX1|NONREGULAR\n')
+    def test_directory_not_read(self): self.assertEqual(self.run_case('directory'),b'OD51RETRY|HEX1|NONREGULAR\n')
 if __name__=='__main__': unittest.main()

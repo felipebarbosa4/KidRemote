@@ -24,7 +24,7 @@ try{
  $manifest=[IO.File]::ReadAllText($manifestPath)|ConvertFrom-Json
  if($manifest.scope -cne $scope -or $manifest.source -cnotmatch '^[a-f0-9]{40}$' -or $manifest.files.Count -lt 5){throw 'BUNDLE_SCHEMA_INVALID'}
  $source=$manifest.source
- if($RetrySummary -and ($manifest.readiness -cne 'READY_FOR_ONE_OWNER_RUN' -or $manifest.privateRead.path -cne 'no_backup/sync-retry' -or $manifest.privateRead.maximumBytes -ne 1024 -or $manifest.privateRead.rawRetained -ne $false)){throw 'BUNDLE_SCHEMA_INVALID'}
+ if($RetrySummary -and ($manifest.readiness -cne 'READY_FOR_ONE_OWNER_RUN' -or $manifest.privateRead.path -cne 'no_backup/sync-retry' -or $manifest.privateRead.maximumBytes -ne 1024 -or -not ($manifest.privateRead.PSObject.Properties.Name -ccontains 'framing') -or $manifest.privateRead.framing -cne 'HEX1' -or $manifest.privateRead.rawRetained -ne $false)){throw 'BUNDLE_SCHEMA_INVALID'}
  $expectedNames=@('MetadataObservation.psm1','ProductRuntimeCatalog.psm1','Read-CurrentMetadata.ps1','runtime/apksigner.jar','runtime/jbr/bin/java.exe')
  if($RetrySummary){$expectedNames+=@('SyncRetryDiagnostic.psm1','SyncRetryDiagnostic.cs','Read-SyncRetry.sh')}
  foreach($name in $expectedNames){if(@($manifest.files|Where-Object{$_.name -ceq $name}).Count -ne 1){throw 'BUNDLE_SCHEMA_INVALID'}}

@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **READY_FOR_OWNER_RETRY_DIAGNOSTIC**. The completed post-enrollment structural probe found identity/syncRetry/consent but no known accounting file; it does not expose retry status or prove the timeout cause. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [updated initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). Do not repeat either completed probe or the retired product runner. The owner has approved the one-file retry-state diagnostic and autonomous preparation within that scope; no reset, revocation, reinstall or configured-policy history exception follows.
+Current physical handoff is **RETRY_FRAME_CORRECTION_PENDING_VALIDATION**. The owner returned a framing failure before the retry checksum/schema was checked. Host tests reproduce LF/CRLF sensitivity; the corrected diagnostic uses explicit byte-preserving HEX1 framing without changing the private read scope. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [framing evidence](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md#retry-framing-failure-and-host-only-correction---2026-10-01). The original frame and sync-timeout causes remain UNKNOWN. Source-6d29949 diagnostic and source-452396d product commands are retired from repeat use. No reset, revocation, app launch, policy action or broadened recovery exception follows.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,

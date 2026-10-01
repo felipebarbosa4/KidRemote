@@ -40,7 +40,7 @@ const manifest={scope:'OD51_READ_ONLY_METADATA_OBSERVATION',readiness:'READY_FOR
  interpretation:'Independent current diagnostic evidence only. It never changes historical metadataKnown/noUnknownFiles and never authorizes a product-slice run.',productPhysicalOracle:'BLOCKED',physicalExecution:'NOT_RUN'};
 if(retry){
  manifest.scope='OD51_BOUNDED_RETRY_DIAGNOSTIC';
- manifest.privateRead={path:'no_backup/sync-retry',maximumBytes:1024,oversizeSentinelBytes:1,rawRetained:false,identityBindingEmitted:false,backupRead:false};
+ manifest.privateRead={path:'no_backup/sync-retry',maximumBytes:1024,framing:'HEX1',oversizeSentinelBytes:1,rawRetained:false,identityBindingEmitted:false,backupRead:false};
  manifest.boundaries={deviceMutation:false,backendMutation:false,appPrivateWrites:false,historicalJournalWrites:false,contentReads:true,screenshots:false,privateReadScope:'SYNC_RETRY_ONLY'};
  manifest.behavior='Existing exact target/APK/signer/reverse checks then one fixed bounded base-file read into host memory. CRC32 and writer-schema validation; only allowlisted technical flags/count/delay. No raw bytes, identity, credentials, backup/fallback read, HTTP, launch or repair.';
  manifest.requiredSwitch='-RetrySummary';

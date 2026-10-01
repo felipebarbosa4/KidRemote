@@ -100,3 +100,9 @@ Reuse `metadata-observation/Read-CurrentMetadata.ps1` with explicit `-RetrySumma
 ## Bounded retry diagnostic ready
 
 The authorized diagnostic is frozen at `6d299495a16a8f4135e507a8bae2af0870f3395b` after complete exact-source CI. Manifest `a8cfb55c45fe7e9093a73d804c113eae2c38c542dfccb1de8fcf99b49f888be1` and all 492 listed files were verified independently. Current execution and PR #24 carry one owner-operated command; no physical read or product test was executed by the agent. Ingest only the technical result, preserving the existing timeout and all earlier evidence.
+
+## Retry framing recovery - 2026-10-01
+
+**Goal:** make the authorized retry summary byte-exact across host line endings without changing application state. **Context:** the returned diagnostic stopped at RETRY_FRAME_INVALID before CRC/schema checks; the owner requested direct PowerShell testing rather than further manual host tests. **Constraints:** preserve the original failure, private-file scope and all historical bytes; no physical ADB by the agent, private-content retention, backend call, reset, policy operation or speculative app fix. **Done when:** the host-only reproduction, parser/filesystem/native regressions and exact-source CI pass, the existing freezer produces a verified replacement diagnostic, and the next physical boundary is stated separately.
+
+[Framing evidence](../test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md#retry-framing-failure-and-host-only-correction---2026-10-01) distinguishes the proven LF/CRLF synthetic reproduction from the unknown original frame. HEX1 reconstructs exact record bytes before CRC checks; it is not a permissive newline rewrite. The original source-6d29949 diagnostic is retired from repeat execution. No further authorization question is needed for safe work inside this diagnostic scope.
