@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED_PENDING_SYNC_READINESS**, not another retry-file probe. Four owned-emulator scenarios have executed, including actual first-policy/Room/server-ACK with the product service enabled; a controlled retained deadline also demonstrated timeout followed by natural convergence. These findings do not prove the Samsung cause or physical Lock/Unlock. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [executed Android evidence](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md#executed-android-first-policy-reproduction---2026-10-01). Preserve the configured Samsung identity/policy and all earlier outcomes. No new owner command, reset, revocation, reinstall or configured-state recovery exception is published.
+Current handoff is **RETAINED_SYNC_OBSERVER_IMPLEMENTED; FINAL_VALIDATION_PENDING**. The next path is a bounded observation of the existing enrolled Samsung and its first fresh authenticated report, not reenrollment or a Lock/Unlock attempt. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution). The prior product/metadata/retry commands remain retired from blind repetition.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
@@ -88,3 +88,13 @@ A future explicitly approved ADB reverse of only TCP 47366 can connect this APK 
 PASS requires positive fixture input, canonical Lock, independently blocked input/focus, corroboration, canonical Unlock with positive allowance, independently restored input and final unrestricted status. Usable fixture input/focus under restriction is FAIL; provenance/setup/transport/oracle ambiguity is INVALID. Cleanup uses canonical UNLOCK at the original expected version, never adds time/resets accounting/toggles permission. Outage/conflict can leave cleanup UNVERIFIED. Every failed/partial attempt remains separate. No physical performance, safety, OEM lifecycle or enforcement acceptance follows from these host tests.
 
 Platform reference checked 2026-09-14: [AOSP ADB manual](https://android.googlesource.com/platform/packages/modules/adb/+/refs/heads/main/docs/user/adb.1.md) documents serial selection, device listing and `reverse [--no-rebind] REMOTE LOCAL`. It establishes command syntax, not successful Samsung connectivity. No ADB global listen-all option is used.
+
+## Retained enrollment synchronization observation
+
+`Observe-SyncReadiness.ps1` is a separate entrypoint composed from this harness. The existing freezer supports `--sync-readiness` and emits a distinct manifest scope. It never invokes the product trial, installation, permission toggles, a new target policy, a pairing RPC or a direct app-data write. Original product journals are verified and retained, not finalized or promoted to recovered.
+
+This is **not read-only**: an owned fixed reverse and normal ChildActivity launch restore contact, and the app may persist/account/enforce its existing policy. Native backend startup requires an existing protected lease/saved device; ordinary synthetic probe-account health checks remain separate from the enrolled target. One bounded retry projection is read before the reverse; no identity/credential body is extracted.
+
+The first 30-second observation is durable and separate from the maximum 360-second diagnostic window. Stored retry delay above 300 seconds stops before reconnection; no Retry-After override or retry reset is performed. An authenticated report with a newer sequence and correct current period/version is synchronization evidence only, regardless of reported enforcement health. No fixture input is injected. Cleanup removes only the session's verified reverse and stops the retained backend. Any previous observer directory requires review rather than automatic repetition.
+
+Device-free tests: `SyncReadiness.Tests.ps1` uses controlled clocks and typed pages; `SyncReadinessNative.Tests.ps1` executes the actual entrypoint in an isolated child process with explicit boundary test doubles. `SyncReadinessFixture.psm1` is test-only. Existing native lease/ACL/private-pipe tests and CI remain mandatory.

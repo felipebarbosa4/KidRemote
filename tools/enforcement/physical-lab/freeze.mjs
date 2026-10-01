@@ -5,6 +5,8 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync,lstatSync,existsSync,unlinkSync} from 'node:fs';
 import {resolve,join,dirname,relative} from 'node:path';import {createHash} from 'node:crypto';
 import {compatibility} from './compatibility.mjs';
+const observation=process.argv[3]==='--sync-readiness';
+if(process.argv.length>4||(process.argv[3]&&!observation))throw Error('FREEZE_MODE_INVALID');
 const root=process.argv[2];if(!root)throw Error('OWNER_LOCAL_DESTINATION_REQUIRED');
 const git=args=>execFileSync('git',args,{encoding:'utf8'}).trim();
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -15,7 +17,7 @@ const ci=runs.find(r=>r.headSha===source&&r.workflowName==='Planning checks'&&r.
 const dir=resolve(root,source);if(existsSync(dir))throw Error('IMMUTABLE_DESTINATION_ALREADY_EXISTS');
 const priorSource='b541595a33eee5ae3a4eecd6385780ae906426b7';
 const priorManifestSha='9d17a81a147ba18359eddd8cf112df1ccff5839dd1282dfe163d99a7a18a9f68';
-const priorDir=resolve(root,priorSource),priorManifestPath=join(priorDir,'bundle.json');
+const priorDir=observation?resolve(dirname(root),'product-physical-lab',priorSource):resolve(root,priorSource),priorManifestPath=join(priorDir,'bundle.json');
 if(!existsSync(priorManifestPath)||sha(readFileSync(priorManifestPath))!==priorManifestSha)throw Error('PRIOR_BUNDLE_MANIFEST_MISMATCH');
 const priorManifest=JSON.parse(readFileSync(priorManifestPath,'utf8'));
 if(priorManifest.source!==priorSource||priorManifest.readiness!=='READY_FOR_ONE_OWNER_RUN'||!Array.isArray(priorManifest.files))throw Error('PRIOR_BUNDLE_SCHEMA_MISMATCH');
@@ -43,7 +45,8 @@ const tracked=git(['ls-files','-z']).split('\0');for(const f of tracked){if(!f)c
 for(const [to,[from]] of Object.entries(inputs))copy(from,join(dir,to));
 function tree(from,to){for(const f of readdirSync(from)){const p=join(from,f),out=join(to,f);if(lstatSync(p).isSymbolicLink())throw Error('RUNTIME_LINK_UNSUPPORTED');if(lstatSync(p).isDirectory())tree(p,out);else copy(p,out);}}
 tree(jbr,join(dir,'runtime/jbr'));
-copy('tools/enforcement/product-oracle/Run-ProductReplacement.ps1',join(dir,'Start-ProductSlice.ps1'));
+const entrypoint=observation?'Observe-SyncReadiness.ps1':'Start-ProductSlice.ps1';
+copy('tools/enforcement/product-oracle/'+(observation?'Observe-SyncReadiness.ps1':'Run-ProductReplacement.ps1'),join(dir,entrypoint));
 writeFileSync(join(dir,'backend-compatibility.json'),JSON.stringify({...compatibility('.'),source}));
 const files=[];function inventory(path){for(const f of readdirSync(path).sort()){if(f==='.incomplete')continue;const p=join(path,f);if(lstatSync(p).isDirectory())inventory(p);else{const name=relative(dir,p).split(String.fromCharCode(92)).join('/');if(!/^[A-Za-z0-9_./-]+$/.test(name))throw Error('BUNDLE_FILENAME');files.push({name,sha256:sha(readFileSync(p))});}}}inventory(dir);
 const historyReviews=JSON.parse(readFileSync('tools/enforcement/product-oracle/ReviewedInvalidAttempts.json','utf8')).reviews;
@@ -64,5 +67,17 @@ const manifest={scope:'OD51_ONE_PERSISTENT_LAB_PRODUCT_SLICE',readiness:'READY_F
  hostGate:'bundle, native tools, owned lease, live Auth/bootstrap/control, fixed ports, artifacts, durable journal, read-only exact target; all before device mutation. Failure INVALID_HOST_PREFLIGHT.',
  verdicts:{PASS:'independent positive input, blocked counter/focus under canonical Lock, corroborating actual product status, canonical Unlock and independent restored input',FAIL:'usable fixture input/focus under restriction',INVALID:'ambiguous transport/provenance/setup/counter/focus or incomplete corroboration'},
  recovery:'canonical Unlock first; manual product Accessibility-disable path only if canonical restoration unavailable; never rewrites original verdict',physicalExecution:'NOT_RUN',notProduction:true};
+if(observation){
+ manifest.scope='OD51_RETAINED_SYNC_READINESS';manifest.entrypoint=entrypoint;
+ manifest.observation={initialMs:30000,maximumMs:360000,ordinaryRetryCapMs:300000,meaning:'Diagnostic only; preserve first 30-second finding separately. No product timeout change.'};
+ manifest.retainedState={review:'source/docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.json',required:'same existing lease, saved device, epoch and initial version/limit; no creation or repair'};
+ manifest.boundaries={directPrivateWrites:false,privateRead:'bounded sync-retry only',enrollmentOperations:false,policyOperations:false,permissionChanges:false,appLaunch:'existing child activity only',reverse:'fixed no-rebind; remove only this session own tunnel',existingPolicyMayBeApplied:true};
+ manifest.productPhysicalOracle='BLOCKED';manifest.physicalEnforcementAcceptance=false;
+ manifest.hostGate='exact bundle/history/provenance/retry, retained-only backend, canonical baseline, fixed reverse, ordinary resume, bounded report observation, verified cleanup';
+ manifest.journal={priorProductHistory:'read and verify only; no recovery-catalog admission',current:'distinct create-new diagnostic events; prior session blocks repetition'};
+ manifest.ownerActions={oneNativeCommand:true,noQr:true,noPermissionChanges:true};
+ for(const key of ['old','resume','recovery','verdicts','runtimeMetadataOverlay'])delete manifest[key];
+ delete manifest.samsung.batterySaver;delete manifest.samsung.appStandby;
+}
 writeFileSync(join(dir,'bundle.json'),JSON.stringify(manifest,null,2)+'\n',{flag:'wx'});unlinkSync(join(dir,'.incomplete'));
-console.log(JSON.stringify({directory:dir,source,ci:ci.databaseId,fileCount:files.length,manifestSha256:sha(readFileSync(join(dir,'bundle.json'))),entrypointSha256:sha(readFileSync(join(dir,'Start-ProductSlice.ps1'))),physicalExecution:'NOT_RUN'}));
+console.log(JSON.stringify({directory:dir,source,ci:ci.databaseId,fileCount:files.length,manifestSha256:sha(readFileSync(join(dir,'bundle.json'))),entrypointSha256:sha(readFileSync(join(dir,entrypoint))),physicalExecution:'NOT_RUN'}));

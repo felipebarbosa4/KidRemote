@@ -47,3 +47,29 @@ test('unfinished recovery preserves missing verdict and pins independent metadat
  assert.match(runner,/INTERRUPTED_HISTORY_REQUIRES_EMPTY_ENROLLMENT/);
  assert.match(runner,/HISTORY_CHANGED_AFTER_PREFLIGHT/);
 });
+
+test('retained sync observer is a distinct non-enforcement path with no destructive fallback',()=>{
+ const entry=readFileSync('tools/enforcement/product-oracle/Observe-SyncReadiness.ps1','utf8');
+ const model=readFileSync('tools/enforcement/product-oracle/SyncReadiness.psm1','utf8');
+ const freeze=readFileSync('tools/enforcement/physical-lab/freeze.mjs','utf8');
+ const backend=readFileSync('tools/enforcement/product-oracle/BackendHost.psm1','utf8');
+ assert.match(entry,/OD51_RETAINED_SYNC_READINESS/);assert.match(entry,/Start-ProductBackend[^\n]+-RequireExisting/);
+ assert.match(entry,/targetPolicyOperationsSent=0/);assert.match(entry,/targetEnrollmentOperationsSent=0/);
+ assert.match(entry,/deviceMayPersistExistingPolicy=\$true/);assert.match(entry,/PRIOR_SYNC_READINESS_REVIEW_REQUIRED/);
+ assert.match(entry,/Assert-SyncReadinessHistory/);assert.match(entry,/Assert-SyncReadinessLease/);
+ assert.match(model,/NOT_OBSERVED_WITHIN_30S/);assert.match(model,/FRESH_AUTHENTICATED_REPORT/);
+ assert.match(model,/SYNC_RETRY_DELAY_OUTSIDE_WINDOW/);assert.match(model,/enforcementAcceptance=\$false/);
+ assert.match(model,/reverse','--no-rebind','tcp:47366','tcp:47366'/);
+ for(const s of [entry,model]){
+  assert.doesNotMatch(s,/Import-Module[^\r\n]*(LiveSlice|LivePreparation|EnrollmentHost|SyncReadinessFixture)/);
+  assert.doesNotMatch(s,/Invoke-ProductSlice|Invoke-StableLabOperation|New-ProductOperation|Add-ProductJournal|Write-ResumeReview|Save-ProductLabDevice|Clear-ProductLabSavedDevice/);
+  assert.doesNotMatch(s,/\/device\/ack|\/pairing\/redeem|finish_pairing|settings','put|appops','set|pm','clear|uninstall|logcat|screencap|sync-retry\.bak/);
+ }
+ assert.match(freeze,/process.argv\[3\]==='--sync-readiness'/);assert.match(freeze,/manifest.scope='OD51_RETAINED_SYNC_READINESS'/);
+ assert.match(freeze,/initialMs:30000,maximumMs:360000/);
+ assert.match(backend,/\[switch\]\$RequireExisting/);assert.match(backend,/RETAINED_LEASE_REQUIRED/);assert.match(backend,/RETAINED_DEVICE_REQUIRED/);
+ // Do not turn preparation into a product recovery-catalog exception or increase its timeout.
+ const catalog=JSON.parse(readFileSync('tools/enforcement/product-oracle/ReviewedInvalidAttempts.json','utf8'));
+ assert.ok(!catalog.reviews.some(x=>x.attempt==='8e407e8b-eddb-4d65-b1bc-1819155b1d52'));
+ assert.match(readFileSync('tools/enforcement/product-oracle/LiveSlice.psm1','utf8'),/Elapsed.TotalSeconds -lt 30/);
+});

@@ -46,13 +46,16 @@ r.on('line',line=>{if(line==='STOP'){process.stdout.write('STOPPED_DATA_RETAINED
    Copy-Item (Join-Path $PSScriptRoot '../physical-lab/lease.mjs') (Join-Path $scripts 'lease.mjs')
    # Public-source syntax check and structural-only framing diagnostic (no secret bytes).
    $null=Invoke-ReviewProcess (Join-Path $runtime 'node.exe') @('--check',(Join-Path $scripts 'runtime.mjs')) ''
+   $refused=$false;try{$unexpected=Start-ProductBackend $source $bundle ('a'*40) -RequireExisting}catch{$refused=$true};Check $refused
+   Check (-not(Test-Path (Join-Path $env:LOCALAPPDATA 'KidRemote/physical-lab/lease.dpapi')))
    Write-Output 'NATIVE_PIPE_FIRST_START'
    $b=Start-ProductBackend $source $bundle ('a'*40);$leaseId=$b.local.id;Check ($null -ne $b.jwt)
    $caught=$false;try{$other=Start-ProductBackend $source $bundle ('a'*40)}catch{$caught=$true};Check $caught
    $d=[pscustomobject]@{id=[Guid]::NewGuid().ToString();policy_epoch=[Guid]::NewGuid().ToString()};Save-ProductLabDevice $b $d
    Check ((Stop-ProductBackend $b) -ceq 'STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED');$b=$null
+   [IO.File]::WriteAllText((Join-Path $env:LOCALAPPDATA 'KidRemote/physical-lab/resources.json'),'SYNTHETIC_NATIVE_RECORD')
    Write-Output 'NATIVE_PIPE_SECOND_START'
-   $b=Start-ProductBackend $source $bundle ('a'*40)
+   $b=Start-ProductBackend $source $bundle ('a'*40) -RequireExisting
    Check ($b.local.id -ceq $leaseId -and $b.local.device.id -ceq $d.id -and $b.local.device.policy_epoch -ceq $d.policy_epoch)
    $null=Stop-ProductBackend $b;$b=$null
    $caught=$false;try{$other=Start-ProductBackend $source $bundle ('b'*40)}catch{$caught=$true};Check $caught

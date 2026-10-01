@@ -101,7 +101,7 @@ function Read-LabProtected([string]$Path){
  $s=ConvertTo-SecureString ([IO.File]::ReadAllText($Path));$p=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s)
  try{return ([Runtime.InteropServices.Marshal]::PtrToStringBSTR($p)|ConvertFrom-Json)}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p);$s.Dispose()}
 }
-function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$Source){
+function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$Source,[switch]$RequireExisting){
  if($env:OS -cne 'Windows_NT'){throw 'INVALID:NATIVE_WINDOWS_REQUIRED'}
  $docker=Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'
  if(-not(Test-Path -LiteralPath $docker)){$docker='C:\Program Files\Docker\Docker\resources\bin\docker.exe'}
@@ -114,6 +114,7 @@ function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$S
   $null=Protect-LabDirectory $root
   $guard=Open-LabLeaseLock $root
   Assert-LabSecretState $root
+  if($RequireExisting -and (-not(Test-Path -LiteralPath (Join-Path $root 'resources.json')) -or -not(Test-Path -LiteralPath (Join-Path $root 'lease.dpapi')))){throw 'INVALID:RETAINED_LEASE_REQUIRED'}
   $stage='PROTECTED_STATE';$secretFile=Join-Path $root 'lease.dpapi'
   if(-not(Test-Path -LiteralPath $secretFile)){
    if(Test-Path -LiteralPath (Join-Path $root 'resources.json')){throw 'INVALID:LEASE_SECRETS_MISSING'}
@@ -124,6 +125,7 @@ function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$S
   }
   $stage='PROTECTED_READ';$local=Read-LabProtected $secretFile
   if($local.format -ne 1 -or $local.id -cnotmatch '^[a-f0-9-]{36}$'){throw 'INVALID:LEASE_SOURCE_MISMATCH'}
+  if($RequireExisting -and $null -eq $local.device){throw 'INVALID:RETAINED_DEVICE_REQUIRED'}
   $proof=if($local.PSObject.Properties.Name -contains 'compatibility'){$local.compatibility}else{[IO.File]::ReadAllText((Join-Path $SourceRoot 'tools/enforcement/physical-lab/legacy-compatibility.json'))|ConvertFrom-Json}
   $current=[IO.File]::ReadAllText((Join-Path $Bundle 'backend-compatibility.json'))|ConvertFrom-Json
   if($current.source -cne $Source -or $current.format -ne 1 -or $current.digest -cnotmatch '^[a-f0-9]{64}$' -or $proof.source -cne $local.source -or $proof.digest -cne $current.digest -or $proof.format -ne 1){throw 'INVALID:BACKEND_COMPATIBILITY_MISMATCH'}
@@ -149,8 +151,8 @@ function Start-ProductBackendCore([string]$SourceRoot,[string]$Bundle,[string]$S
   if($p){try{Write-LabPipeLine $p 'STOP';$p.StandardInput.BaseStream.Close();[void]$p.WaitForExit(60000)}catch{};$p.Dispose()};if($guard){$guard.Dispose()};$e=New-Object Exception('INVALID:HOST_'+$stage+'_LINE_'+$failureLine+'_'+$failureType+'_EXIT_'+$runtimeExit+'_'+$diagnostic);$map=@{LEASE_LOCK='LEASE_STATE';PROTECTED_STATE='LEASE_STATE';PROTECTED_READ='LEASE_STATE';NATIVE_START='RUNTIME_VERIFY';PRIVATE_SESSION='BACKEND_HEALTH'};$e.Data['hostStage']=if($map.ContainsKey($stage)){$map[$stage]}else{$stage};if($original.Data.Contains('hostCode')){$e.Data['hostCode']=$original.Data['hostCode'];$e.Data['hostStage']=$original.Data['hostStage']};throw $e
  }
 }
-function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Source){
- try{return Start-ProductBackendCore $SourceRoot $Bundle $Source}catch{
+function Start-ProductBackend([string]$SourceRoot,[string]$Bundle,[string]$Source,[switch]$RequireExisting){
+ try{return Start-ProductBackendCore $SourceRoot $Bundle $Source -RequireExisting:$RequireExisting}catch{
   if($_.Exception.Data.Contains('hostStage')){throw}
   $stage=switch($_.Exception.Message){'INVALID:DOCKER_CLIENT_MISSING'{'DOCKER_CLIENT'} 'INVALID:NATIVE_RUNTIME_MISSING'{'RUNTIME_VERIFY'} 'INVALID:NATIVE_WINDOWS_REQUIRED'{'RUNTIME_VERIFY'} default{'LEASE_STATE'}}
   $code=if($stage -ceq 'LEASE_STATE'){'LEASE_SECRET_STATE_CONFLICT'}else{'HOST_PREREQUISITE'};$e=New-Object Exception('INVALID:'+$code);$e.Data['hostStage']=$stage;$e.Data['hostCode']=$code;throw $e
