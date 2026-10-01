@@ -17,9 +17,18 @@ try{
  const partial=inspectEnrollment(lease);ok(partial.devices.length===1&&!partial.devices[0].configured&&!partial.devices[0].reported&&partial.devices[0].usable,'READONLY_PARTIAL_REVIEW');
  ok(partial.sessions.length===2&&partial.sessions.filter(s=>s.consumed).length===1&&partial.sessions.filter(s=>s.cancelled).length===1,'NO_DUPLICATE_DEVICE_AFTER_ABANDONED_CANCEL');
  const before=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);ok(before.device_id===d.device_id,'REAL_DEVICE_AUTH');
+ // Exercise the first configured sync through the real native gateway, not only bootstrap/control.
+ const initialOperation=randomUUID();
+ const configured=await wire(47366,'/parent/devices/'+d.device_id+'/operations',{protocol_version:1,operation_id:initialOperation,device_id:d.device_id,kind:'SET_DAILY_LIMIT',payload:{daily_limit_seconds:3600},expected_version:0},jwt);
+ ok(configured.status==='accepted'&&configured.version===1,'FIRST_POLICY_ACCEPTED_NOT_APPLIED');
+ const initialSnapshot=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);
+ ok(initialSnapshot.kind==='CONFIGURED_SNAPSHOT'&&initialSnapshot.version===1&&initialSnapshot.device_id===d.device_id&&initialSnapshot.policy_epoch===d.policy_epoch&&initialSnapshot.daily_limit_seconds===3600&&!initialSnapshot.manual_lock,'FIRST_CONFIGURED_SYNC');
+ ok(initialSnapshot.operations.length===1&&initialSnapshot.operations[0].operation_id===initialOperation&&initialSnapshot.next_cursor===null,'FIRST_CONFIGURED_PAGE');
+ ok(lease.sql(`select count(*) from private.sync_snapshots where device_id='${d.device_id}';`)==='1','CONFIGURED_SNAPSHOT_PERSISTED');
+ const unreported=await wire(47362,'/rpc/parent_devices',{p_after:null},jwt);ok(unreported.devices[0].report===null,'SNAPSHOT_READ_IS_NOT_ACK');
  const ids=JSON.stringify(lease.record);await stopGateway();ok(lease.stop()==='STOPPED_DATA_RETAINED','STOP_RETAINS');
  lease=new Lease(config);ok(await lease.start()==='REUSED','SECOND_START_REUSE');ok(JSON.stringify(lease.record)===ids,'EXACT_RESOURCES');gateway=await startGateway(lease,docker,host);jwt=await health(lease);passed++;
- const after=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);ok(after.device_id===before.device_id&&after.policy_epoch===before.policy_epoch,'ENROLLMENT_SURVIVES_RESTART');
+ const after=await wire(47366,'/device/sync',{protocol_version:1,after_version:0},d.credential);ok(after.device_id===before.device_id&&after.policy_epoch===before.policy_epoch,'ENROLLMENT_SURVIVES_RESTART');ok(after.kind==='CONFIGURED_SNAPSHOT'&&after.version===1&&after.snapshot_id===initialSnapshot.snapshot_id,'CONFIGURED_SNAPSHOT_SURVIVES_RESTART');
  const page=await wire(47362,'/rpc/parent_devices',{p_after:null},jwt);ok(page.devices.length===1&&page.devices[0].id===d.device_id,'NO_DUPLICATE_CHILD');
  ok(lease.sql(`select count(*) from private.device_credentials where device_id='${d.device_id}';`)==='1','SAME_CREDENTIAL');
  for(const id of Object.values(lease.record.containers)){const x=JSON.parse(lease.call(['inspect',id]))[0];check(x.HostConfig.LogConfig.Type==='none','LOG_RETENTION_NOT_DISABLED');}ok(true,'SERVICE_LOG_RETENTION_DISABLED');
