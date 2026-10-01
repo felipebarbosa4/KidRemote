@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current physical handoff is **BLOCKED_PENDING_INITIAL_REPORT_REVIEW**. Source `452396d834dd76410a72094bd1e3e27e3c2954df` has been executed: enrollment and initial policy were recorded, but the slice stopped at INITIAL_REPORT_TIMEOUT before any Lock or independent control. Its command is retired from repeat execution. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). The next owner action is a new read-only structural snapshot after enrollment, not a retry, reset or another QR.
+Current physical handoff is **BLOCKED_PENDING_BOUNDED_RETRY_DIAGNOSTIC_AUTHORIZATION**. The completed post-enrollment structural probe found identity/syncRetry/consent but no known accounting file; it does not expose retry status or prove the timeout cause. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and the [updated initial-report review](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md). Do not repeat either completed probe or the retired product runner. A one-file sanitized retry-state read is proposed but requires explicit owner authorization before implementation; no reset, revocation, reinstall or configured-policy history exception follows.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,

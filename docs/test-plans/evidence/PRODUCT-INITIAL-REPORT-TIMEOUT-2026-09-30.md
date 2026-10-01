@@ -46,3 +46,29 @@ The product source-452396d command is retired from repeat execution pending this
 ## Validation of this evidence update
 
 Local WSL execution passed all six existing guidance tests, the repository validator and whitespace checks. Original attempt/diagnostic hashes and the host resource record were rechecked unchanged. Only evidence/current-routing documents were edited; no new Android, backend or runner test result is claimed. The separate CI for this documentation checkpoint is not validation of a new executable bundle.
+
+## Post-enrollment observation received - 2026-10-01 UTC
+
+**Goal:** locate the first unproven child-sync boundary without repeating the product attempt. **Context:** the owner completed the requested post-enrollment structural probe. **Constraints:** no device/backend operation, private-state content read, reset, revocation, APK change or recovery-catalog amendment. **Done when:** the observation and its limits are recorded and the next missing diagnostic is distinguished from a new physical trial.
+
+[Observation 3143554f](PRODUCT-POST-ENROLLMENT-METADATA-2026-10-01.json) is recorded at `2026-10-01T01:34:58.3254981Z`. The exact owner-local JSON is 3,678 bytes, SHA-256 `6d0124c37009bcaa04e4a3ad2fa948db3d9e856497385d63f561053750431ed9`. This repository representation changes only CRLF to LF, SHA-256 `c79f16040849d19fbe358729850e573852a2899e63fd9650adfc4f237213e110`; restoring CRLF reproduces the original bytes. The original host diagnostic is unchanged.
+
+**OBSERVED:** exact configuration, child APK/signer and fixture provenance passed; the fixed lab reverse was absent; metadata parsing completed and the temporary host APK was removed. Known-present product kinds are `identity`, `syncRetry` and `consent`. Four generic runtime kinds and the same 108-byte Samsung IDS structural entry complete the eight-file inventory. No known `pairing`, `accounting`, accounting sidecar/write-intent or sync-page-progress kind is present in this snapshot. This is not a decrypted identity, consent-value or retry-state observation.
+
+The old generic probe still reports `UNKNOWN_DURABLE_FILES_PRESENT` and `productPhysicalOracle=BLOCKED`. Preserve these original fields. The [existing exact Samsung classification](PRODUCT-SAMSUNG-IDS-CLASSIFICATION-2026-09-16.md) accounts for the one structural IDS entry only on the already-recorded configuration; it does not make this configured device an empty-state recovery candidate. Do not read or delete the IDS file.
+
+**INFERRED:** the unresolved boundary is before the first locally evidenced accounting snapshot, rather than an independently demonstrated Lock failure. The previous backend report/cache observations and this later structural observation were made at different times. They do not prove which HTTP, scheduler, validation or storage step failed. No new backend query was made for this update.
+
+**UNKNOWN:** whether the stored identity can be decrypted and authenticated, whether the retry record is valid or stopped/pending, its reason, and whether initialization ever attempted a write. The existence of `syncRetry` is not proof that a retry executed; the presence of `consent` does not prove its value or current system permission. Preserve `INVALID / INITIAL_REPORT_TIMEOUT / NOT_REQUIRED` as the original slice result, not an enrollment or enforcement PASS.
+
+## Proposed next diagnostic - owner authorization required
+
+The current OD-51 metadata authorization explicitly excludes private file contents. `RetryStore` in `SyncRecovery.kt` already persists `pending`, `stopped`, `reason`, `attempt`, `boot`, `due` and `delay`, together with technical identity binding. Reading those values is outside the completed structural probe's scope. No such read or implementation was performed, and no new permission is inferred from folder access.
+
+Propose one owner-operated, fixed-package read of only `no_backup/sync-retry` (bounded to the existing 1,024-byte format), reduced locally to checksum/schema validity, pending/stopped, the existing reason enum and bounded attempt/timing indicators. No raw body, identity binding, credentials, arbitrary paths, logcat, screenshot, network operation, app launch, consent change or state write may be retained or emitted. The encrypted identity and all other app files remain outside that proposal. Missing/malformed/oversized input must produce a typed diagnostic, never trigger repair or fallback content reads.
+
+This is a proposal, not an approved extension or runnable handoff. Ask the owner before implementing/executing it. If approved, reuse the existing metadata-probe provenance and command boundaries, test synthetic valid/malformed/secret-leak cases and require exact-source validation before one owner command. Do not repeat the generic structural probe or the product runner meanwhile. The configured-policy history remains excluded from pre-setup recovery.
+
+### Validation of the post-enrollment evidence update
+
+Local WSL passed the six existing guidance tests, repository validation and patch whitespace checks. The new metadata representation reconstructs the exact original CRLF bytes. The twelve original timeout-attempt files, its separate durable diagnostic, the original structured timeout record and existing recovery implementation/catalog were rehashed unchanged. Only evidence and current-routing documentation changed. No new Android/backend/runner test or physical acceptance is claimed; the proposed retry-summary diagnostic is not implemented or authorized.
