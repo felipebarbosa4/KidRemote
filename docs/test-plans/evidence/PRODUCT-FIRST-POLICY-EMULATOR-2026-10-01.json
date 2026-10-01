@@ -1,0 +1,290 @@
+{
+  "scope": "OD51_FIRST_POLICY_EMULATOR_REPRODUCTION",
+  "recordedUtc": "2026-10-01T16:07:16.410905+00:00",
+  "sourceBaseline": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+  "testWorkingTreeChanged": true,
+  "attempts": [
+    {
+      "directory": "first-policy-observation-X5DDHo",
+      "sha256": "0e40c597b168fe3cdc2ede1415abe3e9c7b5f5a591af953f981fa6e2f3b2bd60",
+      "record": {
+        "scope": "NATIVE_OWNED_EMULATOR_LOOPBACK_FIXTURE",
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "b414b56d939f60c54445d26708c639de7ca6e4af76c9384f1faec750cee2094d"
+        },
+        "stages": [],
+        "physicalDeviceInvoked": false,
+        "backendInvoked": false,
+        "status": "NOT_PASSED",
+        "cleanup": "UNVERIFIED",
+        "failure": "EMULATOR_IDENTITY_UNVERIFIED"
+      }
+    },
+    {
+      "directory": "first-policy-observation-pb9I9u",
+      "sha256": "d105a980a4ad95f0d708f7c459930f5d254e120cffa776de750985d076086462",
+      "record": {
+        "scope": "NATIVE_OWNED_EMULATOR_LOOPBACK_FIXTURE",
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "b414b56d939f60c54445d26708c639de7ca6e4af76c9384f1faec750cee2094d"
+        },
+        "stages": [
+          {
+            "mode": "foreground",
+            "status": "PASS",
+            "started": "2026-10-01T15:50:24.021Z",
+            "exitCode": 0,
+            "finished": "2026-10-01T15:50:29.044Z",
+            "codes": [
+              "FIXTURE_POLICY_ROOM_ACK_CONFIRMED"
+            ],
+            "observation": {
+              "scope": "EMULATOR_LIFECYCLE_LOOPBACK_FIXTURE",
+              "physicalAcceptance": false,
+              "mode": "foreground",
+              "bootstrapResponses": 2,
+              "initialAccountingAbsent": true,
+              "topLaunchStatusOk": true,
+              "topLaunchReused": false,
+              "withinInitialWindow": true,
+              "resumeCallbacksAfterTopLaunch": 1,
+              "responsesAfterTopLaunch": 1,
+              "converged": true,
+              "localFixtureAckConfirmed": true,
+              "fixtureAckRequests": 2,
+              "responseCount": 4,
+              "totalResumeCallbacks": 2,
+              "observedMsAfterFixtureCommit": 352,
+              "status": "PASS"
+            },
+            "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED"
+          },
+          {
+            "mode": "deadline",
+            "status": "PASS",
+            "started": "2026-10-01T15:50:30.129Z",
+            "exitCode": 0,
+            "finished": "2026-10-01T15:51:19.263Z",
+            "codes": [
+              "FIXTURE_POLICY_ROOM_ACK_CONFIRMED"
+            ],
+            "observation": {
+              "scope": "EMULATOR_LIFECYCLE_LOOPBACK_FIXTURE",
+              "physicalAcceptance": false,
+              "mode": "deadline",
+              "bootstrapResponses": 2,
+              "initialAccountingAbsent": true,
+              "controlledRetryDelayMs": 45000,
+              "topLaunchStatusOk": true,
+              "topLaunchReused": false,
+              "withinInitialWindow": false,
+              "resumeCallbacksAfterTopLaunch": 1,
+              "responsesAfterTopLaunch": 0,
+              "converged": true,
+              "localFixtureAckConfirmed": true,
+              "fixtureAckRequests": 1,
+              "responseCount": 3,
+              "totalResumeCallbacks": 2,
+              "observedMsAfterFixtureCommit": 45115,
+              "status": "PASS"
+            },
+            "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED"
+          }
+        ],
+        "physicalDeviceInvoked": false,
+        "backendInvoked": false,
+        "status": "PASS",
+        "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED"
+      }
+    },
+    {
+      "directory": "first-policy-observation-YWes1k",
+      "sha256": "e38b407bd37e1d84edacbf57fb3b89e73e436229c0ac0ccbd0546ae6d716ff65",
+      "record": {
+        "scope": "NATIVE_OWNED_EMULATOR_REAL_FIRST_POLICY",
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "6fc8134d29f48deb9a711d38dce651ca596f378f9b046650d342382603b84790"
+        },
+        "stages": [
+          {
+            "mode": "connected",
+            "status": "PASS",
+            "started": "2026-10-01T15:57:18.545Z",
+            "exitCode": 0,
+            "finished": "2026-10-01T15:57:27.006Z",
+            "codes": [
+              "REAL_ENROLLMENT_FIRST_POLICY_ROOM_SERVER_ACK"
+            ],
+            "observation": {
+              "scope": "EMULATOR_REAL_GATEWAY_FIRST_POLICY",
+              "mode": "connected",
+              "physicalAcceptance": false,
+              "enrollmentConfirmed": true,
+              "initialAccountingAbsent": true,
+              "topLaunchStatusOk": true,
+              "serverReportVersion": 1,
+              "serverRestrictionApplied": false,
+              "localAckConfirmed": true,
+              "observedMsAfterParentCommit": 614,
+              "status": "PASS"
+            },
+            "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED"
+          }
+        ],
+        "physicalDeviceInvoked": false,
+        "backendInvoked": true,
+        "driverSha256": "29087393c773df28ee48f7e78648ffb6a5c8ce3ebdd79241e23e941e4e980219",
+        "testSources": {
+          "FirstPolicyRuntimeTest.kt": "127e09d656f49f57bcd760d070b48398d35b36a5c374a05ae5f356c9174adb45",
+          "ConnectedFirstPolicyRuntimeTest.kt": "f4eabeba79246c0ec1e07c4d658035b1c5ee50683460d25feb6b36f3be257ca8"
+        },
+        "status": "PASS",
+        "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED",
+        "backendCleanup": "NEW_SYNTHETIC_LEASE_REMOVED",
+        "originalLabUnchanged": true
+      }
+    },
+    {
+      "directory": "first-policy-observation-rPjefF",
+      "sha256": "7c3dda629d82314189fb5817422ac21bafebdc1452731b7fb7f79aa8b735f74e",
+      "record": {
+        "scope": "NATIVE_OWNED_EMULATOR_REAL_FIRST_POLICY",
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "b44cea6179e7f3ab2ec146b2da885240ebae2bca5b41fffcce03a794c1a98040"
+        },
+        "stages": [
+          {
+            "mode": "connected-service",
+            "status": "PASS",
+            "started": "2026-10-01T16:01:42.454Z",
+            "exitCode": 0,
+            "finished": "2026-10-01T16:01:51.041Z",
+            "codes": [
+              "REAL_ENROLLMENT_FIRST_POLICY_ROOM_SERVER_ACK"
+            ],
+            "observation": {
+              "scope": "EMULATOR_REAL_GATEWAY_FIRST_POLICY",
+              "mode": "connected-service",
+              "physicalAcceptance": false,
+              "enrollmentConfirmed": true,
+              "initialAccountingAbsent": true,
+              "serviceConnected": true,
+              "topLaunchStatusOk": true,
+              "serverReportVersion": 1,
+              "serverRestrictionApplied": false,
+              "localAckConfirmed": true,
+              "observedMsAfterParentCommit": 497,
+              "status": "PASS",
+              "serviceSettingsCleanup": "VERIFIED"
+            },
+            "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED"
+          }
+        ],
+        "physicalDeviceInvoked": false,
+        "backendInvoked": true,
+        "driverSha256": "6f00be4e297b5de4a96d147ad63ae0f6bc0bf7bbbc0765702bc73da90ffbe8d9",
+        "testSources": {
+          "FirstPolicyRuntimeTest.kt": "127e09d656f49f57bcd760d070b48398d35b36a5c374a05ae5f356c9174adb45",
+          "ConnectedFirstPolicyRuntimeTest.kt": "6fc659f6e94a2c77f52640d20f98b55ee96c86201734d2e3c8f67df527e9d347"
+        },
+        "status": "PASS",
+        "cleanup": "OWN_SYNTHETIC_APP_DATA_CLEARED",
+        "backendCleanup": "NEW_SYNTHETIC_LEASE_REMOVED",
+        "originalLabUnchanged": true
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "directory": "first-policy-apks-6421f662-cc85-4521-8bbb-b5e9188af29a",
+      "metadata": {
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "b414b56d939f60c54445d26708c639de7ca6e4af76c9384f1faec750cee2094d"
+        },
+        "testSourceSha256": "127e09d656f49f57bcd760d070b48398d35b36a5c374a05ae5f356c9174adb45",
+        "driverSha256": "252ad63452e27b56dab38fbb324835f9196cd9e5d97efb69e6a6e6632a3a1de3"
+      }
+    },
+    {
+      "directory": "first-policy-apks-ef1c2105-47c7-4432-8311-976efb7a0abd",
+      "metadata": {
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "6fc8134d29f48deb9a711d38dce651ca596f378f9b046650d342382603b84790"
+        },
+        "testSources": {
+          "FirstPolicyRuntimeTest.kt": "127e09d656f49f57bcd760d070b48398d35b36a5c374a05ae5f356c9174adb45",
+          "ConnectedFirstPolicyRuntimeTest.kt": "f4eabeba79246c0ec1e07c4d658035b1c5ee50683460d25feb6b36f3be257ca8"
+        },
+        "driverSha256": "29087393c773df28ee48f7e78648ffb6a5c8ce3ebdd79241e23e941e4e980219"
+      }
+    },
+    {
+      "directory": "first-policy-apks-420e8423-7f29-4537-a141-25f1bbd8dff9",
+      "metadata": {
+        "source": "048b0953b9bd0a9753c67ef9431ccf4cd2dcb84f",
+        "workingTreeChanged": true,
+        "apks": {
+          "child-debug.apk": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+          "child-debug-androidTest.apk": "b44cea6179e7f3ab2ec146b2da885240ebae2bca5b41fffcce03a794c1a98040"
+        },
+        "testSources": {
+          "FirstPolicyRuntimeTest.kt": "127e09d656f49f57bcd760d070b48398d35b36a5c374a05ae5f356c9174adb45",
+          "ConnectedFirstPolicyRuntimeTest.kt": "6fc659f6e94a2c77f52640d20f98b55ee96c86201734d2e3c8f67df527e9d347"
+        },
+        "driverSha256": "6f00be4e297b5de4a96d147ad63ae0f6bc0bf7bbbc0765702bc73da90ffbe8d9"
+      }
+    }
+  ],
+  "originalHostEvidenceHashesVerified": 97,
+  "artifactIsolation": {
+    "markerAudit": "PASS",
+    "debugSha256": "b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da",
+    "releaseSha256": "ffb42850fe95fe7f6f48f8e00fe89c534743e334462625b4bed4b7d1f2cb60be",
+    "testSha256": "b44cea6179e7f3ab2ec146b2da885240ebae2bca5b41fffcce03a794c1a98040"
+  },
+  "physicalDeviceInvoked": false,
+  "originalSamsungTimeout": "UNCHANGED_UNKNOWN_CAUSE",
+  "emulatorShutdown": {
+    "helperStopSucceeded": true,
+    "processPresentAfterStop": false,
+    "listeners5584And5585": 0
+  },
+  "limitations": [
+    "The 45-second deadline is a controlled scheduler fixture, not a historical Samsung deadline.",
+    "Loopback fixture ACKs are not backend evidence. Two separate connected runs use real Auth/DB/HTTP/Keystore/Room.",
+    "No Lock/Unlock trial or physical enforcement result. No runtime or retry-policy change."
+  ],
+  "validation": {
+    "freshChildUnitTests": {
+      "scope": "CHILD_JVM_UNIT_TESTS",
+      "testSuites": 7,
+      "tests": 84,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "forcedRerun": true
+    },
+    "nodeTests": 14,
+    "instrumentedScenarios": 4,
+    "compilationAndLint": "PASS",
+    "ci": "PENDING_NEW_COMMIT"
+  }
+}

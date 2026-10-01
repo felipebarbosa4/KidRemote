@@ -111,6 +111,10 @@ jobs:
           fetch-depth: 0
       - name: Validate repository planning
         run: node tools/validate.mjs
+      - name: Audit first-policy emulator test boundaries without a device
+        run: |
+          node --check tools/kr009/first-policy-native.mjs
+          node --test tools/kr009/security.test.mjs
       - name: Test content-free host recovery observer
         run: python3 -B -m unittest discover -s tools/enforcement -p 'test_*.py'
       - name: Test read-only private-state shell program without a device

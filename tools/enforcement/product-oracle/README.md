@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current handoff is **RETRY_DIAGNOSTIC_COMPLETE; ANDROID_INITIAL_SYNC_UNRESOLVED**. The owner returned a valid retry summary; the code caps its counter and records delay rather than current time remaining. A new isolated native host test passed the first configured sync/persistence path without touching the Samsung or original lease. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [classified findings](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md#valid-retry-state-and-native-configured-sync-check---2026-10-01). No more owner diagnostic, QR or product command is requested at this checkpoint. All failed attempts and configured-device recovery restrictions remain.
+Current physical handoff is **BLOCKED_PENDING_SYNC_READINESS**, not another retry-file probe. Four owned-emulator scenarios have executed, including actual first-policy/Room/server-ACK with the product service enabled; a controlled retained deadline also demonstrated timeout followed by natural convergence. These findings do not prove the Samsung cause or physical Lock/Unlock. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution) and [executed Android evidence](../../../docs/test-plans/evidence/PRODUCT-INITIAL-REPORT-TIMEOUT-2026-09-30.md#executed-android-first-policy-reproduction---2026-10-01). Preserve the configured Samsung identity/policy and all earlier outcomes. No new owner command, reset, revocation, reinstall or configured-state recovery exception is published.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
