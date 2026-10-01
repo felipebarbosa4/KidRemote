@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current handoff is **RETAINED_SYNC_OBSERVER_IMPLEMENTED; FINAL_VALIDATION_PENDING**. The next path is a bounded observation of the existing enrolled Samsung and its first fresh authenticated report, not reenrollment or a Lock/Unlock attempt. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution). The prior product/metadata/retry commands remain retired from blind repetition.
+Current handoff is **READY_FOR_RETAINED_SYNC_OBSERVATION; PHYSICAL_NOT_RUN**. The next path is a bounded observation of the existing enrolled Samsung and its first fresh authenticated report, not reenrollment or a Lock/Unlock attempt. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution). The prior product/metadata/retry commands remain retired from blind repetition.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
