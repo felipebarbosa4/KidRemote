@@ -1,0 +1,259 @@
+{
+  "scope": "OD51_INITIAL_REPORT_TIMEOUT_REVIEW_NOT_QUALIFICATION",
+  "reviewedOn": "2026-09-30",
+  "attempt": "8e407e8b-eddb-4d65-b1bc-1819155b1d52",
+  "source": "452396d834dd76410a72094bd1e3e27e3c2954df",
+  "observedResult": {
+    "primaryStatus": "INVALID",
+    "primaryReason": "INITIAL_REPORT_TIMEOUT",
+    "primaryCleanup": "NOT_REQUIRED"
+  },
+  "bundleSha256": "fe352fe67342e0c8f176dc975dadf10dd7bbd8be16737e8b4a101950b69848dd",
+  "durableJournal": {
+    "inventory": {
+      "000000.json": "e66a44c2f2af561ab5cb12dd16ac0132dbbed328aebfed22214611195db92076",
+      "000001.json": "2b3b0ef85fa31bf0d4a22d69150ff944bf13310e53cc0019de568b78bbfd2ccb",
+      "000002.json": "ac7a18ff154689f73b459a2d248aab44e5906d689e6138f273989e19eeb5aa07",
+      "000003.json": "747b861cd092329de3de03fa05a0c9c4fb192be5ddca60d422bc2852e951b3e4",
+      "000004.json": "5b8fc05e513d34953aa4f2ce14e6559fdac6067198b840ef114f1f113a37d6c3",
+      "000005.json": "6dd173a7b03e30fa628db99fbdd2f7cc68b95640b2f497b2a2c59414b272e30a",
+      "000006.json": "cb076b7827272742264429bff05a9354f2f43b64f229e8753a7ee9ca7874a7e4",
+      "000007.json": "98959930da89a3642db31de21864a24e3b44b3b720c1f82be9ea983c0a3ac5a1",
+      "provenance": "e9cc9088266bd32a02bd8b7f0aa6bec49033bb3d2e25b22a7d63a569c8581043",
+      "result.txt": "89d27a47ce92c627a6386c6a7f68bf72d1b7f7d6f10c78b1bbfa7b100600fc5b",
+      "resume-review": "6a436f187ca217859bf9f08dcbf298c3962851cc1902c3620e5d9fa07ddb0eeb",
+      "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "rows": [
+      {
+        "sequence": 0,
+        "previous": "e9cc9088266bd32a02bd8b7f0aa6bec49033bb3d2e25b22a7d63a569c8581043",
+        "event": "f3bfcdae-b8a6-484e-a62a-28461c41ecfa",
+        "stage": "BEGIN",
+        "value": "STARTED",
+        "utc": "2026-09-30T23:34:02.8403622Z"
+      },
+      {
+        "sequence": 1,
+        "previous": "e66a44c2f2af561ab5cb12dd16ac0132dbbed328aebfed22214611195db92076",
+        "event": "ffdd1901-1c97-462c-9cfd-1c7358addf56",
+        "stage": "PAIRING_CLEANUP_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T23:34:02.8504790Z"
+      },
+      {
+        "sequence": 2,
+        "previous": "2b3b0ef85fa31bf0d4a22d69150ff944bf13310e53cc0019de568b78bbfd2ccb",
+        "event": "b263706b-3009-440b-a70e-1a045697de48",
+        "stage": "REVERSE_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T23:34:02.9200431Z"
+      },
+      {
+        "sequence": 3,
+        "previous": "ac7a18ff154689f73b459a2d248aab44e5906d689e6138f273989e19eeb5aa07",
+        "event": "7fe19aa7-3aa5-4d51-bd1b-58bca946805a",
+        "stage": "ENROLLMENT_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T23:34:03.0344285Z"
+      },
+      {
+        "sequence": 4,
+        "previous": "747b861cd092329de3de03fa05a0c9c4fb192be5ddca60d422bc2852e951b3e4",
+        "event": "2420aedc-87e6-4bcb-b6f8-b34229bf2def",
+        "stage": "SETUP_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T23:34:10.5346220Z"
+      },
+      {
+        "sequence": 5,
+        "previous": "5b8fc05e513d34953aa4f2ce14e6559fdac6067198b840ef114f1f113a37d6c3",
+        "event": "92b84ddb-b1ac-44a3-94d9-7609b07a2f46",
+        "stage": "POLICY_ADMITTED",
+        "value": "OD51_FIXED_SCOPE",
+        "utc": "2026-09-30T23:34:59.7446137Z"
+      },
+      {
+        "sequence": 6,
+        "previous": "6dd173a7b03e30fa628db99fbdd2f7cc68b95640b2f497b2a2c59414b272e30a",
+        "event": "8e407e8b-eddb-4d65-b1bc-1819155b1d52",
+        "stage": "VERDICT",
+        "value": "INVALID",
+        "utc": "2026-09-30T23:35:31.9653174Z"
+      },
+      {
+        "sequence": 7,
+        "previous": "cb076b7827272742264429bff05a9354f2f43b64f229e8753a7ee9ca7874a7e4",
+        "event": "6d0ecbf1-20f2-4318-bade-4d024a852e1d",
+        "stage": "CLEANUP",
+        "value": "NOT_REQUIRED",
+        "utc": "2026-09-30T23:35:31.9907256Z"
+      }
+    ],
+    "chainValid": true,
+    "partial": false,
+    "extraDirectories": [],
+    "resumeReviewChecksumValid": true
+  },
+  "durableDiagnostic": {
+    "file": "4b88fc32-df60-4b8d-b096-8fcae9402fae.json",
+    "sha256": "2d2fe25c5943b65d9681c0bd3c56922567dcd938b13b4b6edf6a8d842c1c62c3",
+    "diagnosticId": "4b88fc32-df60-4b8d-b096-8fcae9402fae",
+    "utc": "2026-09-30T23:35:34.1508095Z"
+  },
+  "backendObservation": {
+    "queryMode": "BEGIN READ ONLY; bounded own metadata SELECT; ROLLBACK",
+    "ownershipVerified": true,
+    "hostBeforeUtc": "2026-09-30T23:38:20.110159+00:00",
+    "hostAfterUtc": "2026-09-30T23:38:20.253605+00:00",
+    "review": {
+      "owners": 1,
+      "devices": [
+        {
+          "id": "f827fcc2-0442-4ad7-a995-90e5db636a96",
+          "epoch": "d7c84ef5-64d1-44d3-a597-a2fd47bbbbc6",
+          "report": null,
+          "revoked": false,
+          "configured": true,
+          "manualLock": false,
+          "policyVersion": 1,
+          "dailyLimitSeconds": 3600
+        }
+      ],
+      "commands": [
+        {
+          "id": "92b84ddb-b1ac-44a3-94d9-7609b07a2f46",
+          "kind": "SET_DAILY_LIMIT",
+          "receipt": null,
+          "version": 1,
+          "receiptAt": null,
+          "acceptedAt": "2026-09-30T23:34:59.815104+00:00",
+          "receiptVersion": null
+        }
+      ],
+      "identity": {
+        "schema": "7d9c6f3c1c85fd3f91070f7bad0ce90b4e114ca3f4cbbaaeb02eb799eec7a00a",
+        "source": "3693034816039de67087066f077e6e02a9507dd6"
+      },
+      "sessions": [
+        {
+          "id": "6d703893-dbf0-47d2-b96d-99495159c7af",
+          "device": null,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-15T01:26:10.876792+00:00",
+          "consumedAt": null
+        },
+        {
+          "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+          "device": null,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-17T02:12:25.690697+00:00",
+          "consumedAt": null
+        },
+        {
+          "id": "2598b696-3ddc-497d-899b-a9622bb495ef",
+          "device": null,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-30T16:31:21.862324+00:00",
+          "consumedAt": null
+        },
+        {
+          "id": "c47322c4-f2b8-4e71-9b38-93208c03a43c",
+          "device": null,
+          "consumed": false,
+          "cancelled": true,
+          "createdAt": "2026-09-30T19:00:45.509469+00:00",
+          "consumedAt": null
+        },
+        {
+          "id": "b2fe27ec-8438-4bdf-90cc-4c21f2010dcd",
+          "device": "f827fcc2-0442-4ad7-a995-90e5db636a96",
+          "consumed": true,
+          "cancelled": false,
+          "createdAt": "2026-09-30T23:34:03.099595+00:00",
+          "consumedAt": "2026-09-30T23:34:10.281298+00:00"
+        }
+      ],
+      "serverUtc": "2026-09-30T23:38:20.240853+00:00",
+      "households": 1
+    },
+    "cleanup": "ORIGINAL_STOPPED_STATE_RESTORED",
+    "sessionDevicePolicyMutation": false
+  },
+  "syncCacheObservation": {
+    "hostBeforeUtc": "2026-09-30T23:40:09.035352+00:00",
+    "hostAfterUtc": "2026-09-30T23:40:09.144514+00:00",
+    "snapshot": {
+      "count": 0,
+      "snapshots": []
+    },
+    "cleanup": "ORIGINAL_STOPPED_STATE_RESTORED",
+    "rawSnapshotPayloadOrCredentialsRead": false
+  },
+  "readOnlyProbeReverification": {
+    "source": "8ebcc89e0b483af1f5d3cf3a081fca640da37e10",
+    "manifestSha256": "e4d8ab75d9b6c44ca08d3c5cb3958e3992afa4a254518f4fdebb450ba0cc29ee",
+    "filesVerified": 489,
+    "lastPriorObservationUtc": "2026-09-30T19:31:42.1862523Z",
+    "deviceInvokedByAgent": false
+  },
+  "limitations": [
+    "Preparation fields describe pre-enrollment state, not the final device state.",
+    "expectedVersion=0 is an unset Lock request field; backend canonical policy version is independently observed as 1.",
+    "NOT_REQUIRED applies to the slice Lock cleanup because no Lock was admitted; it is not policy erasure or independently verified unrestricted use.",
+    "No report row and no configured sync snapshot were present at later read-only snapshots; the actual child failure is not established.",
+    "No current Android identity, accounting or retry-state observation was performed in this review.",
+    "Do not extend empty-state history exceptions across POLICY_ADMITTED or reset the enrolled child."
+  ],
+  "durableResult": {
+    "scope": "OD51_ONE_PRODUCT_SLICE_NOT_QUALIFICATION",
+    "hostValidated": true,
+    "hostFailureStage": "NONE",
+    "hostFailureCode": "NONE",
+    "hostFailureAction": "NONE",
+    "preparationFailureStage": "NONE",
+    "preparationFailureCode": "NONE",
+    "preparation": {
+      "classification": "SAFE_RESUME_FROM_ENROLLMENT",
+      "packageMode": "LAB_PACKAGE_UNPAIRED",
+      "path": "ENROLL",
+      "credentialProof": "NOT_ESTABLISHED",
+      "reviewReason": "NONE",
+      "failedChecks": [],
+      "backendDevice": false,
+      "localIdentity": false,
+      "pairingPending": false,
+      "localAccounting": false
+    },
+    "reuse": false,
+    "expectedSetupActions": 5,
+    "persistentSyntheticLab": true,
+    "source": "452396d834dd76410a72094bd1e3e27e3c2954df",
+    "primary": {
+      "stage": "FINAL",
+      "expectedVersion": 0,
+      "cleanupId": "6d0ecbf1-20f2-4318-bade-4d024a852e1d",
+      "scope": "ONE_PRODUCT_VERTICAL_SLICE",
+      "attempt": "8e407e8b-eddb-4d65-b1bc-1819155b1d52",
+      "status": "INVALID",
+      "reason": "INITIAL_REPORT_TIMEOUT",
+      "cleanup": "NOT_REQUIRED",
+      "lockId": "a8c70e09-6791-48e5-add5-5ec6da177eb3",
+      "unlockId": "0b9f22f9-ae1d-477e-9625-f2b9abd4da3b",
+      "independentPositive": false,
+      "independentBlocked": false,
+      "independentRestored": false,
+      "corroborated": false
+    },
+    "backendCleanup": "STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED",
+    "reverseCleanup": "OWN_REVERSE_REMOVED",
+    "labRecovery": "NOT_REQUIRED",
+    "oldApkRestored": false,
+    "newAppMayRemainInstalled": true,
+    "historicalEvidenceUnchanged": true
+  },
+  "originalFilesUnchangedAfterReview": true
+}

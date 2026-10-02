@@ -1,0 +1,25 @@
+{
+  "scope": "ONE_FUTURE_PRODUCT_VERTICAL_SLICE_NOT_QUALIFICATION",
+  "readiness": "BLOCKED",
+  "branch": "kr-product-enforcement-integration",
+  "reportingBaseline": "5675a3881dd08ae4c2433470a809adc4b4711d47",
+  "apkSource": "0b1ecdddf5b9843c16de513b1dce7081f6ed58af",
+  "childPackage": "dev.kidremote.child.unassigned.debug",
+  "childService": "dev.kidremote.child.unassigned.debug/dev.kidremote.child.enforcement.ChildEnforcementService",
+  "childSha256": "d2b3448b5c5574dc4ec693fc1e09386bae6ca1082e42c8c68f6c8c5d870b7f2f",
+  "fixturePackage": "dev.kidremote.spike.ordinary",
+  "fixtureSha256": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+  "fixtureProvenance": "Hash matches the preserved 2026-09-08 Samsung ordinary fixture and owned-emulator artifact; current physical installation is UNSPECIFIED",
+  "samsung": {
+    "manufacturer": "samsung", "model": "SM-X400", "android": "16", "api": "36",
+    "build": "BP4A.251205.006", "securityPatch": "2026-07-05",
+    "batterySaver": "DISABLED", "appStandby": "ENABLED",
+    "adaptiveBattery": "UNSPECIFIED", "oemBatteryManagement": "UNSPECIFIED"
+  },
+  "physicalInstalledProductState": "UNSPECIFIED_NO_PHYSICAL_READ_PERFORMED",
+  "physicalPermissionState": "UNSPECIFIED_NO_TRANSFER_FROM_SPIKE",
+  "childTransport": "BLOCKED_DEBUG_EMULATOR_ONLY_RELEASE_UNCONFIGURED",
+  "installationPolicy": "NO_INSTALL_OR_UPDATE; absent/different APK means INVALID and owner review",
+  "physicalExecution": "NOT_RUN",
+  "ownerBundle": "NOT_CREATED"
+}

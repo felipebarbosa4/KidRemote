@@ -1,13 +1,14 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose") }
 // Bounded update lab: both debug versions are built in one CI job/signing identity.
 val updateVersion=providers.gradleProperty("kr008UpdateVersion").orElse("2").get().toInt().also{require(it in 1..2)}
+val physicalLab=providers.gradleProperty("krPhysicalLab").orElse("false").get().also{require(it in setOf("true","false"))} == "true"
 android {
     namespace="dev.kidremote.child"
     compileSdk=37
     buildToolsVersion="37.0.0"
     defaultConfig { applicationId="dev.kidremote.child.unassigned"; minSdk=28; targetSdk=36; versionCode=updateVersion;versionName="0.0.$updateVersion-local";testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
-    buildTypes { debug {applicationIdSuffix=".debug"}; release {isMinifyEnabled=false} }
-    buildFeatures {compose=true}
+    buildTypes { debug {applicationIdSuffix=".debug"; buildConfigField("String", "LAB_ENDPOINT", "\"" + (if(physicalLab) "http://127.0.0.1:47366" else "http://10.0.2.2:47366") + "\""); if(physicalLab) versionNameSuffix="-physical-lab"}; release {isMinifyEnabled=false} }
+    buildFeatures {compose=true;buildConfig=true}
     compileOptions {sourceCompatibility=JavaVersion.VERSION_17;targetCompatibility=JavaVersion.VERSION_17}
 }
 java {toolchain {languageVersion=JavaLanguageVersion.of(17)}}

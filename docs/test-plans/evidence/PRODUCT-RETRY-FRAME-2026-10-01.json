@@ -1,0 +1,60 @@
+{
+    "attempt":  "cd4c4627-39ef-49b8-8e8c-af6a321c65e4",
+    "utc":  "2026-10-01T03:54:11.1262818Z",
+    "source":  "6d299495a16a8f4135e507a8bae2af0870f3395b",
+    "bundleSha256":  "a8cfb55c45fe7e9093a73d804c113eae2c38c542dfccb1de8fcf99b49f888be1",
+    "result":  {
+                   "scope":  "OD51_BOUNDED_RETRY_DIAGNOSTIC",
+                   "deviceMutation":  false,
+                   "backendMutation":  false,
+                   "mutationJournalCreated":  false,
+                   "configurationProvenance":  "PASS",
+                   "packageProvenance":  "PASS",
+                   "fixtureProvenance":  "PASS",
+                   "reverseAbsent":  true,
+                   "productPhysicalOracle":  "BLOCKED",
+                   "physicalExecution":  "OWNER_READ_ONLY_RETRY_DIAGNOSTIC",
+                   "probeStatus":  "TYPED_RETRY_FAILURE",
+                   "failureStage":  "RETRY_PARSE",
+                   "failureReason":  "RETRY_FRAME_INVALID",
+                   "privateReadScope":  "SYNC_RETRY_ONLY",
+                   "privateContentRetained":  false,
+                   "retryReadAttempted":  true,
+                   "retry":  {
+                                 "status":  "INVALID",
+                                 "failureCode":  "RETRY_FRAME_INVALID",
+                                 "checksumValidity":  "NOT_CHECKED",
+                                 "schemaValidity":  "NOT_CHECKED",
+                                 "pending":  null,
+                                 "stopped":  null,
+                                 "reason":  null,
+                                 "attemptCount":  null,
+                                 "delayMs":  null,
+                                 "bootRecorded":  null,
+                                 "deadlineRecorded":  null,
+                                 "legacyReasonDerived":  null
+                             },
+                   "configuration":  {
+                                         "manufacturer":  "samsung",
+                                         "model":  "SM-X400",
+                                         "android":  "16",
+                                         "api":  "36",
+                                         "build":  "BP4A.251205.006",
+                                         "securityPatch":  "2026-07-05"
+                                     },
+                   "child":  {
+                                 "installed":  true,
+                                 "sha256":  "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+                                 "signerSha256":  "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb",
+                                 "versionCode":  "2",
+                                 "versionName":  "0.0.2-local-physical-lab"
+                             },
+                   "fixture":  {
+                                   "installed":  true,
+                                   "sha256":  "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+                                   "versionCode":  "1",
+                                   "versionName":  "0.0.1-fixture"
+                               },
+                   "hostTemporaryApk":  "HOST_TEMP_DELETED"
+               }
+}

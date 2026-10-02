@@ -19,10 +19,13 @@ data class DeviceSummary(val id:String,val nickname:String,val revoked:Boolean,v
         report==null -> "Aguardando primeiro relatório · proteção não verificada"
         report.health.contains("UPDATE") -> "Atualize o aplicativo do dispositivo"
         report.health.contains("PERMISSION") -> "Permissão necessária no dispositivo"
+        report.restrictionApplied&&report.health.startsWith("RESTRICTED_OBSERVED:") -> "Restrição observada pelo adaptador" + if(report.health.endsWith(":NONE")) " · relatório do dispositivo" else " · contabilidade degradada"
+        report.health=="UNRESTRICTED_OBSERVED:NONE" -> "Sobreposição ausente no último relatório"
+        report.health.startsWith("SAFE_SURFACE_AVAILABLE:") -> "Superfície de sistema disponível · restrição solicitada"
         report.health.endsWith(":CLOCK") -> "Proteção indisponível · horário incerto"
         report.health.endsWith(":HISTORY") -> "Proteção indisponível · contabilidade incompleta"
         report.health.endsWith(":STORAGE") -> "Proteção indisponível · falha de armazenamento"
-        else -> "Proteção indisponível · enforcement não integrado"
+        else -> "Proteção indisponível · adaptador não confirmado"
     }
     // No Online assertion: receipt freshness alone cannot establish radio/enforcement health.
     fun freshness(ageSinceReadMs:Long):String {

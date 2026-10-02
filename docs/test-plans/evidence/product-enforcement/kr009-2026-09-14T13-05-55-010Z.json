@@ -1,0 +1,36 @@
+{
+  "scope": "KR009_LOCAL_SYNC_ACK_EMULATOR",
+  "source": "84a85a57c8a14cc8dea1264eee643519436609a1",
+  "stages": [
+    {
+      "method": "LOCK",
+      "result": "ACCEPTED_NOT_APPLIED"
+    },
+    {
+      "method": "networkLock",
+      "result": "PASS",
+      "codes": [
+        "SERVICE_CONNECTED",
+        "LOCK_ATTACHED_OBSERVED",
+        "OBSERVATION_DURABLE_OFFLINE",
+        "REAL_PARENT_LOCK_ROOM_ADAPTER_ACK_SENT",
+        "SAFE_SURFACE_DETACHED",
+        "ORDINARY_REENTRY_ATTACHED",
+        "SERVICE_DISCONNECTED_VISIBLE",
+        "SERVICE_RECONNECTED",
+        "OFFLINE_RESTRICTION_RESTORED",
+        "LEDGER_AND_UNCERTAINTY_PRESERVED",
+        "REMOVAL_CLEARS_ACTIVE_ADAPTER"
+      ],
+      "hostExit": 0
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "619df509287b1ce58006389e734241e2f1241a49e286b71186ede3a9a38edd22",
+    "child-debug-androidTest.apk": "a102096917add1b06c8467c4af9ae429567f6a7448e513e5c1ae73b52f3bb064"
+  },
+  "overall": "PASS_ACTUAL_PARENT_SERVER_ROOM_ADAPTER_ACK_EMULATOR",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED",
+  "lastCommand": "shell pm clear",
+  "activeStage": "networkLock"
+}

@@ -17,7 +17,7 @@ test('child source keeps camera foreground and closes frames without capture ret
  const s=read('apps/child-android/src/main/java/dev/kidremote/child/ChildActivity.kt');
  assert.match(s,/override fun onPause\(\)\{stopCamera/);assert.match(s,/finally\{image.close\(\)\}/);
  assert.doesNotMatch(s,/ImageCapture|MediaStore|Bitmap.compress|Log\.|FileOutputStream/);
- const m=read('apps/child-android/src/main/AndroidManifest.xml');assert.doesNotMatch(m,/ACCESSIBILITY|PACKAGE_USAGE_STATS|SYSTEM_ALERT_WINDOW|DEVICE_ADMIN|READ_MEDIA|READ_EXTERNAL_STORAGE/);
+ const m=read('apps/child-android/src/main/AndroidManifest.xml');assert.doesNotMatch(m,/PACKAGE_USAGE_STATS|SYSTEM_ALERT_WINDOW|DEVICE_ADMIN|READ_MEDIA|READ_EXTERNAL_STORAGE/);
 });
 test('child credentials are wrapped and backup/transfer excluded, release has no lab endpoint',()=>{
  const s=read('apps/child-android/src/main/java/dev/kidremote/child/Enrollment.kt');assert.match(s,/AndroidKeyStore/);assert.match(s,/AES\/GCM\/NoPadding/);assert.match(s,/noBackupFilesDir/);
@@ -68,3 +68,5 @@ test('packaged backup audit resolves optimized release paths and rejects missing
  assert.throws(()=>backupResourcePath('resource 0x7f0e0000 xml/backup_rules\n () (file) res/../secret.xml type=XML','backup_rules'));
  const entry='resource 0x7f0e0000 xml/backup_rules\n () (file) res/a.xml type=XML\n';assert.throws(()=>backupResourcePath(entry+entry,'backup_rules'));
 });
+
+test('OD49 service is system-bound and content-blind',()=>{const m=read('apps/child-android/src/main/AndroidManifest.xml');assert.match(m,/android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"/);const x=read('apps/child-android/src/main/res/xml/enforcement_service.xml');assert.match(x,/canRetrieveWindowContent="false"/);assert.match(x,/accessibilityEventTypes="typeWindowStateChanged"/);assert.doesNotMatch(x,/canPerformGestures="true"|flagRetrieveInteractiveWindows/)});

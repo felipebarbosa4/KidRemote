@@ -1,0 +1,61 @@
+# OD-49 device-free prerequisites and read-only inventory
+
+- **Goal:** Durable host journal, canonical/provenance adapters, isolated lab build and one immutable read-only owner bundle.
+- **Context:** Baseline `0b4dfb144e0346eb5a9fda31075aba20583a993c`, draft PR #24; product physical oracle BLOCKED.
+- **Constraints:** No physical command, qualification, FCM, destructive operation or historical evidence edit.
+- **Done when:** Device-free checks and CI pass, bundle source/hashes recorded, owner receives only an inventory command.
+
+## OBSERVED
+
+OD-49 extension appended without overwriting earlier authorization. See [current implementation/readiness](../../../tools/enforcement/product-oracle/README.md). Product restriction design and historical evidence are unchanged. Only debug endpoint selection/build metadata changed in the app.
+
+- New prerequisites suite: **71 checks PASS** under native Windows PowerShell 5.1. Real host filesystem flush/atomic append, interrupted admission, truncated write, duplicate retry/conflict, immutable FAIL/separate cleanup, reader restart and corrupted final record are covered. Canonical callback timeout/refusal/401/403/conflict/lost response/stale/concurrent/cleanup outage and synthetic local Auth setup are covered. These are not actual backend results.
+- Separate native fake-executable entrypoint suite: **10 checks PASS**, including independent result files for successful inventory, configuration mismatch, native rejection, manifest mismatch and file tampering. No ADB executable/device was used. Serial/error-detail redaction verified.
+- Existing independent oracle suite: **64 checks PASS**; fixture input/focus contradiction cannot be overruled by applied telemetry.
+- **99 Node regressions PASS**, **3 content-free Python observer tests PASS**. JVM reports child **84**, parent **14**, debug/release build/lint and permission/privacy/release audits PASS (378 Gradle tasks, 34 executed, 344 up-to-date; 40 seconds). Existing cached test reports are not new Android runtime evidence.
+- Lab build: fixed `http://127.0.0.1:47366`, versionCode 2, versionName `0.0.2-local-physical-lab`, package `dev.kidremote.child.unassigned.debug`. Actual DEX check: lab endpoint present only in lab debug; neither lab nor emulator endpoint in release. Default debug rebuilt separately and audited.
+- Lab APK SHA-256 `f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56`; debug certificate SHA-256 `638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb`.
+- Default debug APK SHA-256 `b90fe7c6a4f03ce307ffca46b49052ca14a7d03d3493bae6782d75cf80e415da`; unsigned release SHA-256 `ffb42850fe95fe7f6f48f8e00fe89c534743e334462625b4bed4b7d1f2cb60be`. BuildConfig generation changes APK bytes; release behavior/endpoint/permissions remain isolated, not claimed byte-identical.
+
+### Retained failed/partial attempts
+
+1. Initial prerequisites test stopped because its test scope had not imported `New-ProductOperation`. Earlier checks had run; no complete PASS claimed. Explicit core import fixed the test.
+2. First lab artifact audit: Gradle build/lint SUCCESS, Python audit FAILED because it requested `child-release.apk` instead of actual `child-release-unsigned.apk`. Corrected path; independent second audit PASS. No immutable artifact was created from the failed audit.
+3. First native entrypoint test FAILED `ENTRY_CLASSIFICATION`: manifest file-set validation assumed a culture-dependent sort order for punctuation. Replaced ordering assumption with exact membership/count validation. Separate rerun passed all 10 checks.
+4. Expanded callback test FAILED when closure could not resolve module-private `Assert-LabInteger`. Captured the helper explicitly in the closure; separate rerun passed. This was a host callback defect, not Android evidence.
+
+Dirty-source lab validation identified its baseline and `sourceWorkingTreeChanged=true`; no artifact was frozen from dirty source. Source-pinned artifact/bundle details follow only after the implementation commit.
+
+## INFERRED / boundary
+
+A fixed debug-only loopback endpoint supports planning an ADB reverse without changing release or exposing the gateway to LAN. Only the fixed argument plan is synthetically validated here; no tunnel, physical route or canonical-to-physical sync was tested. Shell signature hash codes do not establish certificate digests; signer remains UNSPECIFIED when not obtainable with bounded reads.
+
+## UNSPECIFIED / NOT RUN
+
+Current Samsung configuration, installed APK/version/signing/state and product permissions remain UNSPECIFIED until the owner executes the read-only bundle. No APK installation/update, reverse, input, app launch, settings change, backend mutation, device command or emulator was executed by this extension. Existing identity/accounting may collide with the debug package and must be preserved.
+
+**PRODUCT_PHYSICAL_ORACLE=BLOCKED.** Only inventory can become ready; its classifications are review outcomes, never enforcement PASS or install authorization. Read-only duration is an unmeasured estimate: approximately 30–90 seconds normally, bounded by per-read 10-second timeouts (roughly five minutes worst case). Paste only the sanitized JSON; never serial/raw dumpsys/screenshots. No cleanup settings/device operations are needed because the bundle performs no physical mutations. Host result files, including invalid attempts, are preserved separately.
+
+5. Staged whitespace check reported one trailing space in Journal.psm1 before the implementation commit. The shell sequence still committed; the space is corrected in a separate follow-up commit. This is retained as a failed check, not a runtime failure.
+
+## Retained INVALID_PREPARATION bundle — NOT EXECUTED (do not use)
+
+Source: `668ab87a22591319afd43167d55ef9ac0909c1b3` on `kr-product-enforcement-integration`.
+Owner directory: `%LOCALAPPDATA%\KidRemote\product-preflight\668ab87a22591319afd43167d55ef9ac0909c1b3`.
+Only three files exist; hashes independently verified on Windows and read-only file attributes set. This host-only verification did not invoke the preflight or ADB.
+
+| File | SHA-256 |
+| --- | --- |
+| `bundle.json` | `2878b8477ed05b277ef58eec4935c3972c066299dc99de3a9cebf33ae516d4fb` |
+| `ReadOnly.psm1` | `4ea9804ed97f70168e5a50ebd17e0c2ec0231dab02bc235955682db0148d8640` |
+| `ReadOnly-Preflight.ps1` | `bb2fdb45df3f96c87105e308cfbde6ddc24afbd8cf5a920787e28332b4ab7ea9` |
+
+Manifest pins exact historical configuration, user 0, expected package names, read-only behavior and source. It contains no APK, token, device serial, canonical control module or tunnel helper. The first prepared bundle is retired after the absent-package native exit-code defect below. Its former command is intentionally withdrawn:
+
+
+
+The final replacement inventory command is supplied separately after corrected validation. It requires the already-authorized target/ADB connection, makes no permission changes, and stops INVALID if selection/authorization is ambiguous. Paste only its emitted sanitized JSON (also preserved in the owner-local result directory). Do not paste raw ADB output or serials. No keypress, screenshot, launch, input, setup, installation or qualification is requested.
+
+The lab APK was separately rebuilt from this clean source (`sourceWorkingTreeChanged=false`), with the same `f6d2a240...` SHA-256 listed above. Frozen artifact/provenance: `apps/child-android/build/outputs/product-lab/668ab87a22591319afd43167d55ef9ac0909c1b3/`. It is **not included in the preflight bundle and not installed**. Release endpoint-isolation DEX check PASS. No task-owned backend, emulator, reverse mapping or physical resource was started, so no device cleanup operation was performed.
+
+6. Late source review found AOSP `displayPackageFilePath` returns exit 1 with empty streams for an absent package. The native fixture had incorrectly returned zero. Correcting the fixture reproduced `ENTRY_CLASSIFICATION` failure before changing the adapter. The initial source-668ab87 bundle is retained unchanged as **INVALID_PREPARATION / NOT_EXECUTED**, not silently replaced or pooled. The adapter now accepts only this exact empty exit-1 response for the two allowlisted `pm path` queries; all other nonzero exits still reject. The independent rerun passes 10 checks. [AOSP PackageManagerShellCommand](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/services/core/java/com/android/server/pm/PackageManagerShellCommand.java) was checked 2026-09-14. Exactly one corrected bundle will be designated for owner use; the retired artifact is evidence only.

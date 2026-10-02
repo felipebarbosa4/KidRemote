@@ -1,0 +1,11 @@
+# Backend compatibility hashes authenticate exact source bytes on Linux and Windows.
+# Frozen owner bundles preserve these LF bytes; do not normalize mismatched inputs at runtime.
+/supabase/** text eol=lf
+/tools/kr007/local-gateway.mjs text eol=lf
+/packages/protocol/CONTRACT.md text eol=lf
+/tools/enforcement/physical-lab/lease.mjs text eol=lf
+/tools/enforcement/physical-lab/health.mjs text eol=lf
+# This reviewed metadata representation is hash-pinned; keep its explicitly normalized LF bytes.
+/docs/test-plans/evidence/PRODUCT-ENROLLMENT-METADATA-2026-09-30.json text eol=lf
+# The fixed device shell program must remain LF on native Windows too.
+/tools/enforcement/metadata-observation/Read-SyncRetry.sh text eol=lf
