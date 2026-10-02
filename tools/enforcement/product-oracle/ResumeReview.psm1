@@ -84,6 +84,32 @@ function Get-ResumableHistoryReview([string]$Directory,[string]$CatalogPath=''){
  }catch{return $null}
 }
 function Test-ResumableHistory([string]$Directory,[string]$CatalogPath=''){return $null -ne (Get-ResumableHistoryReview $Directory $CatalogPath)}
+function Test-ConfiguredReuseHistorySafe($HistoryReviews,$Review,$Saved,[bool]$Identity,[bool]$Pending,[bool]$Accounting){
+ try{
+  $history=@($HistoryReviews)
+  if($history.Count -eq 0 -or $null -eq $Saved -or -not $Identity -or $Pending -or -not $Accounting){return $false}
+  if(@($history|Where-Object{@($_.stages).Count -eq 0 -or @($_.stages|Where-Object{$_ -in @('POLICY_ADMITTED','LOCK_ADMITTED','UNLOCK_ADMITTED')}).Count}).Count){return $false}
+  $expected=@{}
+  foreach($h in $history){
+   if($h.PSObject.Properties.Name -contains 'pairingSession'){
+    $s=$h.pairingSession;if($null -eq $s -or $expected.ContainsKey($s.id) -or $s.id -cnotmatch '^[a-f0-9-]{36}$' -or $s.disposition -cnotin @('OPEN','CANCELLED')){return $false};$expected[$s.id]=[string]$s.disposition
+   }
+   if($h.PSObject.Properties.Name -contains 'pairingResolution'){
+    $r=$h.pairingResolution;if($null -eq $r -or -not $expected.ContainsKey($r.id) -or $expected[$r.id] -cne 'OPEN' -or $r.from -cne 'OPEN' -or $r.to -cne 'CANCELLED'){return $false};$expected[$r.id]='CANCELLED'
+   }
+  }
+  if($expected.Count -eq 0){return $false}
+  $devices=@($Review.devices);if($devices.Count -ne 1){return $false};$d=$devices[0]
+  if($d.id -cne $Saved.id -or $d.epoch -cne $Saved.policy_epoch -or $d.configured -ne $true -or $d.reported -ne $true -or $d.usable -ne $true){return $false}
+  $sessions=@($Review.sessions);if($sessions.Count -ne $expected.Count+1){return $false}
+  foreach($id in $expected.Keys){
+   $rows=@($sessions|Where-Object{$_.id -ceq $id})
+   if($rows.Count -ne 1 -or $rows[0].device -ne $null -or $rows[0].consumed -ne $false -or $rows[0].cancelled -ne $true){return $false}
+  }
+  $consumed=@($sessions|Where-Object{$_.consumed -and -not $_.cancelled})
+  return ($consumed.Count -eq 1 -and $consumed[0].device -ceq $d.id)
+ }catch{return $false}
+}
 function Resolve-ProductPreparation($Facts){
  $answer=[ordered]@{classification='INVALID_PARTIAL_STATE_REVIEW_REQUIRED';packageMode='INVALID_STATE';path='NONE';credentialProof='NOT_ESTABLISHED';reviewReason='NONE';failedChecks=@();backendDevice=$Facts.backendDevice;localIdentity=$Facts.identity;pairingPending=$Facts.pending;localAccounting=$Facts.accounting}
  $required=[ordered]@{provenance='PROVENANCE';owned='OWNERSHIP';compatible='BACKEND_COMPATIBILITY';reverseAbsent='REVERSE_ABSENT';historySafe='HISTORY_SAFE';metadataKnown='METADATA_KNOWN';noUnknownFiles='NO_UNKNOWN_FILES'}
@@ -104,7 +130,8 @@ function Resolve-ProductPreparation($Facts){
  if(-not $Facts.backendDevice -and $Facts.savedDevice){$answer.failedChecks=@('SAVED_DEVICE_ORPHANED');$answer.reviewReason='SAVED_DEVICE_ORPHANED';return [pscustomobject]$answer}
  # Metadata cannot decrypt the epoch. Reuse requires a separate fresh authenticated
  # sync/report gate after RESUME_ADMITTED and before any new canonical policy.
- if($Facts.backendDevice -and $Facts.savedDevice -and $Facts.savedMatches -and $Facts.identity -and -not $Facts.pending -and $Facts.credentialUsable -and $Facts.policyConsistent -and -not $Facts.historicalPartial){
+ $configuredHistorySafe=$Facts.PSObject.Properties.Name -contains 'configuredReuseHistorySafe' -and $Facts.configuredReuseHistorySafe -eq $true
+ if($Facts.backendDevice -and $Facts.savedDevice -and $Facts.savedMatches -and $Facts.identity -and -not $Facts.pending -and $Facts.credentialUsable -and $Facts.policyConsistent -and (-not $Facts.historicalPartial -or $configuredHistorySafe)){
   $answer.packageMode='LAB_PACKAGE_PAIRED_REUSABLE';$answer.path='VERIFY_REUSE';$answer.classification='SAFE_REUSE_ENROLLED';$answer.credentialProof='FRESH_ACK_REQUIRED_BEFORE_POLICY';return [pscustomobject]$answer
  }
  # The approved narrow automatic repair covers incomplete enrollment only. A
@@ -152,4 +179,4 @@ function Write-ResumeReview([string]$Directory,$HistoricalAttempts,[string]$Dige
  try{$bytes=[Text.Encoding]::UTF8.GetBytes($envelope);$f.Write($bytes,0,$bytes.Length);$f.Flush($true)}finally{$f.Dispose()}
  [IO.File]::Move($tmp,$path)
 }
-Export-ModuleMember -Function Test-InterruptedEnrollmentLiveState,Read-ResumeReview,Test-ResumableHistory,Get-ResumableHistoryReview,Resolve-ProductPreparation,Write-ResumeReview
+Export-ModuleMember -Function Test-InterruptedEnrollmentLiveState,Read-ResumeReview,Test-ResumableHistory,Get-ResumableHistoryReview,Test-ConfiguredReuseHistorySafe,Resolve-ProductPreparation,Write-ResumeReview

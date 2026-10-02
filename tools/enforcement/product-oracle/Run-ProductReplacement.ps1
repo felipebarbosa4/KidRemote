@@ -89,17 +89,18 @@ try{
     }
    }
    $d=if($devices.Count -eq 1){$devices[0]}else{$null}
-   $historySafe=(-not $historicalPartial) -or ($historyBackendSafe -and -not $identity -and -not $pending -and -not $accounting)
-   # An unfinished pre-setup review never authorizes reset, replacement or reuse.
+   $configuredReuseHistorySafe=Test-ConfiguredReuseHistorySafe $historyReviews $review $saved $identity $pending $accounting
+   $historySafe=(-not $historicalPartial) -or ($historyBackendSafe -and -not $identity -and -not $pending -and -not $accounting) -or $configuredReuseHistorySafe
+   # Interrupted pre-setup history can coexist with reuse only when a later exact configured device is independently established.
    $interruptedHistory=@($historyReviews|Where-Object{$_.PSObject.Properties.Name -contains 'reviewKind' -and $_.reviewKind -ceq 'INTERRUPTED_PRE_SETUP'}).Count -gt 0
-   if($interruptedHistory){$historySafe=$historySafe -and (Test-InterruptedEnrollmentLiveState $metadata $devices $saved $lab)}
-   $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$historySafe;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
+   if($interruptedHistory -and -not $configuredReuseHistorySafe){$historySafe=$historySafe -and (Test-InterruptedEnrollmentLiveState $metadata $devices $saved $lab)}
+   $facts=[pscustomobject]@{provenance=$true;owned=($review.owners -eq 1 -and $review.households -eq 1);compatible=($h.backend.compatibility -cmatch '^[a-f0-9]{64}$');reverseAbsent=$true;historySafe=$historySafe;metadataKnown=$known;noUnknownFiles=$noUnknown;package=$(if($lab){'LAB'}else{'OLD'});historicalPartial=$historicalPartial;configuredReuseHistorySafe=$configuredReuseHistorySafe;backendDevice=($null -ne $d);savedDevice=($null -ne $saved);savedMatches=($null -ne $saved -and $null -ne $d -and $saved.id -ceq $d.id -and $saved.policy_epoch -ceq $d.epoch);identity=$identity;pending=$pending;accounting=$accounting;credentialUsable=($null -ne $d -and $d.usable);policyConsistent=($null -ne $d -and $d.configured);noPolicyOrReport=($null -eq $d -or (-not $d.configured -and -not $d.manualLock -and -not $d.reported));resetAttributable=($historicalPartial -and $known -and $noUnknown -and (-not $accounting) -and ($null -eq $d -or @($review.sessions|Where-Object{$_.device -ceq $d.id -and $_.consumed}).Count -eq 1))}
    # Historical replacement explicitly authorizes loss of old unknown files, only on OLD path.
    if(-not $lab -and -not $historicalPartial){$facts.metadataKnown=$true;$facts.noUnknownFiles=$true}
    $h.resolution=Resolve-ProductPreparation $facts;$preparation=$h.resolution
    Write-ResumeReview $directory $historyAttemptIds $h.backend.compatibility $h.resolution
    if($h.resolution.path -ceq 'NONE'){throw 'INVALID:INVALID_PARTIAL_STATE_REVIEW_REQUIRED'}
-   if($interruptedHistory -and $h.resolution.path -cne 'ENROLL'){throw 'INVALID:INTERRUPTED_HISTORY_REQUIRES_EMPTY_ENROLLMENT'}
+   if($interruptedHistory -and $h.resolution.path -cnotin @('ENROLL','VERIFY_REUSE')){throw 'INVALID:INTERRUPTED_HISTORY_REQUIRES_EMPTY_ENROLLMENT'}
    $h.reuse=$h.resolution.path -ceq 'VERIFY_REUSE'
    $h.live.state.new=$lab
 

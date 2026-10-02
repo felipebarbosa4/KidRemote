@@ -4,7 +4,7 @@ Import-Module (Join-Path $PSScriptRoot 'ResumeReview.psm1')
 Import-Module (Join-Path $PSScriptRoot 'ResumePreparation.psm1')
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1')
 $script:n=0;function Check($b){$script:n++;if(-not $b){throw "RESUME_CHECK_$script:n"}}
-function Facts {return [pscustomobject]@{provenance=$true;owned=$true;compatible=$true;reverseAbsent=$true;historySafe=$true;metadataKnown=$true;noUnknownFiles=$true;package='LAB';historicalPartial=$true;backendDevice=$false;savedDevice=$false;savedMatches=$false;identity=$false;pending=$false;accounting=$false;credentialUsable=$false;policyConsistent=$false;noPolicyOrReport=$true;resetAttributable=$true}}
+function Facts {return [pscustomobject]@{provenance=$true;owned=$true;compatible=$true;reverseAbsent=$true;historySafe=$true;metadataKnown=$true;noUnknownFiles=$true;package='LAB';historicalPartial=$true;configuredReuseHistorySafe=$false;backendDevice=$false;savedDevice=$false;savedMatches=$false;identity=$false;pending=$false;accounting=$false;credentialUsable=$false;policyConsistent=$false;noPolicyOrReport=$true;resetAttributable=$true}}
 $f=Facts;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'ENROLL');Check ($r.packageMode -ceq 'LAB_PACKAGE_UNPAIRED');Check ($r.reviewReason -ceq 'NONE');Check (@($r.failedChecks).Count -eq 0)
 foreach($field in @('backendDevice','identity','pending')){$f=Facts;$f.$field=$true;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'RESET_ENROLL');Check ($r.packageMode -cne 'LAB_PACKAGE_UNPAIRED')}
 $f=Facts;$f.accounting=$true;$f.resetAttributable=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.packageMode -cne 'LAB_PACKAGE_UNPAIRED');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
@@ -18,6 +18,14 @@ $f=Facts;$f.identity=$true;$f.resetAttributable=$false;$r=Resolve-ProductPrepara
 $f=Facts;$f.historicalPartial=$false;$f.backendDevice=$true;$f.savedDevice=$true;$f.savedMatches=$true;$f.identity=$true;$f.credentialUsable=$true;$f.policyConsistent=$true
 $r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'VERIFY_REUSE');Check ($r.credentialProof -ceq 'FRESH_ACK_REQUIRED_BEFORE_POLICY')
 $f.savedMatches=$false;$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'NONE');Check ($r.reviewReason -ceq 'POLICY_STATE_AMBIGUOUS')
+$historicalSession='33333333-3333-3333-3333-333333333333'
+$review=[pscustomobject]@{sessions=@([pscustomobject]@{id=$historicalSession;device=$null;consumed=$false;cancelled=$true},[pscustomobject]@{id=[Guid]::NewGuid().ToString();device='11111111-1111-1111-1111-111111111111';consumed=$true;cancelled=$false});devices=@([pscustomobject]@{id='11111111-1111-1111-1111-111111111111';epoch='22222222-2222-2222-2222-222222222222';configured=$true;reported=$true;usable=$true})}
+$saved=[pscustomobject]@{id='11111111-1111-1111-1111-111111111111';policy_epoch='22222222-2222-2222-2222-222222222222'}
+$pre=@([pscustomobject]@{stages=@('BEGIN','PAIRING_CLEANUP_ADMITTED','ENROLLMENT_ADMITTED');pairingSession=[pscustomobject]@{id=$historicalSession;disposition='OPEN'}})
+Check (Test-ConfiguredReuseHistorySafe $pre $review $saved $true $false $true)
+$f=Facts;$f.backendDevice=$true;$f.savedDevice=$true;$f.savedMatches=$true;$f.identity=$true;$f.accounting=$true;$f.credentialUsable=$true;$f.policyConsistent=$true;$f.configuredReuseHistorySafe=$true
+$r=Resolve-ProductPreparation $f;Check ($r.path -ceq 'VERIFY_REUSE')
+foreach($bad in @('POLICY','OPEN','MISMATCH')){$copy=$review|ConvertTo-Json -Depth 6|ConvertFrom-Json;$history=$pre;$sv=$saved;if($bad -ceq 'POLICY'){$history=@([pscustomobject]@{stages=@('BEGIN','POLICY_ADMITTED')})};if($bad -ceq 'OPEN'){$copy.sessions=@([pscustomobject]@{id=[Guid]::NewGuid().ToString();device=$null;consumed=$false;cancelled=$false})};if($bad -ceq 'MISMATCH'){$sv=[pscustomobject]@{id=[Guid]::NewGuid().ToString();policy_epoch=$saved.policy_epoch}};Check (-not (Test-ConfiguredReuseHistorySafe $history $copy $sv $true $false $true))}
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-resume-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 try{
  foreach($path in @('ENROLL','RESET_ENROLL','VERIFY_REUSE')){

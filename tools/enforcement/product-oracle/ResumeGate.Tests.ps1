@@ -77,5 +77,14 @@ try{
   Check ((Read-ProductJournal $directory).rows.Count -eq 0)
   Check (($backend|ConvertTo-Json -Depth 8 -Compress) -ceq $backendBefore);Check (($metadata|ConvertTo-Json -Depth 8 -Compress) -ceq $metadataBefore)
  }
+ $script:currentCase='CONFIGURED_HISTORY_REUSE';$historicalPartial=$true;$Adb='SYNTHETIC_ONLY';$temporary=$root;$preparation=$null
+ $directory=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true;$historic=[Guid]::NewGuid().ToString();$historyReviews=@([pscustomobject]@{attempt=[Guid]::NewGuid().ToString();reviewKind='INTERRUPTED_PRE_SETUP';stages=@('BEGIN','PAIRING_CLEANUP_ADMITTED','ENROLLMENT_ADMITTED');pairingSession=[pscustomobject]@{id=$historic;disposition='OPEN'}});$historyAttemptIds=@($historyReviews[0].attempt)
+ $metadata=[pscustomobject]@{status='METADATA_ONLY';otherDurableFiles=0;files=@([pscustomobject]@{kind='identity';presence='PRESENT'},[pscustomobject]@{kind='pairing';presence='ABSENT'},[pscustomobject]@{kind='accounting';presence='PRESENT'})}
+ $saved=[pscustomobject]@{id=$device;policy_epoch=$epoch};$d=[pscustomobject]@{id=$device;epoch=$epoch;configured=$true;manualLock=$false;reported=$true;usable=$true}
+ $backend=[pscustomobject]@{local=[pscustomobject]@{device=$saved};review=[pscustomobject]@{owners=1;households=1;devices=@($d);sessions=@([pscustomobject]@{id=$historic;device=$null;consumed=$false;cancelled=$true},[pscustomobject]@{id=[Guid]::NewGuid().ToString();device=$device;consumed=$true;cancelled=$false})};compatibility=('e'*64);jwt=$null}
+ $installed=$record;$script:fakeLive=@{state=@{new=$false};ops=@{HostReady={};Configuration={};FixtureHash={'223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc'};Installed={$installed}.GetNewClosure();Metadata={$metadata}.GetNewClosure()}}
+ $h=@{backend=$backend;live=$null;reuse=$false;resolution=$null;serial=$null};$backendBefore=$backend|ConvertTo-Json -Depth 8 -Compress;$metadataBefore=$metadata|ConvertTo-Json -Depth 8 -Compress
+ & $gate;Check ($h.resolution.path -ceq 'VERIFY_REUSE');Check $h.reuse;Check ($h.resolution.credentialProof -ceq 'FRESH_ACK_REQUIRED_BEFORE_POLICY')
+ Check ((Read-ResumeReview $directory).permittedPath -ceq 'VERIFY_REUSE');Check (($backend|ConvertTo-Json -Depth 8 -Compress) -ceq $backendBefore);Check (($metadata|ConvertTo-Json -Depth 8 -Compress) -ceq $metadataBefore)
  Write-Output "OD51_ACTUAL_READONLY_GATE_CHECKS=$script:n;ALL_TRANSPORTS=SYNTHETIC;DEVICE=NOT_INVOKED"
 }finally{Remove-Item -LiteralPath $root -Recurse -Force}
