@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current handoff is **BLOCKED_PENDING_KNOWN_ACCOUNTING_BASELINE**. Retained transport observation `e8a3a609-66cf-43ce-8bfe-e2f0eaa5be50` produced a fresh authenticated report after the original 30-second window, but it reported `SAFE_SURFACE_AVAILABLE:HISTORY` with restriction required. This is synchronization recovery, not a safe positive Lock baseline. Reuse now requires a fresh report whose accounting suffix is `:NONE` before any normalization/control operation. Same-period uncertainty is not reset or forgiven.
+Current handoff is **NEXT_PERIOD_REUSE_BUNDLE_READY / PHYSICAL_NOT_RUN**. Retained transport recovered, but the current Samsung report is `SAFE_SURFACE_AVAILABLE:HISTORY`; reuse now fails before normalization/control unless a fresh authenticated report ends in `:NONE`. Exact executable source `055f24fa80f3deda352f7657176c70521f2187b4` is frozen and must not run before `2026-10-03T00:00:00Z` (`Etc/UTC` period rollover). No QR, reset, reinstall or permission change is part of this handoff. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution).
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
