@@ -2,6 +2,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'Reuse.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'Journal.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'LivePreparation.psm1') -Force
 $script:n=0;function Check($b){$script:n++;if(-not $b){throw "REUSE_CHECK_$script:n"}}
 $stages=@('Bundle','Tools','Lease','LiveHealth','Ports','Artifacts','Journal','ReadOnlyTarget')
 foreach($failed in $stages){
@@ -13,6 +14,12 @@ foreach($failed in $stages){
 $s=@{calls=@();failed='NONE'};$ops=@{}
 foreach($stage in $stages){$k=$stage;$ops[$k]={ $s.calls+=,$k }.GetNewClosure()}
 Invoke-ProductHostGate $ops;Check ($s.calls.Count -eq 8)
+Check (Assert-ReuseAccountingKnown ([pscustomobject]@{report=[pscustomobject]@{health='UNRESTRICTED_OBSERVED:NONE'}}))
+Check (Assert-ReuseAccountingKnown ([pscustomobject]@{report=[pscustomobject]@{health='RESTRICTED_OBSERVED:NONE'}}))
+foreach($health in @('SAFE_SURFACE_AVAILABLE:HISTORY','PERMISSION_REQUIRED:STORAGE','UNRESTRICTED_OBSERVED:CLOCK','MALFORMED')){
+ $caught=$false;try{$null=Assert-ReuseAccountingKnown ([pscustomobject]@{report=[pscustomobject]@{health=$health}})}catch{$caught=$_.Exception.Message -ceq 'INVALID:REUSE_ACCOUNTING_UNCERTAIN'};Check $caught
+}
+$caught=$false;try{$null=Assert-ReuseAccountingKnown ([pscustomobject]@{report=$null})}catch{$caught=$_.Exception.Message -ceq 'INVALID:REUSE_ACCOUNTING_UNCERTAIN'};Check $caught
 $root=Join-Path ([IO.Path]::GetTempPath()) ('od51-reuse-'+[Guid]::NewGuid());[void][IO.Directory]::CreateDirectory($root)
 try{
  $dir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true

@@ -1,0 +1,71 @@
+{
+  "scope": "OD51_RETAINED_SYNC_READINESS_REVIEW_NOT_ENFORCEMENT",
+  "observedOn": "2026-10-02",
+  "sourceAttemptSha256": "2b4024090b425fda3121dda1b4cba9419f57d54a02772dde19b5112e8636cd0a",
+  "attempt": "e8a3a609-66cf-43ce-8bfe-e2f0eaa5be50",
+  "source": "6fb6593c328732a6f49dda7a58b98ac70da039a3",
+  "observedResult": {
+    "scope": "OD51_RETAINED_SYNC_READINESS",
+    "status": "OBSERVED",
+    "failureStage": "NONE",
+    "failureCode": "NONE",
+    "retry": {
+      "status": "OBSERVED",
+      "failureCode": "NONE",
+      "checksumValidity": "VALID",
+      "schemaValidity": "VALID",
+      "pending": true,
+      "stopped": false,
+      "reason": "NONE",
+      "attemptCount": 30,
+      "delayMs": 127291,
+      "bootRecorded": true,
+      "deadlineRecorded": true,
+      "legacyReasonDerived": false
+    },
+    "observation": {
+      "status": "OBSERVED",
+      "finding": "FRESH_AUTHENTICATED_REPORT",
+      "firstWindow": "NOT_OBSERVED_WITHIN_30S",
+      "elapsedMs": 30688,
+      "reads": 16,
+      "report": {
+        "version": 1,
+        "sequence": 4,
+        "health": "SAFE_SURFACE_AVAILABLE:HISTORY",
+        "remainingMs": 3598997,
+        "manualLock": false,
+        "restrictionRequired": true,
+        "restrictionApplied": false
+      },
+      "enforcementAcceptance": false
+    },
+    "directPrivateWrites": false,
+    "targetPolicyOperationsSent": 0,
+    "targetEnrollmentOperationsSent": 0,
+    "physicalEnforcementAcceptance": false,
+    "historicalEvidence": "VERIFIED_UNCHANGED",
+    "deviceMayPersistExistingPolicy": true,
+    "privateReadScope": "SYNC_RETRY_ONLY",
+    "privateContentRetained": false,
+    "backendHealthScope": "SEPARATE_SYNTHETIC_PROBE_ACCOUNT",
+    "backendCleanup": "STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED",
+    "reverseCleanup": "OWN_REVERSE_REMOVED",
+    "hostTemporaryApk": "HOST_TEMP_DELETED"
+  },
+  "classification": {
+    "transportAndAuthenticationRecovered": true,
+    "freshReportObserved": true,
+    "withinOriginal30SecondWindow": false,
+    "accountingStatus": "HISTORY",
+    "safeBaselineForLock": false,
+    "lockUnlockExecuted": false,
+    "physicalEnforcementAccepted": false
+  },
+  "limits": [
+    "The report is synchronization evidence, not independent Lock/Unlock evidence.",
+    "SAFE_SURFACE_AVAILABLE:HISTORY means accounting is uncertain; restrictionRequired remains true by design.",
+    "A same-period authenticated sync does not clear HISTORY.",
+    "The original INITIAL_REPORT_TIMEOUT remains unchanged."
+  ]
+}

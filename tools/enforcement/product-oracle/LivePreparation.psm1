@@ -62,6 +62,11 @@ function Get-ProductPreparationFailure($ErrorRecord,$State){
  return [pscustomobject]@{stage=$stage;code=$code;reason=('INVALID:'+$code)}
 }
 
+function Assert-ReuseAccountingKnown($Device){
+ if($null -eq $Device -or $null -eq $Device.report -or [string]$Device.report.health -cnotmatch '^[A-Z_]+:NONE$'){throw 'INVALID:REUSE_ACCOUNTING_UNCERTAIN'}
+ return $true
+}
+
 function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[string]$Temporary,[Security.SecureString]$Jwt,[bool]$Reuse=$false,$SavedDevice=$null,[string]$Directory=''){
  $java=Join-Path $Bundle 'runtime\jbr\bin\java.exe'
  $jar=Join-Path $Bundle 'runtime\apksigner.jar'
@@ -166,6 +171,7 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
    Start-Sleep -Milliseconds 500
   }while($timer.Elapsed.TotalSeconds -lt 45)
   if(-not $verified){throw 'INVALID:REUSE_AUTHENTICATED_ACK_NOT_ESTABLISHED'}
+  $null=Assert-ReuseAccountingKnown $after
   $s.device=$after
  }.GetNewClosure()
  $ops.Resume={& $action OpenChild}.GetNewClosure()
@@ -189,4 +195,4 @@ function New-LivePreparation([string]$Adb,[string]$Serial,[string]$Bundle,[strin
  }.GetNewClosure()
  return @{ops=$ops;state=$s;wire=$wire;read=$read;action=$action}
 }
-Export-ModuleMember -Function New-LivePreparation,Invoke-ProductEnrollmentPreparation,Get-ProductPreparationFailure
+Export-ModuleMember -Function New-LivePreparation,Invoke-ProductEnrollmentPreparation,Get-ProductPreparationFailure,Assert-ReuseAccountingKnown

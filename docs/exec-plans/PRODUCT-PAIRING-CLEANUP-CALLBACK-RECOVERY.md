@@ -135,3 +135,9 @@ The previous exact-source CI run 36890236971 completed cancelled, not PASS. Its 
 ## Verified retained synchronization handoff
 
 Frozen executable source `6fb6593c328732a6f49dda7a58b98ac70da039a3` passed exact-source Planning checks `36906188112` and guidance `36906188126`. The observer bundle has manifest SHA-256 `53137a7e4f7c29718b1891fd08e38b982b8b7f5a742c9b727c1152396ec7d7f4`, entrypoint SHA-256 `c2430c9da970d50ce8d3f341e7bd5b08d0896f24d397ab500a25e689f6d80004` and 1179 separately verified files. Scope is OD51_RETAINED_SYNC_READINESS; physical execution is NOT_RUN and the product oracle remains BLOCKED. Physical execution is the remaining owner boundary; no product control operation or configured-state recovery exception is introduced.
+
+## Retained synchronization observed - 2026-10-02
+
+**OBSERVED:** attempt e8a3a609-66cf-43ce-8bfe-e2f0eaa5be50 restored the exact retained transport and produced a fresh authenticated report at 30,688 ms, after the original 30-second finding remained unobserved. No target policy/enrollment operation was sent; reverse/backend/host-temp cleanup verified and historical evidence remained unchanged. The report was version 1 / sequence 4 with SAFE_SURFACE_AVAILABLE:HISTORY, restrictionRequired=true, manualLock=false, restrictionApplied=false.
+
+**INFERRED:** transport/authentication is no longer the immediate blocker. **OBSERVED:** accounting uncertainty is now the blocker to a safe positive Lock baseline. Existing state semantics require uncertainty to stay restrictive in the same trusted period. Add a reuse guard that requires a fresh :NONE accounting report before any normalization/control operation. Do not reset accounting or weaken the original timeout/qualification threshold.

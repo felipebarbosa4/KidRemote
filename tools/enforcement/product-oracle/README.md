@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current handoff is **READY_FOR_RETAINED_SYNC_OBSERVATION; PHYSICAL_NOT_RUN**. The next path is a bounded observation of the existing enrolled Samsung and its first fresh authenticated report, not reenrollment or a Lock/Unlock attempt. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution). The prior product/metadata/retry commands remain retired from blind repetition.
+Current handoff is **BLOCKED_PENDING_KNOWN_ACCOUNTING_BASELINE**. Retained transport observation `e8a3a609-66cf-43ce-8bfe-e2f0eaa5be50` produced a fresh authenticated report after the original 30-second window, but it reported `SAFE_SURFACE_AVAILABLE:HISTORY` with restriction required. This is synchronization recovery, not a safe positive Lock baseline. Reuse now requires a fresh report whose accounting suffix is `:NONE` before any normalization/control operation. Same-period uncertainty is not reset or forgiven.
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
