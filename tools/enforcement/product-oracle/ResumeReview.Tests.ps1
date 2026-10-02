@@ -48,6 +48,12 @@ try{
   $ops[$failed]={throw 'INVALID:PAIRING_TIMEOUT'};$caught=$false;try{Invoke-ResumePreparation $dir $ops RESET_ENROLL}catch{$caught=$true};Check $caught
   $j=Read-ProductJournal $dir;Check ($j.verdict -ceq 'INVALID');Check ($j.cleanup -ceq 'UNVERIFIED')
  }
+ # Reuse must fail before Consent/Normalize/POLICY when fresh accounting remains uncertain.
+ $dir=New-ProductJournal $root ('a'*40) ('b'*64) ('c'*64) ('d'*64) $true;$reuseFacts=Facts;$reuseFacts.historicalPartial=$false;$reuseFacts.backendDevice=$true;$reuseFacts.savedDevice=$true;$reuseFacts.savedMatches=$true;$reuseFacts.identity=$true;$reuseFacts.accounting=$true;$reuseFacts.credentialUsable=$true;$reuseFacts.policyConsistent=$true
+ Write-ResumeReview $dir 'NONE' ('e'*64) (Resolve-ProductPreparation $reuseFacts);$state=@{actions=@()};$ops=@{}
+ foreach($a in @('Reverse','Consent','Normalize')){$k=$a;$ops[$k]={param($id)$state.actions+=,$k}.GetNewClosure()};$ops.VerifyReuse={param($id)$state.actions+='VerifyReuse';throw 'INVALID:REUSE_ACCOUNTING_UNCERTAIN'}.GetNewClosure()
+ $caught=$false;try{Invoke-ResumePreparation $dir $ops VERIFY_REUSE}catch{$caught=$_.Exception.Message -ceq 'INVALID:REUSE_ACCOUNTING_UNCERTAIN'};Check $caught
+ $j=Read-ProductJournal $dir;Check (($state.actions -join ',') -ceq 'Reverse,VerifyReuse');Check (-not @($j.rows|Where-Object{$_.stage -ceq 'POLICY_ADMITTED'}).Count);Check ($j.verdict -ceq 'INVALID');Check ($j.cleanup -ceq 'UNVERIFIED')
  # Exact historical sequence remains independently INVALID/UNVERIFIED after review.
  $dir=New-ProductJournal $root ('3693034816039de67087066f077e6e02a9507dd6') 'a4824b1e655b5ec3dcaf0d69fcb57516392a0ea9c270cc1865f7c735c63e40fa' 'f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56' '223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc' $true
  $metaPath=Join-Path $dir 'provenance';$meta=[IO.File]::ReadAllText($metaPath)|ConvertFrom-Json
