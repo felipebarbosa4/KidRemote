@@ -1,0 +1,207 @@
+{
+  "scope": "OD51_PAIRING_DIAGNOSTIC_REVIEW_NOT_PHYSICAL_ACCEPTANCE",
+  "reviewedOn": "2026-09-30",
+  "attempt": "236b1c2b-9290-45cd-82ab-75c0a53fb51b",
+  "source": "062fd59b545b37ac6a58b03ac67889b181a806d8",
+  "observedResult": {
+    "primaryStatus": "INVALID",
+    "primaryReason": "INVALID:PAIRING_SESSION_INVALID",
+    "primaryCleanup": "UNVERIFIED",
+    "preparationFailureStage": "PAIRING_SESSION_VALIDATE",
+    "reverseCleanup": "OWN_REVERSE_REMOVED",
+    "backendCleanup": "STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED"
+  },
+  "durableJournals": [
+    {
+      "attempt": "236b1c2b-9290-45cd-82ab-75c0a53fb51b",
+      "source": "062fd59b545b37ac6a58b03ac67889b181a806d8",
+      "bundle": "3eb64b3b5dc134b3ea226c4ba1776a2767b36cae49bd161220d76aaf72dc8fd5",
+      "journalChainValid": true,
+      "partial": false,
+      "stages": [
+        {
+          "stage": "BEGIN",
+          "value": "STARTED",
+          "utc": "2026-09-30T16:31:21.6790165Z"
+        },
+        {
+          "stage": "PAIRING_CLEANUP_ADMITTED",
+          "value": "OD51_FIXED_SCOPE",
+          "utc": "2026-09-30T16:31:21.6892246Z"
+        },
+        {
+          "stage": "REVERSE_ADMITTED",
+          "value": "OD51_FIXED_SCOPE",
+          "utc": "2026-09-30T16:31:21.7138630Z"
+        },
+        {
+          "stage": "ENROLLMENT_ADMITTED",
+          "value": "OD51_FIXED_SCOPE",
+          "utc": "2026-09-30T16:31:21.8089548Z"
+        },
+        {
+          "stage": "VERDICT",
+          "value": "INVALID",
+          "utc": "2026-09-30T16:31:21.9012881Z"
+        },
+        {
+          "stage": "CLEANUP",
+          "value": "UNVERIFIED",
+          "utc": "2026-09-30T16:31:21.9110904Z"
+        }
+      ],
+      "inventory": {
+        "000000.json": "41df019116d0ae474e33061ea18beaa18989dba68bda7ba6a203df9d8582e708",
+        "000001.json": "56ae2fb82c14b8199a8cca6f2ec15a049024826611e576663dbc5033a8742c99",
+        "000002.json": "80e2057e7a89e9b95a97c20d9aa5b164922c42a32f079e9545ca0c8adeccb970",
+        "000003.json": "34c9392c6a1db000700ddd39476ef48a9d0f438f931fcce5984fb0087d7226c0",
+        "000004.json": "78ed845cba3144ea9a537c06d67fb76dbbea6658bb5db192d4eff3acb4c6f577",
+        "000005.json": "27b771fbdeccb7effb7d6a93510e91d59e77688515c4d48ca05e2a7b325c4bbf",
+        "provenance": "3604c5772fc2bb594341de0a6775ac9efd83325c5185831d3270e72159535542",
+        "result.txt": "cfab6111b74c5c2f6d6a56a153e6cc8d0d7de3399c6af0a25632a36b56277287",
+        "resume-review": "f4761d44d7c0b6b3964015f637b5efc1f0d1bfc48a4aadc40ad1f92d8dfbd2d6",
+        "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "attempt": "ecc14e8a-6a86-4674-91c1-66128220420c",
+      "source": "062fd59b545b37ac6a58b03ac67889b181a806d8",
+      "bundle": "3eb64b3b5dc134b3ea226c4ba1776a2767b36cae49bd161220d76aaf72dc8fd5",
+      "journalChainValid": true,
+      "partial": false,
+      "stages": [
+        {
+          "stage": "VERDICT",
+          "value": "INVALID",
+          "utc": "2026-09-30T16:28:52.0398184Z"
+        },
+        {
+          "stage": "CLEANUP",
+          "value": "NOT_REQUIRED",
+          "utc": "2026-09-30T16:28:52.0529348Z"
+        }
+      ],
+      "inventory": {
+        "000000.json": "d3dc10361f09a95ac59f902b6730573199fefb9220c96f3278e5c0a8984cb36f",
+        "000001.json": "c5dd7eda396e16a6ee54949ca444845ac7267d64d8d7ac7088ae1d63f515cceb",
+        "provenance": "04d0ac3261366942bbce0571d0c545a40979be47aec55f3454fc5f0678243d11",
+        "result.txt": "682b4d59392401672d271d1622522155b697780d00721e4b91473f6f70ddac75",
+        "writer.lock": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "durableDiagnostics": [
+    {
+      "file": "2ffe7b34-d19d-4cfc-90b4-be5feb6c82e9.json",
+      "sha256": "43f45bd2e4d808586fdbacf3f12d14047ed747fcf3454a4c3a985b9786361eb8",
+      "diagnosticId": "2ffe7b34-d19d-4cfc-90b4-be5feb6c82e9",
+      "utc": "2026-09-30T16:32:59.5816734Z",
+      "hostStage": "JOURNAL_READY",
+      "hostCode": "PRIOR_ATTEMPT_REVIEW_REQUIRED",
+      "prepStage": "NONE",
+      "prepCode": "NONE",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:INVALID_HOST_PREFLIGHT",
+        "cleanup": "UNVERIFIED"
+      }
+    },
+    {
+      "file": "7c77f64c-437f-4d69-8c78-d4b265b2e858.json",
+      "sha256": "3d63ae9ee8fbb0aeaa23b1c71ed885e412c86a85c76a6a7fdee37cd76ef8bb43",
+      "diagnosticId": "7c77f64c-437f-4d69-8c78-d4b265b2e858",
+      "utc": "2026-09-30T16:28:52.0626901Z",
+      "hostStage": "DOCKER_ENGINE",
+      "hostCode": "HOST_DOCKER_ENGINE_LINE_139_NATIVE_DOCKER_COMMAND_FAILED_EXIT_1_EMPTY",
+      "prepStage": "NONE",
+      "prepCode": "NONE",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:INVALID_HOST_PREFLIGHT",
+        "cleanup": "UNVERIFIED"
+      }
+    },
+    {
+      "file": "d66a043b-01f7-4726-bd14-ee9a3f7e5e81.json",
+      "sha256": "702287db944dd04ded7b83274b8591767247adecb5539dbcd13aa12b9eed5bab",
+      "diagnosticId": "d66a043b-01f7-4726-bd14-ee9a3f7e5e81",
+      "utc": "2026-09-30T16:31:24.1769916Z",
+      "hostStage": "NONE",
+      "hostCode": "NONE",
+      "prepStage": "PAIRING_SESSION_VALIDATE",
+      "prepCode": "PAIRING_SESSION_INVALID",
+      "primary": {
+        "status": "INVALID",
+        "reason": "INVALID:PAIRING_SESSION_INVALID",
+        "cleanup": "UNVERIFIED"
+      }
+    }
+  ],
+  "historyHashesUnchangedAfterReview": true,
+  "backendObservation": {
+    "hostBeforeUtc": "2026-09-30T17:06:23.6288581+00:00",
+    "serverUtc": "2026-09-30T17:06:23.765819+00:00",
+    "hostAfterUtc": "2026-09-30T17:06:23.7793378+00:00",
+    "ownershipVerified": true,
+    "owners": 1,
+    "devices": 0,
+    "queryMode": "BEGIN READ ONLY; SELECT OWN METADATA; ROLLBACK",
+    "originalStoppedStateRestored": true,
+    "sessions": [
+      {
+        "id": "6d703893-dbf0-47d2-b96d-99495159c7af",
+        "consumed": false,
+        "cancelled": true,
+        "device": null
+      },
+      {
+        "id": "53f9f593-cd45-4b60-89fa-87f7cc3241d9",
+        "consumed": false,
+        "cancelled": true,
+        "device": null
+      },
+      {
+        "id": "2598b696-3ddc-497d-899b-a9622bb495ef",
+        "createdAt": "2026-09-30T16:31:21.862324+00:00",
+        "expiresAt": "2026-09-30T16:36:21.862324+00:00",
+        "consumed": false,
+        "cancelled": false,
+        "device": null
+      }
+    ]
+  },
+  "hostOnlyProbe": {
+    "result": "PASS",
+    "accountScope": "EXISTING_SEPARATE_SYNTHETIC_PROBE",
+    "source": "062fd59b545b37ac6a58b03ac67889b181a806d8",
+    "psVersion": "5.1.26100.9444",
+    "expiresAt": "2026-09-30T17:15:10.477819+00:00",
+    "hostUtc": "2026-09-30T17:10:10.5104668+00:00",
+    "expiryDeltaSecondsRounded": 300,
+    "responseResult": "CREATED",
+    "expiryType": "System.String",
+    "protocolValid": true,
+    "sessionValid": true,
+    "tokenType": "System.String",
+    "tokenLength": 43,
+    "tokenFormatValid": true,
+    "probeCleanup": "EXACT_PROBE_SESSION_CANCELLED",
+    "backendCleanup": "STOPPED_SYNTHETIC_LEASE_AND_ENROLLMENT_RETAINED",
+    "deviceInvoked": false,
+    "environmentNote": "Remote shell omitted OS; process-local OS restored only after Win32NT verification. No persistent host setting changed."
+  },
+  "diagnosticRegression": {
+    "baseline": "FAIL:ENROLLMENT_FAILURE_CHECK_26",
+    "afterFix": "44 checks PASS on native Windows PowerShell 5.1",
+    "change": "Record QR_RENDER_PROCESS before renderer argument binding; preserve only exact PAIRING_SCHEMA and PAIRING_EXPIRY codes",
+    "productionAcceptanceRulesChanged": false
+  },
+  "limitations": [
+    "Original response and exception were not retained; exact historical cause remains UNKNOWN.",
+    "A later successful host-only probe is not the historical physical result.",
+    "The returned main account session is associated with the journal by unique new row and matching creation interval; that association is INFERRED, not a captured response.",
+    "A Docker info SystemTime snapshot appeared behind Windows, but database timestamps were aligned. Do not attribute the historical failure to clock skew.",
+    "One optional synthetic callback experiment was blocked by the execution tool. It was not rerouted or counted as evidence.",
+    "Recovery catalog was not changed; no new immutable bundle or physical rerun."
+  ]
+}

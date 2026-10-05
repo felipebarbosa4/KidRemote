@@ -5,12 +5,14 @@ import dev.kidremote.child.EnrollmentApi
 import dev.kidremote.child.DeviceRemoved
 import dev.kidremote.child.accounting.*
 import org.json.JSONObject
+import dev.kidremote.child.enforcement.EnforcementRuntime
 import java.time.Instant
 
-/** Explicit single-flight sync; pending ACK survives restart. No push, timer or enforcement adapter. */
-internal class DeviceSync(private val context:Context,private val sample:()->Sample={AndroidAccountingClock.sample(context,false)}):AutoCloseable {
+/** Explicit single-flight sync; pending ACK survives restart. Adapter observations are separate from desired persistence; no push. */
+internal class DeviceSync(private val context:Context,private val sample:()->Sample={EnforcementRuntime.sample(context)}):AutoCloseable {
     private val identity=IdentityStore(context)
-    private val engine=ChildAccounting(context)
+    private val shared=EnforcementRuntime.engine()
+    private val engine:ChildAccounting=shared?:ChildAccounting(context)
     private val api=EnrollmentApi()
     companion object {private val lock=Any()}
     private fun sendPending(id:JSONObject) {
@@ -60,12 +62,12 @@ internal class DeviceSync(private val context:Context,private val sample:()->Sam
                 }catch(e:RestartSnapshot){if(restart==1)throw RetryableSync();r=first()}
             }
             val policy=Wire.policy(r,id);val utc=Instant.parse(Wire.string(r,"server_utc")).toEpochMilli()
-            val result=engine.applySnapshot(policy,sample(),utc){s->JSONObject().put("protocol_version",1).put("device_id",id.getString("device_id")).put("policy_epoch",s.policy.epoch)
+            val result=engine.applySnapshot(policy,sample(),utc){s->val observed=EnforcementRuntime.report(context,s);JSONObject().put("protocol_version",1).put("device_id",id.getString("device_id")).put("policy_epoch",s.policy.epoch)
                 .put("applied_version",s.policy.version).put("report_sequence",s.reportSequence).put("period_key",s.periodKey).put("used_ms",s.usedMs).put("bonus_seconds",s.bonusSeconds).put("remaining_ms",s.remainingMs)
-                .put("manual_lock",s.policy.manualLock).put("restriction_required",s.restrictionRequired).put("restriction_applied",false).put("health","ENFORCEMENT_UNAVAILABLE").put("accounting_status",s.uncertainty.name).put("observed_at",Wire.string(r,"server_utc")).toString()}
+                .put("manual_lock",s.policy.manualLock).put("restriction_required",s.restrictionRequired).put("restriction_applied",observed.applied(s)).put("health",observed.health).put("accounting_status",s.uncertainty.name).put("observed_at",Wire.string(r,"server_utc")).toString()}
             if(result.storageFailure)throw LocalStorageFailure();SyncProgress(context).clear();SyncFaults.persisted();sendPending(id);engine.read()
         }catch(e:DeviceRemoved){id.put("removal",e.removal);identity.save(id);throw e}
     }
     fun retryAck()=synchronized(lock){sendPending(identity.read()?:error("IDENTITY_REQUIRED"))}
-    override fun close(){engine.close()}
+    override fun close(){if(shared==null)engine.close()}
 }

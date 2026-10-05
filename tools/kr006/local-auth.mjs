@@ -97,7 +97,10 @@ export async function runParentAuth({sql,call,env,name,label,token,network,datab
   }
   if(keep) {
    console.log('PARENT_DEV_READY:Auth=127.0.0.1:47361:REST=127.0.0.1:47362:Mail=127.0.0.1:47365:CtrlC=scopedCleanup');
-   await new Promise(r=>{process.once('SIGINT',r);process.once('SIGTERM',r);});
+   await new Promise(r=>{process.once('SIGINT',r);process.once('SIGTERM',r);
+    // OD-50 host-owned supervisor: exact stdin STOP only, no network control route.
+    if(process.env.KR_PRODUCT_LAB_STDIN==='1'){let pending='';process.stdin.setEncoding('utf8');process.stdin.on('data',b=>{pending+=b;if(pending==='STOP\n')r();else if(pending.length>5)r();});process.stdin.once('end',r);process.stdin.resume();}
+   });
   } else {
    const mailResource=resources.find(r=>r.image===images.mail);
    const mailAvailable=enabled=>{verify(mailResource);call([enabled?'start':'stop',mailResource.id]);};

@@ -198,7 +198,8 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
         else if(saved.has("removal"))removedState()
         else {
             dev.kidremote.child.sync.SyncRecovery.request(getApplication(),explicitRecovery)
-            val result=dev.kidremote.child.accounting.ChildAccounting(getApplication()).use{it.read()}
+            val result=dev.kidremote.child.enforcement.EnforcementRuntime.engine()?.read()
+                ?:dev.kidremote.child.accounting.ChildAccounting(getApplication()).use{it.read()}
             EnrollmentState(paired=true,localReasons=buildList {
                 if(result.storageFailure)add("Falha no armazenamento · estado local não confirmado.")
                 result.ledger?.let { ledger ->
@@ -206,7 +207,7 @@ class EnrollmentModel(application:Application):AndroidViewModel(application) {
                     if(ledger.remainingMs==0L)add("Tempo esgotado. Peça tempo adicional ao responsável.")
                     if(ledger.uncertainty!=dev.kidremote.child.accounting.Uncertainty.NONE)add("Contabilidade incerta · dispositivo precisa de atenção.")
                 }
-            }.joinToString("\n"),message=if(result.ledger!=null)"Política local preservada; sincronização solicitada. Enforcement não disponível." else "Identidade armazenada; sincronização solicitada. Enforcement não ativo; configuração incompleta.")
+            }.joinToString("\n"),message=if(result.ledger!=null)"Política local preservada; sincronização solicitada. Consulte o estado atual do adaptador." else "Identidade armazenada; sincronização solicitada. Enforcement não ativo; configuração incompleta.")
         }
     }
     fun decoded(text:String)=run {

@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "kind": "OD51_RUNTIME_STRUCTURAL_CLASSIFICATION_REVIEW",
+  "probeAttempt": "88af2a3b-bdfd-4d5b-b814-729facbac4a9",
+  "probeSource": "8ebcc89e0b483af1f5d3cf3a081fca640da37e10",
+  "probeResultSha256": "f4bff1b17176ce621db4c27c412710b8148f604422d0bc62fca6d968ecb13e14",
+  "probeResultBytes": 3519,
+  "probeResultRewritten": false,
+  "observed": {
+    "configuration": {
+      "manufacturer": "samsung",
+      "model": "SM-X400",
+      "android": "16",
+      "api": "36",
+      "build": "BP4A.251205.006",
+      "securityPatch": "2026-07-05"
+    },
+    "configurationProvenance": "PASS",
+    "packageProvenance": "PASS",
+    "fixtureProvenance": "PASS",
+    "reverseAbsent": true,
+    "metadataStatus": "METADATA_ONLY",
+    "metadataKnown": true,
+    "knownPresent": [
+      "runtime_profile",
+      "runtime_work_no_backup",
+      "runtime_work_no_backup_wal",
+      "runtime_work_no_backup_shm"
+    ],
+    "totalDurableFiles": 5,
+    "knownDurableFiles": 4,
+    "otherDurableFiles": 1,
+    "unexpectedStructuralEntry": {
+      "path": "shared_prefs/android.app.ActivityThread.IDS.xml",
+      "regularFile": true,
+      "bytes": 108
+    },
+    "deviceMutation": false,
+    "backendMutation": false,
+    "mutationJournalCreated": false,
+    "contentRead": false
+  },
+  "classification": {
+    "logicalKind": "runtime_samsung_ids",
+    "structuralPath": "shared_prefs/android.app.ActivityThread.IDS.xml",
+    "meaning": "SAMSUNG_OEM_MANAGED_RUNTIME_SHARED_PREFERENCES_ARTIFACT_NOT_KIDREMOTE_PRODUCT_STATE",
+    "evidenceLevel": "OBSERVED_PATH_CORROBORATED_BY_NON_OFFICIAL_ROM_AND_UNRELATED_APP_LOG_EVIDENCE",
+    "officialSamsungDocumentation": "NOT_FOUND",
+    "scope": "EXACT_CONFIGURATION_ONLY",
+    "regularFileRequired": true,
+    "symlinkAllowed": false,
+    "directoryOrNonregularAllowed": false,
+    "caseOrPathVariationAllowed": false,
+    "contentTrust": "NONE_CONTENT_UNREAD",
+    "sizeTrust": "NONE_SIZE_IS_STRUCTURAL_METADATA_ONLY",
+    "additionalUnknownFilesAllowed": false
+  },
+  "kidRemoteAudit": {
+    "sourceBaseline": "da988f17814edcbd229bdc43a4dd6b721f4b0f8f",
+    "terms": [
+      "android.app.ActivityThread.IDS.xml",
+      "ActivityThread.IDS",
+      "IDSCount",
+      "IDS_TAG"
+    ],
+    "sourceResourceAndBuildOutputExplicitMatchesBeforeHostOverlay": 0,
+    "approvedLabApkSource": "668ab87a22591319afd43167d55ef9ac0909c1b3",
+    "approvedLabApkSha256": "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+    "apkEntriesScanned": 531,
+    "apkRawByteMatches": 0,
+    "apkDexFilesDisassembled": 10,
+    "apkDexExplicitMatches": 0,
+    "aaptManifestAndResourceMatches": 0,
+    "allExtractedApkStringMatches": 0,
+    "bundledDependencyDexFilesDisassembled": 3,
+    "bundledDependencyExplicitMatches": 0,
+    "explicitPackagedCreationMechanismFound": false
+  },
+  "nonOfficialCorroboration": [
+    "https://stackoverflow.com/questions/78496457/what-is-android-app-activitythread-ids-xml-in-shared-prefs",
+    "https://pastebin.com/Zqp38w5M",
+    "https://github.com/ReVanced/revanced-manager/issues/2207",
+    "https://github.com/koreader/koreader/issues/14902",
+    "https://github.com/meshtastic/Meshtastic-Android/issues/2349"
+  ],
+  "derivedPreparation": {
+    "basis": "CURRENT_READ_ONLY_PROBE_PLUS_PRESERVED_PRIOR_HOST_BACKEND_FACTS",
+    "provenance": true,
+    "owned": true,
+    "compatible": true,
+    "reverseAbsent": true,
+    "historySafe": true,
+    "metadataKnown": true,
+    "noUnknownFilesAfterExactOverlay": true,
+    "package": "LAB",
+    "historicalPartial": true,
+    "backendDevice": false,
+    "savedDevice": false,
+    "identity": false,
+    "pending": false,
+    "accounting": false,
+    "classification": "SAFE_RESUME_FROM_ENROLLMENT",
+    "packageMode": "LAB_PACKAGE_UNPAIRED",
+    "path": "ENROLL",
+    "liveRevalidationRequiredBeforeMutation": true
+  },
+  "historicalAttempts": {
+    "e888975a-207a-473f-a442-2a2895f02347": "UNCHANGED_INVALID_HOST_PREFLIGHT_INVALID_PARTIAL_STATE_REVIEW_REQUIRED",
+    "d9157ae6-a6ff-4849-919f-c8f13fe08f7e": "UNCHANGED_INVALID_PAIRING_TIMEOUT_CLEANUP_UNVERIFIED"
+  }
+}

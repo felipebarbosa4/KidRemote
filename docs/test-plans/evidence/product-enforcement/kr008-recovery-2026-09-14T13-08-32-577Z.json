@@ -1,0 +1,67 @@
+{
+  "scope": "KR008_LOCAL_RECOVERY_EMULATOR",
+  "source": "84a85a57c8a14cc8dea1264eee643519436609a1",
+  "stages": [
+    {
+      "method": "completeAndIncompleteRecovery",
+      "result": "PASS",
+      "codes": [
+        "ROOM_COMPLETE_SUFFIX_ONLY_ONCE_PARTIAL_CONTRADICTION_RESTRICTED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "prepareStorageFailure",
+      "result": "PASS",
+      "codes": [
+        "ROOM_WRITE_ABORT_PRESERVED_LEDGER_DURABLE_INTENT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "restartStorageRecovery",
+      "result": "PASS",
+      "codes": [
+        "WRITABLE_RESTART_STAYS_UNCERTAIN_UNTIL_FULL_SUFFIX"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "trustedPeriodRecovery",
+      "result": "PASS",
+      "codes": [
+        "TRUSTED_NEW_PERIOD_ONCE_REBOOT_SKIPPED_DATES_LOCK_POLICY_PRESERVED"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killBeforeRecoveryCommit",
+      "result": "EXPECTED_PROCESS_DEATH",
+      "codes": [
+        "EXPECTED_KILL_RECOVERY_BEFORE_COMMIT"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "afterRecoveryRollback",
+      "result": "PASS",
+      "codes": [
+        "REAL_RECOVERY_KILL_ROLLED_BACK_NO_HYBRID_INTENT_RESTRICTS"
+      ],
+      "hostExit": 0
+    },
+    {
+      "method": "killAfterRecoveryCommit",
+      "result": "FAIL",
+      "codes": [],
+      "hostExit": 1
+    }
+  ],
+  "hashes": {
+    "child-debug.apk": "619df509287b1ce58006389e734241e2f1241a49e286b71186ede3a9a38edd22",
+    "child-debug-androidTest.apk": "a102096917add1b06c8467c4af9ae429567f6a7448e513e5c1ae73b52f3bb064"
+  },
+  "overall": "NOT_PASSED",
+  "cleanup": "VERIFIED_OWN_APP_TEST_DATA_CLEARED",
+  "error": "ACCOUNTING_STAGE_FAILED:killAfterRecoveryCommit"
+}

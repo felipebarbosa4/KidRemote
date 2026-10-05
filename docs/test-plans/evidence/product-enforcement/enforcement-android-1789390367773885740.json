@@ -1,0 +1,25 @@
+{
+  "scope": "OD49_OWNED_EMULATOR_SERVICE_FIXTURE",
+  "source": "8f6b9b04d614badf81080b4ae3123d0f285f0f3d",
+  "hashes": {
+    "app-debug.apk": "bb416b9e5c0d4b2957b2323914527c176ff8249c51282f34d8bb9126401e3354",
+    "app-debug-androidTest.apk": "82b08632f152ebf87bc910c0925a29d8d4641bdecfd60fe410402fd625461ece",
+    "child-debug.apk": "e776f68a0f2966417942fdb047f5e16ae5dc1eb1fcb2554bdd4d0c6824573d19",
+    "child-debug-androidTest.apk": "4999d53eacdcaad9e803f4a4a7d7acf981025d91abe5d2d31cff96ef18ccc425"
+  },
+  "result": "NOT_PASSED",
+  "cleanup": "TASK_CHILD_DATA_CLEARED_SERVICE_TEST_RESTORED_SETTINGS",
+  "fixtureSha256": "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+  "codes": [
+    "SERVICE_CONNECTED",
+    "LOCK_ATTACHED_OBSERVED",
+    "WAIT_FAILED_OBSERVATION_DURABLE_OFFLINE",
+    "RESTRICTED_OBSERVED"
+  ],
+  "failure": [
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26",
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26",
+    "ENFORCEMENT_RUNTIME_FAILED_LINE_26"
+  ],
+  "error": "AssertionError"
+}

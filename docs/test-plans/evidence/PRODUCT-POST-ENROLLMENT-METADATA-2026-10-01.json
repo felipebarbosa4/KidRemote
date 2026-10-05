@@ -1,0 +1,65 @@
+{
+    "attempt":  "3143554f-6b4f-4ba6-8584-299ac2999ae0",
+    "utc":  "2026-10-01T01:34:58.3254981Z",
+    "source":  "8ebcc89e0b483af1f5d3cf3a081fca640da37e10",
+    "bundleSha256":  "e4d8ab75d9b6c44ca08d3c5cb3958e3992afa4a254518f4fdebb450ba0cc29ee",
+    "result":  {
+                   "scope":  "OD51_READ_ONLY_METADATA_OBSERVATION",
+                   "deviceMutation":  false,
+                   "backendMutation":  false,
+                   "mutationJournalCreated":  false,
+                   "configurationProvenance":  "PASS",
+                   "packageProvenance":  "PASS",
+                   "fixtureProvenance":  "PASS",
+                   "reverseAbsent":  true,
+                   "metadataStatus":  "METADATA_ONLY",
+                   "metadataKnown":  true,
+                   "knownPresent":  [
+                                        "identity",
+                                        "syncRetry",
+                                        "consent",
+                                        "runtime_profile",
+                                        "runtime_work_no_backup",
+                                        "runtime_work_no_backup_wal",
+                                        "runtime_work_no_backup_shm"
+                                    ],
+                   "totalDurableFiles":  8,
+                   "knownDurableFiles":  7,
+                   "otherDurableFiles":  1,
+                   "productPhysicalOracle":  "BLOCKED",
+                   "physicalExecution":  "OWNER_READ_ONLY_OBSERVATION",
+                   "probeStatus":  "OBSERVED",
+                   "failureStage":  "NONE",
+                   "failureReason":  "NONE",
+                   "configuration":  {
+                                         "manufacturer":  "samsung",
+                                         "model":  "SM-X400",
+                                         "android":  "16",
+                                         "api":  "36",
+                                         "build":  "BP4A.251205.006",
+                                         "securityPatch":  "2026-07-05"
+                                     },
+                   "child":  {
+                                 "installed":  true,
+                                 "sha256":  "f6d2a240fae179343d9eb19dfde7684ae6e241b35cebea8ce491205110f7ad56",
+                                 "signerSha256":  "638dfa66379788415c313d7a3ca96dcfcaf7e643c12bb0c4950b3046a3f76beb",
+                                 "versionCode":  "2",
+                                 "versionName":  "0.0.2-local-physical-lab"
+                             },
+                   "fixture":  {
+                                   "installed":  true,
+                                   "sha256":  "223219c17a31439b52698e769bdf03ead0998bbbe8bbb5c1b0ff5be3cfaf21dc",
+                                   "versionCode":  "1",
+                                   "versionName":  "0.0.1-fixture"
+                               },
+                   "metadataFinding":  "UNKNOWN_DURABLE_FILES_PRESENT",
+                   "unexpectedStructuralEntries":  [
+                                                       {
+                                                           "directory":  "shared_prefs",
+                                                           "relativeName":  "android.app.ActivityThread.IDS.xml",
+                                                           "bytes":  108
+                                                       }
+                                                   ],
+                   "hostTemporaryApk":  "HOST_TEMP_DELETED"
+               }
+}

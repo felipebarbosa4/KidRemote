@@ -1,0 +1,34 @@
+name: Agent guidance checks
+on:
+  pull_request:
+    paths:
+      - AGENTS.md
+      - README.md
+      - docs/**
+      - tools/validate-guidance.test.mjs
+      - .github/workflows/guidance.yml
+  push:
+    branches: [main]
+    paths:
+      - AGENTS.md
+      - README.md
+      - docs/**
+      - tools/validate-guidance.test.mjs
+      - .github/workflows/guidance.yml
+permissions:
+  contents: read
+concurrency:
+  group: guidance-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  guidance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: node --test tools/validate-guidance.test.mjs
+      - run: node tools/validate.mjs
+      - run: git show --format= --check HEAD

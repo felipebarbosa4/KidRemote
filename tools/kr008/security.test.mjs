@@ -6,7 +6,7 @@ test('local accounting has no package history, networking, enforcement or receip
   const s=read(root+file);assert.doesNotMatch(s,/getPackageName|packageName|UsageStatsManager|HttpURLConnection|Firebase|AccessibilityService|Log\.|println|System.currentTimeMillis/);
  }
  const probe=read('apps/child-android/src/debug/java/dev/kidremote/child/accounting/UsageHistoryProbe.kt');assert.doesNotMatch(probe,/packageName|getPackageName|queryUsageStats|queryAndAggregateUsageStats|File|Log\./);assert.match(probe,/coverageProven:Boolean=false/);
- const manifest=read('apps/child-android/src/main/AndroidManifest.xml');assert.doesNotMatch(manifest,/PACKAGE_USAGE_STATS|ACCESSIBILITY|SYSTEM_ALERT_WINDOW|DEVICE_ADMIN/);
+ const manifest=read('apps/child-android/src/main/AndroidManifest.xml');assert.doesNotMatch(manifest,/PACKAGE_USAGE_STATS|SYSTEM_ALERT_WINDOW|DEVICE_ADMIN/);
 });
 test('Room storage stays aggregate-only, no destructive migration fallback or independent identity secret',()=>{
  const s=read('apps/child-android/src/main/java/dev/kidremote/child/accounting/ChildAccounting.kt');assert.match(s,/IdentityStore/);assert.match(s,/noBackupFilesDir/);assert.match(s,/runInTransaction/);assert.match(s,/accounting_initialized/);assert.doesNotMatch(s,/fallbackToDestructiveMigration|credential|UUID.randomUUID/);
@@ -45,3 +45,5 @@ test('recovery harness remains owned-emulator-only and release excludes writable
  const release=read('apps/child-android/src/release/java/dev/kidremote/child/accounting/AccountingFaults.kt');assert.doesNotMatch(release,/var |Process|killProcess/);
  assert.match(read('tools/kr007/audit-child.mjs'),/setBeforeRecoveryCommit.*setAfterRecoveryCommit/);
 });
+
+test('OD49 service is system-bound and content-blind',()=>{const m=read('apps/child-android/src/main/AndroidManifest.xml');assert.match(m,/android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"/);const x=read('apps/child-android/src/main/res/xml/enforcement_service.xml');assert.match(x,/canRetrieveWindowContent="false"/);assert.match(x,/accessibilityEventTypes="typeWindowStateChanged"/);assert.doesNotMatch(x,/canPerformGestures="true"|flagRetrieveInteractiveWindows/)});

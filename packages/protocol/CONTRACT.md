@@ -372,3 +372,32 @@ freshness ages locally. No FCM or parent background scheduler is added. Last-kno
 rows remain timestamped in memory across backend failures; logout clears that cache.
 Process restart restores authentication and the latest request, then rereads reports;
 no second durable device-policy cache is introduced on the parent.
+
+## OD-49 local observed enforcement extension
+
+This supersedes only OD-47's local `restriction_applied=false`/unavailable-only ACK
+restriction. Own-device reports retain the same exact keys, monotonic sequence,
+immutable response-loss retry body, canonical version and aggregate validation.
+Allowed adapter health values now include RESTRICTED_OBSERVED,
+UNRESTRICTED_OBSERVED, SAFE_SURFACE_AVAILABLE, UNKNOWN_SURFACE_FAIL_OPEN,
+SERVICE_DISCONNECTED, PERMISSION_REQUIRED, ADAPTER_PENDING and ADAPTER_FAILED.
+`restriction_applied=true` requires RESTRICTED_OBSERVED and required=true; an
+unrestricted observation requires both booleans false. A safe surface does not
+claim the overlay is currently attached. Accounting health remains separate.
+The server accepts authenticated device observations, not independent physical
+attestation; received_at still means report receipt, not continuous enforcement.
+
+Operation status remains pending until durable report, preserves superseded and
+expired-period precedence, and reports applied only when the current observation
+matches the required restriction or confirmed absence of the overlay. Parent UI
+labels this as a device report; acceptance/persistence alone remains insufficient.
+The frozen snapshot's legacy enforcement_available=false is not a child capability
+or adapter observation; only the authenticated observed report describes the adapter.
+
+Room payload format 5 reads formats 1–4 and keeps one bounded (512-character) latest
+adapter observation beside the immutable pending ACK. It is diagnostic past state,
+never restored as applied on process restart. No operation/window/package history
+is added. New observations can persist offline without overwriting a pending retry.
+The existing accounting A/B uncertainty rule is unchanged. The persisted blocked
+measurement signal stops consumption while the overlay remains attached, independently
+of permission/setup readiness and desired restriction; it cannot latch an Unlock.
