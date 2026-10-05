@@ -2,7 +2,7 @@
 
 ## OD-51 current native runner
 
-Current handoff is **NEXT_PERIOD_REUSE_BUNDLE_READY / PHYSICAL_NOT_RUN**. Retained transport recovered, but the current Samsung report is `SAFE_SURFACE_AVAILABLE:HISTORY`; reuse now fails before normalization/control unless a fresh authenticated report ends in `:NONE`. Exact executable source `055f24fa80f3deda352f7657176c70521f2187b4` is frozen and must not run before `2026-10-03T00:00:00Z` (`Etc/UTC` period rollover). No QR, reset, reinstall or permission change is part of this handoff. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution).
+Current handoff is **PHYSICAL_TARGET_RETIRED / NO_ACTIVE_LAB_DEVICE**. On 2026-10-05 the owner removed the Samsung SM-X400 from the KidRemote project and plans to factory-reset it outside the project. The owner reports that the app was removed by another method; that removal was not independently verified by ADB. Do not execute any frozen Samsung product/diagnostic bundle, including source `055f24fa80f3deda352f7657176c70521f2187b4`. Historical artifacts remain evidence only. No replacement physical device is authorized. See [current execution](../../../docs/exec-plans/TASK-CONTRACT.md#current-execution).
 
 A separate OD-51 current-metadata probe is prepared under `../metadata-observation`.
 It cannot invoke this product runner and carries no backend, enrollment, policy,
